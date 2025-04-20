@@ -1,10 +1,6 @@
-use std::{
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
+use std::{fs, path::Path};
 
-use crate::schema::config::BaseConfiguration;
+use crate::{constants::DEFAULT_PROJECT_PATH, schema::config::BaseConfiguration};
 
 fn initialize_the_directory(path: &Path) -> Result<(), String> {
     // if the path does not exist, let's try to create it
@@ -41,15 +37,7 @@ fn initialize_the_directory(path: &Path) -> Result<(), String> {
 
 fn create_configuration_files(path: &Path) -> Result<(), String> {
     let config = BaseConfiguration::new();
-    let content = serde_yaml::to_string(&config).map_err(|e| e.to_string())?;
-
-    let config_path = Path::new(path.to_str().unwrap()).join(".dotapi.yaml");
-    let mut file = File::create(config_path).map_err(|e| e.to_string())?;
-
-    file.write_all(content.as_bytes())
-        .map_err(|e| e.to_string())?;
-
-    return Ok(());
+    return config.save(path);
 }
 
 /// Initialize the dotapi directory
@@ -58,7 +46,7 @@ pub fn init(path: &Option<String>) -> Result<(), String> {
     // If path is not empty, we'd return with an error
     let path = Path::new(match path {
         Some(path) => path.as_str(),
-        None => "./dotapi",
+        None => DEFAULT_PROJECT_PATH,
     });
 
     initialize_the_directory(&path)?;
