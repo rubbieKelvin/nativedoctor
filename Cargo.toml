@@ -5,8 +5,18 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.36", features = ["derive"] }
-reqwest = "0.12.15"
+reqwest = { version = "0.12.15", features = [
+    "json",
+    "blocking",
+    "cookies",
+    "gzip",
+    "multipart",
+    "stream"
+] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140" }
 serde_yaml = "0.9.34"
 regex = "1.10.3"
+base64 = "0.21.7"
+tokio = { version = "1.44.2", features = ["full"] }
+colored = "3.0.0"

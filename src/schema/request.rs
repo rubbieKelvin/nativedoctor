@@ -5,9 +5,13 @@ use std::{
     path::Path,
 };
 
+use base64::{self, Engine as _};
 use serde::{Deserialize, Serialize};
 
-use crate::{constants::REQUEST_FOLDER, utils::sanitize_filename};
+use crate::{
+    constants::REQUEST_FOLDER,
+    utils::{get_current_project_config_path, sanitize_filename},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum HttpMethod {
@@ -18,6 +22,8 @@ pub enum HttpMethod {
     PATCH,
     DELETE,
     OPTIONS,
+    TRACE,
+    CONNECT,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -281,6 +287,8 @@ impl Request {
                 HttpMethod::PATCH => "patch",
                 HttpMethod::DELETE => "delete",
                 HttpMethod::OPTIONS => "options",
+                HttpMethod::TRACE => "trace",
+                HttpMethod::CONNECT => "connect",
             },
             sanitize_filename(&self.name),
             sanitize_filename(&self.url)
@@ -292,5 +300,101 @@ impl Request {
 
         file.write_all(content.as_bytes()).unwrap();
         return Ok(());
+    }
+
+    pub async fn to_reqwest(&self, client: &reqwest::Client) -> Result<reqwest::Request, String> {
+        // Create a new client
+        let project_root = get_current_project_config_path()?;
+        let project_root = project_root.parent().unwrap();
+
+        // Start building the request
+        let mut request_builder = match self.method {
+            HttpMethod::GET => client.get(&self.url),
+            HttpMethod::HEAD => client.head(&self.url),
+            HttpMethod::POST => client.post(&self.url),
+            HttpMethod::PUT => client.put(&self.url),
+            HttpMethod::PATCH => client.patch(&self.url),
+            HttpMethod::DELETE => client.delete(&self.url),
+            HttpMethod::OPTIONS => client.request(reqwest::Method::OPTIONS, &self.url),
+            HttpMethod::TRACE => client.request(reqwest::Method::TRACE, &self.url),
+            HttpMethod::CONNECT => client.request(reqwest::Method::CONNECT, &self.url),
+        };
+
+        // Add query parameters
+        for (key, value) in &self.params {
+            if value.enabled {
+                request_builder = request_builder.query(&[(key, &value.value)]);
+            }
+        }
+
+        // Add headers
+        for (key, value) in &self.headers {
+            if value.enabled {
+                request_builder = request_builder.header(key, &value.value);
+            }
+        }
+
+        // Handle authentication
+        if let Some(auth) = &self.auth {
+            match auth {
+                Auth::Basic(basic_auth) => {
+                    let engine = base64::engine::general_purpose::STANDARD;
+                    let auth_value = format!(
+                        "Basic {}",
+                        engine.encode(format!("{}:{}", basic_auth.username, basic_auth.password))
+                    );
+                    request_builder = request_builder.header("Authorization", auth_value);
+                }
+                Auth::Bearer(bearer_auth) => {
+                    request_builder = request_builder
+                        .header("Authorization", format!("Bearer {}", bearer_auth.token));
+                }
+                Auth::ApiKey(api_key) => {
+                    if api_key.in_header {
+                        request_builder =
+                            request_builder.header(&api_key.header_name, &api_key.key);
+                    } else {
+                        // If not in header, add as query parameter
+                        request_builder =
+                            request_builder.query(&[(&api_key.header_name, &api_key.key)]);
+                    }
+                }
+            }
+        }
+
+        // Handle request body
+        if let Some(body) = &self.body {
+            match &body.data {
+                RequestBodyData::Text(text) => {
+                    request_builder = request_builder.body(text.clone());
+                }
+                RequestBodyData::Form(form_data) => {
+                    let mut form = reqwest::multipart::Form::new();
+                    for data in form_data {
+                        if data.enabled {
+                            form = form.text(data.key.clone(), data.value.clone());
+                        }
+                    }
+                    request_builder = request_builder.multipart(form);
+                }
+                RequestBodyData::File(file_data) => {
+                    let mut form = reqwest::multipart::Form::new();
+                    for file in file_data {
+                        if file.enabled {
+                            let file_path = Path::new(project_root).join(&file.path);
+                            let file_part = reqwest::multipart::Part::file(&file_path).await;
+
+                            if let Ok(file_part) = file_part {
+                                form = form.part(file.name.clone(), file_part);
+                            }
+                        }
+                    }
+                    request_builder = request_builder.multipart(form);
+                }
+            }
+        }
+
+        // Build and return the request
+        request_builder.build().map_err(|e| e.to_string())
     }
 }

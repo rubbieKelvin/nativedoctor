@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 pub mod add;
+pub mod call;
 pub mod env;
 pub mod init;
 
@@ -49,7 +50,7 @@ pub enum Commands {
         #[arg(short = 'F', long = "form")]
         form: Vec<String>,
 
-        /// Files to send in key=@path format
+        /// Files to send in key=@path format relative to the project root
         #[arg(short = 'f', long = "file")]
         files: Vec<String>,
 
@@ -78,8 +79,9 @@ pub enum Commands {
         #[command(subcommand)]
         command: EnvSubcommands,
     },
+    /// Calls a request
     Call {
-        // name of the request to call
+        /// name of the request to call
         name: String,
     },
 }

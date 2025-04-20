@@ -1,14 +1,14 @@
 use clap::Parser;
-use commands::{env, init, Cli, Commands, EnvSubcommands};
+use commands::{call, env, init, Cli, Commands, EnvSubcommands};
 use constants::DEFAULT_ENVIROMENT_NAME;
-use utils::{get_current_project_config_path, load_config};
 
 mod commands;
 mod constants;
 mod schema;
 mod utils;
 
-fn main() -> Result<(), String> {
+#[tokio::main]
+async fn main() -> Result<(), String> {
     let cli = Cli::parse();
 
     // check sub command
@@ -59,14 +59,7 @@ fn main() -> Result<(), String> {
                     EnvSubcommands::List => env::list_env_records(name.clone()),
                 };
             }
-            Commands::Call { name } => {
-                let project_path = get_current_project_config_path()?;
-                let config = load_config(&project_path)?;
-
-                let requests = config.get_requests(&project_path.parent().unwrap());
-                println!("name: {name}, req: {:?}", requests);
-                return Ok(());
-            }
+            Commands::Call { name } => call::call(name).await,
         };
     } else {
         // eprintln!("pass --help to see usage");
