@@ -5,6 +5,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use regex::Regex;
+use serde_yaml;
+
 use crate::{
     constants::{CONFIG_FILE_NAME, VERSION},
     schema::config::BaseConfiguration,
@@ -45,4 +48,16 @@ pub fn load_config(path: &PathBuf) -> Result<BaseConfiguration, String> {
     }
 
     return Ok(config);
+}
+
+pub fn sanitize_filename(url: &str) -> String {
+    let re = Regex::new(r"[^a-zA-Z0-9_-]").unwrap();
+    let sanitized = re.replace_all(url, "_").to_string();
+
+    let multiple_underscores = Regex::new(r"_+").unwrap();
+    let sanitized = multiple_underscores
+        .replace_all(&sanitized, "_")
+        .to_string();
+
+    sanitized.trim_matches('_').to_string()
 }

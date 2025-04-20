@@ -14,8 +14,34 @@ fn main() -> Result<(), String> {
     if let Some(command) = &cli.command {
         return match command {
             Commands::Init { path } => init::init(path),
-            Commands::Add {} => {
-                return Ok(());
+            Commands::Add {
+                name,
+                url,
+                method,
+                params,
+                headers,
+                body,
+                form,
+                files,
+                auth,
+                bearer,
+                api_key,
+                api_key_header,
+            } => {
+                commands::add::add(
+                    name.clone(),
+                    url.clone(),
+                    method.clone(),
+                    params.clone(),
+                    headers.clone(),
+                    body.clone(),
+                    form.clone(),
+                    files.clone(),
+                    auth.clone(),
+                    bearer.clone(),
+                    api_key.clone(),
+                    api_key_header.clone(),
+                )
             }
             Commands::Env { name, command } => {
                 let abs_name = match name {

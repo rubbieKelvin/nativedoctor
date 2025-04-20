@@ -9,3 +9,4 @@ reqwest = "0.12.15"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140" }
 serde_yaml = "0.9.34"
+regex = "1.10.3"
