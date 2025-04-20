@@ -63,7 +63,7 @@ fn main() -> Result<(), String> {
                 let project_path = get_current_project_config_path()?;
                 let config = load_config(&project_path)?;
 
-                let requests = config.get_requests(&project_path);
+                let requests = config.get_requests(&project_path.parent().unwrap());
                 println!("name: {name}, req: {:?}", requests);
                 return Ok(());
             }

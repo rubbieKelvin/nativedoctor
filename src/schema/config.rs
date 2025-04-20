@@ -1,8 +1,15 @@
-use std::{collections::HashMap, fs::File, io::Write, path::Path};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{CONFIG_FILE_NAME, REQUEST_FOLDER, VERSION};
+
+use super::request::Request;
 
 #[derive(Serialize, Deserialize)]
 pub struct BaseConfiguration {
@@ -28,20 +35,34 @@ impl BaseConfiguration {
         return Ok(());
     }
 
-    pub fn get_requests(&self, project_root: &Path) -> Result<Vec<String>, String> {
+    pub fn get_requests(&self, project_root: &Path) -> Result<HashMap<String, Request>, String> {
         let requests_path = Path::new(project_root.to_str().unwrap()).join(REQUEST_FOLDER);
         if !requests_path.try_exists().expect("Could read project root") {
-            return Ok(vec![]);
+            return Ok(HashMap::new());
         }
         let requests_entries = requests_path
             .read_dir()
             .expect("Could not read request directory");
 
-        return Ok(requests_entries
+        let requests = requests_entries
             .map(|e| {
                 let entry = e.unwrap();
-                return String::from(entry.file_name().to_str().unwrap());
+                let rpath = entry.path();
+                let mut file = File::open(rpath).unwrap();
+                let mut buff = String::new();
+
+                file.read_to_string(&mut buff).unwrap();
+                let request = serde_yaml::from_str::<Request>(&buff).unwrap();
+                return request;
             })
-            .collect::<Vec<String>>());
+            .collect::<Vec<Request>>();
+
+        let mut result = HashMap::new();
+
+        for req in requests {
+            result.insert(req.name.clone(), req);
+        }
+
+        return Ok(result);
     }
 }

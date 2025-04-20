@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{constants::REQUEST_FOLDER, utils::sanitize_filename};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum HttpMethod {
     GET,
     HEAD,
@@ -20,7 +20,7 @@ pub enum HttpMethod {
     OPTIONS,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum AuthType {
     None,
     Basic,
@@ -28,39 +28,39 @@ pub enum AuthType {
     ApiKey,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BasicAuth {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BearerAuth {
     pub token: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApiKeyAuth {
     pub key: String,
     pub in_header: bool,
     pub header_name: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Auth {
     Basic(BasicAuth),
     Bearer(BearerAuth),
     ApiKey(ApiKeyAuth),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum RequestBodyType {
     TEXT,
     FORM,
     FILE,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DismissableStringValue {
     pub value: String,
     pub enabled: bool,
@@ -75,34 +75,34 @@ impl DismissableStringValue {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FormData {
     pub key: String,
     pub value: String,
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileData {
     pub name: String,
     pub path: String,
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum RequestBodyData {
     Text(String),
     Form(Vec<FormData>),
     File(Vec<FileData>),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct RequestBody {
     pub body_type: RequestBodyType,
     pub data: RequestBodyData,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
     pub name: String,
     pub url: String,
