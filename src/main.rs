@@ -1,6 +1,7 @@
 use clap::Parser;
 use commands::{env, init, Cli, Commands, EnvSubcommands};
 use constants::DEFAULT_ENVIROMENT_NAME;
+use utils::{get_current_project_config_path, load_config};
 
 mod commands;
 mod constants;
@@ -27,22 +28,20 @@ fn main() -> Result<(), String> {
                 bearer,
                 api_key,
                 api_key_header,
-            } => {
-                commands::add::add(
-                    name.clone(),
-                    url.clone(),
-                    method.clone(),
-                    params.clone(),
-                    headers.clone(),
-                    body.clone(),
-                    form.clone(),
-                    files.clone(),
-                    auth.clone(),
-                    bearer.clone(),
-                    api_key.clone(),
-                    api_key_header.clone(),
-                )
-            }
+            } => commands::add::add(
+                name.clone(),
+                url.clone(),
+                method.clone(),
+                params.clone(),
+                headers.clone(),
+                body.clone(),
+                form.clone(),
+                files.clone(),
+                auth.clone(),
+                bearer.clone(),
+                api_key.clone(),
+                api_key_header.clone(),
+            ),
             Commands::Env { name, command } => {
                 let abs_name = match name {
                     Some(n) => n.to_owned(),
@@ -59,7 +58,15 @@ fn main() -> Result<(), String> {
                     EnvSubcommands::Delete => env::delete_env_record(abs_name.as_str()),
                     EnvSubcommands::List => env::list_env_records(name.clone()),
                 };
-            } // _ => Err("Unimplemented command".to_string()),
+            }
+            Commands::Call { name } => {
+                let project_path = get_current_project_config_path()?;
+                let config = load_config(&project_path)?;
+
+                let requests = config.get_requests(&project_path);
+                println!("name: {name}, req: {:?}", requests);
+                return Ok(());
+            }
         };
     } else {
         // eprintln!("pass --help to see usage");

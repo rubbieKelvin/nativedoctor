@@ -1,23 +1,12 @@
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
+use std::{collections::HashMap, fs::File, io::Write, path::Path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    constants::{CONFIG_FILE_NAME, REQUEST_FOLDER, VERSION},
-    utils::sanitize_filename,
-};
-
-use super::request::Request;
+use crate::constants::{CONFIG_FILE_NAME, REQUEST_FOLDER, VERSION};
 
 #[derive(Serialize, Deserialize)]
 pub struct BaseConfiguration {
     pub version: (u16, u16, u16),
-    pub requests: Vec<String>,
     pub environments: HashMap<String, HashMap<String, String>>,
 }
 
@@ -25,7 +14,6 @@ impl BaseConfiguration {
     pub fn new() -> Self {
         return BaseConfiguration {
             version: VERSION,
-            requests: vec![],
             environments: HashMap::new(),
         };
     }
@@ -40,28 +28,20 @@ impl BaseConfiguration {
         return Ok(());
     }
 
-    pub fn add_request(&mut self, request: Request, project_root: &Path) -> Result<(), String> {
-        let content = serde_yaml::to_string(&request).map_err(|e| e.to_string())?;
-        let path = Path::new(project_root.to_str().unwrap()).join(REQUEST_FOLDER);
-
-        if !path.try_exists().unwrap() {
-            fs::create_dir(&path).unwrap();
+    pub fn get_requests(&self, project_root: &Path) -> Result<Vec<String>, String> {
+        let requests_path = Path::new(project_root.to_str().unwrap()).join(REQUEST_FOLDER);
+        if !requests_path.try_exists().expect("Could read project root") {
+            return Ok(vec![]);
         }
+        let requests_entries = requests_path
+            .read_dir()
+            .expect("Could not read request directory");
 
-        let sanitized_name = format!(
-            "{}_{}.yaml",
-            sanitize_filename(&request.name),
-            sanitize_filename(&request.url)
-        );
-
-        let path = path.join(&sanitized_name);
-
-        let mut file = File::create(path).map_err(|e| e.to_string())?;
-
-        file.write_all(content.as_bytes()).unwrap();
-
-        // now update the config file
-        self.requests.push(sanitized_name);
-        return self.save(project_root);
+        return Ok(requests_entries
+            .map(|e| {
+                let entry = e.unwrap();
+                return String::from(entry.file_name().to_str().unwrap());
+            })
+            .collect::<Vec<String>>());
     }
 }

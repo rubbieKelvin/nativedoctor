@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
 
+pub mod add;
 pub mod env;
 pub mod init;
-pub mod add;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -19,7 +19,7 @@ pub struct Cli {
 pub enum Commands {
     /// Initializes a dotapi project
     Init { path: Option<String> },
-    
+
     /// Adds a new request to the project
     Add {
         /// Name of the request
@@ -77,6 +77,10 @@ pub enum Commands {
 
         #[command(subcommand)]
         command: EnvSubcommands,
+    },
+    Call {
+        // name of the request to call
+        name: String,
     },
 }
 

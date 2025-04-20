@@ -1,6 +1,13 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
 
 use serde::{Deserialize, Serialize};
+
+use crate::{constants::REQUEST_FOLDER, utils::sanitize_filename};
 
 #[derive(Serialize, Deserialize)]
 pub enum HttpMethod {
@@ -254,5 +261,36 @@ impl Request {
             headers: headers_map,
             body,
         }
+    }
+
+    pub fn save(&self, project_root: &Path) -> Result<(), String> {
+        let content = serde_yaml::to_string(&self).map_err(|e| e.to_string())?;
+        let path = Path::new(project_root.to_str().unwrap()).join(REQUEST_FOLDER);
+
+        if !path.try_exists().unwrap() {
+            fs::create_dir(&path).unwrap();
+        }
+
+        let sanitized_name = format!(
+            "{}_{}_{}.yaml",
+            match self.method {
+                HttpMethod::GET => "get",
+                HttpMethod::HEAD => "head",
+                HttpMethod::POST => "post",
+                HttpMethod::PUT => "put",
+                HttpMethod::PATCH => "patch",
+                HttpMethod::DELETE => "delete",
+                HttpMethod::OPTIONS => "options",
+            },
+            sanitize_filename(&self.name),
+            sanitize_filename(&self.url)
+        );
+
+        let path = path.join(&sanitized_name);
+
+        let mut file = File::create(path).map_err(|e| e.to_string())?;
+
+        file.write_all(content.as_bytes()).unwrap();
+        return Ok(());
     }
 }
