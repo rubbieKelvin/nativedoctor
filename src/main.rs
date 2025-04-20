@@ -19,7 +19,7 @@ fn main() -> Result<(), String> {
             }
             Commands::Env { name, command } => {
                 let abs_name = match name {
-                    Some(name) => name.to_owned(),
+                    Some(n) => n.to_owned(),
                     None => DEFAULT_ENVIROMENT_NAME.to_owned(),
                 };
 
@@ -31,7 +31,7 @@ fn main() -> Result<(), String> {
                         env::unset_enviroment_variable(abs_name.as_str(), key)
                     }
                     EnvSubcommands::Delete => env::delete_env_record(abs_name.as_str()),
-                    EnvSubcommands::List { name } => env::list_env_records(name.clone()),
+                    EnvSubcommands::List => env::list_env_records(name.clone()),
                 };
             } // _ => Err("Unimplemented command".to_string()),
         };

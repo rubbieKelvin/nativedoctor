@@ -47,9 +47,5 @@ pub enum EnvSubcommands {
         key: String,
     },
     Delete,
-    List {
-        /// The name of the enviroment to list. if not specified the default is used
-        #[arg(short, long)]
-        name: Option<String>,
-    },
+    List,
 }
