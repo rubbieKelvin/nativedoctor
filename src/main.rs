@@ -1,5 +1,5 @@
 use clap::Parser;
-use commands::{call, env, init, Cli, Commands, EnvSubcommands};
+use commands::{Cli, Commands, EnvSubcommands};
 use constants::DEFAULT_ENVIROMENT_NAME;
 
 mod commands;
@@ -14,7 +14,7 @@ async fn main() -> Result<(), String> {
     // check sub command
     if let Some(command) = &cli.command {
         return match command {
-            Commands::Init { path } => init::init(path),
+            Commands::Init { path } => commands::init::init(path),
             Commands::Add {
                 name,
                 url,
@@ -50,16 +50,17 @@ async fn main() -> Result<(), String> {
 
                 return match command {
                     EnvSubcommands::Set { key, value } => {
-                        env::set_enviroment_variable(abs_name.as_str(), key, value)
+                        commands::env::set_enviroment_variable(abs_name.as_str(), key, value)
                     }
                     EnvSubcommands::UnSet { key } => {
-                        env::unset_enviroment_variable(abs_name.as_str(), key)
+                        commands::env::unset_enviroment_variable(abs_name.as_str(), key)
                     }
-                    EnvSubcommands::Delete => env::delete_env_record(abs_name.as_str()),
-                    EnvSubcommands::List => env::list_env_records(name.clone()),
+                    EnvSubcommands::Delete => commands::env::delete_env_record(abs_name.as_str()),
+                    EnvSubcommands::List => commands::env::list_env_records(name.clone()),
                 };
             }
-            Commands::Call { name } => call::call(name).await,
+            Commands::Call { name, env } => commands::call::call(name, env.clone()).await,
+            Commands::Ls => commands::ls::ls(),
         };
     } else {
         // eprintln!("pass --help to see usage");

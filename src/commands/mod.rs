@@ -4,6 +4,7 @@ pub mod add;
 pub mod call;
 pub mod env;
 pub mod init;
+pub mod ls;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -79,11 +80,19 @@ pub enum Commands {
         #[command(subcommand)]
         command: EnvSubcommands,
     },
+
     /// Calls a request
     Call {
         /// name of the request to call
         name: String,
+
+        /// The enviroment to call with
+        #[arg(short, long)]
+        env: Option<String>,
     },
+
+    /// Lists all requests
+    Ls,
 }
 
 #[derive(Subcommand, Debug)]

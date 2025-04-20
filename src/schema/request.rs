@@ -10,8 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::REQUEST_FOLDER,
-    utils::{get_current_project_config_path, sanitize_filename},
+    utils::{get_current_project_config_path, load_config, normalize_url, sanitize_filename},
 };
+
+use super::config::BaseConfiguration;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum HttpMethod {
@@ -302,22 +304,54 @@ impl Request {
         return Ok(());
     }
 
-    pub async fn to_reqwest(&self, client: &reqwest::Client) -> Result<reqwest::Request, String> {
+    pub fn resovled_url(
+        &self,
+        config: &BaseConfiguration,
+        env: Option<String>,
+    ) -> Result<String, String> {
+        // just incase a url contains an env var key
+        let env_vars = config.resolved_environment_variables(env)?;
+        let mut url = self.url.clone();
+
+        for (key, value) in env_vars.iter() {
+            let mut buff = "{{".to_string();
+            buff.push_str(&key);
+            buff.push_str("}}");
+
+            if url.contains(&buff) {
+                url = url.replace(&buff, value);
+            }
+        }
+        return Ok(normalize_url(&url));
+    }
+
+    pub async fn to_reqwest(
+        &self,
+        client: &reqwest::Client,
+        env: Option<String>,
+    ) -> Result<reqwest::Request, String> {
         // Create a new client
         let project_root = get_current_project_config_path()?;
+        let config = load_config(&project_root)?;
         let project_root = project_root.parent().unwrap();
 
         // Start building the request
         let mut request_builder = match self.method {
-            HttpMethod::GET => client.get(&self.url),
-            HttpMethod::HEAD => client.head(&self.url),
-            HttpMethod::POST => client.post(&self.url),
-            HttpMethod::PUT => client.put(&self.url),
-            HttpMethod::PATCH => client.patch(&self.url),
-            HttpMethod::DELETE => client.delete(&self.url),
-            HttpMethod::OPTIONS => client.request(reqwest::Method::OPTIONS, &self.url),
-            HttpMethod::TRACE => client.request(reqwest::Method::TRACE, &self.url),
-            HttpMethod::CONNECT => client.request(reqwest::Method::CONNECT, &self.url),
+            HttpMethod::GET => client.get(&self.resovled_url(&config, env)?),
+            HttpMethod::HEAD => client.head(&self.resovled_url(&config, env)?),
+            HttpMethod::POST => client.post(&self.resovled_url(&config, env)?),
+            HttpMethod::PUT => client.put(&self.resovled_url(&config, env)?),
+            HttpMethod::PATCH => client.patch(&self.resovled_url(&config, env)?),
+            HttpMethod::DELETE => client.delete(&self.resovled_url(&config, env)?),
+            HttpMethod::OPTIONS => {
+                client.request(reqwest::Method::OPTIONS, &self.resovled_url(&config, env)?)
+            }
+            HttpMethod::TRACE => {
+                client.request(reqwest::Method::TRACE, &self.resovled_url(&config, env)?)
+            }
+            HttpMethod::CONNECT => {
+                client.request(reqwest::Method::CONNECT, &self.resovled_url(&config, env)?)
+            }
         };
 
         // Add query parameters
@@ -395,6 +429,6 @@ impl Request {
         }
 
         // Build and return the request
-        request_builder.build().map_err(|e| e.to_string())
+        return Ok(request_builder.build().unwrap());
     }
 }

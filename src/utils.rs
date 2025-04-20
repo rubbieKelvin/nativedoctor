@@ -6,6 +6,7 @@ use std::{
 };
 
 use regex::Regex;
+use reqwest::Url;
 use serde_yaml;
 
 use crate::{
@@ -60,4 +61,16 @@ pub fn sanitize_filename(url: &str) -> String {
         .to_string();
 
     sanitized.trim_matches('_').to_string()
+}
+
+pub fn normalize_url(url: &str) -> String {
+    // Check if the URL has any protocol scheme (anything followed by "://")
+    let url = if !url.contains("://") {
+        format!("http://{}", url)
+    } else {
+        url.to_string()
+    };
+
+    let url = Url::parse(&url).unwrap();
+    url.to_string()
 }

@@ -65,4 +65,34 @@ impl BaseConfiguration {
 
         return Ok(result);
     }
+
+    /// Load the enviroment variable for the specified enviroment with the default at the lower layer
+    pub fn resolved_environment_variables(
+        &self,
+        name: Option<String>,
+    ) -> Result<HashMap<String, String>, String> {
+        let mut default = match self.environments.get("*") {
+            Some(default_env) => default_env.clone(),
+            None => HashMap::new(),
+        };
+
+        match name {
+            Some(name) => {
+                let target_env = self.environments.get(&name);
+                match target_env {
+                    Some(target_env) => {
+                        for (key, value) in target_env.iter() {
+                            default.insert(key.clone(), value.clone());
+                        }
+                    }
+                    None => {
+                        return Err(format!("Could not get environment variable: {name}"));
+                    }
+                };
+            }
+            None => {}
+        };
+
+        return Ok(default);
+    }
 }

@@ -3,7 +3,7 @@ use colored::*;
 use reqwest::Response;
 use std::io;
 
-pub async fn call(name: &str) -> Result<(), String> {
+pub async fn call(name: &str, env: Option<String>) -> Result<(), String> {
     let project_path = get_current_project_config_path()?;
     let config = load_config(&project_path)?;
 
@@ -11,7 +11,7 @@ pub async fn call(name: &str) -> Result<(), String> {
     match requests.get(name) {
         Some(request_schema) => {
             let client = reqwest::Client::new();
-            let request = request_schema.to_reqwest(&client).await?;
+            let request = request_schema.to_reqwest(&client, env).await?;
             return match client.execute(request).await {
                 Ok(response) => print_response(response).await.map_err(|e| e.to_string()),
                 Err(err) => {
@@ -31,6 +31,13 @@ async fn print_response(response: Response) -> io::Result<()> {
     let status = response.status();
     let headers = response.headers().clone();
     let content_type = headers.get("content-type").cloned();
+
+    // print url
+    println!(
+        "{} {}",
+        "URL".bright_blue(),
+        response.url().to_string().white()
+    );
 
     // print status line
     let status_line = format!(
