@@ -336,6 +336,7 @@ impl Request {
         let project_root = project_root.parent().unwrap();
 
         // Start building the request
+        // Basically just getting the method to use here
         let mut request_builder = match self.method {
             HttpMethod::GET => client.get(&self.resovled_url(&config, env)?),
             HttpMethod::HEAD => client.head(&self.resovled_url(&config, env)?),
