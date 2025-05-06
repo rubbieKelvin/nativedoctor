@@ -77,6 +77,12 @@ pub fn parse_tokens(content: &str) -> Result<Vec<Token>, String> {
     for i in lines {
         let line = i.trim();
 
+        // Comments
+        // Skip lines that begins with #
+        if line.starts_with("#") {
+            continue;
+        }
+
         match &mut current_token {
             Some(token) => {
                 let state = match token {
