@@ -1,0 +1,15 @@
+@env
+base_url = "https://api.example.com"
+@end
+
+@request Login
+POST {{base_url}}/login
+@body { "username": "admin", "password": "secret" }
+@extract token from $.token
+@end
+
+@request FetchData
+GET {{base_url}}/data
+@header Authorization: Bearer {{token}}
+@depends-on Login
+@end
