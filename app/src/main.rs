@@ -1,4 +1,4 @@
-// use dotapilib
+// use cli
 
 fn main() {
     println!("Hello, world!");
