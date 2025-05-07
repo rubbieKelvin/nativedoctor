@@ -1,0 +1,82 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* }
+ESC        = _{ "\\" ~ ("\"" | "\\" | "n" | "t" | "r" | "b" | "f" | "u" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT) }
+
+api_file = { SOI ~ (env_block | request_block | COMMENT | WHITESPACE)* ~ EOI }
+
+// Environment Block
+env_block    =  { "@env" ~ WHITESPACE* ~ env_variable* ~ WHITESPACE* ~ "@end" }
+env_variable =  { identifier ~ ("." ~ identifier)? ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ value_string ~ WHITESPACE* }
+identifier   = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+value_string =  { (!NEWLINE ~ ANY)+ }
+// Simplified, needs to handle quotes and interpolation
+
+// Request Block
+request_block = {
+    "@request" ~ WHITESPACE+ ~ request_name ~ WHITESPACE+ ~ http_method ~ WHITESPACE+ ~ url_string ~ WHITESPACE* ~ config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section? ~ WHITESPACE* ~ "@end"
+}
+request_name  = { identifier }
+http_method   = { "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD" }
+url_string    = { value_string }
+// Can contain {{vars}}
+
+config_section  = { "@config" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ config_property* ~ WHITESPACE* ~ "}" }
+config_property = { identifier ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ config_value ~ ("," | WHITESPACE*)? }
+// Simplified
+config_value =  { array_value | string_value | number_value | boolean_value }
+string_value = @{
+    "\"" ~ (ESC | !("\"" | "\\") ~ ANY)* ~ "\""
+  | // Quoted string with escapes
+  (!("{" | "}" | "," | NEWLINE | WHITESPACE) ~ ANY)+
+}
+// Unquoted string (simple value)}
+// Quoted or unquoted
+number_value  = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+boolean_value = @{ "true" | "false" }
+array_value   = @{ "[" ~ WHITESPACE* ~ (string_value ~ (WHITESPACE* ~ "," ~ WHITESPACE* ~ string_value)*)? ~ WHITESPACE* ~ "]" }
+
+headers_section =  { "@headers" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ header_line* ~ WHITESPACE* ~ "}" }
+header_line     =  { header_name ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ header_value ~ WHITESPACE* }
+header_name     = @{ (ASCII_ALPHANUMERIC | "-")+ }
+header_value    =  { value_string }
+
+query_section = { "@query" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ query_param* ~ WHITESPACE* ~ "}" }
+query_param   = { identifier ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ query_value ~ WHITESPACE* }
+query_value   = { array_value | value_string }
+// Simplified
+
+body_section = {
+    (body_json | body_graphql | body_multipart /* ... other types */
+  )
+}
+body_json    = { "@body:json" ~ WHITESPACE* ~ json_content }
+// json_content needs to correctly parse JSON structure or take raw block
+json_content = { (json_object | json_array) }
+// Simplified
+json_object = _{ "{" ~ (pair ~ ("," ~ pair)*)? ~ "}" }
+json_array  = _{ "[" ~ (json_value ~ ("," ~ json_value)*)? ~ "]" }
+pair        = _{ string_value ~ ":" ~ json_value }
+json_value  = _{ string_value | number_value | json_object | json_array | boolean_value | "null" }
+
+body_graphql          = { "@body:graphql" ~ WHITESPACE* ~ graphql_query_content ~ (WHITESPACE* ~ graphql_variables_section)? }
+graphql_query_content = { block_content }
+// Content until next known directive or end
+graphql_variables_section = { "@variables:json" ~ WHITESPACE* ~ json_content }
+
+body_multipart  = { "@body:multipart" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ multipart_entry* ~ WHITESPACE* ~ "}" }
+multipart_entry = { multipart_field | multipart_file }
+multipart_field = { "field" ~ WHITESPACE+ ~ string_value ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ string_value ~ WHITESPACE* }
+multipart_file  = { "file" ~ WHITESPACE+ ~ string_value ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ string_value ~ (WHITESPACE+ ~ "type" ~ WHITESPACE+ ~ string_value)? ~ WHITESPACE* }
+
+script_section = { "@script:post-request" ~ WHITESPACE* ~ "{" ~ script_content ~ "}" }
+// script_content needs to capture everything, including nested braces, until the final closing brace of the script block.
+// This is often done by matching balanced braces or taking raw content.
+script_content = @{ ((!"}" ~ ANY) | ("}" ~ !"}"))* }
+// Simplified: captures till first '}' - needs improvement for nested braces
+// A better way for script_content or json_content is to parse balanced braces or use a dedicated parser for the embedded language.
+// For now, `block_content` can be a rule that captures text more generally.
+block_content = { ((!("@" | "}")) ~ ANY)+ }
+// Very simplified rule for "take until next @ or }"
+
+// Catch-all for anything not matching, useful for debugging grammar
+// unknown_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }

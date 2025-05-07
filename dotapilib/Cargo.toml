@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nom = "8.0.0"
+pest = "2.8.0"
+pest_derive = "2.8.0"
 regex = "1.11.1"
