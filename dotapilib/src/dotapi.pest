@@ -1,23 +1,56 @@
-WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT    = _{ "#" ~ (!NEWLINE ~ ANY)* }
-ESC        = _{ "\\" ~ ("\"" | "\\" | "n" | "t" | "r" | "b" | "f" | "u" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT) }
+COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* }
+ESC     = _{ "\\" ~ ("\"" | "\\" | "n" | "t" | "r" | "b" | "f" | "u" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT) }
+
+// ---
+// Define basic whitespace components
+HS = _{ " " | "\t" }
+// Horizontal Space (silent)
+NL = _{ NEWLINE }
+// Newline (silent, using PEST's built-in NEWLINE)
+
+// General WHITESPACE for implicit skipping by PEST in other parts of the grammar if needed
+// However, for env_block, we'll be very explicit.
+WHITESPACE = _{ HS | NL }
+// Retain this for other rules or PEST's implicit skips
 
 api_file = { SOI ~ (env_block | request_block | COMMENT | WHITESPACE)* ~ EOI }
 
-// Environment Block
-env_block    =  { "@env" ~ WHITESPACE* ~ env_variable* ~ WHITESPACE* ~ "@end" }
-env_variable =  { identifier ~ ("." ~ identifier)? ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ value_string ~ WHITESPACE* }
+
+// Identifier and Value String (seem okay, value_string captures up to a newline)
 identifier   = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
-value_string =  { (!NEWLINE ~ ANY)+ }
-// Simplified, needs to handle quotes and interpolation
+value_string =  { 
+    "\"" ~ (ESC | !("\"" | "\\") ~ ANY)* ~ "\""  // Quoted string with escapes
+    | (!NEWLINE ~ ANY)+  // Unquoted string
+}
+// Captures content on a line, stopping before NEWLINE
+
+// Environment Variable (does NOT consume its own trailing newline directly)
+// The newline will be handled by the list structure in env_block.
+env_variable = { identifier ~ ("." ~ identifier)? ~ HS* ~ "=" ~ HS* ~ value_string }
+
+// Environment Block with strict newline handling
+env_block = {
+    "@env" ~ HS* ~ NL // Rule 1: @env, optional trailing spaces, then mandatory NEWLINE.
+  ~ (HS* ~ env_variable ~ HS* ~ NL)* // Rule 3: Zero or more variable lines.
+  // Each variable line:
+  // - HS*: Optional leading spaces (indentation).
+  // - env_variable: The variable definition.
+  // - HS*: Optional trailing spaces on the variable line.
+  // - NL: Mandatory NEWLINE ending the variable line.
+  ~ HS* ~ "@end" // Rule 2: @end starts on a new line (guaranteed by previous NL),
+  // possibly with leading HS (indentation).
+}
+
+// ---
 
 // Request Block
 request_block = {
     "@request" ~ WHITESPACE+ ~ request_name ~ WHITESPACE+ ~ http_method ~ WHITESPACE+ ~ url_string ~ WHITESPACE* ~ config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section? ~ WHITESPACE* ~ "@end"
 }
 request_name  = { identifier }
-http_method   = { "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD" }
-url_string    = { value_string }
+// no custom http methods, fuck you.
+http_method = { "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD" | "TRACE" | "CONNECT" }
+url_string  = { value_string }
 // Can contain {{vars}}
 
 config_section  = { "@config" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ config_property* ~ WHITESPACE* ~ "}" }
