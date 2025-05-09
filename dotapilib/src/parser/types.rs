@@ -98,9 +98,8 @@ pub enum Method {
     POST,
     PUT,
     PATCH,
-    OPTIONS,
+    OPTION,
     DELETE,
     TRACE,
-    HEAD,
-    CONNECT,
+    Custom(String),
 }
