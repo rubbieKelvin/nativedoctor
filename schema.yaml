@@ -12,32 +12,20 @@ properties:
       description: Path to an imported YAML file.
   env:
     type: object
-    description: Environment variables configuration. Each variable must specify a 'default' value.
+    description: Environment variables configuration. Each variable must specify a 'default' value, and all values must be strings.
     additionalProperties: # Each property key is a variable name (string)
       type: object
-      description: Definition for a single environment variable, including default and optional environment-specific values.
+      description: Definition for a single environment variable, including default and optional environment-specific string values.
       required:
         - default # Enforce that the 'default' key must be present for every variable
       properties:
         default:
-          description: The default value for the environment variable.
-          oneOf: # Allow standard YAML types for the value (string, number, boolean, array, object, null)
-            - { type: string }
-            - { type: number }
-            - { type: boolean }
-            - { type: array }
-            - { type: object }
-            - { type: "null" }
+          type: string # Enforce string type for the default value
+          description: The default string value for the environment variable.
       patternProperties:
         "^(?!default$).*$": # Allow any other key (representing an environment name) that is not "default"
-          description: Value override for a specific environment.
-          oneOf: # Allow the same types for environment-specific values
-            - { type: string }
-            - { type: number }
-            - { type: boolean }
-            - { type: array }
-            - { type: object }
-            - { type: "null" }
+          type: string # Enforce string type for environment-specific values
+          description: String value override for a specific environment.
       additionalProperties: false # Only 'default' and environment names are allowed as keys for a variable definition
   requests:
     type: object
@@ -52,8 +40,7 @@ properties:
         method:
           type: string
           description: HTTP method for the request (e.g., GET, POST).
-          # Could add enum here if you want to restrict to specific methods
-          # enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+          enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE"]
         url:
           type: string
           description: Target URL for the request. Supports variable interpolation ({{...}}).

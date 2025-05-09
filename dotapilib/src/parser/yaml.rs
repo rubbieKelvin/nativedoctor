@@ -23,9 +23,9 @@ pub struct Schema {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct EnvironmentVariable {
-    pub default: serde_yaml::Value, // Use Value to allow any YAML type
+    pub default: String, // Use Value to allow any YAML type
     #[serde(flatten)] // Flatten environment-specific overrides into this struct
-    pub overrides: HashMap<String, serde_yaml::Value>,
+    pub overrides: HashMap<String, String>,
 }
 
 /// Represents a single API request definition.
@@ -39,7 +39,7 @@ pub struct Request {
     #[serde(default)]
     pub headers: Option<HashMap<String, String>>, // Optional headers block
     #[serde(default)]
-    pub query: Option<HashMap<String, serde_yaml::Value>>, // Optional query block, values can be complex
+    pub query: Option<HashMap<String, String>>, // Optional query block, values can be complex
     #[serde(default)]
     pub body: Option<RequestBody>, // Optional body block
     #[serde(default)]
@@ -112,8 +112,6 @@ pub enum MultipartPart {
         mime_type: Option<String>, // Optional MIME type
     },
 }
-
-// --- Parsing Function ---
 
 /// Parses a YAML string into an Schema struct.
 pub fn parse_api_yaml(yaml_content: &str) -> Result<Schema> {

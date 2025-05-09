@@ -138,3 +138,54 @@ impl Runtime {
 pub struct Response {
     status: i32,
 }
+
+/// Interpolates variables in a string using the provided environment.
+fn interpolate_string(template: &str, env: &HashMap<String, EnvValue>) -> Result<String> {
+    let mut result = String::new();
+    let mut last_end = 0;
+
+    // Simple regex to find {{...}} patterns
+    let re = regex::Regex::new(r"\{\{(.*?)\}\}").expect("Failed to compile regex"); // Regex should be valid
+
+    for cap in re.captures_iter(template) {
+        let full_match = cap.get(0).unwrap(); // The full {{...}} match
+        let variable_name = cap.get(1).unwrap().as_str().trim(); // The content inside {{...}}
+
+        // Append text before the match
+        result.push_str(&template[last_end..full_match.start()]);
+
+        // Look up the variable in the environment
+        if let Some(env_value) = env.get(variable_name) {
+            // Convert the EnvValue to a string representation
+            let value_str = match env_value {
+                EnvValue::String(s) => s.clone(),
+                EnvValue::Number(n) => n.to_string(),
+                EnvValue::Boolean(b) => b.to_string(),
+                EnvValue::Null => "null".to_string(),
+                // Handle Array and Object by serializing to YAML string
+                EnvValue::Array(_) | EnvValue::Object(_) => serde_yaml::to_string(env_value)
+                    .unwrap_or_else(|_| "[Serialization Error]".to_string())
+                    .trim_end_matches('\n')
+                    .to_string(),
+            };
+            result.push_str(&value_str);
+        } else {
+            // Variable not found, decide how to handle (e.g., error, empty string, keep template)
+            // For now, let's keep the original template string for the variable
+            eprintln!(
+                "Warning: Environment variable '{}' not found.",
+                variable_name
+            );
+            result.push_str(full_match.as_str());
+            // Or you could return an error:
+            // bail!("Environment variable '{}' not found", variable_name);
+        }
+
+        last_end = full_match.end();
+    }
+
+    // Append remaining text after the last match
+    result.push_str(&template[last_end..]);
+
+    Ok(result)
+}
