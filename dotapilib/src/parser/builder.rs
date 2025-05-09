@@ -1,12 +1,38 @@
 use super::yaml::{load_api_file, Request, Schema};
-use anyhow::Result;
+use anyhow::{Context, Result};
+use async_recursion::async_recursion;
 use serde::Deserialize;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, env::current_dir};
 
-struct Runtime {
-    schema: Schema,
-    filename: String,
-    environment: Option<String>,
+#[derive(Debug, PartialEq, Clone)]
+pub enum HttpMethod {
+    GET,
+    POST,
+    PUT,
+    PATCH,
+    OPTION,
+    DELETE,
+    TRACE,
+    HEAD,
+    CONNECT,
+}
+
+impl HttpMethod {
+    fn from_str(value: &str) -> Result<Self> {
+        let method = value.to_lowercase();
+        return match method.as_str() {
+            "get" => Ok(HttpMethod::GET),
+            "post" => Ok(HttpMethod::POST),
+            "put" => Ok(HttpMethod::PUT),
+            "patch" => Ok(HttpMethod::PATCH),
+            "delete" => Ok(HttpMethod::DELETE),
+            "option" => Ok(HttpMethod::OPTION),
+            "trace" => Ok(HttpMethod::TRACE),
+            "connect" => Ok(HttpMethod::CONNECT),
+            "head" => Ok(HttpMethod::HEAD),
+            _ => anyhow::bail!("Invalid http method: {}", value),
+        };
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -20,15 +46,23 @@ pub enum EnvValue {
     Null,
 }
 
+pub struct Runtime {
+    pub schema: Schema,
+    filename: String,
+    environment: Option<String>,
+}
+
 impl Runtime {
-    pub fn new(filename: String, environment: Option<String>) -> Result<Self> {
+    pub fn new(filename: &str, environment: Option<String>) -> Result<Self> {
         // TODO: might need to open this from the cwd the program is runing
-        let path = Path::new(&filename);
-        let schema = load_api_file(path)?;
+        let cwd = current_dir().context("Could not get the current working directorty")?;
+        let path = cwd.join(filename);
+
+        let schema = load_api_file(path.as_path())?;
 
         return Ok(Runtime {
             schema,
-            filename,
+            filename: filename.to_string(),
             environment,
         });
     }
@@ -64,8 +98,43 @@ impl Runtime {
         }
         return env_vars;
     }
+
+    #[async_recursion]
+    pub async fn call(&self, name: String, parent: Option<String>) -> Result<Response> {
+        let request = self.schema.requests.get(&name);
+        let mut depenency_responses: HashMap<String, Response> = HashMap::new();
+
+        return match request {
+            Some(request) => {
+                if let Some(config) = &request.config {
+                    for dependency in config.depends_on.iter() {
+                        // Check for circular dependencies (basic check)
+                        if parent.as_ref() == Some(dependency) {
+                            anyhow::bail!(
+                                "Circular dependency detected: {} -> {}",
+                                name,
+                                dependency
+                            );
+                        }
+
+                        // make a call on the dependency. and add it to the results
+                        let dependecy_response =
+                            self.call(dependency.clone(), Some(name.clone())).await?;
+                        depenency_responses.insert(dependency.clone(), dependecy_response);
+                    }
+                }
+
+                // now let's build the request
+
+                Ok(Response { status: 200 })
+            }
+            None => panic!(),
+        };
+    }
+
+    pub fn build_request(&self, request_schema: Request) {}
 }
 
-impl Request {
-    pub fn build(&self) {}
+pub struct Response {
+    status: i32,
 }
