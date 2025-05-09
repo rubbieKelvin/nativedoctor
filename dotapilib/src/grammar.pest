@@ -1,5 +1,4 @@
-// .api File Format Grammar
-
+// TODO: USe this later, not now nothing seems to work for now
 // Ignore whitespace and comments
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 COMMENT    = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
@@ -16,8 +15,6 @@ STRING     = @{ "\"" ~ ("\\\"" | !"\"" ~ ANY)* ~ "\"" }
 KEYWORD_ENV          = { "@env" }
 KEYWORD_END          = { "@end" }
 KEYWORD_REQUEST      = { "@request" }
-KEYWORD_METHOD       = { "METHOD" }
-KEYWORD_URL          = { "URL" }
 KEYWORD_CONFIG       = { "@config" }
 KEYWORD_HEADERS      = { "@headers" }
 KEYWORD_QUERY        = { "@query" }
@@ -73,14 +70,17 @@ env_variable_declaration = {
     IDENTIFIER ~ ("." ~ IDENTIFIER)? ~ "=" ~ (STRING | NUMBER | BOOLEAN | variable_interpolation) // Simplified values for env
 }
 
+// Define a rule for the sequence of optional sections within a request block
+// optional_sections_sequence = {
+// config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section?
+// }
+
 // Request Block
 request_block = {
-    KEYWORD_REQUEST ~ IDENTIFIER ~ request_method ~ request_url ~ config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section? ~ KEYWORD_END
+    KEYWORD_REQUEST ~ IDENTIFIER ~ request_endpoint ~ KEYWORD_END
 }
 
-request_method = { KEYWORD_METHOD ~ HTTP_METHOD }
-request_url    = { KEYWORD_URL ~ (variable_interpolation | !WHITESPACE ~ !NEWLINE ~ ANY)+ }
-// URL can contain interpolation
+request_endpoint = { HTTP_METHOD ~ (STRING) }
 
 // Optional sections within @request
 config_section = {
