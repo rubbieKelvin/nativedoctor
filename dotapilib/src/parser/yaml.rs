@@ -1,6 +1,6 @@
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::io::Read;
+use std::{collections::HashMap, path::Path};
 
 // Use anyhow for simple error handling in the example
 use anyhow::{Context, Result};
@@ -15,7 +15,7 @@ pub struct Schema {
     #[serde(default)] // Make requests optional
     pub requests: HashMap<String, Request>,
     #[serde(default)] // Make calls optional
-    pub calls: Vec<String>,
+    pub calls: HashMap<String, Vec<String>>,
 }
 
 /// Represents the definition of a single environment variable.
@@ -119,7 +119,4 @@ pub fn parse_api_yaml(yaml_content: &str) -> Result<Schema> {
     serde_yaml::from_str(yaml_content).context("Failed to parse API test YAML")
 }
 
-/// Parses YAML content from a reader into an Schema struct.
-pub fn parse_api_yaml_reader<R: Read>(reader: R) -> Result<Schema> {
-    serde_yaml::from_reader(reader).context("Failed to parse API test YAML from reader")
-}
+// pub fn parse_api_yaml_file(file_path: &Path)

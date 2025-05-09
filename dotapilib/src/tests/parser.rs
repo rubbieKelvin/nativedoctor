@@ -16,7 +16,8 @@ fn test_parse_minimal_file() {
                     assert response.status == 200;
 
             calls:
-              - GetStatus
+              default_run:
+                - GetStatus
         "#;
 
     let parsed = parse_api_yaml(yaml).expect("Failed to parse minimal YAML");
@@ -28,7 +29,9 @@ fn test_parse_minimal_file() {
     assert_eq!(parsed.requests.len(), 1);
     assert!(parsed.requests.contains_key("GetStatus"));
     assert_eq!(parsed.calls.len(), 1);
-    assert_eq!(parsed.calls[0], "GetStatus");
+    assert!(parsed.calls.contains_key("default_run"));
+    assert_eq!(parsed.calls["default_run"].len(), 1);
+    assert_eq!(parsed.calls["default_run"][0], "GetStatus");
 
     let status_request = parsed.requests.get("GetStatus").unwrap();
     assert_eq!(status_request.method, "GET");
@@ -45,77 +48,80 @@ fn test_parse_minimal_file() {
 #[test]
 fn test_parse_full_example() {
     let yaml = r#"
-            imports:
-              - common_env.yaml
+                imports:
+                  - common_env.yaml
 
-            env:
-              username:
-                default: "default_user"
-                dev: "dev_user"
-              base_url:
-                default: "https://api.example.com"
-                dev: "https://dev.api.example.com"
-                prod: "https://prod.api.example.com"
-              # api_key: # This is commented out in the YAML string
-              #   default: null
-              #   prod: "prod_secret_key"
+                env:
+                  username:
+                    default: "default_user"
+                    dev: "dev_user"
+                  base_url:
+                    default: "https://api.example.com"
+                    dev: "https://dev.api.example.com"
+                    prod: "https://prod.api.example.com"
+                  # api_key: # This is commented out in the YAML string
+                  #   default: null
+                  #   prod: "prod_secret_key"
 
-            requests:
-              LoginUser:
-                method: POST
-                url: "{{base_url}}/auth/login"
-                headers:
-                  Content-Type: application/json
-                body:
-                  type: json
-                  content:
-                    email: "{{user_email}}"
-                    password: "{{user_password}}"
-                script:
-                  post_request: |
-                    # Script content
-                    log("Logged in");
+                requests:
+                  LoginUser:
+                    method: POST
+                    url: "{{base_url}}/auth/login"
+                    headers:
+                      Content-Type: application/json
+                    body:
+                      type: json
+                      content:
+                        email: "{{user_email}}"
+                        password: "{{user_password}}"
+                    script:
+                      post_request: |
+                        # Script content
+                        log("Logged in");
 
-              CreateItem:
-                method: POST
-                url: "{{base_url}}/items"
-                config:
-                  depends_on: [LoginUser]
-                  timeout: 10s
-                  retries: 2
-                headers:
-                  Content-Type: application/json
-                  Authorization: "Bearer {{authToken}}"
-                body:
-                  type: json
-                  content:
-                    name: "New Item {{uuid()}}"
-                    price: 19.99
-                    tags: ["{{env.current_env}}", "featured"]
-                script:
-                  post_request: |
-                    # Another script
-                    assert response.status == 201;
+                  CreateItem:
+                    method: POST
+                    url: "{{base_url}}/items"
+                    config:
+                      depends_on: [LoginUser]
+                      timeout: 10s
+                      retries: 2
+                    headers:
+                      Content-Type: application/json
+                      Authorization: "Bearer {{authToken}}"
+                    body:
+                      type: json
+                      content:
+                        name: "New Item {{uuid()}}"
+                        price: 19.99
+                        tags: ["{{env.current_env}}", "featured"]
+                    script:
+                      post_request: |
+                        # Another script
+                        assert response.status == 201;
 
-              UploadFile:
-                method: POST
-                url: "{{base_url}}/upload"
-                body:
-                  type: multipart
-                  parts:
-                    - kind: field
-                      name: description
-                      value: "API test file upload"
-                    - kind: file
-                      name: document
-                      path: "./data/report.pdf"
-                      mime_type: application/pdf
+                  UploadFile:
+                    method: POST
+                    url: "{{base_url}}/upload"
+                    body:
+                      type: multipart
+                      parts:
+                        - kind: field
+                          name: description
+                          value: "API test file upload"
+                        - kind: file
+                          name: document
+                          path: "./data/report.pdf"
+                          mime_type: application/pdf
 
-            calls:
-              - LoginUser
-              - CreateItem
-              - UploadFile
-        "#;
+                calls:
+                  full_workflow: # Updated: calls is now a map
+                    - LoginUser
+                    - CreateItem
+                    - UploadFile
+                  another_sequence: # Example of another sequence
+                    - GetStatus # Assuming GetStatus is defined elsewhere or in imports
+            "#;
 
     let parsed = parse_api_yaml(yaml).expect("Failed to parse full example YAML");
 
@@ -136,10 +142,17 @@ fn test_parse_full_example() {
     assert!(parsed.requests.contains_key("CreateItem"));
     assert!(parsed.requests.contains_key("UploadFile"));
 
-    assert_eq!(parsed.calls.len(), 3);
-    assert_eq!(parsed.calls[0], "LoginUser");
-    assert_eq!(parsed.calls[1], "CreateItem");
-    assert_eq!(parsed.calls[2], "UploadFile");
+    assert_eq!(parsed.calls.len(), 2); // Now expects 2 keys in the calls map
+    assert!(parsed.calls.contains_key("full_workflow"));
+    assert!(parsed.calls.contains_key("another_sequence"));
+
+    assert_eq!(parsed.calls["full_workflow"].len(), 3);
+    assert_eq!(parsed.calls["full_workflow"][0], "LoginUser");
+    assert_eq!(parsed.calls["full_workflow"][1], "CreateItem");
+    assert_eq!(parsed.calls["full_workflow"][2], "UploadFile");
+
+    assert_eq!(parsed.calls["another_sequence"].len(), 1);
+    assert_eq!(parsed.calls["another_sequence"][0], "GetStatus");
 
     let create_item_request = parsed.requests.get("CreateItem").unwrap();
     assert!(create_item_request.config.is_some());
