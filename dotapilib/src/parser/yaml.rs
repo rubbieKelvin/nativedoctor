@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use std::io::Read;
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::{collections::HashMap, path::Path};
 
 // Use anyhow for simple error handling in the example
@@ -116,7 +117,22 @@ pub enum MultipartPart {
 
 /// Parses a YAML string into an Schema struct.
 pub fn parse_api_yaml(yaml_content: &str) -> Result<Schema> {
-    serde_yaml::from_str(yaml_content).context("Failed to parse API test YAML")
+    return serde_yaml::from_str(yaml_content).context("Failed to parse API test YAML");
 }
 
-// pub fn parse_api_yaml_file(file_path: &Path)
+pub fn parse_api_test_yaml_reader<R: Read>(reader: R) -> Result<Schema> {
+    return serde_yaml::from_reader(reader).context("Failed to parse API test YAML from reader");
+}
+
+pub fn load_api_file(path: &Path) -> Result<Schema> {
+    let file = File::open(path).context("Failed to open API test file")?;
+    let reader = BufReader::new(file);
+    parse_api_test_yaml_reader(reader).context("Failed to parse content from API test file")
+}
+
+pub fn compile(root_path: &Path) -> Result<Schema> {
+    let schema = load_api_file(root_path)?;
+    // TODO: Resolve imports
+    // let imports = schema.imports.iter().map(|imported_path| => );
+    return Ok(schema);
+}
