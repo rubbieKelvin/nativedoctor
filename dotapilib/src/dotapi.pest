@@ -1,115 +1,161 @@
-COMMENT = _{ "#" ~ (!NEWLINE ~ ANY)* }
-ESC     = _{ "\\" ~ ("\"" | "\\" | "n" | "t" | "r" | "b" | "f" | "u" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT) }
+// .api File Format Grammar
 
-// ---
-// Define basic whitespace components
-HS = _{ " " | "\t" }
-// Horizontal Space (silent)
-NL = _{ NEWLINE }
-// Newline (silent, using PEST's built-in NEWLINE)
+// Ignore whitespace and comments
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-// General WHITESPACE for implicit skipping by PEST in other parts of the grammar if needed
-// However, for env_block, we'll be very explicit.
-WHITESPACE = _{ HS | NL }
-// Retain this for other rules or PEST's implicit skips
+// Basic Tokens
+IDENTIFIER = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+NUMBER     = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+BOOLEAN    =  { "true" | "false" }
+NULL       =  { "null" }
+STRING     = @{ "\"" ~ ("\\\"" | !"\"" ~ ANY)* ~ "\"" }
+// Basic string with escaped quotes
 
-api_file = { SOI ~ (env_block | request_block | COMMENT | WHITESPACE)* ~ EOI }
+// Keywords
+KEYWORD_ENV          = { "@env" }
+KEYWORD_END          = { "@end" }
+KEYWORD_REQUEST      = { "@request" }
+KEYWORD_METHOD       = { "METHOD" }
+KEYWORD_URL          = { "URL" }
+KEYWORD_CONFIG       = { "@config" }
+KEYWORD_HEADERS      = { "@headers" }
+KEYWORD_QUERY        = { "@query" }
+KEYWORD_BODY         = { "@body" }
+KEYWORD_VARIABLES    = { "@variables" }
+KEYWORD_SCRIPT       = { "@script" }
+KEYWORD_POST_REQUEST = { "post-request" }
+KEYWORD_DEPENDS_ON   = { "depends-on" }
+KEYWORD_DELAY        = { "delay" }
+KEYWORD_TIMEOUT      = { "timeout" }
+KEYWORD_RETRIES      = { "retries" }
+KEYWORD_FIELD        = { "field" }
+KEYWORD_FILE         = { "file" }
+KEYWORD_TYPE         = { "type" }
+KEYWORD_CALL         = { "@call" }
 
+// HTTP Methods
+HTTP_METHOD = { "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS" }
+// Common methods
 
-// Identifier and Value String (seem okay, value_string captures up to a newline)
-identifier   = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
-value_string =  { 
-    "\"" ~ (ESC | !("\"" | "\\") ~ ANY)* ~ "\""  // Quoted string with escapes
-    | (!NEWLINE ~ ANY)+  // Unquoted string
+// Value types (used in headers, query, env, etc.)
+value = {
+    STRING
+  | NUMBER
+  | BOOLEAN
+  | NULL
+  | array
+  | object
+  | variable_interpolation
+  | duration
 }
-// Captures content on a line, stopping before NEWLINE
 
-// Environment Variable (does NOT consume its own trailing newline directly)
-// The newline will be handled by the list structure in env_block.
-env_variable = { identifier ~ ("." ~ identifier)? ~ HS* ~ "=" ~ HS* ~ value_string }
+array          = { "[" ~ (value ~ ("," ~ value)*)? ~ "]" }
+object         = { "{" ~ (key_value_pair ~ ("," ~ key_value_pair)*)? ~ "}" }
+key_value_pair = { (STRING | IDENTIFIER) ~ ":" ~ value }
 
-// Environment Block with strict newline handling
+// Variable Interpolation (e.g., {{variable_name}}, {{variable | filter: "arg"}}, {{function()}})
+variable_interpolation = @{ "{{" ~ (!"}}" ~ ANY)* ~ "}}" }
+
+// Duration format (e.g., 500ms, 1s, 2m, 1h)
+duration = @{ NUMBER ~ ("ms" | "s" | "m" | "h") }
+
+// File path (used in @body:multipart file directive)
+file_path = @{ STRING }
+// Treating file paths as strings for simplicity, could be more specific
+
+// Environment Block
 env_block = {
-    "@env" ~ HS* ~ NL // Rule 1: @env, optional trailing spaces, then mandatory NEWLINE.
-  ~ (HS* ~ env_variable ~ HS* ~ NL)* // Rule 3: Zero or more variable lines.
-  // Each variable line:
-  // - HS*: Optional leading spaces (indentation).
-  // - env_variable: The variable definition.
-  // - HS*: Optional trailing spaces on the variable line.
-  // - NL: Mandatory NEWLINE ending the variable line.
-  ~ HS* ~ "@end" // Rule 2: @end starts on a new line (guaranteed by previous NL),
-  // possibly with leading HS (indentation).
+    KEYWORD_ENV ~ env_variable_declaration* ~ KEYWORD_END
 }
 
-// ---
+env_variable_declaration = {
+    IDENTIFIER ~ ("." ~ IDENTIFIER)? ~ "=" ~ (STRING | NUMBER | BOOLEAN | variable_interpolation) // Simplified values for env
+}
 
 // Request Block
 request_block = {
-    "@request" ~ WHITESPACE+ ~ request_name ~ WHITESPACE+ ~ http_method ~ WHITESPACE+ ~ url_string ~ WHITESPACE* ~ config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section? ~ WHITESPACE* ~ "@end"
+    KEYWORD_REQUEST ~ IDENTIFIER ~ request_method ~ request_url ~ config_section? ~ headers_section? ~ query_section? ~ body_section? ~ script_section? ~ KEYWORD_END
 }
-request_name  = { identifier }
-// no custom http methods, fuck you.
-http_method = { "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD" | "TRACE" | "CONNECT" }
-url_string  = { value_string }
-// Can contain {{vars}}
 
-config_section  = { "@config" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ config_property* ~ WHITESPACE* ~ "}" }
-config_property = { identifier ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ config_value ~ ("," | WHITESPACE*)? }
-// Simplified
-config_value =  { array_value | string_value | number_value | boolean_value }
-string_value = @{
-    "\"" ~ (ESC | !("\"" | "\\") ~ ANY)* ~ "\""
-  | // Quoted string with escapes
-  (!("{" | "}" | "," | NEWLINE | WHITESPACE) ~ ANY)+
+request_method = { KEYWORD_METHOD ~ HTTP_METHOD }
+request_url    = { KEYWORD_URL ~ (variable_interpolation | !WHITESPACE ~ !NEWLINE ~ ANY)+ }
+// URL can contain interpolation
+
+// Optional sections within @request
+config_section = {
+    KEYWORD_CONFIG ~ "{" ~ config_setting* ~ "}"
 }
-// Unquoted string (simple value)}
-// Quoted or unquoted
-number_value  = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
-boolean_value = @{ "true" | "false" }
-array_value   = @{ "[" ~ WHITESPACE* ~ (string_value ~ (WHITESPACE* ~ "," ~ WHITESPACE* ~ string_value)*)? ~ WHITESPACE* ~ "]" }
 
-headers_section =  { "@headers" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ header_line* ~ WHITESPACE* ~ "}" }
-header_line     =  { header_name ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ header_value ~ WHITESPACE* }
-header_name     = @{ (ASCII_ALPHANUMERIC | "-")+ }
-header_value    =  { value_string }
+config_setting = {
+    depends_on_setting
+  | delay_setting
+  | timeout_setting
+  | retries_setting
+}
 
-query_section = { "@query" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ query_param* ~ WHITESPACE* ~ "}" }
-query_param   = { identifier ~ WHITESPACE* ~ ":" ~ WHITESPACE* ~ query_value ~ WHITESPACE* }
-query_value   = { array_value | value_string }
-// Simplified
+depends_on_setting = { KEYWORD_DEPENDS_ON ~ ":" ~ "[" ~ (IDENTIFIER ~ ("," ~ IDENTIFIER)*)? ~ "]" }
+delay_setting      = { KEYWORD_DELAY ~ ":" ~ duration }
+timeout_setting    = { KEYWORD_TIMEOUT ~ ":" ~ duration }
+retries_setting    = { KEYWORD_RETRIES ~ ":" ~ NUMBER }
 
+headers_section = {
+    KEYWORD_HEADERS ~ "{" ~ header_pair* ~ "}"
+}
+
+header_pair = { (STRING | IDENTIFIER) ~ ":" ~ (STRING | variable_interpolation) }
+
+query_section = {
+    KEYWORD_QUERY ~ "{" ~ query_pair* ~ "}"
+}
+
+query_pair = { (STRING | IDENTIFIER) ~ ":" ~ (value | variable_interpolation) }
+// Query values can be values or interpolations
+
+// Body Section
 body_section = {
-    (body_json | body_graphql | body_multipart /* ... other types */
-  )
+    json_body_section
+  | graphql_body_section
+  | xml_body_section
+  | text_body_section
+  | form_urlencoded_body_section
+  | multipart_body_section
 }
-body_json    = { "@body:json" ~ WHITESPACE* ~ json_content }
-// json_content needs to correctly parse JSON structure or take raw block
-json_content = { (json_object | json_array) }
-// Simplified
-json_object = _{ "{" ~ (pair ~ ("," ~ pair)*)? ~ "}" }
-json_array  = _{ "[" ~ (json_value ~ ("," ~ json_value)*)? ~ "]" }
-pair        = _{ string_value ~ ":" ~ json_value }
-json_value  = _{ string_value | number_value | json_object | json_array | boolean_value | "null" }
 
-body_graphql          = { "@body:graphql" ~ WHITESPACE* ~ graphql_query_content ~ (WHITESPACE* ~ graphql_variables_section)? }
-graphql_query_content = { block_content }
-// Content until next known directive or end
-graphql_variables_section = { "@variables:json" ~ WHITESPACE* ~ json_content }
+json_body_section    = { KEYWORD_BODY ~ ":" ~ "json" ~ (object | array) }
+graphql_body_section = { KEYWORD_BODY ~ ":" ~ "graphql" ~ ((!KEYWORD_VARIABLES ~ !KEYWORD_END ~ ANY)* ~ variables_section?) }
+xml_body_section     = { KEYWORD_BODY ~ ":" ~ "xml" ~ (!KEYWORD_END ~ ANY)* }
+// XML body is raw text until @end
+text_body_section = { KEYWORD_BODY ~ ":" ~ "text" ~ (!KEYWORD_END ~ ANY)* }
+// Text body is raw text until @end
+form_urlencoded_body_section = { KEYWORD_BODY ~ ":" ~ "form-urlencoded" ~ (!KEYWORD_END ~ ANY)* }
+// Form URL-encoded is raw text until @end
+multipart_body_section = { KEYWORD_BODY ~ ":" ~ "multipart" ~ "{" ~ multipart_part* ~ "}" }
 
-body_multipart  = { "@body:multipart" ~ WHITESPACE* ~ "{" ~ WHITESPACE* ~ multipart_entry* ~ WHITESPACE* ~ "}" }
-multipart_entry = { multipart_field | multipart_file }
-multipart_field = { "field" ~ WHITESPACE+ ~ string_value ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ string_value ~ WHITESPACE* }
-multipart_file  = { "file" ~ WHITESPACE+ ~ string_value ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ string_value ~ (WHITESPACE+ ~ "type" ~ WHITESPACE+ ~ string_value)? ~ WHITESPACE* }
+variables_section = {
+    KEYWORD_VARIABLES ~ ":" ~ "json" ~ (object | array) // GraphQL variables are JSON object/array
+}
 
-script_section = { "@script:post-request" ~ WHITESPACE* ~ "{" ~ script_content ~ "}" }
-// script_content needs to capture everything, including nested braces, until the final closing brace of the script block.
-// This is often done by matching balanced braces or taking raw content.
-script_content = @{ ((!"}" ~ ANY) | ("}" ~ !"}"))* }
-// Simplified: captures till first '}' - needs improvement for nested braces
-// A better way for script_content or json_content is to parse balanced braces or use a dedicated parser for the embedded language.
-// For now, `block_content` can be a rule that captures text more generally.
-block_content = { ((!("@" | "}")) ~ ANY)+ }
-// Very simplified rule for "take until next @ or }"
+multipart_part = {
+    multipart_field
+  | multipart_file
+}
 
-// Catch-all for anything not matching, useful for debugging grammar
-// unknown_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
+multipart_field = { KEYWORD_FIELD ~ (STRING) ~ "=" ~ (STRING | variable_interpolation) }
+multipart_file  = { KEYWORD_FILE ~ (STRING) ~ "=" ~ file_path ~ (KEYWORD_TYPE ~ (STRING))? }
+
+// Script Section
+script_section = {
+    KEYWORD_SCRIPT ~ ":" ~ KEYWORD_POST_REQUEST ~ "{" ~ script_content ~ "}"
+}
+
+// Capture everything inside the script block as a single string
+script_content = @{ (!"}" ~ ANY)* }
+
+// Call Statement (placeholder)
+call_statement = { KEYWORD_CALL ~ IDENTIFIER }
+
+// Top level file structure
+file = {
+    SOI ~ (env_block | request_block | call_statement)* ~ EOI
+}
