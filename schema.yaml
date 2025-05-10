@@ -73,14 +73,8 @@ properties:
         query:
           type: object
           description: URL query parameters. Keys are parameter names. Values can be various types.
-          additionalProperties: # Values can be various types, including lists and objects
-            oneOf:
-              - { type: string }
-              - { type: number }
-              - { type: boolean }
-              - { type: array, items: {} } # Array values, items can be anything
-              - { type: object, additionalProperties: {} } # Object values, keys/values can be anything
-              - { type: "null" }
+          additionalProperties:
+            type: string # all props
         body:
           type: object
           description: Request body configuration, structured by type.
