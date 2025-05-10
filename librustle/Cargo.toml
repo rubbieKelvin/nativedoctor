@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.98"
 async-recursion = "1.1.1"
+openapi = "0.1.5"
 pest_derive = "2.8.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", features = ["json", "multipart"] }
