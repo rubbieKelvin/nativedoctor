@@ -16,6 +16,11 @@ pub struct Runtime {
     overrides: HashMap<String, String>,
 }
 
+pub struct CallResult {
+    pub response: reqwest::Response,
+    pub depenency_responses: HashMap<String, Box<CallResult>>,
+}
+
 impl Runtime {
     pub fn new(filename: &str, environment: Option<String>) -> Result<Self> {
         // TODO: might need to open this from the cwd the program is runing
@@ -59,12 +64,18 @@ impl Runtime {
     }
 
     #[async_recursion]
-    pub async fn call(&self, name: String, parent: Option<String>) -> Result<Response> {
+    pub async fn call_request(
+        &self,
+        name: String,
+        client: &reqwest::Client,
+        parent: Option<String>,
+    ) -> Result<CallResult> {
         let request = self.schema.requests.get(&name);
-        let mut depenency_responses: HashMap<String, Response> = HashMap::new();
 
         return match request {
             Some(request) => {
+                let mut depenency_responses: HashMap<String, Box<CallResult>> = HashMap::new();
+
                 if let Some(config) = &request.config {
                     for dependency in config.depends_on.iter() {
                         // Check for circular dependencies (basic check)
@@ -79,23 +90,36 @@ impl Runtime {
                         }
 
                         // make a call on the dependency. and add it to the results
-                        let dependecy_response =
-                            self.call(dependency.clone(), Some(name.clone())).await?;
-                        depenency_responses.insert(dependency.clone(), dependecy_response);
+                        let dependecy_response = self
+                            .call_request(dependency.clone(), client, Some(name.clone()))
+                            .await?;
+                        depenency_responses
+                            .insert(dependency.clone(), Box::new(dependecy_response));
                     }
                 }
 
                 // now let's build the request
-                let req = self.build_request(request).await?;
+                let req = self.build_request(request, client).await?;
+                let response = client
+                    .execute(req)
+                    .await
+                    .context("Failed to execute request")?;
 
-                Ok(Response { status: 200 })
+                Ok(CallResult {
+                    depenency_responses,
+                    response,
+                })
             }
             None => panic!(),
         };
     }
 
     /// Builds a reqwest::Request from a Request schema and resolved environment variables.
-    pub async fn build_request(&self, request_schema: &Request) -> Result<reqwest::Request> {
+    pub async fn build_request(
+        &self,
+        request_schema: &Request,
+        client: &reqwest::Client,
+    ) -> Result<reqwest::Request> {
         // Build env everytime we're building a request
         // Because overrides might have been added by some other request and we want to catch that
         let env = &self.build_env();
@@ -114,7 +138,6 @@ impl Runtime {
             .context(format!("Invalid HTTP method: {}", request_schema.method))?;
 
         // Start building the request
-        let client = reqwest::Client::new();
         let mut builder = client.request(method, url);
 
         // Add Headers
@@ -234,8 +257,4 @@ impl Runtime {
 
         Ok(reqwest_request)
     }
-}
-
-pub struct Response {
-    status: i32,
 }
