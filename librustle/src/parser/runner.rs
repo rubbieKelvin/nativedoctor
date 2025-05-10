@@ -1,6 +1,6 @@
 use super::{
-    utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
     schema::{load_api_file, MultipartPart, Request, RequestBody, Schema},
+    utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
@@ -29,6 +29,19 @@ impl Runner {
     /// is_root means we called this path as the root path (thte path that imports all other files)
     fn recursively_import(rootpath: &Path, is_root: bool) -> Result<Schema> {
         let mut schema = load_api_file(rootpath)?;
+
+        // We need to ensure of all the loaded files
+        // only the root optionally has project definition
+        if !is_root && schema.project.is_some() {
+            anyhow::bail!(
+                "Project definition specified for none root file: {}",
+                rootpath
+                    .to_str()
+                    .context("Cannot convert root path to string")
+                    .unwrap()
+            );
+        }
+
         let imported_schemas = schema
             .imports
             .iter()
