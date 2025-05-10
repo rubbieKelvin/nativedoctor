@@ -1,7 +1,9 @@
 use clap::Parser;
 use ds::{Cli, Commands, RunMode};
+use init::init;
 
 mod ds;
+mod init;
 mod run;
 
 #[tokio::main]
@@ -10,6 +12,9 @@ async fn main() {
 
     if let Some(command) = &cli.commands {
         match command {
+            Commands::Init { name } => {
+                init(name);
+            }
             Commands::Run {
                 filepath,
                 env,

@@ -21,6 +21,9 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    Init {
+        name: String,
+    },
     /// Runs from a config file
     Run {
         /// The filepath to the .api.yaml file to load
