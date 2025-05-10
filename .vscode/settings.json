@@ -1,5 +1,11 @@
 {
     "yaml.schemas": {
-        "https://raw.githubusercontent.com/rubbieKelvin/dotapi/refs/heads/main/schema.yaml": ["**/*.api.yml", "**/*.api.yaml"],
+        "http://json-schema.org/draft-07/schema": [
+            "**/*.draft-07.schema.yaml"
+        ],
+        "https://raw.githubusercontent.com/rubbieKelvin/dotapi/refs/heads/main/schema.yaml": [
+            "**/*.api.yml",
+            "**/*.api.yaml"
+        ],
     }
 }

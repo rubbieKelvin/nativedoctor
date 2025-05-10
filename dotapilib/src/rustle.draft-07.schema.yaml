@@ -1,6 +1,6 @@
 # This is a JSON Schema definition in YAML format.
-$schema: http://json-schema.org/draft-07/schema#
-title: API Test File
+$schema: http://json-schema.org/draft-07/schema
+title: Rustle config format
 description: Schema for API test definition files in YAML format.
 type: object
 properties:
@@ -40,7 +40,18 @@ properties:
         method:
           type: string
           description: HTTP method for the request (e.g., GET, POST).
-          enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE"]
+          enum:
+            [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "PATCH",
+              "HEAD",
+              "OPTIONS",
+              "CONNECT",
+              "TRACE",
+            ]
         url:
           type: string
           description: Target URL for the request. Supports variable interpolation ({{...}}).
@@ -188,10 +199,39 @@ properties:
           additionalProperties: false # Only defined script phase keys are allowed
       additionalProperties: false # Prevent extra keys in a request definition beyond the defined ones
   calls:
-    type: object # Changed from array to object
+    type: object
     description: Map of named execution sequences. Each key is a sequence name, and the value is a list of request names to execute in that sequence.
     additionalProperties: # Each property key is a sequence name (string)
       type: array # The value is an array of request names
       items:
         type: string # Each item in the list should be a string corresponding to a request name
+  project:
+    type: object
+    description: An object describing the project definition
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: The name of the project
+      version:
+        type: string
+        description: The project version
+      description:
+        type: string
+        description: The project description
+      authors:
+        type: array
+        description: The creators of the project
+        items:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: The name of the user
+            email:
+              type: string
+              description: The email of the user
 additionalProperties: false # Prevent extra top-level keys in the document beyond the defined ones

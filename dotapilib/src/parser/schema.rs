@@ -19,6 +19,29 @@ pub struct Schema {
     pub requests: HashMap<String, Request>,
     #[serde(default)] // Make calls optional
     pub calls: HashMap<String, Vec<String>>,
+    /// Project defination, just for more information
+    #[serde(default)]
+    pub project: Option<Project>
+}
+
+/// Used to describe the project from a root file.
+/// Might contain project configurations too
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct Project {
+    pub name: String,
+    #[serde(default)]
+    pub version: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub authors: Vec<User>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct User {
+    pub name: String,
+    #[serde(default)]
+    pub email: String
 }
 
 /// Represents the definition of a single environment variable.

@@ -67,7 +67,7 @@ env:
     default: "true"
 ```
 
-The `build_env` function in the `Runtime` struct is responsible for taking the parsed `env` structure and the specified runtime environment name, resolving the correct string value for each variable, and returning a `HashMap<String, String>` representing the active environment variables for a given request execution.
+The `build_env` function in the `Runner` struct is responsible for taking the parsed `env` structure and the specified runtime environment name, resolving the correct string value for each variable, and returning a `HashMap<String, String>` representing the active environment variables for a given request execution.
 
 ## Request Definitions (`requests`)
 
@@ -111,7 +111,7 @@ Key elements within a request definition include:
 - `body`: Defines the request body, with different structures based on the `type` (json, graphql, xml, text, form-urlencoded, multipart). Body content also supports interpolation.
 - `script`: Contains script code to run at different phases, currently focusing on `post_request`.
 
-The `build_request` function in the `Runtime` struct is responsible for taking a parsed `Request` schema and the resolved environment variables (`HashMap<String, String>`) and constructing a `reqwest::Request` object, handling all the interpolation and body formatting.
+The `build_request` function in the `Runner` struct is responsible for taking a parsed `Request` schema and the resolved environment variables (`HashMap<String, String>`) and constructing a `reqwest::Request` object, handling all the interpolation and body formatting.
 
 ## Call Sequences (`calls`)
 
@@ -130,7 +130,7 @@ calls:
 
 The `calls` key maps a sequence name (string) to a list of request names (strings). When a sequence is executed, the requests in its list are processed in order.
 
-The `call` function in the `Runtime` struct handles the execution logic. It takes a request name and recursively calls itself for any requests listed in the `depends_on` configuration of the current request. This recursive nature requires special handling in Rust's `async fn`, which we address using the `#[async_recursion]` attribute from the `async_recursion` crate.
+The `call` function in the `Runner` struct handles the execution logic. It takes a request name and recursively calls itself for any requests listed in the `depends_on` configuration of the current request. This recursive nature requires special handling in Rust's `async fn`, which we address using the `#[async_recursion]` attribute from the `async_recursion` crate.
 
 The overall execution flow would involve:
 

@@ -4,14 +4,14 @@ use reqwest::Client;
 use serde_json::json;
 
 use crate::parser::{
-    builder::Runtime,
-    yaml::{Request, RequestBody, RequestConfig, Schema},
+    runner::Runner,
+    schema::{Request, RequestBody, RequestConfig, Schema},
 };
 
 #[tokio::test]
 async fn test_simple_request_call() {
     let client = Client::new();
-    let runtime = Runtime::new(
+    let runtime = Runner::new(
         "src/tests/test_yaml_files/simple_request_call.api.yaml",
         None,
     )
@@ -42,7 +42,7 @@ async fn test_simple_get_request() {
     };
 
     let client = Client::new();
-    let runtime = Runtime::from_schema(schema, None);
+    let runtime = Runner::from_schema(schema, None);
 
     let result = runtime
         .call_request("Ping".to_string(), &client, None)
@@ -87,7 +87,7 @@ async fn test_post_request_with_json_body() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runtime::from_schema(schema, None);
+    let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the request
     let result = runtime
@@ -174,7 +174,7 @@ async fn test_request_with_dependencies() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runtime::from_schema(schema, None);
+    let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the main request (which should trigger dependencies)
     let result = runtime
@@ -249,7 +249,7 @@ async fn test_call_sequence() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runtime::from_schema(schema, None);
+    let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the sequence
     // The call_sequence function currently returns Result<()>, so we can only assert success or failure
@@ -313,7 +313,7 @@ async fn test_nested_sequence() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runtime::from_schema(schema, None);
+    let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the outer sequence
     let result = runtime
@@ -331,7 +331,7 @@ async fn test_nested_sequence() {
 #[tokio::test]
 async fn test_imports() {
     let file = "src/tests/test_yaml_files/test_imports/base.api.yaml";
-    let runtime = Runtime::new(
+    let runtime = Runner::new(
         file,
         None,
     ).unwrap();

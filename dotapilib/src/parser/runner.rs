@@ -1,13 +1,13 @@
 use super::{
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
-    yaml::{load_api_file, MultipartPart, Request, RequestBody, Schema},
+    schema::{load_api_file, MultipartPart, Request, RequestBody, Schema},
 };
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use std::{collections::HashMap, env::current_dir, path::Path};
 use tracing::info;
 
-pub struct Runtime {
+pub struct Runner {
     pub schema: Schema,
     filename: String,
     environment: Option<String>,
@@ -22,7 +22,7 @@ pub struct CallResult {
     pub depenency_responses: HashMap<String, Box<CallResult>>,
 }
 
-impl Runtime {
+impl Runner {
     /// Imports the .yaml file and loads it into the schema. all the imports from the .yaml file
     /// are loaded into a list and merged with the root schema.
     /// rootpath is the path where the yaml file lives.
@@ -38,7 +38,7 @@ impl Runtime {
                     .context("Unable to read parent directory of file path")
                     .unwrap();
                 let p = p.join(name);
-                return Runtime::recursively_import(p.as_path(), false).unwrap();
+                return Runner::recursively_import(p.as_path(), false).unwrap();
             })
             .collect::<Vec<Schema>>();
 
@@ -94,7 +94,7 @@ impl Runtime {
 
     #[allow(unused)]
     pub fn from_schema(schema: Schema, environment: Option<String>) -> Self {
-        return Runtime {
+        return Runner {
             schema,
             filename: String::new(),
             environment,
@@ -112,9 +112,9 @@ impl Runtime {
         }
 
         // let schema = load_api_file(path.as_path())?;
-        let schema = Runtime::recursively_import(path.as_path(), true)?;
+        let schema = Runner::recursively_import(path.as_path(), true)?;
 
-        return Ok(Runtime {
+        return Ok(Runner {
             schema,
             filename: filename.to_string(),
             environment,

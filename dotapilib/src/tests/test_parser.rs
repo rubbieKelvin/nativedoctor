@@ -1,4 +1,4 @@
-use crate::parser::yaml::{parse_api_yaml, MultipartPart, RequestBody};
+use crate::parser::schema::{parse_api_yaml, MultipartPart, RequestBody};
 
 #[test]
 fn test_parse_minimal_file() {
