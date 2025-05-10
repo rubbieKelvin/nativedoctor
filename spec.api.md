@@ -12,6 +12,8 @@ A typical `.api` file consists of:
 
 ## Environment Variables
 
+> This format has not been implemented yet. I was having some trouble with creating the syntax parser with nom.rs and pest.rs, so I'm just going to use YAML for now.
+
 Environment variables allow for dynamic request configurations tailored to different environments (e.g., development, staging, production).
 
 - **Declaration:** Variables are declared within an `@env ... @end` block.
