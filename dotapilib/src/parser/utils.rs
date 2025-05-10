@@ -1,8 +1,19 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use uuid::Uuid;
 
 pub const STRICT_INTERPOLATION: bool = false;
+
+fn create_dynammic_variables() -> HashMap<String, Box<dyn Fn() -> String>> {
+    let mut record: HashMap<String, Box<dyn Fn() -> String>> = HashMap::new();
+
+    record.insert(
+        "uuid()".to_string(),
+        Box::new(|| Uuid::new_v4().to_string()),
+    );
+    return record;
+}
 
 /// Interpolates variables in a string using the provided environment.
 pub fn interpolate_string(
@@ -12,6 +23,7 @@ pub fn interpolate_string(
 ) -> Result<String> {
     let mut result = String::new();
     let mut last_end = 0;
+    let dynamic_variables: HashMap<String, Box<dyn Fn() -> String>> = create_dynammic_variables();
 
     // Simple regex to find {{...}} patterns
     let re = regex::Regex::new(r"\{\{(.*?)\}\}").expect("Failed to compile regex"); // Regex should be valid
@@ -26,6 +38,10 @@ pub fn interpolate_string(
         // Look up the variable in the environment
         if let Some(env_value) = env.get(variable_name) {
             result.push_str(&env_value);
+        // Look up dynamic variables
+        } else if let Some(dynamic_func) = dynamic_variables.get(variable_name) {
+            let string = dynamic_func();
+            result.push_str(&string);
         } else {
             // Variable not found, decide how to handle (e.g., error, empty string, keep template)
             // For now, let's keep the original template string for the variable

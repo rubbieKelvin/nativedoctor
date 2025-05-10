@@ -167,3 +167,8 @@ script:
 
 I jusr discovered `deno_runtime` ([crates.io/crates/deno_runtime])... a slimmed-down version of the Deno CLI's runtime. This looks like an excellent candidate for executing these post-request scripts.
 _( The YAML schema for scripts is defined, but the integration logic is not yet implemented.)_
+
+## Adding logs to this code.
+
+[learnxbyexample](https://learnxbyexample.com/rust/logging/)
+[tracing](https://github.com/tokio-rs/tracing)

@@ -7,8 +7,10 @@ use std::{collections::HashMap, path::Path};
 use anyhow::{Context, Result};
 
 /// Represents the entire API test file structure.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Schema {
+    #[serde(default)]
+    pub filename: String,
     #[serde(default)] // Make imports optional
     pub imports: Vec<String>,
     #[serde(default)] // Make env optional
@@ -20,7 +22,7 @@ pub struct Schema {
 }
 
 /// Represents the definition of a single environment variable.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct EnvironmentVariable {
     pub default: String, // Use Value to allow any YAML type
@@ -29,7 +31,7 @@ pub struct EnvironmentVariable {
 }
 
 /// Represents a single API request definition.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct Request {
     pub method: String,
@@ -47,7 +49,7 @@ pub struct Request {
 }
 
 /// Represents the configuration section of a request.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestConfig {
     #[serde(default)]
@@ -59,17 +61,16 @@ pub struct RequestConfig {
 }
 
 /// Represents the script section of a request.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestScript {
     pub post_request: Option<String>, // Script content as a raw string
-                                      // Add other script phases here if needed, e.g., pre_request: Option<String>,
 }
 
 // --- Request Body Structs ---
 
 /// Represents the body section of a request.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "snake_case")] // Use 'type' field to determine which variant to deserialize
 pub enum RequestBody {
     #[serde(rename = "json")]
@@ -100,7 +101,7 @@ pub enum RequestBody {
 }
 
 /// Represents a single part within a multipart request body.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "kind", rename_all = "snake_case")] // Use 'kind' field to determine field or file
 pub enum MultipartPart {
     #[serde(rename = "field")]
@@ -125,7 +126,16 @@ pub fn parse_api_test_yaml_reader<R: Read>(reader: R) -> Result<Schema> {
 pub fn load_api_file(path: &Path) -> Result<Schema> {
     let file = File::open(path).context("Failed to open API test file")?;
     let reader = BufReader::new(file);
-    parse_api_test_yaml_reader(reader).context("Failed to parse content from API test file")
+    let mut schema =
+        parse_api_test_yaml_reader(reader).context("Failed to parse content from API test file")?;
+
+    // include file information
+    schema.filename = path
+        .to_str()
+        .context("Could not resolve rootpath as string")?
+        .to_string();
+
+    return Ok(schema);
 }
 
 pub fn compile(root_path: &Path) -> Result<Schema> {

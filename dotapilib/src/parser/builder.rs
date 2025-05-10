@@ -5,6 +5,7 @@ use super::{
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use std::{collections::HashMap, env::current_dir, path::Path};
+use tracing::info;
 
 pub struct Runtime {
     pub schema: Schema,
@@ -15,7 +16,6 @@ pub struct Runtime {
     // Or maybe use a unique runtime for each, then run them in parallel
     overrides: HashMap<String, String>,
 }
-
 #[derive(Debug)]
 pub struct CallResult {
     pub response: reqwest::Response,
@@ -23,17 +23,94 @@ pub struct CallResult {
 }
 
 impl Runtime {
+    fn recursively_import(rootpath: &Path) -> Result<Schema> {
+        let mut schema = load_api_file(rootpath)?;
+        let imported_schemas = schema
+            .imports
+            .iter()
+            .map(|name| {
+                let p = rootpath
+                    .parent()
+                    .context("Unable to read parent directory of file path")
+                    .unwrap();
+                let p = p.join(name);
+                return Runtime::recursively_import(p.as_path()).unwrap();
+            })
+            .collect::<Vec<Schema>>();
+
+        for i_schema in imported_schemas.iter() {
+            // extend env with the imported data
+            for (key, value) in i_schema.env.iter() {
+                // Do not override root import env
+                if schema.env.contains_key(key) {
+                    anyhow::bail!(
+                        "Conflicting variable names: File at {} is attempting to override env value at {}",
+                        schema.filename,
+                        i_schema.filename
+                    );
+                }
+
+                // only extend
+                schema.env.insert(key.clone(), value.clone());
+            }
+
+            // extend requests
+            for (key, value) in i_schema.requests.iter() {
+                // Do not override root import requests
+                if schema.requests.contains_key(key) {
+                    anyhow::bail!(
+                        "Conflicting request names: File at {} is attempting to override request at {}",
+                        schema.filename,
+                        i_schema.filename
+                    );
+                }
+
+                // only extend
+                schema.requests.insert(key.clone(), value.clone());
+            }
+
+            // extend sequence
+            for (key, value) in i_schema.calls.iter() {
+                // Do not override root import sequence
+                if schema.calls.contains_key(key) {
+                    anyhow::bail!(
+                        "Conflicting sequence names: File at {} is attempting to override call sequence at {}",
+                        schema.filename,
+                        i_schema.filename
+                    );
+                }
+
+                // only extend
+                schema.calls.insert(key.clone(), value.clone());
+            }
+        }
+
+        return Ok(schema);
+    }
+
+    pub fn from_schema(schema: Schema, environment: Option<String>) -> Self {
+        return Runtime {
+            schema,
+            filename: String::new(),
+            environment,
+            overrides: HashMap::new(),
+        };
+    }
+
     pub fn new(filename: &str, environment: Option<String>) -> Result<Self> {
         // TODO: might need to open this from the cwd the program is runing
         let cwd = current_dir().context("Could not get the current working directorty")?;
         let path = cwd.join(filename);
 
-        let schema = load_api_file(path.as_path())?;
+        // let schema = load_api_file(path.as_path())?;
+        let schema = Runtime::recursively_import(path.as_path())?;
 
         // Make sure the environment is not Some('default'). i regard this as absured, just set this shii to None.
         if let Some(specified_env) = &environment {
             assert!(specified_env.to_lowercase() != "default");
         }
+
+        // let's load imports recursively here
 
         return Ok(Runtime {
             schema,
@@ -62,7 +139,14 @@ impl Runtime {
                 None => &config.default,
             };
 
-            env_vars.insert(key.clone(), resolved_value.to_string());
+            // env_vars.insert(key.clone(), resolved_value.to_string());
+            // env values migh need interpolation.
+            // although there WILL be cases where an interpolated value would need a value that isnt in env yet
+            // i'll handle this later
+            env_vars.insert(
+                key.clone(),
+                interpolate_string(resolved_value, &env_vars, STRICT_INTERPOLATION).unwrap(),
+            );
         }
 
         // TODO: Override with other variables from teh override props
@@ -76,6 +160,7 @@ impl Runtime {
         client: &reqwest::Client,
         parent: Option<String>,
     ) -> Result<CallResult> {
+        info!("Calling request \"{}\"", &name);
         let request = self.schema.requests.get(&name);
 
         return match request {
@@ -96,6 +181,9 @@ impl Runtime {
                         }
 
                         // make a call on the dependency. and add it to the results
+                        // TODO: Dependency calls should be cached per sequence,
+                        // so that if more than a request is the dependency of more than one request
+                        // it's only call and the response is shared across dependants
                         let dependecy_response = self
                             .call_request(dependency.clone(), client, Some(name.clone()))
                             .await?;
@@ -262,5 +350,42 @@ impl Runtime {
         let reqwest_request = builder.build().context("Failed to build reqwest request")?;
 
         Ok(reqwest_request)
+    }
+
+    #[async_recursion]
+    pub async fn call_sequence(
+        &self,
+        name: String,
+        client: &reqwest::Client,
+    ) -> Result<HashMap<String, CallResult>> {
+        let request_names = self.schema.calls.get(&name);
+        let mut dump: HashMap<String, CallResult> = HashMap::new();
+
+        if let Some(request_names) = request_names {
+            for name in request_names {
+                // sequence calling another sequence
+                if name.starts_with("/") {
+                    let actual_sequence_name = name.clone();
+                    let actual_sequence_name = actual_sequence_name.strip_prefix("/").unwrap();
+
+                    if name == actual_sequence_name {
+                        anyhow::bail!("Sequence should not reference self");
+                    }
+
+                    let sequence_dump = self
+                        .call_sequence(actual_sequence_name.to_string(), client)
+                        .await?;
+
+                    for (key, value) in sequence_dump {
+                        dump.insert(format!("{actual_sequence_name}/{key}"), value);
+                    }
+                } else {
+                    let call_response = self.call_request(name.to_string(), &client, None).await?;
+                    dump.insert(name.clone(), call_response);
+                }
+            }
+        }
+
+        return Ok(dump);
     }
 }
