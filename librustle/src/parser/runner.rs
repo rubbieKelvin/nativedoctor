@@ -2,13 +2,14 @@ use super::{
     schema::{load_api_file, MultipartPart, Request, RequestBody, Schema},
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use async_recursion::async_recursion;
 use std::{collections::HashMap, env::current_dir, path::Path};
 use tracing::info;
 
 pub struct Runner {
     pub schema: Schema,
+    #[allow(unused)]
     filename: String,
     environment: Option<String>,
     /// Variables we override at runtime (Impossible for now)
@@ -223,6 +224,30 @@ impl Runner {
         };
     }
 
+    /// Same as `call_request` but does not involke dependencies directly
+    pub async fn call_request_bare(
+        &self,
+        name: String,
+        client: &reqwest::Client,
+    ) -> Result<reqwest::Response> {
+        info!("Calling bare request \"{}\"", &name);
+        let request = self.schema.requests.get(&name);
+
+        return match request {
+            Some(request) => {
+                // now let's build the request
+                let req = self.build_request(request, client).await?;
+                let response = client
+                    .execute(req)
+                    .await
+                    .context("Failed to execute request")?;
+
+                Ok(response)
+            }
+            None => panic!(),
+        };
+    }
+
     /// Builds a reqwest::Request from a Request schema and resolved environment variables.
     pub async fn build_request(
         &self,
@@ -402,5 +427,73 @@ impl Runner {
         }
 
         return Ok(dump);
+    }
+
+    pub fn generate_request_call_queue(&self, name: String) -> Result<Vec<String>> {
+        // check if the request exists
+        let request = match self.schema.requests.get(&name) {
+            Some(request) => request,
+            None => {
+                anyhow::bail!("Request with name \"{name}\" does not exist");
+            }
+        };
+
+        // add the original rewuesnt name
+        let mut queue = vec![name];
+
+        // now lets add dependencies
+        let dependencies = match &request.config {
+            Some(config) => config.depends_on.clone(),
+            None => vec![],
+        };
+
+        for dependency in dependencies {
+            let inner_dep = self.generate_request_call_queue(dependency)?;
+            queue.extend(inner_dep);
+        }
+
+        // remove duplicate
+        let mut dedup = vec![];
+
+        for i in queue {
+            if !dedup.contains(&i) {
+                dedup.push(i);
+            }
+        }
+
+        return Ok(dedup);
+    }
+
+    pub fn generate_request_call_queue_from_sequence(&self, name: String) -> Result<Vec<String>> {
+        let mut queue: Vec<String> = vec![];
+        let sequence = match self.schema.calls.get(&name) {
+            Some(sq) => sq,
+            None => {
+                anyhow::bail!("Request with name \"{name}\" does not exist");
+            }
+        };
+
+        for entry in sequence {
+            if entry.starts_with("/") {
+                let actual_name = &entry[1..];
+                let dependencies =
+                    self.generate_request_call_queue_from_sequence(actual_name.to_string())?;
+                queue.extend(dependencies);
+            } else {
+                let dependencies = self.generate_request_call_queue(entry.to_string())?;
+                queue.extend(dependencies);
+            }
+        }
+
+        // remove duplicate
+        let mut dedup = vec![];
+
+        for i in queue {
+            if !dedup.contains(&i) {
+                dedup.push(i);
+            }
+        }
+
+        return Ok(dedup);
     }
 }

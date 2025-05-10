@@ -14,7 +14,7 @@ async fn run_request(runner: Runner, name: String) {
         }
     };
 
-    // display result
+    // TODO: display result
 }
 
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
