@@ -16,6 +16,7 @@ pub struct Runtime {
     overrides: HashMap<String, String>,
 }
 
+#[derive(Debug)]
 pub struct CallResult {
     pub response: reqwest::Response,
     pub depenency_responses: HashMap<String, Box<CallResult>>,
