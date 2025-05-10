@@ -30,6 +30,11 @@ impl Runtime {
 
         let schema = load_api_file(path.as_path())?;
 
+        // Make sure the environment is not Some('default'). i regard this as absured, just set this shii to None.
+        if let Some(specified_env) = &environment {
+            assert!(specified_env.to_lowercase() != "default");
+        }
+
         return Ok(Runtime {
             schema,
             filename: filename.to_string(),
