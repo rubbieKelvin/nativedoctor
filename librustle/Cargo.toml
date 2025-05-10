@@ -1,5 +1,5 @@
 [package]
-name = "dotapilib"
+name = "librustle"
 version = "0.1.0"
 edition = "2021"
 
