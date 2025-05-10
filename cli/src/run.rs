@@ -6,15 +6,22 @@ use crate::ds::RunMode;
 
 async fn run_request(runner: Runner, name: String) {
     let client = reqwest::Client::new();
-    let result = match runner.call_request(name, &client, None).await {
-        Ok(result) => result,
-        Err(e) => {
-            eprintln!("Error calling request: {}", e.to_string());
-            exit(-1);
-        }
-    };
+    let stack = runner
+        .generate_request_call_queue(name.to_string())
+        .unwrap();
 
-    // TODO: display result
+    for request in stack {
+        let result = match runner.call_request_bare(request, &client).await {
+            Ok(result) => result,
+            Err(e) => {
+                eprintln!("Error calling request: {}", e.to_string());
+                exit(-1);
+            }
+        };
+
+        // TODO: display result
+        println!("{:?}", result);
+    }
 }
 
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {

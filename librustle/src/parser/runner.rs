@@ -429,6 +429,7 @@ impl Runner {
         return Ok(dump);
     }
 
+    /// NOTE: THis doens handle circular dep yet
     pub fn generate_request_call_queue(&self, name: String) -> Result<Vec<String>> {
         // check if the request exists
         let request = match self.schema.requests.get(&name) {
@@ -464,6 +465,7 @@ impl Runner {
         return Ok(dedup);
     }
 
+    /// NOTE: THis doens handle circular dep yet
     pub fn generate_request_call_queue_from_sequence(&self, name: String) -> Result<Vec<String>> {
         let mut queue: Vec<String> = vec![];
         let sequence = match self.schema.calls.get(&name) {
