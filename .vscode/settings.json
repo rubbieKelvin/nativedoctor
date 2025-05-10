@@ -3,7 +3,7 @@
         "http://json-schema.org/draft-07/schema": [
             "**/*.draft-07.schema.yaml"
         ],
-        "https://raw.githubusercontent.com/rubbieKelvin/dotapi/refs/heads/main/schema.yaml": [
+        "https://raw.githubusercontent.com/rubbieKelvin/Rustle/refs/heads/main/librustle/src/rustle.draft-07.schema.yaml": [
             "**/*.api.yml",
             "**/*.api.yaml"
         ],
