@@ -23,7 +23,11 @@ pub struct CallResult {
 }
 
 impl Runtime {
-    fn recursively_import(rootpath: &Path) -> Result<Schema> {
+    /// Imports the .yaml file and loads it into the schema. all the imports from the .yaml file
+    /// are loaded into a list and merged with the root schema.
+    /// rootpath is the path where the yaml file lives.
+    /// is_root means we called this path as the root path (thte path that imports all other files)
+    fn recursively_import(rootpath: &Path, is_root: bool) -> Result<Schema> {
         let mut schema = load_api_file(rootpath)?;
         let imported_schemas = schema
             .imports
@@ -34,7 +38,7 @@ impl Runtime {
                     .context("Unable to read parent directory of file path")
                     .unwrap();
                 let p = p.join(name);
-                return Runtime::recursively_import(p.as_path()).unwrap();
+                return Runtime::recursively_import(p.as_path(), false).unwrap();
             })
             .collect::<Vec<Schema>>();
 
@@ -88,6 +92,7 @@ impl Runtime {
         return Ok(schema);
     }
 
+    #[allow(unused)]
     pub fn from_schema(schema: Schema, environment: Option<String>) -> Self {
         return Runtime {
             schema,
@@ -98,19 +103,16 @@ impl Runtime {
     }
 
     pub fn new(filename: &str, environment: Option<String>) -> Result<Self> {
-        // TODO: might need to open this from the cwd the program is runing
         let cwd = current_dir().context("Could not get the current working directorty")?;
         let path = cwd.join(filename);
-
-        // let schema = load_api_file(path.as_path())?;
-        let schema = Runtime::recursively_import(path.as_path())?;
 
         // Make sure the environment is not Some('default'). i regard this as absured, just set this shii to None.
         if let Some(specified_env) = &environment {
             assert!(specified_env.to_lowercase() != "default");
         }
 
-        // let's load imports recursively here
+        // let schema = load_api_file(path.as_path())?;
+        let schema = Runtime::recursively_import(path.as_path(), true)?;
 
         return Ok(Runtime {
             schema,

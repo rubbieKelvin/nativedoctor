@@ -44,6 +44,9 @@ properties:
         url:
           type: string
           description: Target URL for the request. Supports variable interpolation ({{...}}).
+        doc:
+          type: string
+          description: A description explaining the request. Could be plain text, but maybe a ui version of this would support mardown soon.
         config:
           type: object
           description: Request-specific configurations.

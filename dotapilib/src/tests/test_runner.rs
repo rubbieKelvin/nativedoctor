@@ -327,3 +327,23 @@ async fn test_nested_sequence() {
         result.err()
     );
 }
+
+#[tokio::test]
+async fn test_imports() {
+    let file = "src/tests/test_yaml_files/test_imports/base.api.yaml";
+    let runtime = Runtime::new(
+        file,
+        None,
+    ).unwrap();
+
+    dbg!(file);
+    dbg!(&runtime.schema.filename);
+
+    // check that we set file name
+    assert!(!runtime.schema.filename.is_empty());
+    assert!(runtime.schema.filename.ends_with(file));
+    assert!(runtime.schema.env.contains_key("email"));
+    assert!(runtime.schema.env.contains_key("authId"));
+    assert!(runtime.schema.env.contains_key("username"));
+
+}

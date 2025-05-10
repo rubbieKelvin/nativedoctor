@@ -37,6 +37,8 @@ pub struct Request {
     pub method: String,
     pub url: String,
     #[serde(default)]
+    pub doc: String,
+    #[serde(default)]
     pub config: Option<RequestConfig>, // Optional config block
     #[serde(default)]
     pub headers: Option<HashMap<String, String>>, // Optional headers block
@@ -135,12 +137,5 @@ pub fn load_api_file(path: &Path) -> Result<Schema> {
         .context("Could not resolve rootpath as string")?
         .to_string();
 
-    return Ok(schema);
-}
-
-pub fn compile(root_path: &Path) -> Result<Schema> {
-    let schema = load_api_file(root_path)?;
-    // TODO: Resolve imports
-    // let imports = schema.imports.iter().map(|imported_path| => );
     return Ok(schema);
 }
