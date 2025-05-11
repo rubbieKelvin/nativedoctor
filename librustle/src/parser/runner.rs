@@ -333,6 +333,7 @@ impl Runner {
     }
 
     /// NOTE: THis doens handle circular dep yet
+    #[deprecated]
     pub fn generate_request_call_queue(&self, name: String) -> Result<Vec<String>> {
         // check if the request exists
         let request = match self.schema.requests.get(&name) {
@@ -369,6 +370,7 @@ impl Runner {
     }
 
     /// NOTE: THis doens handle circular dep yet
+    #[deprecated]
     pub fn generate_request_call_queue_from_sequence(&self, name: String) -> Result<Vec<String>> {
         let mut queue: Vec<String> = vec![];
         let sequence = match self.schema.calls.get(&name) {
@@ -400,5 +402,57 @@ impl Runner {
         }
 
         return Ok(dedup);
+    }
+
+    pub fn generate_call_stack(&self, name: &str) -> Result<Vec<String>> {
+        let dirty_stack = self.traverse_request_stack(name, name.to_string().as_str())?;
+        let mut seen: Vec<String> = vec![];
+        let stack = dirty_stack
+            .iter()
+            .rev()
+            .filter(|i| {
+                if seen.contains(i) {
+                    return false;
+                };
+                seen.push(i.to_string());
+                return true;
+            })
+            .map(|i| i.to_string());
+        return Ok(stack.collect::<Vec<String>>());
+    }
+
+    fn traverse_request_stack(&self, name: &str, root_call: &str) -> Result<Vec<String>> {
+        let mut stack: Vec<String> = vec![];
+        let request = match self.schema.requests.get(name) {
+            Some(request) => request,
+            None => {
+                anyhow::bail!("Request with name \"{name}\" does not exist");
+            }
+        };
+
+        // now lets add dependencies
+        let dependencies = match &request.config {
+            Some(config) => config.depends_on.clone(),
+            None => vec![],
+        };
+
+        // then the actual request
+        stack.push(name.to_string());
+
+        for dep in dependencies.iter() {
+            // circular dep
+            if dep == root_call {
+                anyhow::bail!(
+                    "Circular dependency detected in request stack; {} attempted to call {}",
+                    dep,
+                    root_call
+                );
+            }
+
+            let inner_dependency_for_dep = self.traverse_request_stack(dep, root_call)?;
+            stack.extend(inner_dependency_for_dep);
+        }
+
+        return Ok(stack);
     }
 }

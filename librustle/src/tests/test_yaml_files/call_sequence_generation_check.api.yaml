@@ -1,88 +1,38 @@
-# YAML file for testing queue generation logic
-
-# Define some dummy environment variables (not directly used by queue generation, but needed for schema)
-env:
-  base_url:
-    default: "http://example.com"
-
-# Define requests with different dependency structures
 requests:
-  # Request with no dependencies
+  # has 2 deps
   RequestA:
     method: GET
-    url: "{{base_url}}/a"
+    url: "url"
+    config:
+      depends_on: [RequestB, RequestC]
 
   # Request with a single dependency
   RequestB:
     method: GET
-    url: "{{base_url}}/b"
+    url: "url"
     config:
-      depends_on: [RequestA]
+      depends_on: [RequestD]
 
-  # Request with multiple dependencies
+  # Request with a single dependency
   RequestC:
     method: GET
-    url: "{{base_url}}/c"
+    url: "url"
     config:
-      depends_on: [RequestA, RequestB] # Depends on A and B
+      depends_on: [RequestB]
 
-  # Request that depends on a request that has dependencies
+  # Request with no dependencies
   RequestD:
     method: GET
-    url: "{{base_url}}/d"
-    config:
-      depends_on: [RequestC] # Depends on C, which depends on A and B
+    url: "url"
 
-  # Request that is a dependency for multiple other requests
   RequestE:
     method: GET
-    url: "{{base_url}}/e"
+    url: "url"
+    config:
+      depends_on: [RequestF]
 
-  # Requests that depend on RequestE
   RequestF:
     method: GET
-    url: "{{base_url}}/f"
+    url: "url"
     config:
       depends_on: [RequestE]
-
-  RequestG:
-    method: GET
-    url: "{{base_url}}/g"
-    config:
-      depends_on: [RequestE] # Also depends on E
-
-# Define sequences to test sequence processing
-calls:
-  # Simple sequence of individual requests
-  simple_seq:
-    - RequestA
-    - RequestB
-    - RequestC
-
-  # Sequence including a request with dependencies
-  seq_with_deps:
-    - RequestD # Should pull in C, B, and A due to dependencies
-
-  # Sequence with repeated requests (should be de-duplicated)
-  seq_with_duplicates:
-    - RequestA
-    - RequestB
-    - RequestA
-
-  # Sequence calling another sequence
-  nested_seq_inner:
-    - RequestE
-    - RequestF # Depends on RequestE
-
-  nested_seq_outer:
-    - /nested_seq_inner # Calls the inner sequence
-    - RequestG # Depends on RequestE (already in inner_seq's dependencies)
-    - RequestA # Also in simple_seq
-
-  # Sequence combining different types of entries
-  mixed_seq:
-    - RequestA
-    - /simple_seq # Calls simple_seq
-    - RequestD # Request with dependencies
-    - RequestE
-    - /nested_seq_inner # Calls nested_seq_inner
