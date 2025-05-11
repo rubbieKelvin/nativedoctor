@@ -3,7 +3,11 @@ use super::{
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
 use anyhow::{Context, Ok, Result};
-use std::{collections::HashMap, env::current_dir, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    env::current_dir,
+    path::Path,
+};
 use tracing::info;
 
 pub struct Runner {
@@ -404,8 +408,8 @@ impl Runner {
         return Ok(dedup);
     }
 
-    pub fn generate_call_stack(&self, name: &str) -> Result<Vec<String>> {
-        let dirty_stack = self.traverse_request_stack(name, name.to_string().as_str())?;
+    pub fn generate_call_queue(&self, name: &str) -> Result<Vec<String>> {
+        let dirty_stack = self.traverse_request_stack(name, HashSet::new())?;
         let mut seen: Vec<String> = vec![];
         let stack = dirty_stack
             .iter()
@@ -421,7 +425,31 @@ impl Runner {
         return Ok(stack.collect::<Vec<String>>());
     }
 
-    fn traverse_request_stack(&self, name: &str, root_call: &str) -> Result<Vec<String>> {
+    fn traverse_request_stack(
+        &self,
+        name: &str,
+        mut dependency_trace: HashSet<String>,
+    ) -> Result<Vec<String>> {
+        // verify dependency trace tp check for circular dependency
+        if dependency_trace.contains(name) {
+            let mut trace_info = String::new();
+
+            for dep in dependency_trace.iter() {
+                trace_info.push_str(&format!("{dep} -> "));
+            }
+
+            trace_info.push_str(&format!("error({name})"));
+
+            anyhow::bail!(
+                "Circular dependency detected in request stack; attempted to call {}\nwhich has alread been called in this trace: {}",
+                name,
+                trace_info
+            );
+        }
+
+        // add this dependency to the
+        dependency_trace.insert(name.to_string());
+
         let mut stack: Vec<String> = vec![];
         let request = match self.schema.requests.get(name) {
             Some(request) => request,
@@ -440,16 +468,8 @@ impl Runner {
         stack.push(name.to_string());
 
         for dep in dependencies.iter() {
-            // circular dep
-            if dep == root_call {
-                anyhow::bail!(
-                    "Circular dependency detected in request stack; {} attempted to call {}",
-                    dep,
-                    root_call
-                );
-            }
-
-            let inner_dependency_for_dep = self.traverse_request_stack(dep, root_call)?;
+            let inner_dependency_for_dep =
+                self.traverse_request_stack(dep, dependency_trace.clone())?;
             stack.extend(inner_dependency_for_dep);
         }
 

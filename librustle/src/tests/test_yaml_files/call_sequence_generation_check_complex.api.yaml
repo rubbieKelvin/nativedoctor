@@ -1,0 +1,40 @@
+requests:
+  # has 2 deps
+  RequestA:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestB, RequestC]
+
+  # Request with a single dependency
+  RequestB:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestD]
+
+  # Request with a single dependency
+  RequestC:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestB]
+
+  # Request with no dependencies
+  RequestD:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestC]
+
+  RequestE:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestF]
+
+  RequestF:
+    method: GET
+    url: "url"
+    config:
+      depends_on: [RequestE]
