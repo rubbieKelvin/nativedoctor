@@ -220,6 +220,9 @@ properties:
       description:
         type: string
         description: The project description
+      generator:
+        type: string
+        description: This is the openapi file that this project will be continousely generated from if specified
       authors:
         type: array
         description: The creators of the project

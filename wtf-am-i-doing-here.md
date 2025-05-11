@@ -172,3 +172,7 @@ _( The YAML schema for scripts is defined, but the integration logic is not yet 
 
 [learnxbyexample](https://learnxbyexample.com/rust/logging/)
 [tracing](https://github.com/tokio-rs/tracing)
+
+## TODO
+- [ ] fix call stack generator
+- [ ] add deno runtime for scripting

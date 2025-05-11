@@ -11,7 +11,7 @@ async fn run_request(runner: Runner, name: String) {
         .unwrap();
 
     for request in stack {
-        let result = match runner.call_request_bare(request, &client).await {
+        let result = match runner.call_request(request, &client).await {
             Ok(result) => result,
             Err(e) => {
                 eprintln!("Error calling request: {}", e.to_string());

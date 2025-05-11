@@ -3,7 +3,6 @@ use super::{
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
 use anyhow::{Context, Ok, Result};
-use async_recursion::async_recursion;
 use std::{collections::HashMap, env::current_dir, path::Path};
 use tracing::info;
 
@@ -15,12 +14,9 @@ pub struct Runner {
     /// Variables we override at runtime (Impossible for now)
     // NOTE: We might want to clear this per call sequence
     // Or maybe use a unique runtime for each, then run them in parallel
+    // TODO: remove lint rule
+    #[allow(unused)]
     overrides: HashMap<String, String>,
-}
-#[derive(Debug)]
-pub struct CallResult {
-    pub response: reqwest::Response,
-    pub depenency_responses: HashMap<String, Box<CallResult>>,
 }
 
 impl Runner {
@@ -122,7 +118,7 @@ impl Runner {
 
         // Make sure the environment is not Some('default'). i regard this as absured, just set this shii to None.
         if let Some(specified_env) = &environment {
-            assert!(specified_env.to_lowercase() != "default");
+            assert_ne!(specified_env.to_lowercase(), "default");
         }
 
         // let schema = load_api_file(path.as_path())?;
@@ -156,7 +152,7 @@ impl Runner {
             };
 
             // env_vars.insert(key.clone(), resolved_value.to_string());
-            // env values migh need interpolation.
+            // env values might need interpolation.
             // although there WILL be cases where an interpolated value would need a value that isnt in env yet
             // i'll handle this later
             env_vars.insert(
@@ -169,63 +165,7 @@ impl Runner {
         return env_vars;
     }
 
-    #[async_recursion]
     pub async fn call_request(
-        &self,
-        name: String,
-        client: &reqwest::Client,
-        parent: Option<String>,
-    ) -> Result<CallResult> {
-        info!("Calling request \"{}\"", &name);
-        let request = self.schema.requests.get(&name);
-
-        return match request {
-            Some(request) => {
-                let mut depenency_responses: HashMap<String, Box<CallResult>> = HashMap::new();
-
-                if let Some(config) = &request.config {
-                    for dependency in config.depends_on.iter() {
-                        // Check for circular dependencies (basic check)
-                        // This would happend if the user as request A to depend on request B
-                        // And rewuest B depends on request A.
-                        if parent.as_ref() == Some(dependency) {
-                            anyhow::bail!(
-                                "Circular dependency detected: {} -> {}",
-                                name,
-                                dependency
-                            );
-                        }
-
-                        // make a call on the dependency. and add it to the results
-                        // TODO: Dependency calls should be cached per sequence,
-                        // so that if more than a request is the dependency of more than one request
-                        // it's only call and the response is shared across dependants
-                        let dependecy_response = self
-                            .call_request(dependency.clone(), client, Some(name.clone()))
-                            .await?;
-                        depenency_responses
-                            .insert(dependency.clone(), Box::new(dependecy_response));
-                    }
-                }
-
-                // now let's build the request
-                let req = self.build_request(request, client).await?;
-                let response = client
-                    .execute(req)
-                    .await
-                    .context("Failed to execute request")?;
-
-                Ok(CallResult {
-                    depenency_responses,
-                    response,
-                })
-            }
-            None => panic!(),
-        };
-    }
-
-    /// Same as `call_request` but does not involke dependencies directly
-    pub async fn call_request_bare(
         &self,
         name: String,
         client: &reqwest::Client,
@@ -390,43 +330,6 @@ impl Runner {
         let reqwest_request = builder.build().context("Failed to build reqwest request")?;
 
         Ok(reqwest_request)
-    }
-
-    #[async_recursion]
-    pub async fn call_sequence(
-        &self,
-        name: String,
-        client: &reqwest::Client,
-    ) -> Result<HashMap<String, CallResult>> {
-        let request_names = self.schema.calls.get(&name);
-        let mut dump: HashMap<String, CallResult> = HashMap::new();
-
-        if let Some(request_names) = request_names {
-            for name in request_names {
-                // sequence calling another sequence
-                if name.starts_with("/") {
-                    let actual_sequence_name = name.clone();
-                    let actual_sequence_name = actual_sequence_name.strip_prefix("/").unwrap();
-
-                    if name == actual_sequence_name {
-                        anyhow::bail!("Sequence should not reference self");
-                    }
-
-                    let sequence_dump = self
-                        .call_sequence(actual_sequence_name.to_string(), client)
-                        .await?;
-
-                    for (key, value) in sequence_dump {
-                        dump.insert(format!("{actual_sequence_name}/{key}"), value);
-                    }
-                } else {
-                    let call_response = self.call_request(name.to_string(), &client, None).await?;
-                    dump.insert(name.clone(), call_response);
-                }
-            }
-        }
-
-        return Ok(dump);
     }
 
     /// NOTE: THis doens handle circular dep yet

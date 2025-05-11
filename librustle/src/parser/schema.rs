@@ -21,7 +21,7 @@ pub struct Schema {
     pub calls: HashMap<String, Vec<String>>,
     /// Project defination, just for more information
     #[serde(default)]
-    pub project: Option<Project>
+    pub project: Option<Project>,
 }
 
 /// Used to describe the project from a root file.
@@ -35,13 +35,19 @@ pub struct Project {
     pub description: String,
     #[serde(default)]
     pub authors: Vec<User>,
+    /// This is the openapi file that this project will be continousely generated from if specified
+    #[serde(default)]
+    pub generator: Option<String>,
+    /// The environment to be run on by default
+    #[serde(default)]
+    pub default_env: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct User {
     pub name: String,
     #[serde(default)]
-    pub email: String
+    pub email: String,
 }
 
 /// Represents the definition of a single environment variable.

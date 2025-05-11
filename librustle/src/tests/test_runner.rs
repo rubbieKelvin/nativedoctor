@@ -18,7 +18,7 @@ async fn test_simple_request_call() {
     .unwrap();
     assert!(runtime.schema.requests.contains_key("Ping"));
     let res = runtime
-        .call_request("Ping".to_string(), &client, None)
+        .call_request("Ping".to_string(), &client)
         .await
         .unwrap();
     dbg!(res);
@@ -44,15 +44,14 @@ async fn test_simple_get_request() {
     let client = Client::new();
     let runtime = Runner::from_schema(schema, None);
 
-    let result = runtime
-        .call_request("Ping".to_string(), &client, None)
+    let response = runtime
+        .call_request("Ping".to_string(), &client)
         .await
         .expect("Failed to call Ping request");
 
-    println!("Ping Response: {:?}", result.response.status());
-    assert!(result.response.status().is_success());
-    assert_eq!(result.response.status().as_u16(), 200);
-    assert!(result.depenency_responses.is_empty());
+    println!("Ping Response: {:?}", response.status());
+    assert!(response.status().is_success());
+    assert_eq!(response.status().as_u16(), 200);
 }
 
 #[tokio::test]
@@ -90,19 +89,18 @@ async fn test_post_request_with_json_body() {
     let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the request
-    let result = runtime
-        .call_request("PostJson".to_string(), &client, None)
+    let response = runtime
+        .call_request("PostJson".to_string(), &client)
         .await
         .expect("Failed to call PostJson request");
 
     // 4. Assert the outcome
-    println!("PostJson Response Status: {:?}", result.response.status());
-    assert!(result.response.status().is_success());
-    assert_eq!(result.response.status().as_u16(), 200);
+    println!("PostJson Response Status: {:?}", response.status());
+    assert!(response.status().is_success());
+    assert_eq!(response.status().as_u16(), 200);
 
     // Assert the echoed request body and headers from httpbin.org/anything
-    let echoed_response: serde_json::Value = result
-        .response
+    let echoed_response: serde_json::Value = response
         .json()
         .await
         .expect("Failed to parse response body as JSON");
@@ -177,41 +175,39 @@ async fn test_request_with_dependencies() {
     let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the main request (which should trigger dependencies)
-    let result = runtime
-        .call_request("MainRequest".to_string(), &client, None)
+    let response = runtime
+        .call_request("MainRequest".to_string(), &client)
         .await
         .expect("Failed to call MainRequest");
 
     // 4. Assert the outcome
-    println!(
-        "MainRequest Response Status: {:?}",
-        result.response.status()
-    );
-    assert!(result.response.status().is_success());
-    assert_eq!(result.response.status().as_u16(), 200); // Assert MainRequest's status
+    println!("MainRequest Response Status: {:?}", response.status());
+    assert!(response.status().is_success());
+    assert_eq!(response.status().as_u16(), 200); // Assert MainRequest's status
 
+    // TODO: i removed dependency_resposnse from the result of runtime.call_request so the assertations below might not work
     // Assert dependency responses are present and correct
-    assert_eq!(result.depenency_responses.len(), 2);
-    assert!(result.depenency_responses.contains_key("Dependency1"));
-    assert!(result.depenency_responses.contains_key("Dependency2"));
+    // assert_eq!(result.depenency_responses.len(), 2);
+    // assert!(result.depenency_responses.contains_key("Dependency1"));
+    // assert!(result.depenency_responses.contains_key("Dependency2"));
 
-    let dep1_result = result.depenency_responses.get("Dependency1").unwrap();
-    println!(
-        "Dependency1 Response Status: {:?}",
-        dep1_result.response.status()
-    );
-    assert!(dep1_result.response.status().is_success());
-    assert_eq!(dep1_result.response.status().as_u16(), 201); // Assert Dependency1's status
-    assert!(dep1_result.depenency_responses.is_empty()); // Dependencies of dependencies should be empty in this simple case
+    // let dep1_result = result.depenency_responses.get("Dependency1").unwrap();
+    // println!(
+    //     "Dependency1 Response Status: {:?}",
+    //     dep1_result.response.status()
+    // );
+    // assert!(dep1_result.response.status().is_success());
+    // assert_eq!(dep1_result.response.status().as_u16(), 201); // Assert Dependency1's status
+    // assert!(dep1_result.depenency_responses.is_empty()); // Dependencies of dependencies should be empty in this simple case
 
-    let dep2_result = result.depenency_responses.get("Dependency2").unwrap();
-    println!(
-        "Dependency2 Response Status: {:?}",
-        dep2_result.response.status()
-    );
-    assert!(dep2_result.response.status().is_success());
-    assert_eq!(dep2_result.response.status().as_u16(), 202); // Assert Dependency2's status
-    assert!(dep2_result.depenency_responses.is_empty()); // Dependencies of dependencies should be empty
+    // let dep2_result = result.depenency_responses.get("Dependency2").unwrap();
+    // println!(
+    //     "Dependency2 Response Status: {:?}",
+    //     dep2_result.response.status()
+    // );
+    // assert!(dep2_result.response.status().is_success());
+    // assert_eq!(dep2_result.response.status().as_u16(), 202); // Assert Dependency2's status
+    // assert!(dep2_result.depenency_responses.is_empty()); // Dependencies of dependencies should be empty
 }
 
 #[tokio::test]
@@ -241,28 +237,29 @@ async fn test_call_sequence() {
         vec!["Step1".to_string(), "Step2".to_string()],
     );
 
-    let schema = Schema {
-        requests,
-        calls,
-        ..Default::default()
-    };
+    // let schema = Schema {
+    //     requests,
+    //     calls,
+    //     ..Default::default()
+    // };
 
     // 2. Create the runtime
-    let client = Client::new();
-    let runtime = Runner::from_schema(schema, None);
+    // let client = Client::new();
+    // let runtime = Runner::from_schema(schema, None);
 
+    // TODO: i removed support for call sequence
     // 3. Call the sequence
     // The call_sequence function currently returns Result<()>, so we can only assert success or failure
-    let result = runtime
-        .call_sequence("simple_sequence".to_string(), &client)
-        .await;
+    // let result = runtime
+    //     .call_sequence("simple_sequence".to_string(), &client)
+    //     .await;
 
     // 4. Assert the outcome
-    assert!(
-        result.is_ok(),
-        "Sequence execution failed: {:?}",
-        result.err()
-    );
+    // assert!(
+    //     result.is_ok(),
+    //     "Sequence execution failed: {:?}",
+    //     result.err()
+    // );
 }
 
 #[tokio::test]
@@ -305,36 +302,34 @@ async fn test_nested_sequence() {
         vec!["/inner_sequence".to_string(), "OuterStep".to_string()],
     );
 
-    let schema = Schema {
-        requests,
-        calls,
-        ..Default::default()
-    };
+    // TODO: i removed support for call sequence
+    // let schema = Schema {
+    //     requests,
+    //     calls,
+    //     ..Default::default()
+    // };
 
     // 2. Create the runtime
-    let client = Client::new();
-    let runtime = Runner::from_schema(schema, None);
+    // let client = Client::new();
+    // let runtime = Runner::from_schema(schema, None);
 
     // 3. Call the outer sequence
-    let result = runtime
-        .call_sequence("outer_sequence".to_string(), &client)
-        .await;
+    // let result = runtime
+    //     .call_sequence("outer_sequence".to_string(), &client)
+    //     .await;
 
     // 4. Assert the outcome
-    assert!(
-        result.is_ok(),
-        "Nested sequence execution failed: {:?}",
-        result.err()
-    );
+    // assert!(
+    //     result.is_ok(),
+    //     "Nested sequence execution failed: {:?}",
+    //     result.err()
+    // );
 }
 
 #[tokio::test]
 async fn test_imports() {
     let file = "src/tests/test_yaml_files/test_imports/base.api.yaml";
-    let runtime = Runner::new(
-        file,
-        None,
-    ).unwrap();
+    let runtime = Runner::new(file, None).unwrap();
 
     dbg!(file);
     dbg!(&runtime.schema.filename);
@@ -345,5 +340,4 @@ async fn test_imports() {
     assert!(runtime.schema.env.contains_key("email"));
     assert!(runtime.schema.env.contains_key("authId"));
     assert!(runtime.schema.env.contains_key("username"));
-
 }
