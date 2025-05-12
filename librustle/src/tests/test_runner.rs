@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use reqwest::Client;
 use serde_json::json;
 
-use crate::parser::{
+use crate::executor::{
     runner::Runner,
     schema::{Request, RequestBody, RequestConfig, Schema},
 };

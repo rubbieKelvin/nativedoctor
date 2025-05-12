@@ -15,6 +15,7 @@ async fn main() {
             Commands::Init { name } => {
                 init(name);
             }
+            #[allow(unused)]
             Commands::Run {
                 filepath,
                 env,
@@ -24,13 +25,12 @@ async fn main() {
                 run::run(
                     filepath,
                     env.clone(),
-                    if request.is_some() {
-                        RunMode::Request(request.clone().unwrap())
-                    } else if sequence.is_some() {
-                        RunMode::Sequence(sequence.clone().unwrap())
-                    } else {
-                        RunMode::All
-                    },
+                    // if request.is_some() {
+                    RunMode::Request(request.clone().unwrap()), // } else if sequence.is_some() {
+                                                                //     RunMode::Sequence(sequence.clone().unwrap())
+                                                                // } else {
+                                                                //     RunMode::All
+                                                                // },
                 )
                 .await;
             }

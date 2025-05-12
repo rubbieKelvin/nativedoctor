@@ -25,11 +25,11 @@ pub fn init_project<P: AsRef<Path>>(path: P, name: &str) -> Result<()> {
         .with_context(|| format!("Failed to create calls directory: {:?}", calls_dir))?;
 
     // 3. Define file paths
-    let main_file_name = format!("{}-project.api.yaml", name);
+    let main_file_name = "project.rt.yaml".to_string();
     let main_file_path = project_root.join(&main_file_name);
-    let env_file_path = project_root.join("env.api.yaml");
-    let request_file_path = requests_dir.join("request-01.api.yaml");
-    let calls_file_path = calls_dir.join("init.api.yaml");
+    let env_file_path = project_root.join("env.rt.yaml");
+    let request_file_path = requests_dir.join("request-01.rt.yaml");
+    let calls_file_path = calls_dir.join("init.rt.yaml");
 
     // 4. Define initial file contents
     let main_file_content = format!(

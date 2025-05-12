@@ -1,14 +1,12 @@
 use std::{path::PathBuf, process::exit};
 
-use librustle::parser::runner::Runner;
+use librustle::executor::runner::Runner;
 
 use crate::ds::RunMode;
 
 async fn run_request(runner: Runner, name: String) {
     let client = reqwest::Client::new();
-    let stack = runner
-        .generate_request_call_queue(name.to_string())
-        .unwrap();
+    let stack = runner.generate_call_queue(&name).unwrap();
 
     for request in stack {
         let result = match runner.call_request(request, &client).await {
@@ -44,8 +42,8 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
     match mode {
         RunMode::Request(name) => {
             run_request(runner, name).await;
-        }
-        RunMode::Sequence(name) => {}
-        RunMode::All => {}
+        } // ...
+          // RunMode::Sequence(name) => {}
+          // RunMode::All => {}
     };
 }

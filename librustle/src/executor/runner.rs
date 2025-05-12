@@ -425,6 +425,11 @@ impl Runner {
         return Ok(stack.collect::<Vec<String>>());
     }
 
+    #[allow(unused)]
+    pub fn generate_sequence_queue(&self, name: &str) -> Result<Vec<String>> {
+        todo!("Implement");
+    }
+
     fn traverse_request_stack(
         &self,
         name: &str,
