@@ -1,24 +1,24 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use uuid::Uuid;
+
+// NOTE: Since i introduced the fact that env could be any json/yaml object
+// i havent tested the modifications
 
 pub const STRICT_INTERPOLATION: bool = false;
 
 fn create_dynammic_variables() -> HashMap<String, Box<dyn Fn() -> String>> {
     let mut record: HashMap<String, Box<dyn Fn() -> String>> = HashMap::new();
 
-    record.insert(
-        "uuid()".to_string(),
-        Box::new(|| Uuid::new_v4().to_string()),
-    );
+    record.insert("#uuid".to_string(), Box::new(|| Uuid::new_v4().to_string()));
     return record;
 }
 
 /// Interpolates variables in a string using the provided environment.
 pub fn interpolate_string(
     template: &str,
-    env: &HashMap<String, String>,
+    env: &HashMap<String, serde_yaml::Value>,
     strict: bool,
 ) -> Result<String> {
     let mut result = String::new();
@@ -37,7 +37,14 @@ pub fn interpolate_string(
 
         // Look up the variable in the environment
         if let Some(env_value) = env.get(variable_name) {
-            result.push_str(&env_value);
+            // atp the env value here must be string
+            // TODO: i guess
+            match env_value {
+                serde_yaml::Value::String(s) => {
+                    result.push_str(s);
+                }
+                _ => anyhow::bail!("This should be string??"),
+            };
         // Look up dynamic variables
         } else if let Some(dynamic_func) = dynamic_variables.get(variable_name) {
             let string = dynamic_func();
@@ -70,7 +77,7 @@ pub fn interpolate_string(
 /// Interpolates variables recursively within a serde_yaml::Value.
 pub fn interpolate_value(
     value: &serde_yaml::Value,
-    env: &HashMap<String, String>,
+    env: &HashMap<String, serde_yaml::Value>,
 ) -> Result<serde_yaml::Value> {
     match value {
         serde_yaml::Value::String(s) => Ok(serde_yaml::Value::String(interpolate_string(
@@ -96,4 +103,13 @@ pub fn interpolate_value(
         // Numbers, Booleans, and Null don't contain strings to interpolate
         _ => Ok(value.clone()),
     }
+}
+
+/// Interpolate as json value
+pub fn interpolate_json(
+    value: &serde_yaml::Value,
+    env: HashMap<String, serde_yaml::Value>,
+) -> Result<String> {
+    let json = serde_json::to_value(interpolate_value(value, &env)?)?;
+    return Ok(json.to_string());
 }

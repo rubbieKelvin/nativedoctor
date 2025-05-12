@@ -137,8 +137,8 @@ impl Runner {
     }
 
     /// This should resolve the env variables by the current environment, and return a clean represengtation of the env
-    pub fn build_env(&self) -> HashMap<String, String> {
-        let mut env_vars = HashMap::<String, String>::new();
+    pub fn build_env(&self) -> HashMap<String, serde_yaml::Value> {
+        let mut env_vars = HashMap::<String, serde_yaml::Value>::new();
 
         for (key, config) in self.schema.env.iter() {
             // let pick up the value based on the environment
@@ -161,7 +161,8 @@ impl Runner {
             // i'll handle this later
             env_vars.insert(
                 key.clone(),
-                interpolate_string(resolved_value, &env_vars, STRICT_INTERPOLATION).unwrap(),
+                // interpolate_string(resolved_value, &env_vars, STRICT_INTERPOLATION).unwrap(),
+                interpolate_value(resolved_value, &env_vars).unwrap(),
             );
         }
 

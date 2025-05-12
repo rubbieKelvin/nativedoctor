@@ -20,11 +20,9 @@ properties:
         - default # Enforce that the 'default' key must be present for every variable
       properties:
         default:
-          type: string # Enforce string type for the default value
           description: The default string value for the environment variable.
       patternProperties:
         "^(?!default$).*$": # Allow any other key (representing an environment name) that is not "default"
-          type: string # Enforce string type for environment-specific values
           description: String value override for a specific environment.
       additionalProperties: false # Only 'default' and environment names are allowed as keys for a variable definition
   requests:
@@ -116,7 +114,7 @@ properties:
                   oneOf: # JSON can be an object or an array at the top level
                     - { type: object }
                     - { type: array }
-                  # Could potentially allow other JSON primitives if the content key is just the value
+                  # TODO: Could potentially allow other JSON primitives if the content key is just the value
                   # - { type: string }
                   # - { type: number }
                   # - { type: boolean }

@@ -54,9 +54,9 @@ pub struct User {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct EnvironmentVariable {
-    pub default: String, // Use Value to allow any YAML type
+    pub default: serde_yaml::Value, // Use Value to allow any YAML type
     #[serde(flatten)] // Flatten environment-specific overrides into this struct
-    pub overrides: HashMap<String, String>,
+    pub overrides: HashMap<String, serde_yaml::Value>,
 }
 
 /// Represents a single API request definition.

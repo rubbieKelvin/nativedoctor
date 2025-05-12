@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 
 use anyhow::{Context, Ok, Result};
-use deno_core::serde_v8;
-use deno_core::v8::{Script, ScriptOrigin, String as v8String, TryCatch};
+use deno_core::v8;
 use deno_core::{Extension, JsRuntime, RuntimeOptions};
 
 pub struct JavascriptRunner {
@@ -38,9 +37,10 @@ impl JavascriptRunner {
         // TODO: Set global values/variables
         // ...
 
-        let script = v8String::new(scope, script).context("Cannot create v8 string")?;
-        let scr_name = v8String::new(scope, "<unnamed>").context("Cannot create v8 string")?;
-        let origin = ScriptOrigin::new(
+        let script = v8::String::new(scope, script).context("Cannot create v8 string")?;
+        let scr_name =
+            v8::String::new(scope, "<untitled_script>").context("Cannot create v8 string")?;
+        let origin = v8::ScriptOrigin::new(
             scope,
             scr_name.into(),
             0,
@@ -54,8 +54,8 @@ impl JavascriptRunner {
             None,
         );
 
-        let try_catch_scope = &mut TryCatch::new(scope);
-        let compiled_script = Script::compile(try_catch_scope, script, Some(&origin))
+        let try_catch_scope = &mut v8::TryCatch::new(scope);
+        let compiled_script = v8::Script::compile(try_catch_scope, script, Some(&origin))
             .context("Failed to compile script")?;
 
         let result = compiled_script.run(try_catch_scope);
