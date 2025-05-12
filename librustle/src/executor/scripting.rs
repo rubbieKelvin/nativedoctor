@@ -1,32 +1,44 @@
-use std::borrow::Cow;
+use std::rc::Rc;
 
-use anyhow::{Context, Ok, Result};
-use deno_core::v8;
-use deno_core::{Extension, JsRuntime, RuntimeOptions};
+use anyhow::{Context, Result};
+use deno_core::{error::CoreError, extension, v8, FsModuleLoader, JsRuntime, RuntimeOptions};
+use tracing::info;
 
-pub struct JavascriptRunner {
+use super::runner::Runner;
+
+pub struct JavascriptExec {
     runtime: JsRuntime,
 }
 
-impl JavascriptRunner {
+const pre_script: &'static str = "
+    const { core } = Deno;
+    const log = core.ops.op_log;
+    const console = undefined;
+    function assert(condition, message){
+        if (!condition){
+            let err = new Error(message || 'Assertation failed');
+            err.name = 'AssertationError';
+            throw err;
+        }
+    }
+";
+
+impl JavascriptExec {
     pub fn new() -> Result<Self> {
-        let extensions = Extension {
-            name: "rustle_post_request_script",
-            ops: Cow::Borrowed(&[]),
-            ..Default::default()
-        };
+        extension!(rustle, ops = [op_log]);
 
         let runtime = JsRuntime::new(RuntimeOptions {
-            module_loader: None, // we wont be loading js modules from here, so we can ignore this
-            extensions: vec![extensions],
+            // module_loader: None, // we wont be loading js modules from here, so we can ignore this
+            module_loader: Some(Rc::new(FsModuleLoader)),
+            extensions: vec![rustle::init()],
             ..Default::default()
         });
 
-        return Ok(JavascriptRunner { runtime });
+        return Ok(JavascriptExec { runtime });
     }
 
     // execute the js snippet within the deno runtime
-    pub fn run(&mut self, script: &str) -> Result<()> {
+    pub fn run(&mut self, script: &str, rustle_exec: Option<&mut Runner>) -> Result<()> {
         let runtime = &mut self.runtime;
 
         // enter the v8 scope
@@ -34,10 +46,15 @@ impl JavascriptRunner {
         let scope = &mut runtime.handle_scope();
         let global = context.open(scope);
 
-        // TODO: Set global values/variables
-        // ...
+        if let Some(rustle) = rustle_exec {
+            // TODO: Set global values/variables
+            let env_v8_obj = v8::Object::new(scope);
+        }
 
-        let script = v8::String::new(scope, script).context("Cannot create v8 string")?;
+        let mut js = String::from(pre_script);
+        js.push_str(script);
+
+        let script = v8::String::new(scope, &js).context("Cannot create v8 string")?;
         let scr_name =
             v8::String::new(scope, "<untitled_script>").context("Cannot create v8 string")?;
         let origin = v8::ScriptOrigin::new(
@@ -68,4 +85,39 @@ impl JavascriptRunner {
 
         return Ok(());
     }
+}
+
+// Op definition for assert to be used in js runtims
+#[deno_core::op2(fast)]
+fn op_log(#[string] message: String) -> std::result::Result<(), CoreError> {
+    println!("[JS]: {message}");
+    return Ok(());
+}
+
+#[derive(Debug)]
+enum ConsoleOutput {
+    Info { message: String },
+    Debug { message: String },
+    Error { message: String },
+    Warning { message: String },
+}
+
+pub fn run_js(output: &mut Vec<ConsoleOutput>) -> Result<()> {
+    extension!(rustle, ops = [op_logger_info]);
+
+    // Op definition for assert to be used in js runtims
+    #[deno_core::op2(fast)]
+    fn op_logger_info(#[string] message: String) -> std::result::Result<(), CoreError> {
+        info!("JS: {message}");
+        output;
+        return Ok(());
+    }
+
+    let runtime = JsRuntime::new(RuntimeOptions {
+        // module_loader: None, // we wont be loading js modules from here, so we can ignore this
+        module_loader: Some(Rc::new(FsModuleLoader)),
+        extensions: vec![rustle::init()],
+        ..Default::default()
+    });
+    return Ok(());
 }

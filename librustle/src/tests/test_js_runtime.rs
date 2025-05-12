@@ -1,22 +1,28 @@
-use crate::executor::scripting::JavascriptRunner;
+use crate::executor::scripting::JavascriptExec;
 
 #[test]
 fn test_js_script() {
-    let mut runtime = JavascriptRunner::new().unwrap();
-    runtime.run("let x = 5;").unwrap();
+    let mut runtime = JavascriptExec::new().unwrap();
+    runtime.run("let x = 5;", None).unwrap();
 }
 
 #[test]
 #[should_panic(expected = "Script execution failed: Error: Fuck yes!")]
 fn test_js_script_throwing_error() {
-    let mut runtime = JavascriptRunner::new().unwrap();
-    runtime.run("throw new Error('Fuck yes!')").unwrap();
+    let mut runtime = JavascriptExec::new().unwrap();
+    runtime.run("throw new Error('Fuck yes!')", None).unwrap();
 }
 
 #[test]
-// #[should_panic(expected = "")]
+#[should_panic(expected = "Script execution failed: AssertationError: Assertation failed")]
 fn test_js_script_asserted() {
-    let mut runtime = JavascriptRunner::new().unwrap();
-    runtime.run("console.assert(false, '!Yes')").unwrap();
+    let mut runtime = JavascriptExec::new().unwrap();
+    runtime.run("assert(false)", None).unwrap();
+}
+
+#[test]
+fn test_js_script_log() {
+    let mut runtime = JavascriptExec::new().unwrap();
+    runtime.run("log('Hello rubbie')", None).unwrap();
     assert!(false);
 }
