@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 clap = {version = "4.5.37", features = ["derive"]}
-librustle = { path = "../librustle" }
+rustle-api = { path = "../api" }
 reqwest = "0.12.15"
 tokio = { version = "1.45.0", features = ["full"] }

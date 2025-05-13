@@ -1,13 +1,11 @@
 [package]
-name = "librustle"
+name = "rustle-api"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0.98"
-deno_core = "0.347.0"
 openapi = "0.1.5"
-pest_derive = "2.8.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", features = ["json", "multipart"] }
 serde = { version = "1.0.219", features = ["derive"] }

@@ -76,7 +76,7 @@ pub struct Request {
     #[serde(default)]
     pub body: Option<RequestBody>, // Optional body block
     #[serde(default)]
-    pub script: Option<RequestScript>, // Optional script block
+    pub script: Option<RequestScriptConfig>, // Optional script block
 }
 
 /// Represents the configuration section of a request.
@@ -94,11 +94,21 @@ pub struct RequestConfig {
 /// Represents the script section of a request.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
-pub struct RequestScript {
-    pub post_request: Option<String>, // Script content as a raw string
+pub struct RequestScriptConfig {
+    pub post_request: Option<Script>,
+    pub pre_request: Option<Script>,
 }
 
-// --- Request Body Structs ---
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "snake_case", tag = "language")]
+pub enum Script {
+    #[serde(rename = "lua")]
+    Lua { content: String },
+    #[serde(rename = "javascript")]
+    Javascript { content: String },
+    #[serde(rename = "rhai")]
+    Rhai { content: String },
+}
 
 /// Represents the body section of a request.
 #[derive(Debug, Deserialize, Clone)]

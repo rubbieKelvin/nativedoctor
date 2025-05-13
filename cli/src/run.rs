@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::exit};
 
-use librustle::executor::runner::Runner;
+use rustle_api::executor::runner::Runner;
 
 use crate::ds::RunMode;
 
