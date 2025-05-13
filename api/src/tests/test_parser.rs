@@ -11,9 +11,6 @@ fn test_parse_minimal_file() {
               GetStatus:
                 method: GET
                 url: "{{base_url}}/status"
-                script:
-                  post_request: |
-                    assert response.status == 200;
 
             calls:
               default_run:
@@ -36,13 +33,6 @@ fn test_parse_minimal_file() {
     let status_request = parsed.requests.get("GetStatus").unwrap();
     assert_eq!(status_request.method, "GET");
     assert_eq!(status_request.url, "{{base_url}}/status");
-    assert!(status_request.script.is_some());
-    assert!(status_request
-        .script
-        .as_ref()
-        .unwrap()
-        .post_request
-        .is_some());
 }
 
 #[test]
@@ -74,10 +64,6 @@ fn test_parse_full_example() {
                       content:
                         email: "{{user_email}}"
                         password: "{{user_password}}"
-                    script:
-                      post_request: |
-                        # Script content
-                        log("Logged in");
 
                   CreateItem:
                     method: POST
@@ -95,10 +81,6 @@ fn test_parse_full_example() {
                         name: "New Item {{uuid()}}"
                         price: 19.99
                         tags: ["{{env.current_env}}", "featured"]
-                    script:
-                      post_request: |
-                        # Another script
-                        assert response.status == 201;
 
                   UploadFile:
                     method: POST
