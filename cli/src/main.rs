@@ -38,11 +38,9 @@ async fn main() {
                     if request.is_some() {
                         RunMode::Request(request.clone().unwrap())
                     } else if sequence.is_some() {
-                        // RunMode::Sequence(sequence.clone().unwrap())
-                        todo!()
+                        RunMode::Sequence(sequence.clone().unwrap())
                     } else {
-                        // RunMode::All
-                        todo!()
+                        RunMode::All
                     },
                 )
                 .await;

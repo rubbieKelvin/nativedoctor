@@ -445,7 +445,7 @@ impl Runner {
         dependency_trace.insert(name.to_string());
 
         let mut stack: Vec<String> = vec![];
-        
+
         // Get the sequence
         let sequence = match self.schema.calls.get(name) {
             Some(seq) => seq,
@@ -456,17 +456,17 @@ impl Runner {
 
         // Process each item in the sequence
         for item in sequence {
-            if item.starts_with('/') {
-                // This is a nested sequence, extract the sequence name and process it
-                let nested_seq_name = &item[1..]; // Remove the leading '/'
-                let mut nested_trace = dependency_trace.clone();
-                let nested_deps = self.traverse_seq_stack_internal(nested_seq_name, &mut nested_trace)?;
-                stack.extend(nested_deps);
-            } else {
-                // This is a request, process its dependencies
-                let request_deps = self.traverse_request_stack(item, dependency_trace.clone())?;
-                stack.extend(request_deps);
-            }
+            // if item.starts_with('/') {
+            //     // This is a nested sequence, extract the sequence name and process it
+            //     let nested_seq_name = &item[1..]; // Remove the leading '/'
+            //     let mut nested_trace = dependency_trace.clone();
+            //     let nested_deps = self.traverse_seq_stack_internal(nested_seq_name, &mut nested_trace)?;
+            //     stack.extend(nested_deps);
+            // } else {
+            // This is a request, process its dependencies
+            let request_deps = self.traverse_request_stack(item, dependency_trace.clone())?;
+            stack.extend(request_deps);
+            // }
         }
 
         // Add the sequence name itself

@@ -5,9 +5,9 @@ use tracing::error;
 
 use crate::ds::RunMode;
 
-async fn run_request(mut runner: Runner, name: String) {
+async fn run_request(runner: &mut Runner, name: String) {
     let client = reqwest::Client::new();
-    let stack =  match runner.generate_call_queue(&name) {
+    let stack = match runner.generate_call_queue(&name) {
         Ok(s) => s,
         Err(e) => {
             error!("Error generating call stack: {}", e);
@@ -59,6 +59,30 @@ fn get_validated_path_str(filepath: &str) -> Result<String, String> {
     }
 }
 
+async fn run_sequence(runner: &mut Runner, name: String) {
+    let client = reqwest::Client::new();
+    let stack = match runner.generate_sequence_queue(&name) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Error generating sequence stack: {}", e);
+            exit(1);
+        }
+    };
+
+    for request in stack {
+        let result = match runner.call_request(request, &client).await {
+            Ok(result) => result,
+            Err(e) => {
+                error!("Error calling request: {}", e);
+                exit(-1);
+            }
+        };
+
+        // TODO: display result
+        println!("{:?}", result);
+    }
+}
+
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
     let cwd = match current_dir() {
         Ok(dir) => dir,
@@ -90,7 +114,7 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
     };
 
     // initiate the runner
-    let runner = match Runner::new(&path, env, ScriptEngine::None, is_project) {
+    let mut runner = match Runner::new(&path, env, ScriptEngine::None, is_project) {
         Ok(runner) => runner,
         Err(e) => {
             eprintln!("Error creating runner: {}", e.to_string());
@@ -100,9 +124,22 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
 
     match mode {
         RunMode::Request(name) => {
-            run_request(runner, name).await;
-        } // ...
-          // RunMode::Sequence(name) => {}
-          // RunMode::All => {}
+            run_request(&mut runner, name).await;
+        }
+        RunMode::Sequence(name) => {
+            run_sequence(&mut runner, name).await;
+        }
+        RunMode::All => {
+            let seq = &runner
+                .schema
+                .calls
+                .keys()
+                .map(|k| k.to_string())
+                .collect::<Vec<String>>();
+
+            for i in seq {
+                run_sequence(&mut runner, i.clone()).await;
+            }
+        }
     };
 }

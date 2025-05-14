@@ -4,6 +4,8 @@ use clap::{Parser, Subcommand};
 
 pub enum RunMode {
     Request(String),
+    Sequence(String),
+    All,
 }
 
 #[derive(Parser, Debug)]
