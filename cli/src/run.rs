@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::exit};
 
-use rustle_api::executor::runner::Runner;
+use rustle_api::executor::runner::{Runner, ScriptEngine};
 
 use crate::ds::RunMode;
 
@@ -31,7 +31,7 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
         }
     };
 
-    let runner = match Runner::new(path_str, env) {
+    let runner = match Runner::new(path_str, env, ScriptEngine::None) {
         Ok(runner) => runner,
         Err(e) => {
             eprintln!("Error creating runner: {}", e.to_string());

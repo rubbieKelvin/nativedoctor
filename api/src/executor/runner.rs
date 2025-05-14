@@ -1,14 +1,21 @@
+use crate::scripting::rhai::RhaiScripting;
+
 use super::{
-    schema::{load_api_file, MultipartPart, Request, RequestBody, Schema},
+    schema::{load_api_file, MultipartPart, Request, RequestBody, Schema, Script},
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
-use anyhow::{Context, Ok, Result};
+use anyhow::{Context, Result};
 use std::{
     collections::{HashMap, HashSet},
     env::current_dir,
     path::Path,
 };
 use tracing::info;
+
+pub enum ScriptEngine {
+    Rhai(RhaiScripting),
+    None,
+}
 
 pub struct Runner {
     pub schema: Schema,
@@ -20,7 +27,8 @@ pub struct Runner {
     // Or maybe use a unique runtime for each, then run them in parallel
     // TODO: remove lint rule
     #[allow(unused)]
-    overrides: HashMap<String, String>,
+    overrides: HashMap<String, serde_yaml::Value>,
+    script_engine: ScriptEngine,
 }
 
 impl Runner {
@@ -107,16 +115,25 @@ impl Runner {
     }
 
     #[allow(unused)]
-    pub fn from_schema(schema: Schema, environment: Option<String>) -> Self {
+    pub fn from_schema(
+        schema: Schema,
+        environment: Option<String>,
+        script_engine: ScriptEngine,
+    ) -> Self {
         return Runner {
             schema,
             filename: String::new(),
             environment,
             overrides: HashMap::new(),
+            script_engine,
         };
     }
 
-    pub fn new(filename: &str, environment: Option<String>) -> Result<Self> {
+    pub fn new(
+        filename: &str,
+        environment: Option<String>,
+        script_engine: ScriptEngine,
+    ) -> Result<Self> {
         let cwd = current_dir().context("Could not get the current working directorty")?;
         let path = cwd.join(filename);
 
@@ -127,13 +144,18 @@ impl Runner {
 
         // let schema = load_api_file(path.as_path())?;
         let schema = Runner::recursively_import(path.as_path(), true)?;
-
-        return Ok(Runner {
+        let runner = Runner {
             schema,
             filename: filename.to_string(),
             environment,
             overrides: HashMap::new(),
-        });
+            script_engine,
+        };
+
+        // initialize the scripting engine we'd use js/lua/rhai
+        runner.initialize_scripting_engine();
+
+        return Ok(runner);
     }
 
     /// This should resolve the env variables by the current environment, and return a clean represengtation of the env
@@ -171,31 +193,61 @@ impl Runner {
     }
 
     pub async fn call_request(
-        &self,
+        &mut self,
         name: String,
         client: &reqwest::Client,
     ) -> Result<reqwest::Response> {
         info!("Calling bare request \"{}\"", &name);
-        let request = self.schema.requests.get(&name);
+        let request = self.schema.requests.get_mut(&name);
 
-        return match request {
-            Some(request) => {
-                // now let's build the request
-                let req = self.build_request(request, client).await?;
-                let response = client
-                    .execute(req)
-                    .await
-                    .context("Failed to execute request")?;
+        // get request
+        let request = match request {
+            Some(request) => request,
+            None => anyhow::bail!("Request \"{}\" not found in runtime scope", name),
+        }
+        .clone();
 
-                Ok(response)
+        // try to run pre-request
+        if let Some(script) = &request.script {
+            if let Some(script) = &script.pre_request {
+                self.run_request_script(script, None)?;
             }
-            None => panic!(),
-        };
+        }
+
+        // now let's build the request
+        let req = self.build_request(&request, client).await?;
+
+        // make the http call
+        let response = client
+            .execute(req)
+            .await
+            .context("Failed to execute request")?;
+
+        // try to run post-request
+        if let Some(script) = &request.script {
+            if let Some(script) = &script.post_request {
+                self.run_request_script(script, None)?;
+            }
+        }
+
+        return Ok(response);
+    }
+
+    fn run_request_script(
+        &mut self,
+        script: &Script,
+        response: Option<&reqwest::Response>,
+    ) -> Result<()> {
+        match script {
+            Script::Rhai { content } => self.run_rhai_script(content, response),
+            Script::Javascript { .. } => unimplemented!(),
+            Script::Lua { .. } => unimplemented!(),
+        }
     }
 
     /// Builds a reqwest::Request from a Request schema and resolved environment variables.
     pub async fn build_request(
-        &self,
+        &mut self,
         request_schema: &Request,
         client: &reqwest::Client,
     ) -> Result<reqwest::Request> {
@@ -337,78 +389,6 @@ impl Runner {
         Ok(reqwest_request)
     }
 
-    /// NOTE: THis doens handle circular dep yet
-    #[deprecated]
-    pub fn generate_request_call_queue(&self, name: String) -> Result<Vec<String>> {
-        // check if the request exists
-        let request = match self.schema.requests.get(&name) {
-            Some(request) => request,
-            None => {
-                anyhow::bail!("Request with name \"{name}\" does not exist");
-            }
-        };
-
-        // add the original rewuesnt name
-        let mut queue = vec![name];
-
-        // now lets add dependencies
-        let dependencies = match &request.config {
-            Some(config) => config.depends_on.clone(),
-            None => vec![],
-        };
-
-        for dependency in dependencies {
-            let inner_dep = self.generate_request_call_queue(dependency)?;
-            queue.extend(inner_dep);
-        }
-
-        // remove duplicate
-        let mut dedup = vec![];
-
-        for i in queue {
-            if !dedup.contains(&i) {
-                dedup.push(i);
-            }
-        }
-
-        return Ok(dedup);
-    }
-
-    /// NOTE: THis doens handle circular dep yet
-    #[deprecated]
-    pub fn generate_request_call_queue_from_sequence(&self, name: String) -> Result<Vec<String>> {
-        let mut queue: Vec<String> = vec![];
-        let sequence = match self.schema.calls.get(&name) {
-            Some(sq) => sq,
-            None => {
-                anyhow::bail!("Request with name \"{name}\" does not exist");
-            }
-        };
-
-        for entry in sequence {
-            if entry.starts_with("/") {
-                let actual_name = &entry[1..];
-                let dependencies =
-                    self.generate_request_call_queue_from_sequence(actual_name.to_string())?;
-                queue.extend(dependencies);
-            } else {
-                let dependencies = self.generate_request_call_queue(entry.to_string())?;
-                queue.extend(dependencies);
-            }
-        }
-
-        // remove duplicate
-        let mut dedup = vec![];
-
-        for i in queue {
-            if !dedup.contains(&i) {
-                dedup.push(i);
-            }
-        }
-
-        return Ok(dedup);
-    }
-
     pub fn generate_call_queue(&self, name: &str) -> Result<Vec<String>> {
         let dirty_stack = self.traverse_request_stack(name, HashSet::new())?;
         let mut seen: Vec<String> = vec![];
@@ -480,5 +460,28 @@ impl Runner {
         }
 
         return Ok(stack);
+    }
+
+    fn initialize_scripting_engine(&self) {
+        match &self.script_engine {
+            ScriptEngine::Rhai(engine) => self.initialize_rhai_scripting_engine(engine),
+            ScriptEngine::None => {}
+        }
+    }
+
+    fn initialize_rhai_scripting_engine(&self, _engine: &RhaiScripting) {}
+
+    fn run_rhai_script(
+        &mut self,
+        script: &str,
+        _response: Option<&reqwest::Response>,
+    ) -> Result<()> {
+        let engine = match &mut self.script_engine {
+            ScriptEngine::Rhai(engine) => engine,
+            _ => anyhow::bail!("Rhai engine not available to run rhai script"),
+        };
+
+        engine.run(script, &mut self.overrides);
+        return Ok(());
     }
 }

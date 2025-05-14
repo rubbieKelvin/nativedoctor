@@ -1,4 +1,4 @@
-use crate::executor::runner::Runner;
+use crate::executor::runner::{Runner, ScriptEngine};
 
 fn loaded_runner(complex: bool) -> Runner {
     return Runner::new(
@@ -8,6 +8,7 @@ fn loaded_runner(complex: bool) -> Runner {
             "src/tests/test_yaml_files/call_sequence_generation_check.api.yaml"
         },
         None,
+        ScriptEngine::None,
     )
     .unwrap();
 }
