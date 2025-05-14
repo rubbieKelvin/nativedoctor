@@ -417,7 +417,62 @@ impl Runner {
 
     #[allow(unused)]
     pub fn generate_sequence_queue(&self, name: &str) -> Result<Vec<String>> {
-        todo!("Implement");
+        let mut dependency_trace = HashSet::new();
+        self.traverse_seq_stack_internal(name, &mut dependency_trace)
+    }
+
+    fn traverse_seq_stack_internal(
+        &self,
+        name: &str,
+        dependency_trace: &mut HashSet<String>,
+    ) -> Result<Vec<String>> {
+        // Check for circular dependency
+        if dependency_trace.contains(name) {
+            let mut trace_info = String::new();
+            for dep in dependency_trace.iter() {
+                trace_info.push_str(&format!("{dep} -> "));
+            }
+            trace_info.push_str(&format!("error({name})"));
+
+            anyhow::bail!(
+                "Circular dependency detected in sequence stack; attempted to call {}\nwhich has already been called in this trace: {}",
+                name,
+                trace_info
+            );
+        }
+
+        // Add this sequence to the dependency trace
+        dependency_trace.insert(name.to_string());
+
+        let mut stack: Vec<String> = vec![];
+        
+        // Get the sequence
+        let sequence = match self.schema.calls.get(name) {
+            Some(seq) => seq,
+            None => {
+                anyhow::bail!("Sequence with name \"{name}\" does not exist");
+            }
+        };
+
+        // Process each item in the sequence
+        for item in sequence {
+            if item.starts_with('/') {
+                // This is a nested sequence, extract the sequence name and process it
+                let nested_seq_name = &item[1..]; // Remove the leading '/'
+                let mut nested_trace = dependency_trace.clone();
+                let nested_deps = self.traverse_seq_stack_internal(nested_seq_name, &mut nested_trace)?;
+                stack.extend(nested_deps);
+            } else {
+                // This is a request, process its dependencies
+                let request_deps = self.traverse_request_stack(item, dependency_trace.clone())?;
+                stack.extend(request_deps);
+            }
+        }
+
+        // Add the sequence name itself
+        stack.push(name.to_string());
+
+        Ok(stack)
     }
 
     fn traverse_request_stack(
