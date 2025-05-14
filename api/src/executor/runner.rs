@@ -4,13 +4,12 @@ use super::{
     schema::{load_api_file, MultipartPart, Request, RequestBody, Schema, Script},
     utils::{interpolate_string, interpolate_value, STRICT_INTERPOLATION},
 };
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::{
     collections::{HashMap, HashSet},
-    env::current_dir,
     path::Path,
 };
-use tracing::info;
+use tracing::{error, info};
 
 pub enum ScriptEngine {
     Rhai(RhaiScripting),
@@ -54,13 +53,19 @@ impl Runner {
         let imported_schemas = schema
             .imports
             .iter()
-            .map(|name| {
+            .filter_map(|name| {
                 let p = rootpath
                     .parent()
                     .context("Unable to read parent directory of file path")
                     .unwrap();
                 let p = p.join(name);
-                return Runner::recursively_import(p.as_path(), false).unwrap();
+
+                if !p.exists() {
+                    error!("Unable to import file: {}", p.to_str().unwrap());
+                    return None;
+                } else {
+                    return Some(Runner::recursively_import(p.as_path(), false).unwrap());
+                }
             })
             .collect::<Vec<Schema>>();
 
@@ -133,17 +138,19 @@ impl Runner {
         filename: &str,
         environment: Option<String>,
         script_engine: ScriptEngine,
+        as_project: bool,
     ) -> Result<Self> {
-        let cwd = current_dir().context("Could not get the current working directorty")?;
-        let path = cwd.join(filename);
-
         // Make sure the environment is not Some('default'). i regard this as absured, just set this shii to None.
         if let Some(specified_env) = &environment {
             assert_ne!(specified_env.to_lowercase(), "default");
         }
 
-        // let schema = load_api_file(path.as_path())?;
-        let schema = Runner::recursively_import(path.as_path(), true)?;
+        let schema = Runner::recursively_import(Path::new(filename), true)?;
+
+        if as_project && schema.project.is_none() {
+            anyhow::bail!("Project definition not found in project file: {}", filename);
+        }
+
         let runner = Runner {
             schema,
             filename: filename.to_string(),
@@ -218,10 +225,12 @@ impl Runner {
         let req = self.build_request(&request, client).await?;
 
         // make the http call
-        let response = client
-            .execute(req)
-            .await
-            .context("Failed to execute request")?;
+        let response = match client.execute(req).await {
+            Ok(r) => r,
+            Err(e) => {
+                bail!("Failed to execute \"{}\" request: {}", &name, e);
+            }
+        };
 
         // try to run post-request
         if let Some(script) = &request.script {
@@ -481,7 +490,7 @@ impl Runner {
             _ => anyhow::bail!("Rhai engine not available to run rhai script"),
         };
 
-        engine.run(script, &mut self.overrides);
+        engine.run(script, &mut self.overrides)?;
         return Ok(());
     }
 }

@@ -11,10 +11,11 @@ use crate::executor::{
 #[tokio::test]
 async fn test_simple_request_call() {
     let client = Client::new();
-    let runtime = Runner::new(
+    let mut runtime = Runner::new(
         "src/tests/test_yaml_files/simple_request_call.api.yaml",
         None,
         ScriptEngine::None,
+        false,
     )
     .unwrap();
     assert!(runtime.schema.requests.contains_key("Ping"));
@@ -43,7 +44,7 @@ async fn test_simple_get_request() {
     };
 
     let client = Client::new();
-    let runtime = Runner::from_schema(schema, None, ScriptEngine::None);
+    let mut runtime = Runner::from_schema(schema, None, ScriptEngine::None);
 
     let response = runtime
         .call_request("Ping".to_string(), &client)
@@ -87,7 +88,7 @@ async fn test_post_request_with_json_body() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runner::from_schema(schema, None, ScriptEngine::None);
+    let mut runtime = Runner::from_schema(schema, None, ScriptEngine::None);
 
     // 3. Call the request
     let response = runtime
@@ -173,7 +174,7 @@ async fn test_request_with_dependencies() {
 
     // 2. Create the runtime
     let client = Client::new();
-    let runtime = Runner::from_schema(schema, None, ScriptEngine::None);
+    let mut runtime = Runner::from_schema(schema, None, ScriptEngine::None);
 
     // 3. Call the main request (which should trigger dependencies)
     let response = runtime
@@ -330,7 +331,7 @@ async fn test_nested_sequence() {
 #[tokio::test]
 async fn test_imports() {
     let file = "src/tests/test_yaml_files/test_imports/base.api.yaml";
-    let runtime = Runner::new(file, None, ScriptEngine::None).unwrap();
+    let runtime = Runner::new(file, None, ScriptEngine::None, false).unwrap();
 
     dbg!(file);
     dbg!(&runtime.schema.filename);

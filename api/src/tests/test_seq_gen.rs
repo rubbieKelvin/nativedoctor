@@ -9,6 +9,7 @@ fn loaded_runner(complex: bool) -> Runner {
         },
         None,
         ScriptEngine::None,
+        false,
     )
     .unwrap();
 }

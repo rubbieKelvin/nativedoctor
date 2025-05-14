@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use tracing::info;
 
 /// Initializes a new Rustle project at the given path with the specified name.
 /// Creates the necessary folder structure and initial YAML files.
@@ -11,6 +12,11 @@ use std::path::Path;
 /// * `name`: The name of the new project folder and main project file.
 pub fn init_project<P: AsRef<Path>>(path: P, name: &str) -> Result<()> {
     let project_root = path.as_ref().join(name);
+
+    if project_root.exists() {
+        anyhow::bail!("Folder already exists...");
+    }
+
     let requests_dir = project_root.join("requests");
     let calls_dir = project_root.join("calls");
 
@@ -38,9 +44,9 @@ project:
   name: "{}"
 
 imports:
-  - env.api.yaml
-  - requests/request-01.api.yaml
-  - calls/init.api.yaml
+  - env.rt.yaml
+  - requests/request-01.rt.yaml
+  - calls/init.rt.yaml
 "#,
         main_file_name
     );
@@ -96,7 +102,7 @@ calls:
         .with_context(|| format!("Failed to create calls file: {:?}", calls_file_path))?;
     calls_file.write_all(calls_file_content.as_bytes())?;
 
-    println!(
+    info!(
         "Rustle project '{}' initialized successfully at {:?}",
         name, project_root
     );
