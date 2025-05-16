@@ -69,17 +69,19 @@ async fn run_sequence(runner: &mut Runner, name: String) {
         }
     };
 
-    for request in stack {
-        let result = match runner.call_request(request, &client).await {
-            Ok(result) => result,
-            Err(e) => {
-                error!("Error calling request: {}", e);
-                exit(-1);
-            }
-        };
+    for request_seq in stack {
+        for request in request_seq {
+            let result = match runner.call_request(request, &client).await {
+                Ok(result) => result,
+                Err(e) => {
+                    error!("Error calling request: {}", e);
+                    exit(-1);
+                }
+            };
 
-        // TODO: display result
-        println!("{:?}", result);
+            // TODO: display result
+            println!("{:?}", result);
+        }
     }
 }
 
@@ -137,9 +139,12 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
                 .map(|k| k.to_string())
                 .collect::<Vec<String>>();
 
-            for i in seq {
-                run_sequence(&mut runner, i.clone()).await;
+            if seq.len() != 1 {
+                eprintln!("Specify sequence name if there's more than one in the schema");
+                exit(1);
             }
+
+            run_sequence(&mut runner, seq.get(0).unwrap().clone()).await;
         }
     };
 }
