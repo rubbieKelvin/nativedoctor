@@ -1184,6 +1184,7 @@ dependencies = [
  "colored",
  "reqwest",
  "rustle-api",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
