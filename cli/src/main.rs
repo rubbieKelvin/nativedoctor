@@ -1,22 +1,21 @@
+use actions::{init::init, run::run, tree::draw_tree};
 use clap::Parser;
 use ds::{Cli, Commands, RunMode};
-use init::init;
-use tracing::Level;
-use tracing_subscriber::FmtSubscriber;
+// use tracing::Level;
+// use tracing_subscriber::FmtSubscriber;
 
+mod actions;
 mod ds;
-mod init;
-mod run;
 
 #[tokio::main]
 async fn main() {
     // Initialize the tracing subscriber
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO) // Set the maximum logging level
-        .finish();
+    // let subscriber = FmtSubscriber::builder()
+    //     .with_max_level(Level::INFO) // Set the maximum logging level
+    //     .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set global default subscriber");
+    // tracing::subscriber::set_global_default(subscriber)
+    //     .expect("Failed to set global default subscriber");
 
     let cli = Cli::parse();
 
@@ -25,14 +24,13 @@ async fn main() {
             Commands::Init { name } => {
                 init(name);
             }
-            #[allow(unused)]
             Commands::Run {
                 filepath,
                 env,
                 request,
                 sequence,
             } => {
-                run::run(
+                run(
                     filepath,
                     env.clone(),
                     if request.is_some() {
@@ -45,7 +43,10 @@ async fn main() {
                 )
                 .await;
             }
-        };
+            Commands::Tree { filepath } => {
+                draw_tree(filepath);
+            }
+        }
     } else {
         eprintln!("pass --help to see usage");
     }

@@ -40,4 +40,9 @@ pub enum Commands {
         #[arg(short, long)]
         sequence: Option<String>,
     },
+    /// Prints a tree describing the call sequences of the api file
+    Tree {
+        /// The filepath to the .api.yaml file to load
+        filepath: PathBuf,
+    },
 }

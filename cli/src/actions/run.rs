@@ -1,8 +1,9 @@
-use std::{env::current_dir, fs, path::PathBuf, process::exit};
+use std::{path::PathBuf, process::exit};
 
 use rustle_api::executor::runner::{Runner, ScriptEngine};
 use tracing::error;
 
+use super::utils::resolve_path;
 use crate::ds::RunMode;
 
 async fn run_request(runner: &mut Runner, name: String) {
@@ -26,36 +27,6 @@ async fn run_request(runner: &mut Runner, name: String) {
 
         // TODO: display result
         println!("{:?}", result);
-    }
-}
-
-fn get_validated_path_str(filepath: &str) -> Result<String, String> {
-    let path = PathBuf::from(filepath);
-
-    if path.is_dir() {
-        let project_file_path = path.join("project.rt.yaml");
-        if project_file_path.exists() && project_file_path.is_file() {
-            project_file_path
-                .to_str()
-                .map(|s| s.to_string()) // Convert &str to String
-                .ok_or_else(|| {
-                    format!(
-                        "Error: Project file path is not valid UTF-8: {}",
-                        project_file_path.display()
-                    )
-                })
-        } else {
-            Err(format!(
-                "Error: Project file not found at: {}",
-                project_file_path.display()
-            ))
-        }
-    } else if path.is_file() {
-        path.to_str()
-            .map(|s| s.to_string()) // Convert &str to String
-            .ok_or_else(|| "Error: File path is not valid UTF-8".to_string())
-    } else {
-        Err("Error: Invalid file path".to_string())
     }
 }
 
@@ -86,34 +57,7 @@ async fn run_sequence(runner: &mut Runner, name: String) {
 }
 
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
-    let cwd = match current_dir() {
-        Ok(dir) => dir,
-        Err(e) => {
-            error!("Cannot get the current dir: {}", e);
-            exit(1);
-        }
-    };
-
-    // resolve path
-    let filepath = filepath.to_str().unwrap();
-    let path = cwd.join(filepath);
-    let path = match fs::canonicalize(path) {
-        Ok(p) => p,
-        Err(e) => {
-            error!("Cannot get absolute path of {}\nError: {}", filepath, e);
-            exit(1);
-        }
-    };
-
-    // resolve project or file path
-    let is_project = path.is_dir();
-    let path = match get_validated_path_str(path.to_str().unwrap()) {
-        Ok(p) => p,
-        Err(err) => {
-            eprintln!("{}", err);
-            exit(1); // Or handle the error differently
-        }
-    };
+    let (path, is_project) = resolve_path(filepath);
 
     // initiate the runner
     let mut runner = match Runner::new(&path, env, ScriptEngine::None, is_project) {
@@ -139,12 +83,19 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
                 .map(|k| k.to_string())
                 .collect::<Vec<String>>();
 
-            if seq.len() != 1 {
-                eprintln!("Specify sequence name if there's more than one in the schema");
-                exit(1);
+            match seq.len() {
+                0 => {
+                    eprintln!("No defined sequence in the list");
+                    exit(1);
+                }
+                1 => {
+                    run_sequence(&mut runner, seq.get(0).unwrap().clone()).await;
+                }
+                _ => {
+                    eprintln!("Specify sequence name if there's more than one in the schema");
+                    exit(1);
+                }
             }
-
-            run_sequence(&mut runner, seq.get(0).unwrap().clone()).await;
         }
     };
 }

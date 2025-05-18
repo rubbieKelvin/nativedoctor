@@ -10,3 +10,4 @@ reqwest = "0.12.15"
 tokio = { version = "1.45.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+colored = "3.0.0"
