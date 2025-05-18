@@ -70,10 +70,27 @@ async fn base_run_request(runner: &mut Runner, client: &Client, name: String, qu
     };
 
     for request in stack {
+        let schema = runner.get_request_schema(&request).unwrap();
+
+        if request == name {
+            quiet_or_print(format!("-> REQ {} {}", request.green(), schema.url), quiet);
+        } else {
+            quiet_or_print(
+                format!(
+                    "-> [{}] REQ {} {}",
+                    format!("dependency/{}", name).on_yellow().black(),
+                    request.green(),
+                    schema.url
+                ),
+                quiet,
+            );
+        }
+
         let result = match runner.call_request(request, &client).await {
             Ok(result) => result,
             Err(e) => {
-                error!("{e}");
+                eprintln!("{}", e.to_string().red());
+                // error!("{e}");
                 exit(-1);
             }
         };
@@ -88,25 +105,28 @@ async fn run_request(runner: &mut Runner, name: String, quiet: bool) {
 }
 
 async fn run_sequence(runner: &mut Runner, name: String, quiet: bool) {
-    let client = reqwest::Client::new();
-    let stack = match runner.generate_sequence_queue(&name) {
-        Ok(s) => s,
-        Err(e) => {
-            error!("Error generating sequence stack: {}", e);
-            exit(1);
-        }
-    };
-
     quiet_or_print(format!("SEQ {}", name.yellow()), quiet);
 
-    for request_seq in stack {
-        for request in request_seq {
-            let schema = runner.get_request_schema(&request).unwrap();
+    let client = reqwest::Client::new();
+    let seq = runner.get_sequence(&name).unwrap();
 
-            quiet_or_print(format!("-> REQ {} {}", request.green(), schema.url), quiet);
-            base_run_request(runner, &client, request, quiet).await;
-        }
+    for request in seq {
+        base_run_request(runner, &client, request, quiet).await
     }
+
+    // let stack = match runner.generate_sequence_queue(&name) {
+    //     Ok(s) => s,
+    //     Err(e) => {
+    //         error!("Error generating sequence stack: {}", e);
+    //         exit(1);
+    //     }
+    // };
+
+    // for request_seq in stack {
+    //     for request in request_seq {
+    //         base_run_request(runner, &client, request, quiet).await;
+    //     }
+    // }
 }
 
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode, quiet: bool) {

@@ -209,6 +209,14 @@ impl Runner {
         };
     }
 
+    pub fn get_sequence(&self, name: &str) -> Result<Vec<String>> {
+        let seq = self.schema.calls.get(name);
+        return match seq {
+            Some(seq) => Ok(seq.clone()),
+            None => anyhow::bail!("Schema \"{}\" not found in runtime scope", name),
+        };
+    }
+
     pub async fn call_request(
         &mut self,
         name: String,
