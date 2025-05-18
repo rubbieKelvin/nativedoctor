@@ -48,7 +48,7 @@ impl fmt::Display for NodeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         return match self {
             NodeType::File(name) => write!(f, "{}", name),
-            NodeType::Sequence(name) => write!(f, "{}", name.blue()),
+            NodeType::Sequence(name) => write!(f, "{}", name.yellow()),
             NodeType::Request(name) => write!(f, "{}", name.green()),
         };
     }

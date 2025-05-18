@@ -64,3 +64,9 @@ pub fn resolve_path(filepath: &PathBuf) -> (String, bool) {
         path.is_dir(),
     );
 }
+
+pub fn quiet_or_print(string: String, quiet: bool) {
+    if !quiet {
+        println!("{string}");
+    }
+}

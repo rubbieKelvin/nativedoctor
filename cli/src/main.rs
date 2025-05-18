@@ -29,6 +29,7 @@ async fn main() {
                 env,
                 request,
                 sequence,
+                quiet,
             } => {
                 run(
                     filepath,
@@ -40,6 +41,7 @@ async fn main() {
                     } else {
                         RunMode::All
                     },
+                    *quiet,
                 )
                 .await;
             }

@@ -4,4 +4,3 @@ pub mod init;
 #[cfg(test)]
 mod tests;
 pub mod scripting;
-pub mod wrappers;

@@ -39,6 +39,9 @@ pub enum Commands {
         /// else all sequence will run (not to be use with request arg)
         #[arg(short, long)]
         sequence: Option<String>,
+        /// Dont print anything?
+        #[arg(short, long)]
+        quiet: bool,
     },
     /// Prints a tree describing the call sequences of the api file
     Tree {

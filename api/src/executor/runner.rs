@@ -199,6 +199,16 @@ impl Runner {
         return env_vars;
     }
 
+    pub fn get_request_schema(&self, name: &str) -> Result<Request> {
+        let request = self.schema.requests.get(name);
+
+        // get request
+        return match request {
+            Some(request) => Ok(request.clone()),
+            None => anyhow::bail!("Request \"{}\" not found in runtime scope", name),
+        };
+    }
+
     pub async fn call_request(
         &mut self,
         name: String,

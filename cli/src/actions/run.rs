@@ -1,12 +1,13 @@
 use std::{path::PathBuf, process::exit};
 
+use colored::Colorize;
 use rustle_api::executor::runner::{Runner, ScriptEngine};
 use tracing::error;
 
-use super::utils::resolve_path;
+use super::utils::{quiet_or_print, resolve_path};
 use crate::ds::RunMode;
 
-async fn run_request(runner: &mut Runner, name: String) {
+async fn run_request(runner: &mut Runner, name: String, quiet: bool) {
     let client = reqwest::Client::new();
     let stack = match runner.generate_call_queue(&name) {
         Ok(s) => s,
@@ -30,7 +31,7 @@ async fn run_request(runner: &mut Runner, name: String) {
     }
 }
 
-async fn run_sequence(runner: &mut Runner, name: String) {
+async fn run_sequence(runner: &mut Runner, name: String, quiet: bool) {
     let client = reqwest::Client::new();
     let stack = match runner.generate_sequence_queue(&name) {
         Ok(s) => s,
@@ -40,8 +41,13 @@ async fn run_sequence(runner: &mut Runner, name: String) {
         }
     };
 
+    quiet_or_print(format!("SEQ {}", name.yellow()), quiet);
+
     for request_seq in stack {
         for request in request_seq {
+            let schema = runner.get_request_schema(&request).unwrap();
+            quiet_or_print(format!("-> REQ {} {}", request.green(), schema.url), quiet);
+
             let result = match runner.call_request(request, &client).await {
                 Ok(result) => result,
                 Err(e) => {
@@ -50,13 +56,12 @@ async fn run_sequence(runner: &mut Runner, name: String) {
                 }
             };
 
-            // TODO: display result
-            println!("{:?}", result);
+            // print the respose
         }
     }
 }
 
-pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
+pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode, quiet: bool) {
     let (path, is_project) = resolve_path(filepath);
 
     // initiate the runner
@@ -70,10 +75,10 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
 
     match mode {
         RunMode::Request(name) => {
-            run_request(&mut runner, name).await;
+            run_request(&mut runner, name, quiet).await;
         }
         RunMode::Sequence(name) => {
-            run_sequence(&mut runner, name).await;
+            run_sequence(&mut runner, name, quiet).await;
         }
         RunMode::All => {
             let seq = &runner
@@ -89,7 +94,7 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode) {
                     exit(1);
                 }
                 1 => {
-                    run_sequence(&mut runner, seq.get(0).unwrap().clone()).await;
+                    run_sequence(&mut runner, seq.get(0).unwrap().clone(), quiet).await;
                 }
                 _ => {
                     eprintln!("Specify sequence name if there's more than one in the schema");
