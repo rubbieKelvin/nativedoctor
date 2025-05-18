@@ -56,24 +56,19 @@ env:
   # Define your environment variables here
   # Remember all values must be strings
   base_url:
-    default: "http://localhost:8000"
-    dev: "http://dev.api.example.com"
-    prod: "http://prod.api.example.com"
+    default: "https://httpbin.org"
 "#;
 
-    let request_file_content = r#"# Example Request Definitions
-
-requests:
+    let request_file_content = r#"requests:
   # A simple example GET request
   Ping:
     method: GET
-    url: "{{base_url}}/ping" # Uses the base_url from env.api.yaml
+    url: "{{base_url}}/get" # Uses the base_url from env.api.yaml
     headers:
       Accept: application/json
     # Optional: Add a post-execution script
     # script:
     #   post_request: |
-    #     assert response.status === 200;
     #     log("Ping successful!");
 "#;
 

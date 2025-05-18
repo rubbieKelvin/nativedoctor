@@ -16,11 +16,11 @@ A powerful and developer-friendly tool for defining, executing, and testing HTTP
 - **File Imports**: Modular configuration through file imports
 - **Project Metadata**: Define project information and authors
 
-## Installation
+<!-- ## Installation
 
 ```bash
 cargo install rustle
-```
+``` -->
 
 ## Quick Start
 

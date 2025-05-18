@@ -1,6 +1,6 @@
 $schema: http://json-schema.org/draft-07/schema#
-title: API Test File Schema
-description: Describes the structure of an API test definition file, based on Rust structs with Serde.
+title: Rustle File Schema
+description: Describes the structure of a Rustle definition yaml file.
 type: object
 properties:
   imports:

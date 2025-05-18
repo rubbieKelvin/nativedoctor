@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rhai::{CustomType, Dynamic, Engine, EvalAltResult, Scope, TypeBuilder};
+use rhai::{CustomType, Dynamic, Engine, EvalAltResult, Position, Scope, TypeBuilder};
 use tracing::warn;
 
 #[derive(Clone)]
@@ -62,9 +62,9 @@ impl RhaiScripting {
             })
             .register_fn(
                 "assert",
-                |condition: bool| -> Result<(), Box<rhai::EvalAltResult>> {
+                |condition: bool| -> Result<(), Box<EvalAltResult>> {
                     if !condition {
-                        Err("Assertion failed".into())
+                        Err(EvalAltResult::ErrorTerminated("Assertion failed".into(), Position::NONE).into())
                     } else {
                         Ok(())
                     }
@@ -72,9 +72,13 @@ impl RhaiScripting {
             )
             .register_fn(
                 "assert",
-                |condition: bool, msg: &str| -> Result<(), Box<rhai::EvalAltResult>> {
+                |condition: bool, msg: &str| -> Result<(), Box<EvalAltResult>> {
                     if !condition {
-                        Err(msg.into())
+                        Err(EvalAltResult::ErrorTerminated(
+                            format!("Assertion failed: {}", msg).into(),
+                            Position::NONE,
+                        )
+                        .into())
                     } else {
                         Ok(())
                     }

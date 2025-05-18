@@ -2,7 +2,10 @@ use std::{path::PathBuf, process::exit};
 
 use colored::Colorize;
 use reqwest::{Client, Version};
-use rustle_api::executor::runner::{Runner, ScriptEngine};
+use rustle_api::{
+    executor::runner::{Runner, ScriptEngine},
+    scripting::rhai::RhaiScripting,
+};
 use tracing::error;
 
 use super::utils::{quiet_or_print, resolve_path};
@@ -113,27 +116,18 @@ async fn run_sequence(runner: &mut Runner, name: String, quiet: bool) {
     for request in seq {
         base_run_request(runner, &client, request, quiet).await
     }
-
-    // let stack = match runner.generate_sequence_queue(&name) {
-    //     Ok(s) => s,
-    //     Err(e) => {
-    //         error!("Error generating sequence stack: {}", e);
-    //         exit(1);
-    //     }
-    // };
-
-    // for request_seq in stack {
-    //     for request in request_seq {
-    //         base_run_request(runner, &client, request, quiet).await;
-    //     }
-    // }
 }
 
 pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode, quiet: bool) {
     let (path, is_project) = resolve_path(filepath);
 
     // initiate the runner
-    let mut runner = match Runner::new(&path, env, ScriptEngine::None, is_project) {
+    let mut runner = match Runner::new(
+        &path,
+        env,
+        ScriptEngine::Rhai(RhaiScripting::new()),
+        is_project,
+    ) {
         Ok(runner) => runner,
         Err(e) => {
             eprintln!("Error creating runner: {}", e.to_string());
@@ -158,7 +152,7 @@ pub async fn run(filepath: &PathBuf, env: Option<String>, mode: RunMode, quiet: 
 
             match seq.len() {
                 0 => {
-                    eprintln!("No defined sequence in the list");
+                    eprintln!("{}", "No defined sequence in the list".red());
                     exit(1);
                 }
                 1 => {
