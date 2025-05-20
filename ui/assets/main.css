@@ -1,0 +1,16 @@
+html, body {
+    padding: 0;
+    margin: 0;
+    user-select: none;
+    cursor: default;
+}
+
+body {
+    background-color: rgb(55, 58, 52);
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html, body, #main {
+    height: 100%;
+}

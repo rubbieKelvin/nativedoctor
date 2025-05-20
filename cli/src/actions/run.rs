@@ -6,10 +6,12 @@ use rustle_api::{
     executor::runner::{Runner, ScriptEngine},
     scripting::rhai::RhaiScripting,
 };
-use tracing::error;
+use tracing::{error, warn};
 
 use super::utils::{quiet_or_print, resolve_path};
 use crate::ds::RunMode;
+
+const BODY_SIZE_LIMIT: u32 = 1500000;
 
 async fn print_response(response: reqwest::Response, quiet: bool) {
     // Print status line
@@ -32,7 +34,8 @@ async fn print_response(response: reqwest::Response, quiet: bool) {
     quiet_or_print(format!(" * {} {}", http_version, status_color,), quiet);
 
     // Print headers
-    for (name, value) in response.headers() {
+    let headers = response.headers();
+    for (name, value) in headers {
         quiet_or_print(
             format!(
                 " * {}: {}",
@@ -43,19 +46,44 @@ async fn print_response(response: reqwest::Response, quiet: bool) {
         );
     }
 
-    quiet_or_print(format!(""), quiet); // Empty line between headers and body
+    // Checkout the content lenght
+    let content_length = match headers.get("content-length") {
+        Some(cl) => {
+            let val = cl.to_str().unwrap();
+            match val.parse() {
+                Ok(v) => v,
+                Err(_) => {
+                    warn!("Could not convert {val} to i32");
+                    0
+                }
+            }
+        }
+        None => 0,
+    };
 
-    // Print body
-    if let Ok(text) = response.text().await {
-        if !text.is_empty() {
-            // Try to parse as JSON for pretty printing
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
-                quiet_or_print(
-                    format!(" * {}", serde_json::to_string_pretty(&json).unwrap()),
-                    quiet,
-                );
-            } else {
-                quiet_or_print(format!(" * {}", text), quiet);
+    if content_length > BODY_SIZE_LIMIT {
+        // Redact
+        quiet_or_print(
+            format!(
+                " * {} <preview unavailable, response is above {} limit>",
+                "[BODY]".blue(),
+                &BODY_SIZE_LIMIT
+            ),
+            quiet,
+        );
+    } else {
+        // Print body
+        if let Ok(text) = response.text().await {
+            if !text.is_empty() {
+                // Try to parse as JSON for pretty printing
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+                    quiet_or_print(
+                        format!(" * {}", serde_json::to_string_pretty(&json).unwrap()),
+                        quiet,
+                    );
+                } else {
+                    quiet_or_print(format!(" * {}", text), quiet);
+                }
             }
         }
     }

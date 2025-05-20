@@ -9,5 +9,11 @@
             "**/*.rt.yaml",
             "**/*.rt.yml"
         ],
-    }
+    },
+    "tailwindCSS.experimental.classRegex": [
+        "class: \"(.*)\""
+    ],
+    "tailwindCSS.includeLanguages": {
+        "rust": "html"
+    },
 }
