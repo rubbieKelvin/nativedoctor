@@ -1,11 +1,27 @@
-use dioxus::prelude::*;
+use dioxus::{desktop::wry::dpi::Size, prelude::*};
+use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
+// use dioxus_free_icons::{icons::ld_icons::LdPlus, Icon};
+use ui::{request_panel, side_bar};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
+mod appdata;
+mod ui;
+
 fn main() {
-    dioxus::launch(App);
+    dioxus::LaunchBuilder::desktop()
+        .with_cfg(
+            Config::new().with_window(
+                WindowBuilder::new()
+                    .with_title("Rustle")
+                    .with_always_on_top(true) // Leave this for development
+                    .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
+                    .with_resizable(true),
+            ),
+        )
+        .launch(App);
 }
 
 #[component]
@@ -15,30 +31,9 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
         div {
-            class: "bg-red-500 p-5",
-            style: "height: 100%; display: flex;",
-            div {
-                style: "height: 100%;",
-                "Smoke"
-            }
-            div {
-                style: "height: 100%;",
-                "Stack"
-            }
+            class: "flex h-full flex-row",
+            side_bar::SideBar{}
+            request_panel::RequestPanel {  }
         }
     };
 }
-
-// #[component]
-// fn OpenProject() -> Element {
-//     return rsx! {
-//         div {
-//             button {
-//                 "Create project"
-//             }
-//             button {
-//                 "Open project"
-//             }
-//         }
-//     };
-// }

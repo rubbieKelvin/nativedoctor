@@ -1,2 +1,10 @@
 @import "tailwindcss";
 @config "./tailwind.config.js";
+
+body {
+    /* @apply bg-[#212121] text-white; */
+    @apply text-xs;
+}
+
+@layer components {
+}
