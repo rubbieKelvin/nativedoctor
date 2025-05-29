@@ -1,7 +1,8 @@
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 // use dioxus_free_icons::{icons::ld_icons::LdPlus, Icon};
-use ui::{request_panel, side_bar};
+use appdata::prelude::provide_context;
+use ui::{side_bar, work_view};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -26,7 +27,7 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    appdata::provide_context();
+    provide_context();
 
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -35,7 +36,7 @@ fn App() -> Element {
         div {
             class: "flex h-full flex-row",
             side_bar::SideBar{}
-            request_panel::RequestPanel {  }
+            work_view::WorkPanel {  }
         }
     };
 }

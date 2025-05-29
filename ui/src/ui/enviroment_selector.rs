@@ -1,4 +1,4 @@
-use crate::appdata::Environment;
+use crate::appdata::prelude::Environment;
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
 

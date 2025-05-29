@@ -1,11 +1,11 @@
 use super::toggle_bar;
-use crate::appdata;
+use crate::appdata::prelude::SequenceItem;
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn SequenceToggleBar() -> Element {
-    let sequences = use_context::<Signal<Vec<appdata::SequenceItem>>>();
+    let sequences = use_context::<Signal<Vec<SequenceItem>>>();
 
     return rsx! {
         toggle_bar::ToggleBar {

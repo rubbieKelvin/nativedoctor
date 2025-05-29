@@ -1,12 +1,14 @@
 use super::toggle_bar;
-use crate::appdata;
+use crate::appdata::prelude::RequestItem;
+use crate::appdata::tabs::{TabItem, TabItemManager, TabType};
 use crate::ui::http_method_badge::HttpMethodBadge;
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn RequestToggleBar() -> Element {
-    let requests = use_context::<Signal<Vec<appdata::RequestItem>>>();
+    let requests = use_context::<Signal<Vec<RequestItem>>>();
+    let mut tabs = use_context::<Signal<TabItemManager>>();
     let open = use_signal(|| true);
 
     return rsx! {
@@ -29,6 +31,16 @@ pub fn RequestToggleBar() -> Element {
                     for request in requests() {
                         button {
                             class: "w-full flex items-center gap-2 pl-4 pr-2 py-0.5 hover:bg-item-hover-bg",
+                            onclick: move |_| {
+                                let tman = &mut tabs.write();
+                                let tab = TabItem::new(
+                                    request.name.clone(),
+                                    TabType::Request,
+                                    Some(request.id.clone()),
+                                );
+
+                                tman.add_tab(tab);
+                            },
                             HttpMethodBadge {
                                 method: request.method,
                             }

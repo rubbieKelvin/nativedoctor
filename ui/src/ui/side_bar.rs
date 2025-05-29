@@ -23,14 +23,28 @@ pub fn SideBar() -> Element {
             div {
                 class: "p-2 border-b flex gap-2",
                 enviroment_selector::EnviromentSelector{}
+
+                // Edit environment button
                 button {
                     class: "p-1 border rounded-md",
                     title: "Edit environment",
                     onclick: move |_| open_env_edit_dialog.set(true),
                     Icon {
                         icon: ld_icons::LdSquarePen,
-                        width: 16,
-                        height: 16,
+                        width: 14,
+                        height: 14,
+                    }
+                }
+
+                // Search button
+                button {
+                    class: "p-1 border rounded-md",
+                    title: "Search",
+                    onclick: move |_| {},
+                    Icon {
+                        icon: ld_icons::LdSearch,
+                        width: 14,
+                        height: 14,
                     }
                 }
             }

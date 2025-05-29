@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::appdata::HttpMethod;
+use crate::appdata::prelude::HttpMethod;
 
 #[component]
 pub fn HttpMethodBadge(method: HttpMethod) -> Element {

@@ -1,11 +1,11 @@
 use super::toggle_bar;
-use crate::appdata;
+use crate::appdata::prelude::EnvironmentVariable;
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn EnvToggleBar() -> Element {
-    let env_vars = use_context::<Signal<Vec<appdata::EnvironmentVariable>>>();
+    let env_vars = use_context::<Signal<Vec<EnvironmentVariable>>>();
 
     return rsx! {
         toggle_bar::ToggleBar {

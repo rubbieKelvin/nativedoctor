@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons, Icon, IconShape};
+use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn ToggleBar(
