@@ -6,6 +6,7 @@ pub enum TabType {
     Request,
     Sequence,
     WelcomePage,
+    EditEnvironment,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -39,6 +40,16 @@ impl TabItemManager {
             if t.payload == tab.payload && t.tab_type == tab.tab_type {
                 self.set_current_tab(t.id.clone());
                 return;
+            }
+        }
+
+        // if payload is None, and the type is in the list, don't add it again
+        if tab.payload.is_none() {
+            for t in &self.tabs {
+                if t.tab_type == tab.tab_type {
+                    self.set_current_tab(t.id.clone());
+                    return;
+                }
             }
         }
 
