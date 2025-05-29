@@ -1,4 +1,5 @@
 use crate::ui::{
+    dialog::env_edit_dialog,
     enviroment_selector,
     toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
 };
@@ -7,9 +8,16 @@ use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn SideBar() -> Element {
+    let mut open_env_edit_dialog = use_signal(|| false);
+
     rsx! {
         div {
             class: "h-full flex flex-col border-r w-[22%]",
+
+            // Dialogs
+            env_edit_dialog::EnvEditDialog {
+                open: open_env_edit_dialog,
+            }
 
             // Environment selector
             div {
@@ -18,6 +26,7 @@ pub fn SideBar() -> Element {
                 button {
                     class: "p-1 border rounded-md",
                     title: "Edit environment",
+                    onclick: move |_| open_env_edit_dialog.set(true),
                     Icon {
                         icon: ld_icons::LdSquarePen,
                         width: 16,
@@ -28,13 +37,13 @@ pub fn SideBar() -> Element {
 
             // Item toggles
             div {
-                class: "flex-grow h-0 overflow-y-auto",
+                class: "flex-grow h-0 overflow-y-auto flex flex-col",
                 // Request header
                 request_toggle_bar::RequestToggleBar {  }
-                
+
                 // Call sequence section
                 sequence_toggle_bar::SequenceToggleBar {  }
-                
+
                 // Environment variables
                 env_toggle_bar::EnvToggleBar{}
             }

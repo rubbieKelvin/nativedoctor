@@ -10,6 +10,8 @@
   --text-2xl: 20px;
   --text-3xl: 28px;
   --text-4xl: 36px;
+  --color-bg-primary: #212121;
+  --color-bg-secondary: #2a2a2a;
   --color-item-hover-bg: #343434;
 }
 
@@ -18,7 +20,7 @@ html {
 }
 
 body {
-  @apply bg-[#212121] text-white;
+  @apply bg-bg-primary text-white;
   @apply text-base;
 
   * {

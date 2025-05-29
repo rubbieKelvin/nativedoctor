@@ -2,12 +2,19 @@ use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon, IconShape};
 
 #[component]
-pub fn ToggleBar(title: String, add_button: Option<Element>, body: Option<Element>) -> Element {
-    let mut open = use_signal(|| true);
+pub fn ToggleBar(
+    title: String,
+    class: Option<String>,
+    add_button: Option<Element>,
+    body: Option<Element>,
+    open: Option<Signal<bool>>,
+) -> Element {
+    let mut open = open.unwrap_or_else(|| use_signal(|| true));
+    let class = class.unwrap_or("".to_string());
 
     return rsx! {
         div {
-            class: "border-b",
+            class: "border-b {class}",
             div {
                 class: "flex items-center gap-1 px-2 py-1 sticky top-0",
                 button {
