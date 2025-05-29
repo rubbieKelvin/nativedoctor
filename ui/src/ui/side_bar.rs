@@ -21,7 +21,7 @@ pub fn SideBar() -> Element {
 
             // Environment selector
             div {
-                class: "p-2 border-b flex gap-2",
+                class: "py-1 px-2 border-b flex gap-2",
                 enviroment_selector::EnviromentSelector{}
 
                 // Edit environment button

@@ -9,7 +9,7 @@ pub fn TabItemManagerUi() -> Element {
 
     return rsx! {
         div {
-            class: "flex border-b pt-1",
+            class: "flex border-b pt-1 px-1",
             for tab in tabs().tabs {
                 TabItemUi { item: tab }
             }
@@ -34,12 +34,13 @@ pub fn TabItemUi(item: TabItem) -> Element {
 
     return rsx! {
         button {
-            class: "p-2 pb-2.5 border-b-2 {border_class} flex items-center justify-between gap-2 group",
+            class: "p-1 pb-2.5 border-b-2 {border_class} flex items-center justify-between gap-2 group",
             onclick: move |_| {
                 let tman = &mut tab_manager.write();
                 tman.set_current_tab(cloned_item.id.clone());
             },
             span {
+                class: "text-sm",
                 "{item.name}"
             }
             button {

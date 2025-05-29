@@ -59,13 +59,51 @@ impl TabItemManager {
     }
 
     pub fn remove_tab(&mut self, id: String) {
+        let removed_tab_index = self.tabs.iter().position(|t| t.id == id);
+        if removed_tab_index.is_none() {
+            return; // Tab not found
+        }
+        let removed_tab_index = removed_tab_index.unwrap();
+
         self.tabs.retain(|t| t.id != id);
-        if self.tabs.len() == 0 {
+
+        if self.tabs.is_empty() {
             self.add_tab(TabItem::new(
                 "Welcome".to_string(),
                 TabType::WelcomePage,
                 None,
             ));
+            return;
+        }
+
+        match self.current_tab {
+            Some(current_idx) => {
+                if removed_tab_index == current_idx {
+                    // Active tab was removed
+                    if current_idx > 0 && current_idx <= self.tabs.len() {
+                        // If there was a tab to the left, make it active
+                        self.current_tab = Some(current_idx - 1);
+                    } else if !self.tabs.is_empty() {
+                        // Otherwise, if there are still tabs, make the new first tab active
+                        self.current_tab = Some(0);
+                    } else {
+                        // This case should be covered by the is_empty check above,
+                        // but as a fallback, set to None.
+                        self.current_tab = None;
+                    }
+                } else if removed_tab_index < current_idx {
+                    // A tab to the left of the active tab was removed
+                    self.current_tab = Some(current_idx - 1);
+                }
+                // If a tab to the right of the active tab was removed, current_tab index remains valid
+            }
+            None => {
+                // No active tab was set, or tabs list was empty before.
+                // If there are tabs now, make the first one active.
+                if !self.tabs.is_empty() {
+                    self.current_tab = Some(0);
+                }
+            }
         }
     }
 
