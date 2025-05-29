@@ -1,10 +1,31 @@
 @import "tailwindcss";
 @config "./tailwind.config.js";
 
+@theme {
+  --text-xs: 8px;
+  --text-sm: 10px;
+  --text-base: 12px;
+  --text-lg: 14px;
+  --text-xl: 16px;
+  --text-2xl: 20px;
+  --text-3xl: 28px;
+  --text-4xl: 36px;
+  --color-item-hover-bg: #343434;
+}
+
+html {
+  @apply bg-[#fff];
+}
+
 body {
-    /* @apply bg-[#212121] text-white; */
-    @apply text-xs;
+  @apply bg-[#212121] text-white;
+  @apply text-base;
+
+  * {
+    @apply border-[#333333];
+  }
 }
 
 @layer components {
+  /* put component styles here */
 }

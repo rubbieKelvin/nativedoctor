@@ -16,7 +16,7 @@ fn main() {
             Config::new().with_window(
                 WindowBuilder::new()
                     .with_title("Rustle")
-                    .with_always_on_top(true) // Leave this for development
+                    // .with_always_on_top(true) // Leave this for development
                     .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
                     .with_resizable(true),
             ),
@@ -26,6 +26,8 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    appdata::provide_context();
+
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
