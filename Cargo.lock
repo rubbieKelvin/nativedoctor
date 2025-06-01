@@ -3980,6 +3980,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustle-app"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "dioxus-desktop",
+ "dioxus-free-icons",
+ "uuid",
+]
+
+[[package]]
 name = "rustle-cli"
 version = "0.1.0"
 dependencies = [
@@ -4013,14 +4023,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustle-ui"
+name = "rustle-ui-components"
 version = "0.1.0"
-dependencies = [
- "dioxus",
- "dioxus-desktop",
- "dioxus-free-icons",
- "uuid",
-]
 
 [[package]]
 name = "rustls"
