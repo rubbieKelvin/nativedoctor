@@ -1,6 +1,6 @@
 [workspace]
 resolver = '2'
-members = ["cli", "api", "ui"]
+members = ["cli", "core", "ui"]
 
 [profile.wasm-dev]
 inherits = "dev"

@@ -1,10 +1,12 @@
 use crate::appdata::prelude::RequestItem;
+use crate::ui::select::Select;
 use dioxus::prelude::*;
 
 #[component]
 pub fn RequestPage(request: RequestItem) -> Element {
     let mut selected_tab = use_signal(|| RequestTab::Params);
     let mut selected_bottom_tab = use_signal(|| BottomPaneTab::RequestData);
+    let mut selected_method = use_signal(|| Some("GET"));
 
     rsx! {
         div {
@@ -12,15 +14,22 @@ pub fn RequestPage(request: RequestItem) -> Element {
             // URL and Method Section
             div {
                 class: "flex items-center p-2 border-b border-gray-200 dark:border-gray-700",
-                select {
-                    class: "p-2 border border-gray-300 rounded-l dark:bg-gray-800 dark:border-gray-600 dark:text-white",
-                    option { value: "GET", "GET" }
-                    option { value: "POST", "POST" }
-                    option { value: "PUT", "PUT" }
-                    option { value: "DELETE", "DELETE" }
-                    option { value: "PATCH", "PATCH" }
-                    option { value: "HEAD", "HEAD" }
-                    option { value: "OPTIONS", "OPTIONS" }
+                // select {
+                //     class: "p-2 border border-gray-300 rounded-l dark:bg-gray-800 dark:border-gray-600 dark:text-white",
+                //     option { value: "GET", "GET" }
+                //     option { value: "POST", "POST" }
+                //     option { value: "PUT", "PUT" }
+                //     option { value: "DELETE", "DELETE" }
+                //     option { value: "PATCH", "PATCH" }
+                //     option { value: "HEAD", "HEAD" }
+                //     option { value: "OPTIONS", "OPTIONS" }
+                // }
+                Select<&'static str> {
+                    items: vec!["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+                    selected: selected_method,
+                    render_selected: |method: &&str| method.to_string(),
+                    render_item: |method: &&str| rsx! { p { "{method}" } },
+                    placeholder: "Select method",
                 }
                 input {
                     class: "flex-grow p-2 border-t border-b border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white",
@@ -102,7 +111,12 @@ struct KeyValueItem {
 
 #[component]
 fn KeyValueEditor(title: &'static str) -> Element {
-    let mut items = use_signal(|| vec![KeyValueItem { item_key: "".to_string(), value: "".to_string() }]);
+    let mut items = use_signal(|| {
+        vec![KeyValueItem {
+            item_key: "".to_string(),
+            value: "".to_string(),
+        }]
+    });
 
     rsx! {
         div {
@@ -172,8 +186,10 @@ fn TabButton<T: PartialEq + Clone + Copy + 'static>(
     tab: T,
 ) -> Element {
     let base_class = "px-4 py-2 cursor-pointer focus:outline-none";
-    let active_class = "border-b-2 border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400";
-    let inactive_class = "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200";
+    let active_class =
+        "border-b-2 border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400";
+    let inactive_class =
+        "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200";
 
     let current_class = if active_tab() == tab {
         format!("{} {}", base_class, active_class)

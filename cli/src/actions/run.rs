@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::exit};
 
 use colored::Colorize;
 use reqwest::{Client, Version};
-use rustle_api::{
+use rustle_core::{
     executor::runner::{Runner, ScriptEngine},
     scripting::rhai::RhaiScripting,
 };

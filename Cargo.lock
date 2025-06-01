@@ -3980,7 +3980,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustle-api"
+name = "rustle-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colored",
+ "reqwest",
+ "rustle-core",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "rustle-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -3996,20 +4010,6 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
-]
-
-[[package]]
-name = "rustle-cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "colored",
- "reqwest",
- "rustle-api",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
