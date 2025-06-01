@@ -7,9 +7,11 @@ use dioxus_free_icons::{icons::ld_icons, Icon};
 
 #[component]
 pub fn RequestToggleBar() -> Element {
-    let requests = RequestManager::get_request_items();
+    let mut request_manager_signal = RequestManager::inject();
     let mut tabs = use_context::<Signal<TabItemManager>>();
     let open = use_signal(|| true);
+
+    let requests_to_display = request_manager_signal.read().items.clone();
 
     return rsx! {
         toggle_bar::ToggleBar {
@@ -19,6 +21,11 @@ pub fn RequestToggleBar() -> Element {
             add_button: rsx! {
                 button {
                     class: "hover:bg-item-hover-bg rounded-md",
+                    onclick: move |_| {
+                        request_manager_signal.with_mut(|manager| {
+                            manager.insert_new();
+                        })
+                    },
                     Icon {
                         icon: ld_icons::LdPlus,
                         width: 16,
@@ -28,7 +35,7 @@ pub fn RequestToggleBar() -> Element {
             },
             body: rsx! {
                 div {
-                    for request in requests {
+                    for request in requests_to_display {
                         button {
                             class: "w-full flex items-center gap-2 pl-4 pr-2 py-0.5 hover:bg-item-hover-bg",
                             onclick: move |_| {

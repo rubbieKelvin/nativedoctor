@@ -1,4 +1,8 @@
-use dioxus::{hooks::{use_context, use_context_provider}, signals::{Readable, Signal}};
+use dioxus::{
+    hooks::{use_context, use_context_provider},
+    signals::{Readable, Signal},
+};
+use uuid::Uuid;
 
 #[allow(unused)]
 #[derive(Clone, Debug, PartialEq)]
@@ -52,35 +56,44 @@ pub struct RequestItem {
     pub method: HttpMethod,
 }
 
-// impl RequestItem {
-//     pub fn copy_from(&mut self, other: RequestItem) {
-//         self.id = other.id;
-//         self.method = other.method;
-//         self.url = other.url;
-//         self.name = other.name;
-//     }
-// }
+impl RequestItem {
+    fn new() -> Self {
+        return RequestItem {
+            id: Uuid::new_v4().to_string(),
+            name: "New request".to_string(),
+            url: String::new(),
+            method: HttpMethod::GET,
+        };
+    }
+    pub fn copy_from(&mut self, other: RequestItem) {
+        self.id = other.id;
+        self.method = other.method;
+        self.url = other.url;
+        self.name = other.name;
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RequestManager {
     pub current: Option<RequestItem>,
-    pub items: Vec<RequestItem>
+    pub items: Vec<RequestItem>,
 }
 
 impl RequestManager {
-    pub fn provide(){
+    pub fn provide() {
         use_context_provider::<Signal<RequestManager>>(|| {
-            Signal::new(RequestManager { current: None, items: vec![] })
+            Signal::new(RequestManager {
+                current: None,
+                items: vec![],
+            })
         });
     }
 
-    pub fn inject() -> Signal<RequestManager>{
+    pub fn inject() -> Signal<RequestManager> {
         return use_context::<Signal<RequestManager>>();
     }
 
-    pub fn get_request_items() -> Vec<RequestItem> {
-        let signal = RequestManager::inject();
-        let manager = signal();
-        return manager.items;
+    pub fn insert_new(&mut self) {
+        self.items.push(RequestItem::new());
     }
 }

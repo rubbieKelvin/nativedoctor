@@ -10,7 +10,8 @@ use dioxus::prelude::*;
 #[component]
 pub fn TabPage() -> Element {
     let tab_manager = use_context::<Signal<TabItemManager>>();
-    let requests = RequestManager::get_request_items();
+    let request_manager_signal = RequestManager::inject();
+    let requests = request_manager_signal().items;
 
     let no_page = rsx! {
         div {
