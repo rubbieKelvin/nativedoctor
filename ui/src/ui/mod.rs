@@ -5,3 +5,4 @@ pub mod toggle_bar;
 pub mod http_method_badge;
 pub mod dialog;
 pub mod tabs;
+pub mod select;
