@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@config "./tailwind.config.js";
+@source "../src/**/*.{rs,html,css}";
+@source "../../components/src/**/*.{rs,css}";
 
 @theme {
   --text-xs: 8px;

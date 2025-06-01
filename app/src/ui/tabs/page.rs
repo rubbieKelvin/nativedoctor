@@ -1,6 +1,6 @@
 use crate::{
     appdata::{
-        prelude::RequestItem,
+        requests::RequestManager,
         tabs::{TabItemManager, TabType},
     },
     ui::tabs::request::RequestPage,
@@ -10,7 +10,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn TabPage() -> Element {
     let tab_manager = use_context::<Signal<TabItemManager>>();
-    let requests = use_context::<Signal<Vec<RequestItem>>>();
+    let requests = RequestManager::get_request_items();
 
     let no_page = rsx! {
         div {
@@ -19,7 +19,6 @@ pub fn TabPage() -> Element {
         }
     };
 
-    let requests_instance = requests();
     let tabmanager_instance = tab_manager();
     let current_tab = match tabmanager_instance.get_current_tab() {
         Some(tab) => tab,
@@ -37,7 +36,7 @@ pub fn TabPage() -> Element {
 
             match current_tab.tab_type {
                 TabType::Request => {
-                    let req = requests_instance.iter().find(|r| r.id == payload);
+                    let req = requests.iter().find(|r| r.id == payload);
 
                     match req {
                         Some(req) => {

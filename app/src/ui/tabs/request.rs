@@ -1,12 +1,13 @@
-use crate::appdata::prelude::RequestItem;
-use crate::ui::select::Select;
+use crate::appdata;
+use crate::appdata::requests::RequestItem;
 use dioxus::prelude::*;
+use rustle_ui_components::select::Select;
 
 #[component]
 pub fn RequestPage(request: RequestItem) -> Element {
     let mut selected_tab = use_signal(|| RequestTab::Params);
     let mut selected_bottom_tab = use_signal(|| BottomPaneTab::RequestData);
-    let mut selected_method = use_signal(|| Some("GET"));
+    let mut selected_method = use_signal(|| Some(appdata::requests::HttpMethod::GET));
 
     rsx! {
         div {
@@ -14,22 +15,13 @@ pub fn RequestPage(request: RequestItem) -> Element {
             // URL and Method Section
             div {
                 class: "flex items-center p-2 border-b border-gray-200 dark:border-gray-700",
-                // select {
-                //     class: "p-2 border border-gray-300 rounded-l dark:bg-gray-800 dark:border-gray-600 dark:text-white",
-                //     option { value: "GET", "GET" }
-                //     option { value: "POST", "POST" }
-                //     option { value: "PUT", "PUT" }
-                //     option { value: "DELETE", "DELETE" }
-                //     option { value: "PATCH", "PATCH" }
-                //     option { value: "HEAD", "HEAD" }
-                //     option { value: "OPTIONS", "OPTIONS" }
-                // }
-                Select<&'static str> {
-                    items: vec!["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+                Select<appdata::requests::HttpMethod> {
+                    items: appdata::requests::HttpMethod::all(),
                     selected: selected_method,
-                    render_selected: |method: &&str| method.to_string(),
-                    render_item: |method: &&str| rsx! { p { "{method}" } },
+                    render_selected: |method: &appdata::requests::HttpMethod| method.to_string(),
+                    render_item: |method: &appdata::requests::HttpMethod| rsx! { div { class: "px-2 py-0.1", "{method.to_string()}" } },
                     placeholder: "Select method",
+                    class: "text-sm"
                 }
                 input {
                     class: "flex-grow p-2 border-t border-b border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white",

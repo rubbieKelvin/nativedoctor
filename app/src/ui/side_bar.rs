@@ -1,7 +1,6 @@
 use crate::{
     appdata::tabs::{TabItem, TabItemManager, TabType},
     ui::{
-        dialog::env_edit_dialog,
         enviroment_selector,
         toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
     },

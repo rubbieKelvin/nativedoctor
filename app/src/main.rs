@@ -1,7 +1,7 @@
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 // use dioxus_free_icons::{icons::ld_icons::LdPlus, Icon};
-use appdata::prelude::provide_context;
+use appdata::{prelude::provide_context, requests};
 use ui::{side_bar, work_view};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -28,6 +28,7 @@ fn main() {
 #[component]
 fn App() -> Element {
     provide_context();
+    requests::RequestManager::provide();
 
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }

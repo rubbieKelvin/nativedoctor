@@ -8,9 +8,10 @@ edition = "2021"
 
 [dependencies]
 dioxus-desktop = "0.6.3"
-dioxus = { version = "0.6.0", features = ['router'] }
+dioxus = { version = "0.6.0" }
 dioxus-free-icons = { version = "0.9", features = ["lucide"] }
 uuid = { version = "1.17.0", features = ["v4"] }
+rustle-ui-components = { path = "../components" }
 
 
 [features]
