@@ -1,6 +1,8 @@
 use crate::appdata;
 use crate::appdata::requests::{RequestItem, RequestManager};
 use dioxus::prelude::*;
+use dioxus_free_icons::icons::{hi_solid_icons, ld_icons};
+use dioxus_free_icons::Icon;
 use rustle_ui_components::select::Select;
 
 #[component]
@@ -44,6 +46,30 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
                         })
                     }
                 }
+                // button group
+                div {
+                    class: "flex gap-2 items-center px-4",
+
+                    button {
+                        title: "Documentation",
+                        class: "p-1 rounded hover:bg-item-hover-bg",
+                        Icon {
+                            icon: ld_icons::LdBook,
+                            height: 14,
+                            width: 14
+                        }
+                    }
+
+                    button {
+                        title: "Scripts",
+                        class: "p-1 rounded hover:bg-item-hover-bg",
+                        Icon {
+                            icon: ld_icons::LdFileJson,
+                            height: 14,
+                            width: 14
+                        }
+                    }
+                }
             }
 
             // URL and Method Section
@@ -70,48 +96,48 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
                 }
             }
 
-            // Top Tabs Section
-            div {
-                class: "flex border-b border-gray-200 dark:border-gray-700",
-                TabButton { name: "Params", active_tab: selected_tab, tab: RequestTab::Params }
-                TabButton { name: "Authorization", active_tab: selected_tab, tab: RequestTab::Authorization }
-                TabButton { name: "Headers", active_tab: selected_tab, tab: RequestTab::Headers }
-                TabButton { name: "Body", active_tab: selected_tab, tab: RequestTab::Body }
-                TabButton { name: "Scripts", active_tab: selected_tab, tab: RequestTab::Scripts }
-                TabButton { name: "Documentation", active_tab: selected_tab, tab: RequestTab::Documentation }
-            }
+            // // Top Tabs Section
+            // div {
+            //     class: "flex border-b border-gray-200 dark:border-gray-700",
+            //     TabButton { name: "Params", active_tab: selected_tab, tab: RequestTab::Params }
+            //     TabButton { name: "Authorization", active_tab: selected_tab, tab: RequestTab::Authorization }
+            //     TabButton { name: "Headers", active_tab: selected_tab, tab: RequestTab::Headers }
+            //     TabButton { name: "Body", active_tab: selected_tab, tab: RequestTab::Body }
+            //     TabButton { name: "Scripts", active_tab: selected_tab, tab: RequestTab::Scripts }
+            //     TabButton { name: "Documentation", active_tab: selected_tab, tab: RequestTab::Documentation }
+            // }
 
-            // Top Tab Content Section
-            div {
-                class: "flex-grow p-4",
-                match selected_tab() {
-                    RequestTab::Params => rsx! { KeyValueEditor { title: "Query Params" } },
-                    RequestTab::Authorization => rsx! { div { "Authorization content goes here" } },
-                    RequestTab::Headers => rsx! { KeyValueEditor { title: "Headers" } },
-                    RequestTab::Body => rsx! { div { "Body content goes here" } },
-                    RequestTab::Scripts => rsx! { div { "Scripts content goes here" } },
-                    RequestTab::Documentation => rsx! { div { "Documentation content goes here" } },
-                }
-            }
+            // // Top Tab Content Section
+            // div {
+            //     class: "flex-grow p-4",
+            //     match selected_tab() {
+            //         RequestTab::Params => rsx! { KeyValueEditor { title: "Query Params" } },
+            //         RequestTab::Authorization => rsx! { div { "Authorization content goes here" } },
+            //         RequestTab::Headers => rsx! { KeyValueEditor { title: "Headers" } },
+            //         RequestTab::Body => rsx! { div { "Body content goes here" } },
+            //         RequestTab::Scripts => rsx! { div { "Scripts content goes here" } },
+            //         RequestTab::Documentation => rsx! { div { "Documentation content goes here" } },
+            //     }
+            // }
 
-            // Bottom Tab Group
-            div {
-                class: "h-1/3 border-t border-gray-200 dark:border-gray-700 flex flex-col",
-                // Bottom Tab Buttons
-                div {
-                    class: "flex border-b border-gray-200 dark:border-gray-700",
-                    BottomTabButton { name: "Request Data", active_tab: selected_bottom_tab, tab: BottomPaneTab::RequestData }
-                    BottomTabButton { name: "Console Log", active_tab: selected_bottom_tab, tab: BottomPaneTab::ConsoleLog }
-                }
-                // Bottom Tab Content
-                div {
-                    class: "flex-grow p-4 bg-gray-50 dark:bg-gray-800 overflow-auto",
-                    match selected_bottom_tab() {
-                        BottomPaneTab::RequestData => rsx! { div { "Request Data (Body, Cookies, Headers) content goes here" } },
-                        BottomPaneTab::ConsoleLog => rsx! { div { "Console Log content goes here" } },
-                    }
-                }
-            }
+            // // Bottom Tab Group
+            // div {
+            //     class: "h-1/3 border-t border-gray-200 dark:border-gray-700 flex flex-col",
+            //     // Bottom Tab Buttons
+            //     div {
+            //         class: "flex border-b border-gray-200 dark:border-gray-700",
+            //         BottomTabButton { name: "Request Data", active_tab: selected_bottom_tab, tab: BottomPaneTab::RequestData }
+            //         BottomTabButton { name: "Console Log", active_tab: selected_bottom_tab, tab: BottomPaneTab::ConsoleLog }
+            //     }
+            //     // Bottom Tab Content
+            //     div {
+            //         class: "flex-grow p-4 bg-gray-50 dark:bg-gray-800 overflow-auto",
+            //         match selected_bottom_tab() {
+            //             BottomPaneTab::RequestData => rsx! { div { "Request Data (Body, Cookies, Headers) content goes here" } },
+            //             BottomPaneTab::ConsoleLog => rsx! { div { "Console Log content goes here" } },
+            //         }
+            //     }
+            // }
         }
     }
 }

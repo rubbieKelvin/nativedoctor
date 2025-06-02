@@ -17,6 +17,10 @@ pub fn WorkPanel() -> Element {
 
             // tab content
             page::TabPage {  }
+
+            // TODO: you were building toast
+            // toast
+            // toast::Toast {  }
         }
     };
 }
