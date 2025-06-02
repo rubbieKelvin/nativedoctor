@@ -2,8 +2,7 @@ use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{
     tao::platform::macos::WindowBuilderExtMacOS, Config, LogicalSize, WindowBuilder,
 };
-// use dioxus_free_icons::{icons::ld_icons::LdPlus, Icon};
-use appdata::{prelude::provide_context, requests, tabs};
+use appdata::{prelude::provide_context, project, requests, tabs};
 use ui::{side_bar, work_view};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -38,6 +37,7 @@ fn main() {
 fn App() -> Element {
     provide_context();
     tabs::TabItemManager::provide();
+    project::ProjectManager::provide();
     requests::RequestManager::provide();
 
     // TODO: this is a hack to get the window to have a border on macos
