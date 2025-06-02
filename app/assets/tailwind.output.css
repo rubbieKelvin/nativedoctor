@@ -7,10 +7,12 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --color-red-100: oklch(93.6% 0.032 17.717);
     --color-red-300: oklch(80.8% 0.114 19.571);
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-red-700: oklch(50.5% 0.213 27.518);
+    --color-amber-100: oklch(96.2% 0.059 95.617);
     --color-yellow-400: oklch(85.2% 0.199 91.936);
     --color-green-400: oklch(79.2% 0.209 151.711);
     --color-green-500: oklch(72.3% 0.219 149.579);
@@ -290,38 +292,14 @@
   .h-full {
     height: 100%;
   }
-  .w-18 {
-    width: calc(var(--spacing) * 18);
-  }
-  .w-20 {
-    width: calc(var(--spacing) * 20);
-  }
   .w-24 {
     width: calc(var(--spacing) * 24);
-  }
-  .w-28 {
-    width: calc(var(--spacing) * 28);
-  }
-  .w-32 {
-    width: calc(var(--spacing) * 32);
-  }
-  .w-36 {
-    width: calc(var(--spacing) * 36);
   }
   .w-\[22\%\] {
     width: 22%;
   }
-  .w-\[30px\] {
-    width: 30px;
-  }
-  .w-\[32px\] {
-    width: 32px;
-  }
   .w-\[36px\] {
     width: 36px;
-  }
-  .w-\[40px\] {
-    width: 40px;
   }
   .w-full {
     width: 100%;
@@ -329,23 +307,8 @@
   .w-max {
     width: max-content;
   }
-  .max-w-\[30px\] {
-    max-width: 30px;
-  }
-  .max-w-\[32px\] {
-    max-width: 32px;
-  }
   .max-w-\[36px\] {
     max-width: 36px;
-  }
-  .max-w-\[40px\] {
-    max-width: 40px;
-  }
-  .min-w-\[30px\] {
-    min-width: 30px;
-  }
-  .min-w-\[32px\] {
-    min-width: 32px;
   }
   .min-w-\[36px\] {
     min-width: 36px;
@@ -464,20 +427,14 @@
   .border-b-accent\! {
     border-bottom-color: var(--color-accent) !important;
   }
-  .border-b-bg-secondary\! {
-    border-bottom-color: var(--color-bg-secondary) !important;
-  }
-  .border-b-blue-400\! {
-    border-bottom-color: var(--color-blue-400) !important;
-  }
-  .border-b-item-hover-bg\! {
-    border-bottom-color: var(--color-item-hover-bg) !important;
-  }
   .border-b-transparent\! {
     border-bottom-color: transparent !important;
   }
   .bg-accent {
     background-color: var(--color-accent);
+  }
+  .bg-amber-100 {
+    background-color: var(--color-amber-100);
   }
   .bg-bg-primary {
     background-color: var(--color-bg-primary);
@@ -491,6 +448,9 @@
       background-color: color-mix(in oklab, var(--color-black) 40%, transparent);
     }
   }
+  .bg-blue-500 {
+    background-color: var(--color-blue-500);
+  }
   .bg-gray-50 {
     background-color: var(--color-gray-50);
   }
@@ -499,6 +459,12 @@
   }
   .bg-inherit {
     background-color: inherit;
+  }
+  .bg-red-100 {
+    background-color: var(--color-red-100);
+  }
+  .bg-red-500 {
+    background-color: var(--color-red-500);
   }
   .p-0\.5 {
     padding: calc(var(--spacing) * 0.5);
@@ -521,6 +487,9 @@
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
   }
+  .px-18 {
+    padding-inline: calc(var(--spacing) * 18);
+  }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
@@ -533,11 +502,17 @@
   .py-3 {
     padding-block: calc(var(--spacing) * 3);
   }
+  .pt-1 {
+    padding-top: calc(var(--spacing) * 1);
+  }
   .pr-2 {
     padding-right: calc(var(--spacing) * 2);
   }
   .pl-4 {
     padding-left: calc(var(--spacing) * 4);
+  }
+  .pl-18 {
+    padding-left: calc(var(--spacing) * 18);
   }
   .text-left {
     text-align: left;
@@ -575,6 +550,9 @@
   .whitespace-nowrap {
     white-space: nowrap;
   }
+  .text-accent {
+    color: var(--color-accent);
+  }
   .text-blue-400 {
     color: var(--color-blue-400);
   }
@@ -604,6 +582,12 @@
   }
   .text-text-secondary {
     color: var(--color-text-secondary);
+  }
+  .text-text-secondary\/50 {
+    color: color-mix(in srgb, #999999 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-text-secondary) 50%, transparent);
+    }
   }
   .text-white {
     color: var(--color-white);
@@ -653,16 +637,6 @@
       }
     }
   }
-  .hover\:bg-accent\/20 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: color-mix(in srgb, #5e6ad2 20%, transparent);
-        @supports (color: color-mix(in lab, red, red)) {
-          background-color: color-mix(in oklab, var(--color-accent) 20%, transparent);
-        }
-      }
-    }
-  }
   .hover\:bg-accent\/70 {
     &:hover {
       @media (hover: hover) {
@@ -693,6 +667,16 @@
         background-color: color-mix(in srgb, #1a1a1a 50%, transparent);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--color-item-hover-bg) 50%, transparent);
+        }
+      }
+    }
+  }
+  .hover\:bg-item-hover-bg\/70 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in srgb, #1a1a1a 70%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-item-hover-bg) 70%, transparent);
         }
       }
     }

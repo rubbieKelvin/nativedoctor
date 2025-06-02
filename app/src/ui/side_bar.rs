@@ -3,7 +3,10 @@ use crate::{
         prelude::Environment,
         tabs::{TabItem, TabItemManager, TabType},
     },
-    ui::toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
+    ui::{
+        toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
+        wm_project_button::WmProjectButton,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
@@ -22,7 +25,16 @@ pub fn SideBar() -> Element {
 
             if cfg!(target_os = "macos") {
                 WmDragArea {
-                    class: "h-7 w-full",
+                    class: "h-7 w-full pl-18 pr-2",
+
+                    div {
+                        class: "pt-1 flex gap-2 items-center w-full justify-between",
+                        WmProjectButton {  }
+                        p {
+                            class: "text-sm text-text-secondary/50",
+                            "v0.0.1"
+                        }
+                    }
                 }
             }
 
@@ -86,7 +98,7 @@ pub fn SideBar() -> Element {
 
             // Settings and extra menus
             div {
-                class: "p-2 border-t",
+                class: "p-2",
                 button {
                     class: "flex items-center gap-2 hover:bg-item-hover-bg rounded-md px-2 py-1 w-full",
                     Icon {
