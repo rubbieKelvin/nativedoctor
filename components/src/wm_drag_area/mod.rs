@@ -5,13 +5,22 @@ use dioxus_desktop::use_window;
 #[component]
 pub fn WmDragArea(class: Option<&'static str>, children: Element) -> Element {
     let window = use_window();
+    let mdwindow_handle = window.clone();
+    let dbc_window_handle = window.clone();
 
     rsx! {
         div {
             class,
             onmousedown: move |event| {
                 if event.held_buttons() == MouseButton::Primary {
-                    window.drag_window()?;
+                    mdwindow_handle.drag_window()?;
+                }
+                Ok(())
+            },
+            ondoubleclick: move |event| {
+                if event.trigger_button() == Some(MouseButton::Primary) {
+                    let maximized = dbc_window_handle.is_maximized();
+                    dbc_window_handle.set_maximized(!maximized);
                 }
                 Ok(())
             },

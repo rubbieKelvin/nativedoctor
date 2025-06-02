@@ -36,7 +36,7 @@ pub fn SideBar() -> Element {
                     render_item: |environment: &Environment| rsx! { div { class: "px-2 py-0.1 text-text-secondary", "{environment.name}" } },
                     placeholder: "Select environment",
                     class: "px-2",
-                    wrapper_class: "w-full border rounded-md",
+                    wrapper_class: "w-full border rounded-md hover:bg-item-hover-bg/50",
                     dropdown_class: "bg-bg-primary border",
                     item_class: "hover:bg-item-hover-bg",
                 }
@@ -44,7 +44,7 @@ pub fn SideBar() -> Element {
 
                 // Edit environment button
                 button {
-                    class: "p-1 border rounded-md",
+                    class: "p-1 border rounded-md hover:bg-item-hover-bg",
                     title: "Edit environment",
                     onclick: move |_| {
                         let tman = &mut tab_manager.write();
@@ -60,7 +60,7 @@ pub fn SideBar() -> Element {
 
                 // Search button
                 button {
-                    class: "p-1 border rounded-md",
+                    class: "p-1 border rounded-md hover:bg-item-hover-bg",
                     title: "Search",
                     onclick: move |_| {},
                     Icon {

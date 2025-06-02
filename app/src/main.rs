@@ -40,25 +40,32 @@ fn App() -> Element {
     tabs::TabItemManager::provide();
     requests::RequestManager::provide();
 
+    // TODO: this is a hack to get the window to have a border on macos
+    // but it's not working, so i'm not using it for now
+    // if cfg!(target_os = "macos") {
+    //     document::Style {
+    //         r#"
+    //         body {{
+    //             margin: 1px;
+    //             height: calc(100% - 2px);
+    //             border: 1px solid #353535;
+    //             border-radius: 2px;
+    //         }}
+    //         "#
+    //     }
+    // }
+
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
-        if cfg!(target_os = "macos") {
-            document::Style {
-                r#"
-                html {{
-                    padding: 2px;
-                    border: 1px solid #353535;
-                    border-radius: 8px;
-                }}
-                "#
-            }
-        }
 
         div {
             class: "flex h-full flex-row",
+            oncontextmenu: move |e| {
+                e.prevent_default();
+            },
             side_bar::SideBar{}
             work_view::WorkPanel {}
         }

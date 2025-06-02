@@ -17,7 +17,7 @@ pub fn HttpMethodBadge(method: HttpMethod) -> Element {
 
     return rsx! {
         div {
-            class: "rounded-sm p-0.5 text-xs max-w-[40px] w-[40px] text-start {color}",
+            class: "rounded-sm p-0.5 text-xs max-w-[36px] w-[36px] min-w-[36px] text-start {color}",
             "{method.to_string()}"
         }
     };

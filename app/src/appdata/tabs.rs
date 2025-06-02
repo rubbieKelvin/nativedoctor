@@ -42,7 +42,7 @@ impl TabItemManager {
     pub fn provide() {
         use_context_provider::<Signal<TabItemManager>>(|| {
             Signal::new(TabItemManager {
-                current_tab: None,
+                current_tab: Some(0),
                 tabs: vec![TabItem::new(
                     "Welcome".to_string(),
                     TabType::WelcomePage,

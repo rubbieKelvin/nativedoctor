@@ -4,15 +4,16 @@ use dioxus_free_icons::{icons::ld_icons, Icon};
 use crate::appdata::tabs::{TabItem, TabItemManager};
 
 #[component]
-pub fn TabItemManagerUi() -> Element {
+pub fn TabItemManagerUi(children: Element) -> Element {
     let tabs = TabItemManager::inject();
 
     return rsx! {
         div {
-            class: "flex border-b pt-1 px-1",
+            class: "flex border-b px-1",
             for tab in tabs().tabs {
                 TabItemUi { item: tab }
             }
+            {children}
         }
     };
 }
@@ -24,7 +25,7 @@ pub fn TabItemUi(item: TabItem) -> Element {
         && tab_manager().get_current_tab().unwrap().id == item.id;
 
     let border_class = if is_current_tab {
-        "border-b-blue-400!"
+        "border-b-accent!"
     } else {
         "border-b-transparent!"
     };
@@ -34,7 +35,7 @@ pub fn TabItemUi(item: TabItem) -> Element {
 
     return rsx! {
         button {
-            class: "p-1 pb-2.5 border-b-2 {border_class} flex items-center justify-between gap-2 group",
+            class: "p-2 border-b-2 {border_class} flex items-center justify-between gap-2 group",
             onclick: move |_| {
                 let tman = &mut tab_manager.write();
                 tman.set_current_tab(cloned_item.id.clone());

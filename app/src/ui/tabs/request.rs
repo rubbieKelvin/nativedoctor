@@ -1,17 +1,51 @@
 use crate::appdata;
-use crate::appdata::requests::RequestItem;
+use crate::appdata::requests::{RequestItem, RequestManager};
 use dioxus::prelude::*;
 use rustle_ui_components::select::Select;
 
 #[component]
-pub fn RequestPage(request: RequestItem) -> Element {
+pub fn RequestPage(mut request: RequestItem) -> Element {
+    let mut request_manager = RequestManager::inject();
     let mut selected_tab = use_signal(|| RequestTab::Params);
     let mut selected_bottom_tab = use_signal(|| BottomPaneTab::RequestData);
     let mut selected_method = use_signal(|| Some(appdata::requests::HttpMethod::GET));
 
+    {
+        let id = request.id.clone();
+        use_effect(move || {
+            let method = selected_method();
+            if method.is_none() {
+                return;
+            }
+
+            request_manager.with_mut(|m| {
+                m.update(id.clone(), move |r| {
+                    r.method = method.unwrap();
+                });
+            });
+        });
+    }
+
     rsx! {
         div {
             class: "flex flex-col h-full",
+            div {
+                class: "flex items-center gap-4 border-b",
+                input {
+                    class: "flex-grow h-full outline-none py-3 px-2",
+                    placeholder: "Enter request name",
+                    value: request.clone().name,
+                    oninput: move |evt| {
+                        let name = evt.value();
+                        request_manager.with_mut(|m| {
+                            m.update(request.id.clone(), move |r| {
+                                r.name = name;
+                            });
+                        })
+                    }
+                }
+            }
+
             // URL and Method Section
             div {
                 class: "flex items-center gap-4 border-b",
@@ -21,14 +55,17 @@ pub fn RequestPage(request: RequestItem) -> Element {
                     render_selected: |method: &appdata::requests::HttpMethod| method.to_string(),
                     render_item: |method: &appdata::requests::HttpMethod| rsx! { div { class: "px-2 py-0.1", "{method.to_string()}" } },
                     placeholder: "Select method",
-                    class: "text-sm ml-2"
+                    class: "text-sm ml-2",
+                    wrapper_class: "w-24",
+                    dropdown_class: "bg-bg-primary border rounded-md",
+                    item_class: "hover:bg-item-hover-bg px-2 py-1",
                 }
                 input {
                     class: "flex-grow h-full outline-none py-3",
                     placeholder: "Enter request URL"
                 }
                 button {
-                    class: "px-2 py-1 bg-accent",
+                    class: "px-4 py-1 bg-accent hover:bg-accent/70 h-full",
                     "Send"
                 }
             }

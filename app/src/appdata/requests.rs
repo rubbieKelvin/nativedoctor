@@ -96,4 +96,23 @@ impl RequestManager {
     pub fn insert_new(&mut self) {
         self.items.push(RequestItem::new());
     }
+
+    pub fn delete(&mut self, id: String) {
+        self.items.retain(|item| item.id != id);
+    }
+
+    pub fn update<F>(&mut self, id: String, update_fn: F)
+    where
+        F: FnOnce(&mut RequestItem),
+    {
+        let index = self.items.iter().position(|item| item.id == id);
+        if index.is_none() {
+            return;
+        }
+
+        let request = self.items.get_mut(index.unwrap());
+        if let Some(request) = request {
+            update_fn(request);
+        }
+    }
 }

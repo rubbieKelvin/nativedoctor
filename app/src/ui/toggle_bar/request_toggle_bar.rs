@@ -1,14 +1,15 @@
 use super::toggle_bar;
-use crate::appdata::requests::RequestManager;
+use crate::appdata::requests::{RequestItem, RequestManager};
 use crate::appdata::tabs::{TabItem, TabItemManager, TabType};
 use crate::ui::http_method_badge::HttpMethodBadge;
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
+use rustle_ui_components::context_menu::{ContextMenu, MenuItem};
 
 #[component]
 pub fn RequestToggleBar() -> Element {
-    let mut request_manager_signal = RequestManager::inject();
     let mut tabs = TabItemManager::inject();
+    let mut request_manager_signal = RequestManager::inject();
 
     let requests_to_display = request_manager_signal.read().items.clone();
     let bar_open = use_signal(|| true);
@@ -44,29 +45,55 @@ pub fn RequestToggleBar() -> Element {
             body: rsx! {
                 div {
                     for request in requests_to_display {
-                        button {
-                            class: "w-full flex items-center gap-2 pl-4 pr-2 py-0.5 hover:bg-item-hover-bg",
-                            onclick: move |_| {
-                                let tman = &mut tabs.write();
-                                let tab = TabItem::new(
-                                    request.name.clone(),
-                                    TabType::Request,
-                                    Some(request.id.clone()),
-                                );
-
-                                tman.add_tab(tab);
-                            },
-                            HttpMethodBadge {
-                                method: request.method,
-                            }
-                            p {
-                                class: " ",
-                                "{request.name}"
-                            }
-                        }
+                        RequestItemContextMenu { request }
                     }
                 }
             },
+        }
+    };
+}
+
+#[component]
+fn RequestItemContextMenu(request: RequestItem) -> Element {
+    let mut tabs = TabItemManager::inject();
+    let mut manager = RequestManager::inject();
+
+    let request_id = request.id.clone();
+
+    return rsx! {
+        ContextMenu {
+            items: vec![
+                MenuItem {
+                    label: "Delete".to_string(),
+                    on_click: Callback::new(move |_| {
+                        manager.with_mut(|m| {
+                            m.delete(request_id.clone());
+                        })
+                    }),
+                    disabled: false,
+                    icon: None,
+                },
+            ],
+            button {
+                class: "w-full flex items-center gap-2 pl-4 pr-2 py-0.5 hover:bg-item-hover-bg",
+                onclick: move |_| {
+                    let tman = &mut tabs.write();
+                    let tab = TabItem::new(
+                        request.name.clone(),
+                        TabType::Request,
+                        Some(request.id.clone()),
+                    );
+
+                    tman.add_tab(tab);
+                },
+                HttpMethodBadge {
+                    method: request.method,
+                }
+                p {
+                    class: "text-start text-nowrap truncate",
+                    "{request.name}"
+                }
+            }
         }
     };
 }
