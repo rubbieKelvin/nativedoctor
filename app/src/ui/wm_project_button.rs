@@ -1,16 +1,30 @@
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::hi_solid_icons, Icon};
+use rfd::AsyncFileDialog;
 
 use crate::appdata::project::ProjectManager;
 
 #[component]
 pub fn WmProjectButton() -> Element {
-    let project_manager_signal = ProjectManager::inject();
+    let mut project_manager_signal = ProjectManager::inject();
     let project_manager = project_manager_signal();
 
+    
     return rsx! {
         button {
             class: "flex items-center gap-2 px-1 rounded hover:bg-item-hover-bg/70 truncate text-nowrap",
+            onclick: move |_| {
+                let folder_picker = AsyncFileDialog::new();
+                spawn(async move {
+                    if let Some(folder_path) = folder_picker.pick_folder().await {
+                        if let Some(path) = folder_path.path().to_str() {
+                            project_manager_signal.with_mut(|man| {
+                                man.open(path.to_string());
+                            })
+                        }
+                    }
+                });
+            },
             if project_manager.current.is_some() {
                 div {
 
@@ -23,7 +37,7 @@ pub fn WmProjectButton() -> Element {
                 }
                 p {
                     class: "text-sm",
-                    "Project name"
+                    { project_manager.current.unwrap().name }
                 }
             }else{
                 div {

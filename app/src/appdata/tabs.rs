@@ -99,14 +99,6 @@ impl TabItemManager {
 
         self.tabs.retain(|t| t.id != id);
 
-        if self.tabs.is_empty() {
-            self.add_tab(TabItem::new(
-                "Welcome".to_string(),
-                TabType::WelcomePage,
-                None,
-            ));
-            return;
-        }
 
         match self.current_tab {
             Some(current_idx) => {

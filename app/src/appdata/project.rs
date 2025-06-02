@@ -25,4 +25,11 @@ impl ProjectManager {
     pub fn inject() -> Signal<ProjectManager> {
         return use_context::<Signal<ProjectManager>>();
     }
+
+    pub fn open(&mut self, path: String) {
+        self.current = Some(Project {
+            name: path.split("/").last().unwrap().to_string(),
+            path,
+        });
+    }
 }

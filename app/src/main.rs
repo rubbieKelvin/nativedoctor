@@ -1,8 +1,8 @@
+use appdata::{prelude::provide_context, project, requests, tabs};
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{
     tao::platform::macos::WindowBuilderExtMacOS, Config, LogicalSize, WindowBuilder,
 };
-use appdata::{prelude::provide_context, project, requests, tabs};
 use ui::{side_bar, work_view};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -42,30 +42,36 @@ fn App() -> Element {
 
     // TODO: this is a hack to get the window to have a border on macos
     // but it's not working, so i'm not using it for now
+    let macos_border = if cfg!(target_os = "macos") {
+        // rsx! {
+        //     document::Style {
+        //         "
+        //         html {{
+        //             border-radius: 8px;
+        //             box-sizing: border-box;
+
+        //         }}
+        //         body {{
+        //             padding: 1px;
+        //             border-radius: 8px;
+        //             border: 1px solid #454445;
+        //             overflow: clip;
+        //             box-sizing: border-box;
+        //         }}
+        //         "
+        //     }
+        // }
+        rsx!{}
+    } else {
+        rsx! {}
+    };
 
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
-        if cfg!(target_os = "macos") {
-            document::Style {
-                "
-                html {{
-                    border-radius: 8px;
-                    box-sizing: border-box;
-
-                }}
-                body {{
-                    padding: 1px;
-                    border-radius: 8px;
-                    border: 1px solid #454445;
-                    overflow: clip;
-                    box-sizing: border-box;
-                }}
-                "
-            }
-        }
+        {macos_border}
 
         div {
             class: "flex h-full flex-row",

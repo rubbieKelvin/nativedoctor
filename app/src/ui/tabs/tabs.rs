@@ -5,12 +5,18 @@ use crate::appdata::tabs::{TabItem, TabItemManager};
 
 #[component]
 pub fn TabItemManagerUi(children: Element) -> Element {
-    let tabs = TabItemManager::inject();
+    let tabs_manager_signal = TabItemManager::inject();
+    let tabs_manager = tabs_manager_signal();
 
     return rsx! {
         div {
-            class: "flex border-b px-1",
-            for tab in tabs().tabs {
+            class: "flex px-1",
+            class: if tabs_manager_signal().tabs.is_empty() {
+                "h-10"
+            } else {
+                "border-b"
+            },
+            for tab in tabs_manager.tabs {
                 TabItemUi { item: tab }
             }
             {children}
