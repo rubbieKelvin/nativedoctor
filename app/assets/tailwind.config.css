@@ -17,7 +17,8 @@
   --color-accent: #415A77;
   --color-info: #778DA9;
   --color-bg-light: #E0E1DD;
-  --color-item-hover-bg: #343434;
+  --color-item-hover-bg: #1a1a1a;
+  --color-text-secondary: #999999;
 }
 
 html, body {

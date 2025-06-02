@@ -33,12 +33,13 @@ pub fn SideBar() -> Element {
                     items: environments(),
                     selected: selected_environment,
                     render_selected: |environment: &Environment| environment.name.clone(),
-                    render_item: |environment: &Environment| rsx! { div { class: "px-2 py-0.1", "{environment.name}" } },
+                    render_item: |environment: &Environment| rsx! { div { class: "px-2 py-0.1 text-text-secondary", "{environment.name}" } },
                     placeholder: "Select environment",
                     class: "px-2",
-                    wrapper_class: "w-full border rounded-md border-red-500",
+                    wrapper_class: "w-full border rounded-md",
+                    dropdown_class: "bg-bg-primary border",
+                    item_class: "hover:bg-item-hover-bg",
                 }
-                // enviroment_selector::EnviromentSelector{}
 
 
                 // Edit environment button

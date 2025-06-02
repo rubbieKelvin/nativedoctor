@@ -53,7 +53,8 @@
     --color-bg-primary: #101011;
     --color-bg-secondary: #090909;
     --color-accent: #415A77;
-    --color-item-hover-bg: #343434;
+    --color-item-hover-bg: #1a1a1a;
+    --color-text-secondary: #999999;
   }
 }
 @layer base {
@@ -410,9 +411,6 @@
   .border-gray-300 {
     border-color: var(--color-gray-300);
   }
-  .border-red-500 {
-    border-color: var(--color-red-500);
-  }
   .border-b-blue-400\! {
     border-bottom-color: var(--color-blue-400) !important;
   }
@@ -421,6 +419,9 @@
   }
   .bg-accent {
     background-color: var(--color-accent);
+  }
+  .bg-bg-primary {
+    background-color: var(--color-bg-primary);
   }
   .bg-bg-secondary {
     background-color: var(--color-bg-secondary);
@@ -544,6 +545,9 @@
   }
   .text-red-500 {
     color: var(--color-red-500);
+  }
+  .text-text-secondary {
+    color: var(--color-text-secondary);
   }
   .text-white {
     color: var(--color-white);
