@@ -1,6 +1,6 @@
 use dioxus::{
     hooks::{use_context, use_context_provider},
-    signals::{Readable, Signal},
+    signals::Signal,
 };
 use uuid::Uuid;
 

@@ -12,7 +12,7 @@ use rustle_ui_components::{select::Select, wm_drag_area::WmDragArea};
 #[component]
 pub fn SideBar() -> Element {
     let environments = use_context::<Signal<Vec<Environment>>>();
-    let mut tab_manager = use_context::<Signal<TabItemManager>>();
+    let mut tab_manager = TabItemManager::inject();
 
     let selected_environment = use_signal(|| Some(environments()[0].clone()));
 

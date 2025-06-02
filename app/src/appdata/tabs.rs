@@ -1,3 +1,7 @@
+use dioxus::{
+    hooks::{use_context, use_context_provider},
+    signals::Signal,
+};
 use uuid::Uuid;
 
 #[allow(unused)]
@@ -35,6 +39,23 @@ pub struct TabItemManager {
 }
 
 impl TabItemManager {
+    pub fn provide() {
+        use_context_provider::<Signal<TabItemManager>>(|| {
+            Signal::new(TabItemManager {
+                current_tab: None,
+                tabs: vec![TabItem::new(
+                    "Welcome".to_string(),
+                    TabType::WelcomePage,
+                    None,
+                )],
+            })
+        });
+    }
+
+    pub fn inject() -> Signal<TabItemManager> {
+        return use_context::<Signal<TabItemManager>>();
+    }
+
     pub fn add_tab(&mut self, tab: TabItem) {
         for t in &self.tabs {
             if t.payload == tab.payload && t.tab_type == tab.tab_type {

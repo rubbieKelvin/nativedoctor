@@ -8,7 +8,7 @@ use dioxus_free_icons::{icons::ld_icons, Icon};
 #[component]
 pub fn RequestToggleBar() -> Element {
     let mut request_manager_signal = RequestManager::inject();
-    let mut tabs = use_context::<Signal<TabItemManager>>();
+    let mut tabs = TabItemManager::inject();
 
     let requests_to_display = request_manager_signal.read().items.clone();
     let bar_open = use_signal(|| true);

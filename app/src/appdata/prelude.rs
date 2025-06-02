@@ -1,4 +1,3 @@
-use crate::appdata::tabs::{TabItem, TabItemManager, TabType};
 use dioxus::prelude::{use_context_provider, Signal};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -21,17 +20,6 @@ pub struct Environment {
 }
 
 pub fn provide_context() {
-    use_context_provider::<Signal<TabItemManager>>(|| {
-        Signal::new(TabItemManager {
-            current_tab: Some(0),
-            tabs: vec![TabItem::new(
-                "Welcome".to_string(),
-                TabType::WelcomePage,
-                None,
-            )],
-        })
-    });
-
     use_context_provider::<Signal<Vec<Environment>>>(|| {
         Signal::new({
             vec![

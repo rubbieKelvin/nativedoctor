@@ -5,7 +5,7 @@ use crate::appdata::tabs::{TabItem, TabItemManager};
 
 #[component]
 pub fn TabItemManagerUi() -> Element {
-    let tabs = use_context::<Signal<TabItemManager>>();
+    let tabs = TabItemManager::inject();
 
     return rsx! {
         div {
@@ -19,7 +19,7 @@ pub fn TabItemManagerUi() -> Element {
 
 #[component]
 pub fn TabItemUi(item: TabItem) -> Element {
-    let mut tab_manager = use_context::<Signal<TabItemManager>>();
+    let mut tab_manager = TabItemManager::inject();
     let is_current_tab = tab_manager().get_current_tab().is_some()
         && tab_manager().get_current_tab().unwrap().id == item.id;
 

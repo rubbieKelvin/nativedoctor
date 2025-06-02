@@ -3,7 +3,7 @@ use dioxus_desktop::{
     tao::platform::macos::WindowBuilderExtMacOS, Config, LogicalSize, WindowBuilder,
 };
 // use dioxus_free_icons::{icons::ld_icons::LdPlus, Icon};
-use appdata::{prelude::provide_context, requests};
+use appdata::{prelude::provide_context, requests, tabs};
 use ui::{side_bar, work_view};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -37,6 +37,7 @@ fn main() {
 #[component]
 fn App() -> Element {
     provide_context();
+    tabs::TabItemManager::provide();
     requests::RequestManager::provide();
 
     return rsx! {
