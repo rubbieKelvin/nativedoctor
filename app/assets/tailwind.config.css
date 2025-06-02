@@ -11,21 +11,25 @@
   --text-2xl: 20px;
   --text-3xl: 28px;
   --text-4xl: 36px;
-  --color-bg-primary: #212121;
-  --color-bg-secondary: #2a2a2a;
+  --color-text-base: #e3e4e5;
+  --color-bg-primary: #101011;
+  --color-bg-secondary: #090909;
+  --color-accent: #415A77;
+  --color-info: #778DA9;
+  --color-bg-light: #E0E1DD;
   --color-item-hover-bg: #343434;
 }
 
-html {
-  @apply bg-[#fff];
+html, body {
+  @apply bg-bg-primary;
 }
 
 body {
-  @apply bg-bg-primary text-white;
+  @apply text-text-base;
   @apply text-base;
 
   * {
-    @apply border-[#333333];
+    @apply border-[#202020];
   }
 }
 

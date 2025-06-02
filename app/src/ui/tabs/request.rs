@@ -14,21 +14,21 @@ pub fn RequestPage(request: RequestItem) -> Element {
             class: "flex flex-col h-full",
             // URL and Method Section
             div {
-                class: "flex items-center p-2 border-b border-gray-200 dark:border-gray-700",
+                class: "flex items-center gap-4 border-b",
                 Select<appdata::requests::HttpMethod> {
                     items: appdata::requests::HttpMethod::all(),
                     selected: selected_method,
                     render_selected: |method: &appdata::requests::HttpMethod| method.to_string(),
                     render_item: |method: &appdata::requests::HttpMethod| rsx! { div { class: "px-2 py-0.1", "{method.to_string()}" } },
                     placeholder: "Select method",
-                    class: "text-sm"
+                    class: "text-sm ml-2"
                 }
                 input {
-                    class: "flex-grow p-2 border-t border-b border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-white",
+                    class: "flex-grow h-full outline-none py-3",
                     placeholder: "Enter request URL"
                 }
                 button {
-                    class: "p-2 bg-blue-500 text-white rounded-r hover:bg-blue-600",
+                    class: "px-2 py-1 bg-accent",
                     "Send"
                 }
             }

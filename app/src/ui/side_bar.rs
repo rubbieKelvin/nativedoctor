@@ -1,31 +1,45 @@
 use crate::{
-    appdata::tabs::{TabItem, TabItemManager, TabType},
-    ui::{
-        enviroment_selector,
-        toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
+    appdata::{
+        prelude::Environment,
+        tabs::{TabItem, TabItemManager, TabType},
     },
+    ui::toggle_bar::{env_toggle_bar, request_toggle_bar, sequence_toggle_bar},
 };
 use dioxus::prelude::*;
 use dioxus_free_icons::{icons::ld_icons, Icon};
+use rustle_ui_components::{select::Select, wm_drag_area::WmDragArea};
 
 #[component]
 pub fn SideBar() -> Element {
+    let environments = use_context::<Signal<Vec<Environment>>>();
     let mut tab_manager = use_context::<Signal<TabItemManager>>();
-    // let mut open_env_edit_dialog = use_signal(|| false);
+
+    let selected_environment = use_signal(|| Some(environments()[0].clone()));
 
     rsx! {
         div {
-            class: "h-full flex flex-col border-r w-[22%]",
+            class: "h-full flex flex-col border-r w-[22%] bg-bg-secondary",
 
-            // Dialogs
-            // env_edit_dialog::EnvEditDialog {
-            //     open: open_env_edit_dialog,
-            // }
+            if cfg!(target_os = "macos") {
+                WmDragArea {
+                    class: "h-7 w-full",
+                }
+            }
 
             // Environment selector
             div {
-                class: "py-1 px-2 border-b flex gap-2",
-                enviroment_selector::EnviromentSelector{}
+                class: "py-1 px-2 flex gap-2",
+                Select<Environment> {
+                    items: environments(),
+                    selected: selected_environment,
+                    render_selected: |environment: &Environment| environment.name.clone(),
+                    render_item: |environment: &Environment| rsx! { div { class: "px-2 py-0.1", "{environment.name}" } },
+                    placeholder: "Select environment",
+                    class: "px-2",
+                    wrapper_class: "w-full border rounded-md border-red-500",
+                }
+                // enviroment_selector::EnviromentSelector{}
+
 
                 // Edit environment button
                 button {

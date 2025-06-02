@@ -9,15 +9,23 @@ use dioxus_free_icons::{icons::ld_icons, Icon};
 pub fn RequestToggleBar() -> Element {
     let mut request_manager_signal = RequestManager::inject();
     let mut tabs = use_context::<Signal<TabItemManager>>();
-    let open = use_signal(|| true);
 
     let requests_to_display = request_manager_signal.read().items.clone();
+    let bar_open = use_signal(|| true);
 
     return rsx! {
         toggle_bar::ToggleBar {
             title: "Requests".to_string(),
-            class: (if open() { "flex-grow" } else { "" }).to_string(),
-            open: open,
+            class: "flex-grow bg-bg-secondary",
+            open: bar_open,
+            can_toggle: false,
+            icon: rsx! {
+                Icon {
+                    icon: ld_icons::LdWifi,
+                    width: 14,
+                    height: 14,
+                }
+            },
             add_button: rsx! {
                 button {
                     class: "hover:bg-item-hover-bg rounded-md",

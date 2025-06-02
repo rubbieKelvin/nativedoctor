@@ -11,14 +11,12 @@
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-red-700: oklch(50.5% 0.213 27.518);
-    --color-amber-950: oklch(27.9% 0.077 45.635);
     --color-yellow-400: oklch(85.2% 0.199 91.936);
     --color-green-400: oklch(79.2% 0.209 151.711);
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-600: oklch(62.7% 0.194 149.214);
     --color-blue-400: oklch(70.7% 0.165 254.624);
     --color-blue-500: oklch(62.3% 0.214 259.815);
-    --color-blue-600: oklch(54.6% 0.245 262.881);
     --color-indigo-500: oklch(58.5% 0.233 277.117);
     --color-purple-400: oklch(71.4% 0.203 305.504);
     --color-gray-50: oklch(98.5% 0.002 247.839);
@@ -51,8 +49,10 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --color-bg-primary: #212121;
-    --color-bg-secondary: #2a2a2a;
+    --color-text-base: #e3e4e5;
+    --color-bg-primary: #101011;
+    --color-bg-secondary: #090909;
+    --color-accent: #415A77;
     --color-item-hover-bg: #343434;
   }
 }
@@ -283,6 +283,9 @@
   .h-1\/3 {
     height: calc(1/3 * 100%);
   }
+  .h-7 {
+    height: calc(var(--spacing) * 7);
+  }
   .h-full {
     height: 100%;
   }
@@ -304,6 +307,9 @@
   .min-w-\[120px\] {
     min-width: 120px;
   }
+  .min-w-\[160px\] {
+    min-width: 160px;
+  }
   .flex-grow {
     flex-grow: 1;
   }
@@ -315,6 +321,9 @@
   }
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .cursor-not-allowed {
+    cursor: not-allowed;
   }
   .cursor-pointer {
     cursor: pointer;
@@ -342,6 +351,9 @@
   }
   .gap-2 {
     gap: calc(var(--spacing) * 2);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
   }
   .self-start {
     align-self: flex-start;
@@ -398,11 +410,17 @@
   .border-gray-300 {
     border-color: var(--color-gray-300);
   }
+  .border-red-500 {
+    border-color: var(--color-red-500);
+  }
   .border-b-blue-400\! {
     border-bottom-color: var(--color-blue-400) !important;
   }
   .border-b-transparent\! {
     border-bottom-color: transparent !important;
+  }
+  .bg-accent {
+    background-color: var(--color-accent);
   }
   .bg-bg-secondary {
     background-color: var(--color-bg-secondary);
@@ -413,14 +431,14 @@
       background-color: color-mix(in oklab, var(--color-black) 40%, transparent);
     }
   }
-  .bg-blue-500 {
-    background-color: var(--color-blue-500);
-  }
   .bg-gray-50 {
     background-color: var(--color-gray-50);
   }
   .bg-green-500 {
     background-color: var(--color-green-500);
+  }
+  .bg-inherit {
+    background-color: inherit;
   }
   .p-0\.5 {
     padding: calc(var(--spacing) * 0.5);
@@ -451,6 +469,9 @@
   }
   .py-2 {
     padding-block: calc(var(--spacing) * 2);
+  }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
   }
   .pt-1 {
     padding-top: calc(var(--spacing) * 1);
@@ -533,6 +554,9 @@
   .italic {
     font-style: italic;
   }
+  .opacity-50 {
+    opacity: 50%;
+  }
   .shadow-lg {
     --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -558,17 +582,14 @@
     --tw-duration: 200ms;
     transition-duration: 200ms;
   }
+  .outline-none {
+    --tw-outline-style: none;
+    outline-style: none;
+  }
   .group-hover\:visible {
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
         visibility: visible;
-      }
-    }
-  }
-  .hover\:bg-blue-600 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-blue-600);
       }
     }
   }
@@ -687,16 +708,15 @@
     }
   }
 }
-html {
-  background-color: #fff;
+html, body {
+  background-color: var(--color-bg-primary);
 }
 body {
-  background-color: var(--color-bg-primary);
-  color: var(--color-white);
+  color: var(--color-text-base);
   font-size: var(--text-base);
   line-height: var(--tw-leading, var(--text-base--line-height));
   * {
-    border-color: #333333;
+    border-color: #202020;
   }
 }
 @layer components;
