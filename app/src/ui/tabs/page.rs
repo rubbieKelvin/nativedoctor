@@ -3,7 +3,7 @@ use crate::{
         requests::RequestManager,
         tabs::{TabItemManager, TabType},
     },
-    ui::tabs::request::RequestPage,
+    ui::tabs::request::NoteBook,
 };
 use dioxus::prelude::*;
 
@@ -42,7 +42,7 @@ pub fn TabPage() -> Element {
                     match req {
                         Some(req) => {
                             rsx! {
-                                RequestPage { request: req.clone() }
+                                NoteBook { request: req.clone() }
                             }
                         }
                         None => {
