@@ -5,3 +5,4 @@ pub mod wrapper;
 #[cfg(test)]
 mod tests;
 pub mod scripting;
+pub mod schema;

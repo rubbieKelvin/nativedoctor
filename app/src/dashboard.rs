@@ -18,7 +18,7 @@ pub fn DashboardView() -> Element {
 
 #[component]
 pub fn DashboardHeader() -> Element {
-    let (project_state_signal, mut dispatch) = ProjectStateManager::inject();
+    let (project_state_signal, dispatch) = ProjectStateManager::inject();
     let project_signal = project_state_signal();
 
     return rsx! {
