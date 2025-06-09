@@ -1,6 +1,9 @@
-# Rustle
+# Native doctor
 
-A powerful and developer-friendly tool for defining, executing, and testing HTTP API requests in Rust. Rustle allows you to define API tests and workflows in a structured, human-readable YAML format, making it easy to integrate API testing directly into your development workflow and repository.
+> ⚠️ I'm making crazy changes.. this is not even usable atp
+
+A powerful and developer-friendly tool for defining, executing, and testing HTTP API requests in Rust. Native doctor allows you to define API tests and workflows in a structured, human-readable YAML format, making it easy to integrate API testing directly into your development workflow and repository.
+
 
 ## Features
 
@@ -19,15 +22,15 @@ A powerful and developer-friendly tool for defining, executing, and testing HTTP
 <!-- ## Installation
 
 ```bash
-cargo install rustle
+cargo install ndoc
 ``` -->
 
 ## Quick Start
 
-- Create a new Rustle project:
+- Create a new Native doctor project:
 
 ```bash
-rustle init my-api-tests
+ndoc init my-api-tests
 cd my-api-tests
 ```
 
@@ -77,13 +80,13 @@ calls:
 
 ```bash
 # Run in default environment
-rustle run
+ndoc run
 
 # Run in specific environment
-rustle run --env dev
+ndoc run --env dev
 
 # Run specific test sequence
-rustle run --sequence smoke_test
+ndoc run --sequence smoke_test
 ```
 
 ## Comprehensive Examples
@@ -446,7 +449,7 @@ body:
       mime_type: image/png
 ```
 
-See the [YAML Schema](librustle/src/rustle.draft-07.schema.yaml) for complete details.
+See the [YAML Schema](core/src/ndoc.draft-07.schema.yaml) for complete details.
 
 ## Contributing
 

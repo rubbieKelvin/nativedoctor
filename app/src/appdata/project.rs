@@ -3,10 +3,13 @@ use dioxus::{
     signals::Signal,
 };
 
+use rustle_core::executor::runner::{Runner, ScriptEngine};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Project {
     pub name: String,
     pub path: String,
+    // pub runner: Runner,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -26,10 +29,15 @@ impl ProjectManager {
         return use_context::<Signal<ProjectManager>>();
     }
 
-    pub fn open(&mut self, path: String) {
+    pub fn open(&mut self, path: String) -> Result<(), String> {
+        let project = Runner::new(&path, None, ScriptEngine::None, true);
+
         self.current = Some(Project {
             name: path.split("/").last().unwrap().to_string(),
             path,
+            // runner: project,
         });
+
+        Ok(())
     }
 }

@@ -5,10 +5,13 @@ use dioxus_free_icons::icons::{hi_solid_icons, ld_icons};
 use dioxus_free_icons::Icon;
 use rustle_ui_components::select::Select;
 
+use request_section::RequestSection;
+
+mod request_section;
+
 #[component]
-pub fn RequestPage(mut request: RequestItem) -> Element {
+pub fn NoteBook(mut request: RequestItem) -> Element {
     let mut request_manager = RequestManager::inject();
-    let mut selected_tab = use_signal(|| RequestTab::Params);
     let mut selected_bottom_tab = use_signal(|| BottomPaneTab::RequestData);
     let mut selected_method = use_signal(|| Some(appdata::requests::HttpMethod::GET));
 
@@ -31,8 +34,10 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
     rsx! {
         div {
             class: "flex flex-col h-full",
+
+            // Name input and button group
             div {
-                class: "flex items-center gap-4 border-b",
+                class: "flex items-center gap-4 border-b px-2",
                 input {
                     class: "flex-grow h-full outline-none py-3 px-2",
                     placeholder: "Enter request name",
@@ -46,28 +51,13 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
                         })
                     }
                 }
-                // button group
-                div {
-                    class: "flex gap-2 items-center px-4",
-
-                    button {
-                        title: "Documentation",
-                        class: "p-1 rounded hover:bg-item-hover-bg",
-                        Icon {
-                            icon: ld_icons::LdBook,
-                            height: 14,
-                            width: 14
-                        }
-                    }
-
-                    button {
-                        title: "Scripts",
-                        class: "p-1 rounded hover:bg-item-hover-bg",
-                        Icon {
-                            icon: ld_icons::LdFileJson,
-                            height: 14,
-                            width: 14
-                        }
+                
+                button {
+                    class: "p-1 rounded hover:bg-item-hover-bg",
+                    Icon {
+                        icon: hi_solid_icons::HiDotsVertical,
+                        height: 14,
+                        width: 14
                     }
                 }
             }
@@ -96,6 +86,7 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
                 }
             }
 
+            RequestSection {}
             // // Top Tabs Section
             // div {
             //     class: "flex border-b border-gray-200 dark:border-gray-700",
@@ -103,8 +94,6 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
             //     TabButton { name: "Authorization", active_tab: selected_tab, tab: RequestTab::Authorization }
             //     TabButton { name: "Headers", active_tab: selected_tab, tab: RequestTab::Headers }
             //     TabButton { name: "Body", active_tab: selected_tab, tab: RequestTab::Body }
-            //     TabButton { name: "Scripts", active_tab: selected_tab, tab: RequestTab::Scripts }
-            //     TabButton { name: "Documentation", active_tab: selected_tab, tab: RequestTab::Documentation }
             // }
 
             // // Top Tab Content Section
@@ -140,16 +129,6 @@ pub fn RequestPage(mut request: RequestItem) -> Element {
             // }
         }
     }
-}
-
-#[derive(PartialEq, Clone, Copy)]
-enum RequestTab {
-    Params,
-    Authorization,
-    Headers,
-    Body,
-    Scripts,
-    Documentation,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -269,3 +248,4 @@ fn BottomTabButton<T: PartialEq + Clone + Copy + 'static>(
 ) -> Element {
     rsx! { TabButton { name: name, active_tab: active_tab, tab: tab } }
 }
+

@@ -1,13 +1,13 @@
 {
+    "files.associations": {
+        "*.ndoc": "yaml",
+    },
     "yaml.schemas": {
         "http://json-schema.org/draft-07/schema": [
             "**/*.draft-07.schema.yaml"
         ],
-        "https://raw.githubusercontent.com/rubbieKelvin/Rustle/refs/heads/main/api/src/schema/rustle-v0.0.1.draft-07.schema.yaml": [
-            "**/*.api.yml",
-            "**/*.api.yaml",
-            "**/*.rt.yaml",
-            "**/*.rt.yml"
+        "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/src/schema/ndoc-v0.0.1.draft-07.schema.yaml": [
+            "**/*.ndoc",
         ],
     },
     "tailwindCSS.experimental.classRegex": [

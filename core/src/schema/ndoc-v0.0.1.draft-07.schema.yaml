@@ -1,6 +1,6 @@
 $schema: http://json-schema.org/draft-07/schema#
-title: Rustle File Schema
-description: Describes the structure of a Rustle definition yaml file.
+title: Native doctor File Schema
+description: Describes the structure of a Native doctor definition yaml file.
 type: object
 properties:
   imports:

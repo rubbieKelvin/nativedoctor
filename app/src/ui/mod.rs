@@ -1,8 +1,10 @@
-pub mod dialog;
-pub mod enviroment_selector;
-pub mod http_method_badge;
-pub mod side_bar;
-pub mod tabs;
-pub mod toggle_bar;
-pub mod wm_project_button;
-pub mod work_view;
+mod dialog;
+mod enviroment_selector;
+mod http_method_badge;
+mod side_bar;
+mod tabs;
+mod toggle_bar;
+mod wm_project_button;
+mod work_view;
+
+pub use wm_project_button::WmProjectButton;

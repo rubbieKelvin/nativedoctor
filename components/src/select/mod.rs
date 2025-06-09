@@ -19,10 +19,10 @@ pub fn Select<T: Clone + PartialEq + 'static>(
     let class = class.unwrap_or("");
     let dropdown_class = dropdown_class.unwrap_or("");
     let wrapper_class = wrapper_class.unwrap_or("");
-    
+
     rsx! {
         div {
-            class: format!("relative inline-block text-left z-20 {}", wrapper_class),
+            class: format!("relative inline-block text-left {}", wrapper_class),
 
             // The dropdown toggle button
             button {

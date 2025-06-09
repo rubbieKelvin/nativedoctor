@@ -4112,6 +4112,7 @@ dependencies = [
  "dioxus-desktop",
  "dioxus-free-icons",
  "rfd 0.15.3",
+ "rustle-core",
  "rustle-ui-components",
  "uuid",
 ]
@@ -4156,6 +4157,8 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-free-icons",
+ "rfd 0.15.3",
+ "uuid",
 ]
 
 [[package]]
