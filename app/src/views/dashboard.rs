@@ -1,91 +1,99 @@
+use crate::components::WmDragArea;
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::hi_outline_icons, Icon};
-use rfd::AsyncFileDialog;
 
-use crate::{
-    actions::ProjectActions,
-    components::WmDragArea,
-    constants::{APP_NAME, FILE_EXTENSION},
-    managers::ProjectStateManager,
-};
-
-#[component]
-pub fn DashboardView() -> Element {
-    return rsx! {
-        div { class: "h-full", DashboardHeader {} }
-    };
+#[derive(Clone, PartialEq)]
+enum MainDashboardTab {
+    Requests,
+    Sequence,
 }
 
 #[component]
-pub fn DashboardHeader() -> Element {
-    // let (project_state_signal, dispatch) = ProjectStateManager::inject();
-    // let project_signal = project_state_signal();
+pub fn DashboardView() -> Element {
+    let tab = use_context_provider::<Signal<MainDashboardTab>>(|| {
+        Signal::new(MainDashboardTab::Requests)
+    });
 
     return rsx! {
-        WmDragArea { class: "py-2 flex items-center",
+        div { class: "h-full flex flex-col",
+            WmDragArea { class: "h-10 flex items-center bg-amber-400" }
 
-            // env select
-            div { class: "flex-grow pl-28 items-center gap-2 flex",
-                // open button
-                button {
-                    class: "bg-gray-100 rounded px-2",
-                    // onclick: {
-                    //     let dispatch = dispatch.clone();
-                    //     move |_| {
-                    //         let mut dispatch = dispatch.clone();
-                    //         let file_picker = AsyncFileDialog::new()
-                    //             .set_title(format!("Select {} file", APP_NAME))
-                    //             .add_filter("Project ", &[FILE_EXTENSION]);
-                    //         spawn(async move {
-                    //             if let Some(file_path) = file_picker.pick_file().await {
-                    //                 let path = file_path.path();
-                    //                 if path.is_file() {
-                    //                     if let Some(path) = path.to_str().map(|s| s.to_string()) {
-                    //                         dispatch(ProjectActions::LoadFile(path)).unwrap();
-                    //                     }
-                    //                 }
-                    //             }
-                    //         });
-                    //     }
-                    // },
+            div {
+                class: "flex-grow flex",
 
-                    // if let Some(path) = project_signal.file_name(false) {
-                    //     span { "{path}" }
-                    // } else {
-                    //     span { "open" }
-                    // }
-                }
+                SideBar{}
 
-
-                // create button 
-                button {
-                    class: "bg-gray-100 rounded p-1",
-                    // onclick: {
-                    //     // TODO: this should create a new project
-                    //     let dispatch = dispatch.clone();
-                    //     move |_| {
-                    //         let mut dispatch = dispatch.clone();
-                    //         let file_picker = AsyncFileDialog::new().set_title("Select folder");
-                    //         spawn(async move {
-                    //             if let Some(folder_path) = file_picker.pick_folder().await {
-                    //                 let path = folder_path.path();
-                    //                 if path.is_file() {
-                    //                     if let Some(path) = path.to_str().map(|s| s.to_string()) {
-                    //                         dispatch(ProjectActions::LoadFile(path)).unwrap();
-                    //                     }
-                    //                 }
-                    //             }
-                    //         });
-                    //     }
-                    // },
-
-                    Icon {
-                        icon: hi_outline_icons::HiPlus,
-                        width: 14,
-                        height: 14,
+                div {
+                    class: "bg-indigo-600 flex-grow",
+                    match tab() {
+                        MainDashboardTab::Requests => rsx!{RequestView {}},
+                        MainDashboardTab::Sequence => rsx!{SequenceView {}}
                     }
                 }
             }
         }
+    };
+}
+
+#[component]
+fn SideBar() -> Element {
+    let mut tab = use_context::<Signal<MainDashboardTab>>();
+
+    return rsx! {
+        div {
+            class: "flex bg-gray-200 flex-col p-4 gap-2",
+            button {
+                class: "p-2 rounded-md bg-gray-100 hover:bg-gray-300",
+                onclick: move |_| {
+                    *tab.write() = MainDashboardTab::Requests;
+                },
+                "Requests"
+            }
+            button {
+                class: "p-2 rounded-md bg-gray-100 hover:bg-gray-300",
+                onclick: move |_| {
+                    *tab.write() = MainDashboardTab::Sequence;
+                },
+                "Sequence"
+            }
+        }
+    };
+}
+
+#[component]
+fn RequestListColumn() -> Element {
+    return rsx! {
+        div {
+            input {
+                placeholder: "Search"
+            }
+        }
+    };
+}
+
+#[component]
+fn RequestPanelColumn() -> Element {
+    return rsx! {
+        div {
+            class: "bg-lime-600 flex-grow",
+            "Panel"
+        }
+    };
+}
+
+#[component]
+fn RequestView() -> Element {
+    return rsx! {
+        div {
+            class: "flex bg-fuchsia-800 h-full",
+            RequestListColumn {  }
+            RequestPanelColumn {  }
+        }
+    };
+}
+
+#[component]
+fn SequenceView() -> Element {
+    return rsx! {
+        div {"sequence"}
     };
 }

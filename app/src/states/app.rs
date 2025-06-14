@@ -1,21 +1,30 @@
+use std::path::PathBuf;
+
 use dioxus::prelude::*;
-use nd_core::schema::root::RootSchema;
+use nd_core::schema::{request::RequestSchema, root::{LoadedRootObject, RootSchema}};
 use rfd::AsyncFileDialog;
 
-use crate::{
-    constants::{APP_NAME, FILE_EXTENSION},
-    states::ProjectContentLoadingState,
-};
+use crate::constants::{APP_NAME, FILE_EXTENSION};
+
+#[derive(Clone, PartialEq)]
+pub enum ProjectContentLoadingState {
+    None,
+    Loading(PathBuf),
+    Loaded(LoadedRootObject),
+    Error(String),
+}
 
 #[derive(Clone, PartialEq)]
 pub struct ApplicationState {
     pub project: Signal<ProjectContentLoadingState>,
+    pub requests: Signal<Vec<RequestSchema>>,
 }
 
 impl ApplicationState {
     pub fn provide() -> ApplicationState {
         return use_context_provider(|| ApplicationState {
             project: Signal::new(ProjectContentLoadingState::None),
+            requests: Signal::new(vec![]),
         });
     }
 
@@ -40,7 +49,12 @@ impl ApplicationState {
                         return;
                     }
 
+                    // set loading
+                    *project = ProjectContentLoadingState::Loading(path.to_path_buf());
+
+                    // load content
                     let content = RootSchema::load_recursive(path).await;
+
                     match content {
                         Ok(content) => {
                             *project = ProjectContentLoadingState::Loaded(content);

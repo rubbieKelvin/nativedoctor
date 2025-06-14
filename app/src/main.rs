@@ -1,11 +1,9 @@
-use dioxus::{desktop::wry::dpi::Size, html::s, prelude::*};
+use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 
-use managers::ProjectStateManager;
-use states::ProjectContentLoadingState;
 use views::{dashboard::DashboardView, empty::EmptyPage};
 
-use crate::states::ApplicationState;
+use states::{ApplicationState, ProjectContentLoadingState};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -14,8 +12,6 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 mod actions;
 mod components;
 mod constants;
-mod logic;
-mod managers;
 mod states;
 mod views;
 
