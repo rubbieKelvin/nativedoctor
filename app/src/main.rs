@@ -14,6 +14,7 @@ mod logic;
 mod managers;
 mod states;
 mod constants;
+mod views;
 
 fn main() {
     let mut window_builder = WindowBuilder::new()
