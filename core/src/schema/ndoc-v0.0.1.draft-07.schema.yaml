@@ -154,6 +154,9 @@ definitions:
         description: Number of times to retry the request on failure.
         minimum: 0
         default: 0
+      folder:
+        type: string
+        description: Where to group this request
 
   RequestScriptConfig:
     type: object

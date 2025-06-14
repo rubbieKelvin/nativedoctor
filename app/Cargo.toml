@@ -1,5 +1,5 @@
 [package]
-name = "rustle-app"
+name = "ndoc-app"
 version = "0.1.0"
 authors = ["rubbie kelvin <dev.rubbie@gmail.com>"]
 edition = "2021"
@@ -15,8 +15,7 @@ dioxus-free-icons = { version = "0.9", features = [
     "hero-icons-solid",
 ] }
 uuid = { version = "1.17.0", features = ["v4"] }
-rustle-ui-components = { path = "../components" }
-rustle-core = { path = "../core" }
+nd-core = { path = "../core" }
 rfd = "0.15.3"
 
 

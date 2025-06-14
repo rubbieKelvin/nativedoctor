@@ -17,7 +17,6 @@ mod constants;
 
 fn main() {
     let mut window_builder = WindowBuilder::new()
-        .with_title("Rustle")
         .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
         .with_transparent(true)
         .with_resizable(true);

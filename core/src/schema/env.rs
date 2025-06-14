@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 /// Represents the definition of a single environment variable.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub struct EnvironmentVariableSchema {
     pub default: serde_yaml::Value, // Use Value to allow any YAML type

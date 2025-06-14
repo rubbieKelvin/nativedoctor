@@ -1,29 +1,25 @@
 use std::path::Path;
 
-#[derive(Clone, PartialEq)]
-struct ProjectFileData {
-    pub path: String,
-    pub name: String,
-    pub requests: Vec<uuid::Uuid>,
-    pub sequences: Vec<uuid::Uuid>,
-    pub environments: Vec<String>,
-    pub variables: Vec<uuid::Uuid>,
-}
+use nd_core::schema::root::RootSchema;
 
 #[derive(Clone, PartialEq)]
 pub struct ProjectState {
-    pub content: Option<ProjectFileData>,
+    pub path: Option<String>,
+    pub content: Option<RootSchema>,
 }
 
 impl ProjectState {
     pub fn new() -> Self {
-        return ProjectState { content: None };
+        return ProjectState {
+            path: None,
+            content: None,
+        };
     }
 
     pub fn file_name(&self, with_ext: bool) -> Option<String> {
-        return match &self.content {
-            Some(content) => {
-                let path = Path::new(&content.path);
+        return match &self.path {
+            Some(path) => {
+                let path = Path::new(path);
                 let path = match with_ext {
                     true => path.file_name(),
                     false => path.file_stem(),
@@ -34,7 +30,19 @@ impl ProjectState {
         };
     }
 
-    pub fn load_file(&self, path: String) -> Result<(), String> {
-        return Ok(());
+    pub fn project_name(&self) -> Option<String> {
+        if self.path.is_none() {
+            return None;
+        }
+
+        let default = self.file_name(false).unwrap();
+        let name = match &self.content {
+            Some(content) => match &content.project {
+                Some(project) => project.name.clone(),
+                None => default,
+            },
+            None => default,
+        };
+        return Some(name);
     }
 }

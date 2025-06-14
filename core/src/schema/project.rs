@@ -4,7 +4,7 @@ use crate::schema::user::UserSchema;
 
 /// Used to describe the project from a root file.
 /// Might contain project configurations too
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
 pub struct ProjectDefinationSchema {
     pub name: String,
     #[serde(default)]

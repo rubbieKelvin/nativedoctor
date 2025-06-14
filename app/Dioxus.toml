@@ -4,7 +4,7 @@
 [web.app]
 
 # HTML title tag content
-title = "Rustle"
+title = "Native Doctor"
 
 # include `assets` in web platform
 [web.resource]

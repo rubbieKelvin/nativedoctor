@@ -1,5 +1,5 @@
 use colored::Colorize;
-use rustle_core::executor::runner::Runner;
+use nd_core::executor::runner::Runner;
 use std::{fmt, path::PathBuf};
 
 use crate::actions::utils::resolve_path;
@@ -59,7 +59,7 @@ pub fn draw_tree(filepath: &PathBuf) {
     let runner = Runner::new(
         &filepath,
         None,
-        rustle_core::executor::runner::ScriptEngine::None,
+        nd_core::executor::runner::ScriptEngine::None,
         is_project,
     )
     .unwrap();

@@ -8,7 +8,7 @@ use crate::schema::{
 };
 
 /// Represents a single API request definition.
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestSchema {
     pub method: String,

@@ -2959,6 +2959,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "nd-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "openapi",
+ "regex",
+ "reqwest",
+ "rhai",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "ndk"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2986,6 +3005,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873"
 dependencies = [
  "jni-sys",
+]
+
+[[package]]
+name = "ndoc-app"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "dioxus-desktop",
+ "dioxus-free-icons",
+ "nd-core",
+ "rfd 0.15.3",
+ "uuid",
+]
+
+[[package]]
+name = "ndoc-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "colored",
+ "nd-core",
+ "reqwest",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4102,52 +4147,6 @@ dependencies = [
  "libc",
  "linux-raw-sys 0.9.4",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "rustle-app"
-version = "0.1.0"
-dependencies = [
- "dioxus",
- "dioxus-desktop",
- "dioxus-free-icons",
- "rfd 0.15.3",
- "rustle-core",
- "rustle-ui-components",
- "uuid",
-]
-
-[[package]]
-name = "rustle-cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "colored",
- "reqwest",
- "rustle-core",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "rustle-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "openapi",
- "regex",
- "reqwest",
- "rhai",
- "serde",
- "serde_json",
- "serde_yaml 0.9.34+deprecated",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "uuid",
 ]
 
 [[package]]

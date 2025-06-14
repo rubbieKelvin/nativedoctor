@@ -3,7 +3,7 @@ use dioxus::{
     signals::Signal,
 };
 
-use rustle_core::executor::runner::{Runner, ScriptEngine};
+use nd_core::executor::runner::{Runner, ScriptEngine};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Project {
