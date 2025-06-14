@@ -1,16 +1,19 @@
-use anyhow::{Context, Result};
-use serde::Deserialize;
-use std::{
-    collections::HashMap,
-    fs::{canonicalize, File},
-    io::BufReader,
-    path::{Path, PathBuf},
-};
-
 use crate::schema::{
     env::EnvironmentVariableSchema, meta::MetaSchema, project::ProjectDefinationSchema,
     request::RequestSchema,
 };
+use anyhow::{bail, Context, Result};
+use async_recursion::async_recursion;
+use serde::Deserialize;
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
+use tokio::{
+    fs::canonicalize,
+    io::{AsyncReadExt, BufReader},
+};
+use uuid::Uuid;
 
 /// Represents the entire API test file structure.
 #[derive(Debug, Deserialize, Default, PartialEq, Clone)]
@@ -30,82 +33,109 @@ pub struct RootSchema {
     pub meta: Option<MetaSchema>,
 }
 
-impl RootSchema {
-    pub fn new(path: &Path, mut wd: Option<PathBuf>) -> Result<Self> {
-        let resultant_file_path = match &wd {
-            Some(p) => canonicalize(p.join(path)).context("Could not canonicalize path")?,
-            None => path.to_path_buf(),
-        };
+#[derive(Deserialize, PartialEq, Clone)]
+struct LoadedRootObject {
+    pub id: Uuid,
+    pub schema: RootSchema,
+    pub imports: Vec<Box<LoadedRootObject>>,
+}
 
-        if wd.is_none() {
-            let rfp = resultant_file_path.clone();
-            wd = Some(
-                rfp.parent()
-                    .context("Cannot get file parent")?
-                    .to_path_buf(),
-            );
+impl RootSchema {
+    /// Load root schema from path, as-is.
+    /// path is the file path to load. this should be an absolute path, no relative
+    /// caller file is the file that initiated the run.
+    pub async fn load(path: &Path) -> Result<Self> {
+        if !path.is_absolute() {
+            bail!("Path to load must be an absolute path");
         }
 
-        let working_directory = wd.unwrap();
+        let file = tokio::fs::File::open(&path)
+            .await
+            .context(format!("Failed to open file"))?;
 
-        let file = File::open(&resultant_file_path).context(format!("Failed to open file"))?;
+        let mut reader = BufReader::new(file);
+        let mut content = String::new();
+        reader.read_to_string(&mut content);
 
-        let reader = BufReader::new(file);
-        let mut schema: RootSchema = serde_yaml::from_reader(reader).context("Parse Error")?;
+        let mut schema: RootSchema = serde_yaml::from_str(&content).context("Parse Error")?;
 
         // fill meta
         let meta = MetaSchema::new()
-            .add_filepath(Some(resultant_file_path))
-            .add_wd(Some(working_directory));
+            .set_filepath(Some(path.to_path_buf()))
+            .set_main_file(Some(path.to_path_buf()));
 
         schema.meta = Some(meta);
 
         return Ok(schema);
     }
 
-    pub fn get_all_requests(&self) -> Result<Vec<(Option<PathBuf>, String, RequestSchema)>> {
-        // Go through this root schema and return the requests.
-        // mind there's "imports". we'd need to loop though the imports and load all the requests from there too.
-        let mut requests = vec![];
-        // let working_dir = self
-        //     .meta
-        //     .clone()
-        //     .map(|m| m.working_directory)
-        //     .unwrap_or(None);
-        let working_dir = self.get_working_dir();
-
-        fn traverse(
-            root: RootSchema,
-            container: &mut Vec<(Option<PathBuf>, String, RequestSchema)>,
-            working_dir: &PathBuf,
-        ) -> Result<()> {
-            for (name, request) in root.requests {
-                container.push((
-                    root.meta.clone().map(|m| m.filepath).unwrap_or(None),
-                    name,
-                    request,
-                ));
-            }
-
-            for path in root.imports {
-                let path = Path::new(&path);
-                let schema = RootSchema::new(path, Some(working_dir.clone()))?;
-                traverse(schema, container, working_dir)?;
-            }
-
-            return Ok(());
+    /// Loads root schema from path, then loads all imports from path too
+    /// This will also watch out for circular-imports
+    /// caller_file is the file that began the run
+    /// import trace is the a list of file paths that led to the current file beign loaded (for circular dep check)
+    #[async_recursion]
+    async fn _load_recursive(
+        path: &Path,
+        caller_file: Option<PathBuf>,
+        mut import_trace: HashSet<String>,
+    ) -> Result<LoadedRootObject> {
+        // check for circular dep
+        let str_path = path
+            .to_str()
+            .context("Cannot convert import path to string")?
+            .to_string();
+        if import_trace.contains(&str_path) {
+            bail!("Circular dependency detected for import: {}", &str_path);
+        } else {
+            import_trace.insert(str_path);
         }
 
-        traverse(self.clone(), &mut requests, &working_dir)?;
+        // create schema for this path
+        let mut root = RootSchema::load(path).await?;
+        let mut imports = vec![];
 
-        return Ok(requests);
+        // set the actual caller file, since we're recursively importing
+        if caller_file.is_some() {
+            if let Some(meta) = root.meta {
+                root.meta = Some(meta.set_main_file(caller_file.clone()));
+            }
+        }
+
+        // compute working dir
+        let working_dir = match &caller_file {
+            Some(p) => {
+                let parent = p.parent().context("Could not get file parent")?;
+                parent.to_path_buf()
+            }
+            None => path.to_path_buf(),
+        };
+
+        // load imports
+        for import_path in root.imports.iter() {
+            let path = Path::new(&import_path);
+            let path = canonicalize(working_dir.join(path)).await?;
+
+            let loaded_object = RootSchema::_load_recursive(
+                path.as_path(),
+                caller_file.clone(),
+                import_trace.clone(),
+            )
+            .await?;
+            imports.push(Box::new(loaded_object));
+        }
+
+        return Ok(LoadedRootObject {
+            id: Uuid::new_v4(),
+            schema: root,
+            imports,
+        });
     }
 
-    pub fn get_working_dir(&self) -> PathBuf {
-        return self
-            .meta
-            .clone()
-            .map(|m| m.working_directory.context("No working dir").unwrap())
-            .unwrap();
+    pub async fn load_recursive(path: &Path) -> Result<LoadedRootObject> {
+        // path must be absolute
+        if !path.is_absolute() {
+            bail!("Path to recursive load must be absolute");
+        }
+        return RootSchema::_load_recursive(path, None, HashSet::new()).await;
     }
 }

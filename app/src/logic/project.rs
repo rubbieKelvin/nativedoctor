@@ -6,7 +6,7 @@ use crate::{actions::ProjectActions, states::ProjectState};
 
 fn load_file(state: &mut ProjectState, path: String) -> Result<(), String> {
     let path_ref = Path::new(&path);
-    let root_schema = RootSchema::new(path_ref, None).map_err(|e| e.to_string())?;
+    let root_schema = RootSchema::load(path_ref, None).map_err(|e| e.to_string())?;
 
     state.path = Some(path);
     state.content = Some(root_schema);

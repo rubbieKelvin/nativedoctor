@@ -9,6 +9,8 @@ pub mod request_script;
 pub mod root;
 pub mod user;
 
+pub use root::RootSchema;
+
 pub mod node {
     use anyhow::Context;
     use std::path::Path;
@@ -66,7 +68,7 @@ pub mod node {
                 .iter()
                 .filter_map(|import_path| {
                     let path = Path::new(import_path);
-                    match RootSchema::new(path, Some(self.get_working_dir())) {
+                    match RootSchema::load(path, Some(self.get_working_dir())) {
                         Ok(schema) => Some(Box::new(schema)),
                         Err(_) => None,
                     }
