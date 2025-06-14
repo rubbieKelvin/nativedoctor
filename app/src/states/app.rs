@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use dioxus::prelude::*;
-use nd_core::schema::{request::RequestSchema, root::{LoadedRootObject, RootSchema}};
+use nd_core::schema::{
+    file_object::{LoadedRequestObject, LoadedRootObject},
+    request::RequestSchema,
+    root::RootSchema,
+};
 use rfd::AsyncFileDialog;
 
 use crate::constants::{APP_NAME, FILE_EXTENSION};
@@ -15,16 +19,23 @@ pub enum ProjectContentLoadingState {
 }
 
 #[derive(Clone, PartialEq)]
+pub enum RequestLoadingState {
+    None,
+    Loading,
+    Loaded(Vec<LoadedRequestObject>),
+}
+
+#[derive(Clone, PartialEq)]
 pub struct ApplicationState {
     pub project: Signal<ProjectContentLoadingState>,
-    pub requests: Signal<Vec<RequestSchema>>,
+    pub requests: Signal<RequestLoadingState>,
 }
 
 impl ApplicationState {
     pub fn provide() -> ApplicationState {
         return use_context_provider(|| ApplicationState {
             project: Signal::new(ProjectContentLoadingState::None),
-            requests: Signal::new(vec![]),
+            requests: Signal::new(RequestLoadingState::None),
         });
     }
 
@@ -38,6 +49,7 @@ impl ApplicationState {
             .set_title(format!("Select {} file", APP_NAME))
             .add_filter("Project", &[FILE_EXTENSION]);
 
+        // try to open project
         if let Some(path) = picker.pick_file().await {
             let path = path.path();
             match path.try_exists() {
@@ -68,6 +80,24 @@ impl ApplicationState {
                     *project = ProjectContentLoadingState::Error(err.to_string());
                 }
             };
+        }
+
+        // try to load objects
+        let mut requests = self.requests.write();
+        
+        match &*project {
+            ProjectContentLoadingState::Loaded(content) => {
+                // load requests
+                *requests = RequestLoadingState::Loading;
+
+                let mut buff = Vec::<LoadedRequestObject>::new();
+                content.dump_requests(&mut buff).await;
+
+                *requests = RequestLoadingState::Loaded(buff);
+            }
+            _ => {
+                *requests = RequestLoadingState::None;
+            }
         }
     }
 }

@@ -9,7 +9,6 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
-mod actions;
 mod components;
 mod constants;
 mod states;

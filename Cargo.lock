@@ -2959,6 +2959,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nd-app"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "dioxus-desktop",
+ "dioxus-free-icons",
+ "nd-core",
+ "rfd 0.15.3",
+ "uuid",
+]
+
+[[package]]
 name = "nd-core"
 version = "0.1.0"
 dependencies = [
@@ -2975,6 +2987,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
+ "tokio-stream",
  "tracing",
  "uuid",
 ]
@@ -3007,18 +3020,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873"
 dependencies = [
  "jni-sys",
-]
-
-[[package]]
-name = "ndoc-app"
-version = "0.1.0"
-dependencies = [
- "dioxus",
- "dioxus-desktop",
- "dioxus-free-icons",
- "nd-core",
- "rfd 0.15.3",
- "uuid",
 ]
 
 [[package]]
@@ -4994,6 +4995,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e727b36a1a0e8b74c376ac2211e40c2c8af09fb4013c60d910495810f008e9b"
 dependencies = [
  "rustls",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eca58d7bba4a75707817a2c44174253f9236b2d5fbd055602e9d5c07c139a047"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
  "tokio",
 ]
 

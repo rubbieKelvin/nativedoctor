@@ -1,5 +1,5 @@
 [package]
-name = "ndoc-app"
+name = "nd-app"
 version = "0.1.0"
 authors = ["rubbie kelvin <dev.rubbie@gmail.com>"]
 edition = "2021"
