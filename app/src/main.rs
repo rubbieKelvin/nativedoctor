@@ -1,7 +1,11 @@
-use dioxus::{desktop::wry::dpi::Size, prelude::*};
+use dioxus::{desktop::wry::dpi::Size, html::s, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 
-use crate::{dashboard::DashboardView, managers::ProjectStateManager};
+use managers::ProjectStateManager;
+use states::ProjectContentLoadingState;
+use views::{dashboard::DashboardView, empty::EmptyPage};
+
+use crate::states::ApplicationState;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -9,11 +13,10 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
 mod actions;
 mod components;
-mod dashboard;
+mod constants;
 mod logic;
 mod managers;
 mod states;
-mod constants;
 mod views;
 
 fn main() {
@@ -50,7 +53,8 @@ fn main() {
 #[component]
 fn App() -> Element {
     // State
-    ProjectStateManager::provide();
+    let state = ApplicationState::provide();
+    let project = state.project.read();
 
     // Ui element
     return rsx! {
@@ -58,6 +62,17 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
-        DashboardView {}
+        match *project {
+            ProjectContentLoadingState::Loaded(_) => {
+                rsx! {
+                    DashboardView {}
+                }
+            }
+            _ => {
+                rsx! {
+                    EmptyPage {}
+                }
+            }
+        }
     };
 }

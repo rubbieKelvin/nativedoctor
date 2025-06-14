@@ -8,8 +8,8 @@ use crate::{actions::ProjectActions, logic::project_reducer, states::ProjectStat
 pub struct ProjectStateManager;
 
 impl ProjectStateManager {
-    pub fn provide() {
-        use_context_provider(|| Signal::new(ProjectState::new()));
+    pub fn provide() -> Signal<ProjectState> {
+        return use_context_provider(|| Signal::new(ProjectState::new()));
     }
 
     pub fn inject() -> (
