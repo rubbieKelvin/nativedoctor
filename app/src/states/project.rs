@@ -1,24 +1,30 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use nd_core::schema::root::RootSchema;
+use nd_core::schema::root::LoadedRootObject;
+
+#[derive(Clone, PartialEq)]
+pub enum ProjectContentLoadingState {
+    None,
+    Loading(PathBuf),
+    Loaded(LoadedRootObject),
+    Error(String),
+}
 
 #[derive(Clone, PartialEq)]
 pub struct ProjectState {
-    pub path: Option<String>,
-    pub content: Option<RootSchema>,
+    pub content: ProjectContentLoadingState,
 }
 
 impl ProjectState {
     pub fn new() -> Self {
         return ProjectState {
-            path: None,
-            content: None,
+            content: ProjectContentLoadingState::None,
         };
     }
 
     pub fn file_name(&self, with_ext: bool) -> Option<String> {
-        return match &self.path {
-            Some(path) => {
+        return match &self.content {
+            ProjectContentLoadingState::Loading(path) => {
                 let path = Path::new(path);
                 let path = match with_ext {
                     true => path.file_name(),
@@ -26,23 +32,25 @@ impl ProjectState {
                 };
                 path.unwrap().to_str().map(|s| s.to_string())
             }
-            None => None,
+            ProjectContentLoadingState::Loaded(obj) => {
+                let path = obj.path.as_path();
+                let path = match with_ext {
+                    true => path.file_name(),
+                    false => path.file_stem(),
+                };
+                path.unwrap().to_str().map(|s| s.to_string())
+            }
+            _ => None,
         };
     }
 
     pub fn project_name(&self) -> Option<String> {
-        if self.path.is_none() {
-            return None;
-        }
-
-        let default = self.file_name(false).unwrap();
-        let name = match &self.content {
-            Some(content) => match &content.project {
-                Some(project) => project.name.clone(),
-                None => default,
+        return match &self.content {
+            ProjectContentLoadingState::Loaded(content) => match &content.schema.project {
+                Some(project) => Some(project.name.clone()),
+                None => None,
             },
-            None => default,
+            _ => None,
         };
-        return Some(name);
     }
 }

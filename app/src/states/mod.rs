@@ -1,3 +1,3 @@
 mod project;
 
-pub use project::ProjectState;
+pub use project::{ProjectState, ProjectContentLoadingState};

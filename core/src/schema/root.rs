@@ -34,10 +34,11 @@ pub struct RootSchema {
 }
 
 #[derive(Deserialize, PartialEq, Clone)]
-struct LoadedRootObject {
+pub struct LoadedRootObject {
     pub id: Uuid,
     pub schema: RootSchema,
     pub imports: Vec<Box<LoadedRootObject>>,
+    pub path: PathBuf
 }
 
 impl RootSchema {
@@ -55,7 +56,7 @@ impl RootSchema {
 
         let mut reader = BufReader::new(file);
         let mut content = String::new();
-        reader.read_to_string(&mut content);
+        reader.read_to_string(&mut content).await?;
 
         let mut schema: RootSchema = serde_yaml::from_str(&content).context("Parse Error")?;
 
@@ -128,6 +129,7 @@ impl RootSchema {
             id: Uuid::new_v4(),
             schema: root,
             imports,
+            path: path.to_path_buf()
         });
     }
 
