@@ -214,7 +214,7 @@ definitions:
           - content
 
   RequestBody:
-    type: [object, "null"]
+    type: object
     description: Represents the body of an HTTP request, discriminated by the 'type' field. Field names for variants are snake_case.
     oneOf:
       - type: object
@@ -300,6 +300,7 @@ definitions:
         required:
           - type
           - parts
+      - type: "null"
 
   MultipartPart:
     type: object
