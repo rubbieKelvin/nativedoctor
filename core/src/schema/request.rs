@@ -26,3 +26,13 @@ pub struct RequestSchema {
     #[serde(default)]
     pub script: Option<RequestScriptConfigSchema>, // Optional script block
 }
+
+impl RequestSchema {
+    pub fn new(method: String, url: String) -> Self {
+        Self {
+            method,
+            url,
+            ..Default::default()
+        }
+    }
+}

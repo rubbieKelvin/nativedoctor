@@ -1,4 +1,7 @@
-use crate::components::WmDragArea;
+use crate::{
+    components::WmDragArea,
+    states::{ApplicationState, RequestLoadingStatus},
+};
 use dioxus::prelude::*;
 
 #[derive(Clone, PartialEq)]
@@ -9,24 +12,49 @@ enum MainDashboardTab {
 
 #[component]
 pub fn DashboardView() -> Element {
+    let appstate = ApplicationState::inject();
     let tab = use_context_provider::<Signal<MainDashboardTab>>(|| {
         Signal::new(MainDashboardTab::Requests)
     });
 
+    let project_info = appstate.current_project_title();
+
     return rsx! {
         div { class: "h-full flex flex-col",
-            WmDragArea { class: "h-10 flex items-center bg-amber-400" }
+            WmDragArea { class: "h-10 flex items-center pl-24",
+                match project_info {
+                    Some((filename, title)) => {
+                        rsx! {
+                            div {
+                                class: "flex gap-1",
+                                p { "{filename}" }
+                                if let Some(title) = title {
+                                    p {"-"}
+                                    p {"{title}"}
+                                }
+                            }
+                        }
+                    }
+                    None => {
+                        rsx! {
+                            p { "No open project" }
+                        }
+                    }
+                }
+            }
 
-            div {
-                class: "flex-grow flex",
+            div { class: "flex-grow flex",
 
-                SideBar{}
+                SideBar {}
 
-                div {
-                    class: "bg-indigo-600 flex-grow",
+                div { class: "flex-grow",
                     match tab() {
-                        MainDashboardTab::Requests => rsx!{RequestView {}},
-                        MainDashboardTab::Sequence => rsx!{SequenceView {}}
+                        MainDashboardTab::Requests => rsx! {
+                            RequestView {}
+                        },
+                        MainDashboardTab::Sequence => rsx! {
+                            SequenceView {}
+                        },
                     }
                 }
             }
@@ -39,8 +67,7 @@ fn SideBar() -> Element {
     let mut tab = use_context::<Signal<MainDashboardTab>>();
 
     return rsx! {
-        div {
-            class: "flex bg-gray-200 flex-col p-4 gap-2",
+        div { class: "flex bg-gray flex-col p-4 gap-2",
             button {
                 class: "p-2 rounded-md bg-gray-100 hover:bg-gray-300",
                 onclick: move |_| {
@@ -61,10 +88,29 @@ fn SideBar() -> Element {
 
 #[component]
 fn RequestListColumn() -> Element {
+    let mut appstate = ApplicationState::inject();
+    let requests = appstate.computed_requests();
+
     return rsx! {
-        div {
-            input {
-                placeholder: "Search"
+        div { class: "border border-gray-300 mb-4 p-2",
+
+            div { class: "flex gap-2",
+                input { placeholder: "Search" }
+
+
+                button {
+                    class: "bg-gray-400",
+                    onclick: move |_| {
+                        appstate.add_new_request();
+                    },
+                    "create"
+                }
+            }
+
+            div {
+                for item in requests {
+                    div { key: item.id, "{item.name}" }
+                }
             }
         }
     };
@@ -73,20 +119,16 @@ fn RequestListColumn() -> Element {
 #[component]
 fn RequestPanelColumn() -> Element {
     return rsx! {
-        div {
-            class: "bg-lime-600 flex-grow",
-            "Panel"
-        }
+        div { class: "flex-grow", "Panel" }
     };
 }
 
 #[component]
 fn RequestView() -> Element {
     return rsx! {
-        div {
-            class: "flex bg-fuchsia-800 h-full",
-            RequestListColumn {  }
-            RequestPanelColumn {  }
+        div { class: "flex h-full",
+            RequestListColumn {}
+            RequestPanelColumn {}
         }
     };
 }
@@ -94,6 +136,6 @@ fn RequestView() -> Element {
 #[component]
 fn SequenceView() -> Element {
     return rsx! {
-        div {"sequence"}
+        div { "sequence" }
     };
 }

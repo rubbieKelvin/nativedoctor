@@ -56,4 +56,8 @@ impl RootSchema {
 
         return Ok(schema);
     }
+
+    pub fn to_string(&self) -> Result<String> {
+        return serde_yaml::to_string(&self).context("Could not serialize root schema");
+    }
 }

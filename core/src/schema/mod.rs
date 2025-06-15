@@ -24,22 +24,6 @@ pub mod file_object {
 
     use crate::schema::{request::RequestSchema, root::RootSchema};
 
-    #[derive(Deserialize, PartialEq, Clone, Debug)]
-    pub struct LoadedRootObject {
-        pub id: Uuid,
-        pub schema: RootSchema,
-        pub imports: Vec<Box<LoadedRootObject>>,
-        pub path: PathBuf,
-    }
-
-    #[derive(Deserialize, PartialEq, Clone)]
-    pub struct LoadedRequestObject {
-        pub id: Uuid,
-        pub name: String,
-        pub request: RequestSchema,
-        pub path: PathBuf,
-    }
-
     impl RootSchema {
         /// Loads root schema from path, then loads all imports from path too
         /// This will also watch out for circular-imports
@@ -119,7 +103,21 @@ pub mod file_object {
         }
     }
 
+    #[derive(Deserialize, PartialEq, Clone, Debug)]
+    pub struct LoadedRootObject {
+        pub id: Uuid,
+        pub schema: RootSchema,
+        pub imports: Vec<Box<LoadedRootObject>>,
+        pub path: PathBuf,
+    }
+
     impl LoadedRootObject {
+        pub async fn save(&self) -> Result<()> {
+            tokio::fs::write(&self.path, self.schema.to_string()?).await?;
+            return Ok(());
+        }
+
+        /// Recursivelly loads all requests from the root object and all imports into the vector buffer
         #[async_recursion]
         pub async fn dump_requests(&self, buffer: &mut Vec<LoadedRequestObject>) {
             let schema = self.schema.clone();
@@ -136,12 +134,36 @@ pub mod file_object {
                     name: name.clone(),
                     request: request.clone(),
                     path: self.path.clone(),
+                    edited: false,
                 });
             }
 
             // load up imports
             while let Some(imported_object) = imports_stream.next().await {
                 imported_object.dump_requests(buffer).await;
+            }
+        }
+    }
+
+    #[derive(Deserialize, PartialEq, Clone)]
+    pub struct LoadedRequestObject {
+        pub id: Uuid,
+        pub name: String,
+        pub request: RequestSchema,
+        /// The file that contained the request
+        pub path: PathBuf,
+        /// Tells if the request has been edited since it was loaded and not saved yet
+        pub edited: bool,
+    }
+
+    impl LoadedRequestObject {
+        pub fn empty() -> Self {
+            Self {
+                id: Uuid::new_v4(),
+                name: "new request".to_string(),
+                request: RequestSchema::new("GET".to_string(), "".to_string()),
+                path: PathBuf::new(), // set an empty path for now. we can check this with .file_name()
+                edited: true,
             }
         }
     }

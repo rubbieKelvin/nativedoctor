@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use dioxus::prelude::*;
 use nd_core::{
@@ -21,7 +21,7 @@ pub enum ProjectContentLoadingStatus {
 }
 
 #[derive(Clone, PartialEq)]
-pub enum RequestLoadingState {
+pub enum RequestLoadingStatus {
     None,
     Loading,
     Loaded(Vec<LoadedRequestObject>),
@@ -38,7 +38,7 @@ pub enum ProjectCreationStatus {
 #[derive(Clone, PartialEq)]
 pub struct ApplicationState {
     pub project: Signal<ProjectContentLoadingStatus>,
-    pub requests: Signal<RequestLoadingState>,
+    pub requests: Signal<RequestLoadingStatus>,
     pub creation_status: Signal<ProjectCreationStatus>,
 }
 
@@ -46,13 +46,25 @@ impl ApplicationState {
     pub fn provide() -> ApplicationState {
         return use_context_provider(|| ApplicationState {
             project: Signal::new(ProjectContentLoadingStatus::None),
-            requests: Signal::new(RequestLoadingState::None),
+            requests: Signal::new(RequestLoadingStatus::None),
             creation_status: Signal::new(ProjectCreationStatus::None),
         });
     }
 
     pub fn inject() -> ApplicationState {
         return use_context::<ApplicationState>();
+    }
+
+    // returns the current file's filename and the project name (if available)
+    pub fn current_project_title(&self) -> Option<(String, Option<String>)> {
+        return match &*self.project.read() {
+            ProjectContentLoadingStatus::Loaded(content) => {
+                let filename = content.path.file_name().unwrap().to_str().unwrap();
+                let projectname = content.schema.project.clone().map(|p| p.name);
+                Some((filename.to_string(), projectname.clone()))
+            }
+            _ => None,
+        };
     }
 
     pub async fn open_project_with_picker(&mut self) {
@@ -73,15 +85,15 @@ impl ApplicationState {
         match &*project {
             ProjectContentLoadingStatus::Loaded(content) => {
                 // load requests
-                *requests = RequestLoadingState::Loading;
+                *requests = RequestLoadingStatus::Loading;
 
                 let mut buff = Vec::<LoadedRequestObject>::new();
                 content.dump_requests(&mut buff).await;
 
-                *requests = RequestLoadingState::Loaded(buff);
+                *requests = RequestLoadingStatus::Loaded(buff);
             }
             _ => {
-                *requests = RequestLoadingState::None;
+                *requests = RequestLoadingStatus::None;
             }
         }
     }
@@ -126,8 +138,7 @@ impl ApplicationState {
 
                 // load content
                 let content = RootSchema::load_recursive(path).await;
-                
-                
+
                 match content {
                     Ok(content) => {
                         tracing::info!("Successfully loaded project");
@@ -164,5 +175,55 @@ impl ApplicationState {
                 *creation_status = ProjectCreationStatus::Error(err.to_string());
             }
         };
+    }
+
+    pub fn add_new_request(&mut self) -> uuid::Uuid {
+        let request = LoadedRequestObject::empty();
+        let id = request.id.clone();
+        self.requests.with_mut(|status| match status {
+            RequestLoadingStatus::Loaded(requests) => {
+                requests.push(request);
+            }
+            _ => {
+                tracing::error!("Attempting to add new request to unloaded request stack");
+            }
+        });
+        return id;
+    }
+
+    pub fn computed_requests(&self) -> Vec<LoadedRequestObject> {
+        return match &*self.requests.read() {
+            RequestLoadingStatus::Loaded(requests) => requests.clone(),
+            _ => vec![],
+        };
+    }
+
+    pub async fn save_project(&mut self) {
+        // group all the request files
+        let request_objects_to_save = self.computed_requests();
+        
+        let saved_schemas: HashMap<PathBuf, LoadedRootObject> = HashMap::new();
+        let mut request_map: HashMap<PathBuf, Vec<LoadedRequestObject>> = HashMap::new();
+
+        for request in request_objects_to_save {
+            if request_map.contains_key(&request.path) {
+                if let Some(container) = request_map.get_mut(&request.path){
+                    container.push(request.clone());
+                };
+            }else{
+                request_map.insert(request.path.clone(), vec![request.clone()]);
+            };
+        };
+
+        // create schema for each path to be save, then load them with all the requests that should be there
+        for (path, requests) in request_map {
+            // TODO: I stopped here. I'm tired
+            // create the loaded root object, load the requests in the schema
+            // if the object has only one request
+                // if the pathbuf is not empty, delete the old file in path buf
+                // change the path buf file name to the request name
+            // let schema = LoadedRootObject
+            // schema.save().await;
+        }
     }
 }
