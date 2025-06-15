@@ -38,6 +38,9 @@ fn ProjectNameInputDialog(show: Signal<bool>) -> Element {
                 input {
                     id: "project-name-input",
                     value: "{project_name}",
+                    autocomplete: "off",
+                    autocapitalize: "off",
+                    spellcheck: false,
                     placeholder: "Enter project name",
                     oninput: move |e| {
                         let text = e.value();

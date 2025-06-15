@@ -76,11 +76,16 @@ pub mod file_object {
 
             // compute working dir
             let working_dir = match &caller_file {
+                // if there's a caller file, let's use the folder where the file resides
                 Some(p) => {
                     let parent = p.parent().context("Could not get file parent")?;
                     parent.to_path_buf()
                 }
-                None => path.to_path_buf(),
+                // else, let's use the folder where this file resides
+                None => path
+                    .parent()
+                    .context("Could not get parent path")?
+                    .to_path_buf(),
             };
 
             // load imports

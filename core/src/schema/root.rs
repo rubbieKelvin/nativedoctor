@@ -31,6 +31,8 @@ impl RootSchema {
     /// path is the file path to load. this should be an absolute path, no relative
     /// caller file is the file that initiated the run.
     pub async fn load(path: &Path) -> Result<Self> {
+        tracing::info!("Opening file: {:?}", path);
+
         if !path.is_absolute() {
             bail!("Path to load must be an absolute path");
         }

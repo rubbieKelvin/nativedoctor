@@ -1,3 +1,4 @@
 target/
 example/
-*.ndoc
+*.nd
+.DS_Store
