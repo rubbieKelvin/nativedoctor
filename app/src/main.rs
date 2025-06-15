@@ -6,6 +6,8 @@ use views::{dashboard::DashboardView, empty::EmptyPage};
 
 use states::{ApplicationState, ProjectContentLoadingStatus};
 
+use crate::{components::ToastProvider, states::ToastState};
+
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
@@ -51,6 +53,9 @@ fn main() {
 fn App() -> Element {
     // State
     let state = ApplicationState::provide();
+    ToastState::provide();
+
+    // instances
     let project = state.project.read();
 
     // Ui element
@@ -58,6 +63,8 @@ fn App() -> Element {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+
+        ToastProvider {}
 
         match *project {
             ProjectContentLoadingStatus::Loaded(_) => {
