@@ -2965,8 +2965,10 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-free-icons",
+ "dioxus-logger",
  "nd-core",
  "rfd 0.15.3",
+ "tracing",
  "uuid",
 ]
 

@@ -24,7 +24,7 @@ pub mod file_object {
 
     use crate::schema::{request::RequestSchema, root::RootSchema};
 
-    #[derive(Deserialize, PartialEq, Clone)]
+    #[derive(Deserialize, PartialEq, Clone, Debug)]
     pub struct LoadedRootObject {
         pub id: Uuid,
         pub schema: RootSchema,

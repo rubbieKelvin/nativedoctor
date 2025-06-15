@@ -1,3 +1,3 @@
 mod app;
 
-pub use app::{ApplicationState, ProjectContentLoadingState};
+pub use app::{ApplicationState, ProjectContentLoadingStatus};

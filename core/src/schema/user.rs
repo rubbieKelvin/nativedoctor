@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct UserSchema {
     pub name: String,
     #[serde(default)]

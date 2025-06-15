@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::schema::{
     request_body::RequestBodySchema, request_config::RequestConfigSchema,
@@ -8,7 +8,7 @@ use crate::schema::{
 };
 
 /// Represents a single API request definition.
-#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestSchema {
     pub method: String,

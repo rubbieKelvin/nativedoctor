@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn Dialog(
     show: Signal<bool>,
-    content: Element,
+    children: Element,
     title: Option<String>,
     close_on_click_outside: Option<bool>,
 ) -> Element {
@@ -40,7 +40,7 @@ pub fn Dialog(
                 }
 
 
-                {content}
+                {children}
 
             }
         }

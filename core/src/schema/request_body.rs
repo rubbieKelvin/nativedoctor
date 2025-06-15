@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Represents the body section of a request.
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")] // Use 'type' field to determine which variant to deserialize
 pub enum RequestBodySchema {
     #[serde(rename = "json")]
@@ -32,7 +32,7 @@ pub enum RequestBodySchema {
 }
 
 /// Represents a single part within a multipart request body.
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")] // Use 'kind' field to determine field or file
 pub enum MultipartPartSchema {
     #[serde(rename = "field")]

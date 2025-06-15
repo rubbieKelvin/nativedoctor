@@ -17,6 +17,8 @@ dioxus-free-icons = { version = "0.9", features = [
 uuid = { version = "1.17.0", features = ["v4"] }
 nd-core = { path = "../core" }
 rfd = "0.15.3"
+tracing = "0.1.41"
+dioxus-logger = "0.6.2"
 
 
 [features]

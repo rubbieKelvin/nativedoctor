@@ -1,10 +1,10 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::schema::user::UserSchema;
 
 /// Used to describe the project from a root file.
 /// Might contain project configurations too
-#[derive(Debug, Deserialize, Clone, Default, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct ProjectDefinationSchema {
     pub name: String,
     #[serde(default)]

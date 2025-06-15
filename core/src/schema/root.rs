@@ -4,12 +4,12 @@ use crate::schema::{
 };
 use anyhow::{bail, Context, Result};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
 use tokio::io::{AsyncReadExt, BufReader};
 
 /// Represents the entire API test file structure.
-#[derive(Debug, Deserialize, Default, PartialEq, Clone)]
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq, Clone)]
 pub struct RootSchema {
     #[serde(default)] // Make imports optional
     pub imports: Vec<String>,

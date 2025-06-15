@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Represents the configuration section of a request.
-#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestConfigSchema {
     #[serde(default)]

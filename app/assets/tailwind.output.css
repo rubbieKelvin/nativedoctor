@@ -448,9 +448,6 @@
   .bg-amber-400 {
     background-color: var(--color-amber-400);
   }
-  .bg-amber-500 {
-    background-color: var(--color-amber-500);
-  }
   .bg-bg-primary {
     background-color: var(--color-bg-primary);
   }
@@ -478,12 +475,6 @@
   .bg-gray-200 {
     background-color: var(--color-gray-200);
   }
-  .bg-gray-500 {
-    background-color: var(--color-gray-500);
-  }
-  .bg-green-200 {
-    background-color: var(--color-green-200);
-  }
   .bg-green-500 {
     background-color: var(--color-green-500);
   }
@@ -502,8 +493,8 @@
   .bg-red-100 {
     background-color: var(--color-red-100);
   }
-  .bg-red-500 {
-    background-color: var(--color-red-500);
+  .bg-white {
+    background-color: var(--color-white);
   }
   .p-0\.5 {
     padding: calc(var(--spacing) * 0.5);
@@ -552,9 +543,6 @@
   }
   .pl-18 {
     padding-left: calc(var(--spacing) * 18);
-  }
-  .pl-28 {
-    padding-left: calc(var(--spacing) * 28);
   }
   .text-center {
     text-align: center;

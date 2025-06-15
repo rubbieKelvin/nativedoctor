@@ -1,20 +1,22 @@
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 
+// use tracing::Level;
 use views::{dashboard::DashboardView, empty::EmptyPage};
 
-use states::{ApplicationState, ProjectContentLoadingState};
+use states::{ApplicationState, ProjectContentLoadingStatus};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
 mod components;
-mod constants;
 mod states;
 mod views;
 
 fn main() {
+    // dioxus_logger::init(Level::INFO).expect("failed to init logger");
+
     let mut window_builder = WindowBuilder::new()
         .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
         .with_transparent(true)
@@ -58,7 +60,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
         match *project {
-            ProjectContentLoadingState::Loaded(_) => {
+            ProjectContentLoadingStatus::Loaded(_) => {
                 rsx! {
                     DashboardView {}
                 }
