@@ -36,7 +36,7 @@ definitions:
     type: [string, number, integer, boolean, array, object, "null"]
 
   Project:
-    type: object
+    type: [object, "null"]
     description: Describes the project from a root file, including metadata and global settings.
     properties:
       name:
@@ -56,7 +56,7 @@ definitions:
         items:
           $ref: "#/definitions/User"
       generator:
-        type: string
+        type: [string, "null"]
         description: Optional path or identifier for an OpenAPI (or similar) spec file from which parts of this test suite might be generated from.
       default_env:
         type: string # This field is default_env in Rust
@@ -117,7 +117,7 @@ definitions:
         additionalProperties:
           type: string
       query:
-        type: object
+        type: [object, "null"]
         description: Optional URL query parameters for the request. Each key-value pair represents a parameter name and its value.
         additionalProperties:
           type: string
@@ -132,7 +132,7 @@ definitions:
       - url
 
   RequestConfig:
-    type: object
+    type: [object, "null"]
     description: Configuration settings for a request's execution. Field names are snake_case.
     properties:
       depends_on:
@@ -159,7 +159,7 @@ definitions:
         description: Where to group this request
 
   RequestScriptConfig:
-    type: object
+    type: [object, "null"]
     description: Configuration for pre-request and post-request scripts. Field names are snake_case.
     properties:
       post_request:
@@ -214,7 +214,7 @@ definitions:
           - content
 
   RequestBody:
-    type: object
+    type: [object, "null"]
     description: Represents the body of an HTTP request, discriminated by the 'type' field. Field names for variants are snake_case.
     oneOf:
       - type: object

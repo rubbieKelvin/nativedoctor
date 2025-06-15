@@ -1,13 +1,13 @@
 {
     "files.associations": {
-        "*.ndoc": "yaml",
+        "*.nd": "yaml",
     },
     "yaml.schemas": {
         "http://json-schema.org/draft-07/schema": [
             "**/*.draft-07.schema.yaml"
         ],
         "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/src/schema/ndoc-v0.0.1.draft-07.schema.yaml": [
-            "**/*.ndoc",
+            "**/*.nd",
         ],
     },
     "tailwindCSS.experimental.classRegex": [
