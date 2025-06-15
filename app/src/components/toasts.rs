@@ -23,10 +23,11 @@ pub fn ToastItem(toast: ToastConfig) -> Element {
 
     return rsx! {
         div {
-            class: "p-4 bg-gray-100 border border-gray-200 rounded-md",
+            class: "p-4 bg-gray-100 border border-gray-200 rounded-md flex-col",
             div {
                 class: "flex gap-4",
                 span {
+                    class: "flex-grow",
                     "{title}"
                 }
 
@@ -36,6 +37,12 @@ pub fn ToastItem(toast: ToastConfig) -> Element {
                         toast_state.remove(toast.id);
                     },
                     "X"
+                }
+            }
+
+            if let Some(summary) = toast.summary {
+                div {
+                    "{summary}"
                 }
             }
         }

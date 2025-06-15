@@ -1,8 +1,6 @@
-use std::slice::Iter;
-
 use dioxus::{
     hooks::{use_context, use_context_provider},
-    signals::{Readable, Signal, Writable, WritableVecExt},
+    signals::{Readable, Signal, Writable},
 };
 
 #[derive(Clone, PartialEq, Debug)]
@@ -21,6 +19,12 @@ impl Into<String> for ToastTitle {
             ToastTitle::Info(s) => s,
             ToastTitle::Warning(s) => s,
         };
+    }
+}
+
+impl Into<ToastTitle> for String {
+    fn into(self) -> ToastTitle {
+        return ToastTitle::Info(self);
     }
 }
 
@@ -72,6 +76,7 @@ impl ToastState {
     }
 
     pub fn push(&mut self, config: ToastConfig) {
+        tracing::debug!("Pushed toast: {:?}", &config);
         self.toasts.with_mut(|toasts| {
             toasts.push(config);
         })

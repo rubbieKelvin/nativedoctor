@@ -3,7 +3,10 @@ use dioxus_desktop::use_window;
 
 use crate::{
     components::{Dialog, WmDragArea},
-    states::ApplicationState,
+    states::{
+        ApplicationState, ProjectContentLoadingStatus, ToastCloseMethod, ToastConfig, ToastState,
+        ToastTitle,
+    },
 };
 
 const BUTTON_CLASS: &'static str =
@@ -63,8 +66,25 @@ fn ProjectNameInputDialog(show: Signal<bool>) -> Element {
 #[component]
 pub fn EmptyPage() -> Element {
     let window = use_window();
+    let mut toast = ToastState::inject();
     let appstate = ApplicationState::inject();
     let mut open_project = use_signal(|| false);
+
+    
+    // watch for creation errors
+    use_effect(move || {
+        let project_status = appstate.project.read();
+        match &*project_status {
+            ProjectContentLoadingStatus::Error(e) => {
+                toast.push(ToastConfig::new(
+                    ToastTitle::Error("An error occured".to_string()),
+                    Some(e.to_string()),
+                    ToastCloseMethod::Button,
+                ));
+            }
+            _ => {}
+        };
+    });
 
     return rsx! {
         ProjectNameInputDialog {
