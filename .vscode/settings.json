@@ -3,11 +3,16 @@
         "*.nd": "yaml",
     },
     "yaml.schemas": {
+        "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml",
         "http://json-schema.org/draft-07/schema": [
-            "**/*.draft-07.schema.yaml"
+            "core/src/schema/definations/*/nd-project.yaml",
+            "core/src/schema/definations/*/nd.yaml"
         ],
-        "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/src/schema/ndoc-v0.0.1.draft-07.schema.yaml": [
-            "**/*.nd",
+        "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/src/schema/definations/v0.0.1/nd.yaml": [
+            "**/*.nd"
+        ],
+        "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/src/schema/definations/v0.0.1/nd-project.yaml": [
+            "**/*.nd-project"
         ],
     },
     "tailwindCSS.experimental.classRegex": [

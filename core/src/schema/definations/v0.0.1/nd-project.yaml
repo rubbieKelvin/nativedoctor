@@ -1,0 +1,63 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Native doctor project
+description: Schema for native doctor projects
+type: object
+properties:
+  project:
+    $ref: "#/definitions/Project"
+  requests_dir:
+    type: string
+  env:
+    type: object
+    description: Environment variables, keyed by environment name (e.g., "dev", "prod"). Each key maps to an EnvironmentVariable definition.
+    additionalProperties:
+      $ref: "#/definitions/EnvironmentVariable"
+  call_definations:
+    type: object
+    description: Defines sequences of requests (flows or scenarios), keyed by a call name. Each call is a list of request names.
+    required:
+      - main
+    additionalProperties:
+      type: array
+      items:
+        type: string
+        description: name of the request file in the requests folder
+
+required:
+  - project
+  - call_definations
+
+definitions:
+  Project:
+    type: object
+    description: Describes the project from a root file, including metadata and global settings.
+    properties:
+      name:
+        type: string
+        description: The mandatory name of the project.
+      version:
+        type: string
+        description: The version of the project.
+        default: ""
+      description:
+        type: string
+        description: A short description of the project.
+        default: ""
+    required:
+      - name
+
+  EnvironmentVariable:
+    type: object
+    description: Definition of a single environment variable, including its default value and environment-specific overrides.
+    properties:
+      default:
+        $ref: "#/definitions/SerdeYamlValue"
+        description: The default value for the environment variable. This value is used if no environment-specific override is found or if no specific environment is active.
+    additionalProperties:
+      $ref: "#/definitions/SerdeYamlValue"
+    required:
+      - default
+
+  SerdeYamlValue:
+    description: Represents any valid YAML/JSON value (string, number, boolean, array, object, null).
+    type: [string, number, integer, boolean, array, object, "null"]
