@@ -1,5 +1,0 @@
-env:
-  username:
-    default: "rubbiekelvin"
-  email:
-    default: "dev.rubbie@gmail.com"

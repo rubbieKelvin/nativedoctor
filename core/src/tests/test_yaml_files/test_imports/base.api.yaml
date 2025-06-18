@@ -1,6 +1,0 @@
-imports:
-  - "./imported.api.yaml"
-
-env:
-  authId:
-    default: "<this-is-the-auth-id>"
