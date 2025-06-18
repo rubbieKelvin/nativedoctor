@@ -12,7 +12,7 @@ properties:
     description: Environment variables, keyed by environment name (e.g., "dev", "prod"). Each key maps to an EnvironmentVariable definition.
     additionalProperties:
       $ref: "#/definitions/EnvironmentVariable"
-  call_definations:
+  calls:
     type: object
     description: Defines sequences of requests (flows or scenarios), keyed by a call name. Each call is a list of request names.
     required:
@@ -25,7 +25,7 @@ properties:
 
 required:
   - project
-  - call_definations
+  - calls
 
 definitions:
   Project:
