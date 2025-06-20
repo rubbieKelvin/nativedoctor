@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 use crate::schema::{
     calls::CallSchema, env::EnvironmentVariableSchema, request_body::RequestBodySchema,
@@ -8,17 +8,17 @@ use crate::schema::{
 use super::project::ProjectDefinationSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct ProjectRootSchema {
     pub project: ProjectDefinationSchema,
     #[serde(default)]
-    requests_dir: Option<String>,
+    pub requests_dir: Option<String>,
     #[serde(default)]
-    env: HashMap<String, EnvironmentVariableSchema>,
-    calls: CallSchema,
+    pub env: HashMap<String, EnvironmentVariableSchema>,
+    pub calls: CallSchema,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct RequestRootSchema {
     pub method: String,
     pub url: String,
