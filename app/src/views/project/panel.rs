@@ -38,7 +38,7 @@ pub fn RequestPanel() -> Element {
         let name = name();
         match request_memo() {
             Some(mut request_copy) => {
-                request_copy.set_name(&name, &project.unwrap().path);
+                request_copy.set_name(&name, &project().path);
                 project_state.update_request(request_copy);
             }
             None => {}

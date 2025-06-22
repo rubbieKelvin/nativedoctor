@@ -12,16 +12,19 @@ use nativedoctor_core::{
 #[derive(Clone, PartialEq)]
 pub struct ProjectState {
     pub selected_request: Signal<Option<uuid::Uuid>>,
-    pub project: Signal<Option<FileObject<ProjectRootSchema>>>,
+    pub project: Signal<FileObject<ProjectRootSchema>>,
     pub requests: Signal<Vec<FileObject<RequestRootSchema>>>,
 }
 
 impl ProjectState {
-    pub fn new() -> ProjectState {
+    pub fn new(
+        projects: FileObject<ProjectRootSchema>,
+        requests: Vec<FileObject<RequestRootSchema>>,
+    ) -> ProjectState {
         return ProjectState {
             selected_request: Signal::new(None),
-            project: Signal::new(None),
-            requests: Signal::new(vec![]),
+            project: Signal::new(projects),
+            requests: Signal::new(requests),
         };
     }
 
@@ -61,8 +64,7 @@ impl ProjectState {
             let item = requests.iter_mut().find(|i| i.id == request.id);
             if let Some(item) = item {
                 item.copy_from(request);
-            } 
-            
+            }
         })
     }
 }

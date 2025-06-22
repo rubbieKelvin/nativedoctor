@@ -1,7 +1,11 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
+use nativedoctor_core::{
+    fs::FileObject,
+    schema::roots::{ProjectRootSchema, RequestRootSchema},
+};
 
 // use tracing::Level;
 // use views::{dashboard::DashboardView, empty::EmptyPage};
@@ -24,7 +28,7 @@ fn main() {
 
     #[cfg(debug_assertions)]
     {
-        window_builder = window_builder.with_always_on_top(true);
+        // window_builder = window_builder.with_always_on_top(true);
     }
 
     #[cfg(target_os = "macos")]
@@ -47,14 +51,21 @@ fn main() {
     dioxus::launch(App);
 }
 
+#[derive(Clone, PartialEq)]
+pub enum PageScreen {
+    StartScreen,
+    ProjectScreen(
+        FileObject<ProjectRootSchema>,
+        Vec<FileObject<RequestRootSchema>>,
+    ),
+}
+
 #[component]
 fn App() -> Element {
     // State
     // let state = ApplicationState::provide();
     states::ToastState::provide();
-
-    // TODO: Update
-    let path = Path::new("/Users/rubbiekelvin/Projects/nativedoctor/example/project.nd-project");
+    let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
 
     // Ui element
     return rsx! {
@@ -63,8 +74,16 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
         components::ToastProvider{}
-        views::project::ProjectView {
-            path: path.to_path_buf()
+        match screen_state() {
+            PageScreen::StartScreen => rsx!{
+                views::start::StartScreenView {  }
+            },
+            PageScreen::ProjectScreen(schema, requests) => rsx!{
+                views::project::ProjectView {
+                    schema,
+                    requests
+                }
+            }
         }
     };
 }

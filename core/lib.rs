@@ -17,9 +17,13 @@ mod tests;
 pub const EXTENSION_FOR_REQUEST: &str = "nd";
 pub const EXTENSION_FOR_PROJECT: &str = "nd-project";
 
-// Initializes a new project at path
-pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
-    // Create schemas
+pub fn create_project_template(name: &str) -> (ProjectRootSchema, Vec<RequestRootSchema>) {
+    let name = if name.len() == 0 {
+        "Untitled".to_string()
+    } else {
+        name.to_string()
+    };
+
     let mut env = HashMap::<String, EnvironmentVariableSchema>::new();
     env.insert(
         "baseurl".to_string(),
@@ -34,7 +38,7 @@ pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
 
     let project_schema = ProjectRootSchema {
         project: ProjectDefinationSchema {
-            name: name.to_string(),
+            name,
             description: "Native doctor project".to_string(),
             version: Some("0.1.0".to_string()),
         },
@@ -51,6 +55,15 @@ pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
         url: "{{baseurl}}/get".to_string(),
         ..Default::default()
     };
+
+    return (project_schema, vec![hello_request]);
+}
+
+// Initializes a new project at path
+pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
+    // Create schemas
+    let (project_schema, requests) = create_project_template(name);
+    let hello_request = requests[0].clone();
 
     // create the project file
     let project_path = path.join(format!(".{EXTENSION_FOR_PROJECT}"));
