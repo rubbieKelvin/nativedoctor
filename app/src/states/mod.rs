@@ -3,5 +3,5 @@ mod project;
 mod toasts;
 
 // pub use app::{ApplicationState, ProjectContentLoadingStatus, RequestLoadingStatus};
-pub use project::ProjectState;
+pub use project::{ProjectState, WritableRequest};
 pub use toasts::{ToastCloseMethod, ToastConfig, ToastState, ToastTitle};
