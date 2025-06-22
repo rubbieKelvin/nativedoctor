@@ -1,16 +1,9 @@
-use std::path::PathBuf;
-
 use dioxus::{desktop::wry::dpi::Size, prelude::*};
 use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
 use nativedoctor_core::{
     fs::FileObject,
     schema::roots::{ProjectRootSchema, RequestRootSchema},
 };
-
-// use tracing::Level;
-// use views::{dashboard::DashboardView, empty::EmptyPage};
-
-// use states::{ApplicationState, ProjectContentLoadingStatus};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");

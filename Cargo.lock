@@ -33,6 +33,7 @@ dependencies = [
  "dioxus-logger",
  "nativedoctor-core",
  "rfd 0.15.3",
+ "tokio",
  "tracing",
  "uuid",
 ]

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
-use serde::Deserialize;
+use anyhow::{Context, Ok, bail};
+use serde::{Deserialize, Serialize};
 use tokio::io::AsyncReadExt;
 
 use crate::{
@@ -10,13 +10,13 @@ use crate::{
 };
 
 #[derive(Clone, PartialEq)]
-pub struct FileObject<T: Clone + PartialEq + Deserialize<'static>> {
+pub struct FileObject<T: Clone + PartialEq + Deserialize<'static> + Serialize> {
     pub id: uuid::Uuid,
     pub path: PathBuf,
     pub object: T,
 }
 
-impl<T: Clone + PartialEq + Deserialize<'static>> FileObject<T> {
+impl<T: Clone + PartialEq + Deserialize<'static> + Serialize> FileObject<T> {
     pub fn new(path: PathBuf, object: T) -> FileObject<T> {
         return FileObject {
             id: uuid::Uuid::new_v4(),
@@ -28,6 +28,20 @@ impl<T: Clone + PartialEq + Deserialize<'static>> FileObject<T> {
     pub fn copy_from(&mut self, other: FileObject<T>) {
         self.path = other.path;
         self.object = other.object;
+    }
+
+    pub async fn save(&self) -> anyhow::Result<()> {
+        let path = self.path.clone();
+
+        // Make sure path is absolue
+        if !path.is_absolute() {
+            tracing::error!("{:?} Project path must be absolute", &path);
+            bail!("Project path must be absolute".to_string());
+        }
+
+        let content = serde_yaml::to_string(&self.object).context("Error serializing object")?;
+        tokio::fs::write(&self.path, content).await?;
+        return Ok(());
     }
 }
 
@@ -55,8 +69,9 @@ impl ProjectRootSchema {
 }
 
 impl FileObject<ProjectRootSchema> {
-    fn get_requests_dir(&self) -> PathBuf {
-        return self.path.join(match &self.object.requests_dir {
+    pub fn get_requests_dir(&self) -> PathBuf {
+        let dir = self.path.parent().context("Cannot get project file parent").unwrap();
+        return dir.join(match &self.object.requests_dir {
             Some(dir) => dir,
             None => "requests",
         });

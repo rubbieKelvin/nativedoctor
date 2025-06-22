@@ -16,6 +16,7 @@ uuid = { version = "1.17.0", features = ["v4"] }
 nativedoctor-core = { path = "../core" }
 rfd = "0.15.3"
 tracing = "0.1.41"
+tokio = { version = "1.45.0", features = ["full"] }
 dioxus-logger = "0.6.2"
 
 
