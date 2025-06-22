@@ -54,7 +54,7 @@ fn App() -> Element {
     states::ToastState::provide();
 
     // TODO: Update
-    let path = Path::new("/Users/rubbiekelvin/Projects/dotapi/example/project.nd-project");
+    let path = Path::new("/Users/rubbiekelvin/Projects/nativedoctor/example/project.nd-project");
 
     // Ui element
     return rsx! {

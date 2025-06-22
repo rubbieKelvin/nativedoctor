@@ -9,10 +9,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod schema;
 pub mod fs;
+pub mod schema;
 #[cfg(test)]
 mod tests;
+
+pub const EXTENSION_FOR_REQUEST: &str = "nd";
+pub const EXTENSION_FOR_PROJECT: &str = "nd-project";
 
 // Initializes a new project at path
 pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
@@ -50,9 +53,9 @@ pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
     };
 
     // create the project file
-    let project_path = path.join(format!(".nd-project"));
+    let project_path = path.join(format!(".{EXTENSION_FOR_PROJECT}"));
     let request_folder = path.join("requests");
-    let home_folder = request_folder.join("hello.nd".to_string());
+    let home_folder = request_folder.join(format!("hello.{EXTENSION_FOR_REQUEST}").to_string());
 
     // create
     tokio::fs::write(

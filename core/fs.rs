@@ -4,7 +4,10 @@ use anyhow::Context;
 use serde::Deserialize;
 use tokio::io::AsyncReadExt;
 
-use crate::schema::roots::{ProjectRootSchema, RequestRootSchema};
+use crate::{
+    EXTENSION_FOR_REQUEST,
+    schema::roots::{ProjectRootSchema, RequestRootSchema},
+};
 
 #[derive(Clone, PartialEq)]
 pub struct FileObject<T: Clone + PartialEq + Deserialize<'static>> {
@@ -20,6 +23,11 @@ impl<T: Clone + PartialEq + Deserialize<'static>> FileObject<T> {
             path,
             object,
         };
+    }
+
+    pub fn copy_from(&mut self, other: FileObject<T>) {
+        self.path = other.path;
+        self.object = other.object;
     }
 }
 
@@ -80,8 +88,20 @@ impl FileObject<ProjectRootSchema> {
 }
 
 impl FileObject<RequestRootSchema> {
-    pub fn get_name(&self) -> String {
-        let filename = self.path.file_name().unwrap();
-        return filename.to_str().unwrap().to_string();
+    pub fn get_name(&self) -> Option<String> {
+        let filename = self.path.file_stem();
+        return match filename {
+            Some(filename) => filename.to_str().map(|s| s.to_string()),
+            None => None,
+        };
+    }
+
+    pub fn set_name(&mut self, name: &str, folder: &PathBuf) {
+        let name = name.trim();
+        if name == "" {
+            self.path = PathBuf::new();
+            return;
+        }
+        self.path = folder.join(format!("{name}.{EXTENSION_FOR_REQUEST}"));
     }
 }
