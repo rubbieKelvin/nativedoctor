@@ -1,9 +1,6 @@
-use dioxus::desktop::use_window;
 use dioxus::prelude::*;
-use dioxus_desktop::{
-    tao::event::{ElementState, Event, KeyEvent, WindowEvent},
-    use_global_shortcut,
-};
+// use dioxus_desktop::use_global_shortcut;
+// use dioxus::
 use nativedoctor_core::{
     fs::FileObject,
     schema::roots::{ProjectRootSchema, RequestRootSchema},
@@ -22,29 +19,42 @@ pub fn ProjectView(
 ) -> Element {
     let project_state = use_context_provider(|| ProjectState::new(schema, requests));
     let mut saving = use_signal(|| false);
-    let save_shortcut = if cfg!(target_os = "macos") {
-        "cmd+s"
-    } else {
-        "ctrl+s"
-    };
+    // let save_shortcut = if cfg!(target_os = "macos") {
+    //     "cmd+s"
+    // } else {
+    //     "ctrl+s"
+    // };
 
-    _ = use_global_shortcut(save_shortcut, move || {
-        if saving() {
-            return;
-        }
-
-        tracing::info!("Saving");
-        *saving.write() = true;
-        let project_state = project_state.clone();
-
-        spawn(async move {
-            match project_state.save().await {
-                Ok(_) => tracing::info!("Saved"),
-                Err(e) => tracing::error!("Error saving: {}", e),
-            }
-            *saving.write() = false;
-        });
+    use_hook(|| {
+        document::eval("document.getElementById('project-view').focus()");
     });
+
+    let save_project = move |e: Event<KeyboardData>| {
+        let key = e.key();
+        tracing::info!("Key: {}", key);
+        match e.key() {
+            Key::Save => {
+                tracing::info!("CLicked save");
+            }
+            _ => {}
+        };
+
+        // if saving() {
+        //     return;
+        // }
+
+        // tracing::info!("Saving");
+        // *saving.write() = true;
+        // let project_state = project_state.clone();
+
+        // spawn(async move {
+        //     match project_state.save().await {
+        //         Ok(_) => tracing::info!("Saved"),
+        //         Err(e) => tracing::error!("Error saving: {}", e),
+        //     }
+        //     *saving.write() = false;
+        // });
+    };
 
     // #[cfg(feature = "desktop")]
     // use_wry_event_handler(move |event   , _window| {
@@ -128,7 +138,11 @@ pub fn ProjectView(
     // };
 
     return rsx! {
-        div { class: "flex flex-col h-full",
+        div {
+            id: "project-view",
+            class: "flex flex-col h-full focus:bg-accent focus-within:bg-accent",
+            tabindex: 1,
+            onkeydown: save_project,
             WmDragArea { class: "h-10 flex items-center" }
 
             div { class: "flex-grow flex", side::SideBar {} }

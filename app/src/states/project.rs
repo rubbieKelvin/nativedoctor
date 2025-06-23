@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use dioxus::{
     hooks::use_context,
-    signals::{Readable, Signal, Writable},
+    signals::{Signal, Writable},
 };
 use nativedoctor_core::{
     fs::FileObject,
