@@ -1,6 +1,6 @@
 # Components
 
-- [ ] Buttons
+- [x] Buttons
 - [ ] Labels
 - [ ] Button Groups
 - [ ] Text inputs
@@ -12,3 +12,4 @@
 - [ ] Dropdown Select
 - [ ] Dialogs
 - [ ] Empty States
+- [ ] Pane
