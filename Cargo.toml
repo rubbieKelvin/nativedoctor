@@ -1,6 +1,6 @@
 [workspace]
 resolver = '2'
-members = ["core", "app"]
+members = ["core", "app", "components"]
 
 [profile.wasm-dev]
 inherits = "dev"
@@ -11,3 +11,5 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
+
+[workspace.dependencies]
