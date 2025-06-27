@@ -39,24 +39,29 @@ impl LabelSizeVariant {
     }
 }
 
-
 #[derive(Clone, PartialEq)]
 pub enum LabelStyleVariant {
     Default,
+    Mild,
     Ghost,
 }
 
 impl LabelStyleVariant {
     fn classes(&self) -> &'static str {
         return match self {
-            LabelStyleVariant::Default => "text-[#b4b4b4]",
+            LabelStyleVariant::Default => "text-[#ffffff]",
+            LabelStyleVariant::Mild => "text-[#b4b4b4]",
             LabelStyleVariant::Ghost => "text-[#898989]",
         };
     }
 
     #[allow(unused)]
     pub fn all() -> &'static [LabelStyleVariant] {
-        return &[LabelStyleVariant::Default, LabelStyleVariant::Ghost];
+        return &[
+            LabelStyleVariant::Default,
+            LabelStyleVariant::Mild,
+            LabelStyleVariant::Ghost,
+        ];
     }
 }
 

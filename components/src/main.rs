@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
+use dioxus_free_icons::{Icon, icons::ld_icons};
 
 mod button;
 mod label;
+mod pane;
 
 fn main() {
     dioxus::launch(App);
@@ -20,10 +22,8 @@ fn App() -> Element {
 
             // buttons
             div { class: "flex flex-col gap-2",
-                h1 {
-                    class: "text-3xl",
-                    "Buttons"
-                }
+                h1 { "Buttons" }
+
                 for size in button::ButtonSizeVariant::all() {
                     div {
                         key: "{size.to_string()}",
@@ -37,11 +37,16 @@ fn App() -> Element {
                                 key: "{style.to_string()}",
                                 style: style.clone(),
                                 size: size.clone(),
+                                class: "flex items-center justify-center",
 
                                 if *size != button::ButtonSizeVariant::Icon {
                                     "{style.to_string()}"
                                 }else{
-                                    "O"
+                                    Icon {
+                                        width: 16,
+                                        height: 16,
+                                        icon: ld_icons::LdHome
+                                    }
                                 }
                             }
                         }
@@ -52,10 +57,7 @@ fn App() -> Element {
             // Labels
             div {
                 class: "flex gap-2 flex-col",
-
-                h1 {
-                    "Label"
-                }
+                h1 { "Label" }
 
                 div {
                     class: "flex gap-4",
@@ -73,8 +75,23 @@ fn App() -> Element {
                     }
                 }
             }
-            
-            // 
+
+            // pane
+            div {
+                class: "flex gap-2 flex-col",
+                h1 { "Pane" }
+
+                div {
+                    class: "flex gap-2",
+                    for style in pane::PaneStyleVariant::all() {
+                        pane::Pane {
+                            class: "p-8 rounded-md",
+                            style: style.clone(),
+                            "Hello"
+                        }
+                    }
+                }
+            }
         }
     };
 }

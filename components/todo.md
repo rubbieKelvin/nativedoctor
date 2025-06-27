@@ -1,7 +1,7 @@
 # Components
 
 - [x] Buttons
-- [ ] Labels
+- [x] Labels
 - [ ] Button Groups
 - [ ] Text inputs
 - [ ] Number inputs
