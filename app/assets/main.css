@@ -1,0 +1,15 @@
+html, body {
+    padding: 0;
+    margin: 0;
+    user-select: none;
+    cursor: default;
+    overscroll-behavior: none;
+}
+
+body {
+    font-family: 'Helvetica Neue', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html, body, #main {
+    height: 100%;
+}

@@ -1,10 +1,8 @@
 {
     "recommendations": [
-        "Vue.volar",
         "redhat.vscode-yaml",
         "rust-lang.rust-analyzer",
         "rhaiscript.vscode-rhai",
-        "bradlc.vscode-tailwindcss",
-        "tauri-apps.tauri-vscode",
+        "bradlc.vscode-tailwindcss"
     ]
 }
