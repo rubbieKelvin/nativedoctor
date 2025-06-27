@@ -1,6 +1,6 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use crate::schema::{
+use super::{
     calls::CallSchema, env::EnvironmentVariableSchema, request_body::RequestBodySchema,
     request_config::RequestConfigSchema,
 };

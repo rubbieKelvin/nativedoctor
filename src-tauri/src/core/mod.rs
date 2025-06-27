@@ -1,4 +1,4 @@
-use crate::schema::{
+use self::schema::{
     calls::CallSchema,
     env::EnvironmentVariableSchema,
     project::ProjectDefinationSchema,

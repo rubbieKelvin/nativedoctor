@@ -4,12 +4,12 @@ use anyhow::{Context, Ok, bail};
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncReadExt;
 
-use crate::{
+use super::{
     EXTENSION_FOR_REQUEST,
     schema::roots::{ProjectRootSchema, RequestRootSchema},
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct FileObject<T: Clone + PartialEq + Deserialize<'static> + Serialize> {
     pub id: uuid::Uuid,
     pub path: PathBuf,
