@@ -1,7 +1,12 @@
 use dioxus::prelude::*;
+use strum;
 
-#[derive(PartialEq, Clone)]
+use crate::traits::Variant;
+
+
+#[derive(PartialEq, Clone, strum::EnumIter, strum::Display, Default)]
 pub enum ButtonStyleVariant {
+    #[default]
     Default,
     Secondary,
     Destructive,
@@ -10,7 +15,7 @@ pub enum ButtonStyleVariant {
     Link,
 }
 
-impl ButtonStyleVariant {
+impl Variant for ButtonStyleVariant {
     fn classes(&self) -> &'static str {
         return match self {
             ButtonStyleVariant::Default => "bg-[#3d3d3d] hover:bg-[#464646] active:bg-[#5a5a5a]",
@@ -25,42 +30,19 @@ impl ButtonStyleVariant {
             ButtonStyleVariant::Link => "text-[#5c95ff] hover:underline",
         };
     }
-
-    #[allow(unused)]
-    pub fn to_string(&self) -> &'static str {
-        return match self {
-            ButtonStyleVariant::Default => "Default",
-            ButtonStyleVariant::Secondary => "Secondary",
-            ButtonStyleVariant::Destructive => "Destructive",
-            ButtonStyleVariant::Outline => "Outline",
-            ButtonStyleVariant::Ghost => "Ghost",
-            ButtonStyleVariant::Link => "Link",
-        };
-    }
-
-    #[allow(unused)]
-    pub fn all() -> &'static [ButtonStyleVariant] {
-        return &[
-            ButtonStyleVariant::Default,
-            ButtonStyleVariant::Secondary,
-            ButtonStyleVariant::Destructive,
-            ButtonStyleVariant::Outline,
-            ButtonStyleVariant::Ghost,
-            ButtonStyleVariant::Link,
-        ];
-    }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, strum::Display, strum::EnumIter, Default)]
 pub enum ButtonSizeVariant {
     Large,
+    #[default]
     Default,
     Small,
     Tiny,
     Icon,
 }
 
-impl ButtonSizeVariant {
+impl Variant for ButtonSizeVariant {
     fn classes(&self) -> &'static str {
         return match self {
             ButtonSizeVariant::Large => "rounded-md px-4 py-1",
@@ -69,28 +51,6 @@ impl ButtonSizeVariant {
             ButtonSizeVariant::Tiny => "rounded-sm px-0.5",
             ButtonSizeVariant::Icon => "w-6 h-6 rounded",
         };
-    }
-
-    #[allow(unused)]
-    pub fn to_string(&self) -> &'static str {
-        return match self {
-            ButtonSizeVariant::Large => "Large",
-            ButtonSizeVariant::Default => "Default",
-            ButtonSizeVariant::Small => "Small",
-            ButtonSizeVariant::Tiny => "Tiny",
-            ButtonSizeVariant::Icon => "Icon",
-        };
-    }
-
-    #[allow(unused)]
-    pub fn all() -> &'static [ButtonSizeVariant] {
-        return &[
-            ButtonSizeVariant::Large,
-            ButtonSizeVariant::Default,
-            ButtonSizeVariant::Small,
-            ButtonSizeVariant::Tiny,
-            ButtonSizeVariant::Icon,
-        ];
     }
 }
 
@@ -105,8 +65,8 @@ pub struct ButtonProps {
 
 #[component]
 pub fn Button(props: ButtonProps) -> Element {
-    let style = props.style.unwrap_or(ButtonStyleVariant::Default);
-    let size = props.size.unwrap_or(ButtonSizeVariant::Default);
+    let style = props.style.unwrap_or_default();
+    let size = props.size.unwrap_or_default();
     let class = format!(
         "{} {} {}",
         props.class.unwrap_or(""),

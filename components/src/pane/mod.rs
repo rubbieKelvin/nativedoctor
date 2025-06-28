@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 
-#[derive(PartialEq, Clone)]
+use crate::traits::Variant;
+
+#[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
 pub enum PaneStyleVariant {
     Lighter,
     Default,
@@ -8,7 +10,7 @@ pub enum PaneStyleVariant {
     Evil,
 }
 
-impl PaneStyleVariant {
+impl Variant for PaneStyleVariant {
     fn classes(&self) -> &'static str {
         return match self {
             PaneStyleVariant::Lighter => "bg-[#202020]",
@@ -16,15 +18,6 @@ impl PaneStyleVariant {
             PaneStyleVariant::Dark => "bg-[#141414]",
             PaneStyleVariant::Evil => "bg-[#0a0a0a]",
         };
-    }
-
-    pub fn all() -> &'static [PaneStyleVariant] {
-        return &[
-            PaneStyleVariant::Lighter,
-            PaneStyleVariant::Default,
-            PaneStyleVariant::Dark,
-            PaneStyleVariant::Evil
-        ];
     }
 }
 

@@ -21,8 +21,8 @@ pub fn ButtonGroup(
     inactive_style: Option<button::ButtonStyleVariant>,
 ) -> Element {
     let multiselect = multiselect.unwrap_or(false);
-    let active_style = active_style.unwrap_or(button::ButtonStyleVariant::Default);
-    let inactive_style = inactive_style.unwrap_or(button::ButtonStyleVariant::Ghost);
+    let active_style = active_style.unwrap_or_default();
+    let inactive_style = inactive_style.unwrap_or_else(|| button::ButtonStyleVariant::Ghost);
 
     // set the group
     let button_group_injection = use_context_provider::<Signal<ButtonGroupInjection>>(|| {

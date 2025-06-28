@@ -1,14 +1,17 @@
 use dioxus::prelude::*;
 
-#[derive(Clone, PartialEq)]
+use crate::traits::Variant;
+
+#[derive(Clone, PartialEq, strum::Display, strum::EnumIter, Default)]
 pub enum LabelSizeVariant {
     Large,
+    #[default]
     Default,
     Small,
     Tiny,
 }
 
-impl LabelSizeVariant {
+impl Variant for LabelSizeVariant {
     fn classes(&self) -> &'static str {
         return match self {
             LabelSizeVariant::Large => "text-xl",
@@ -17,51 +20,23 @@ impl LabelSizeVariant {
             LabelSizeVariant::Tiny => "text-xs",
         };
     }
-
-    #[allow(unused)]
-    pub fn to_string(&self) -> &'static str {
-        return match self {
-            LabelSizeVariant::Large => "Large",
-            LabelSizeVariant::Default => "Default",
-            LabelSizeVariant::Small => "Small",
-            LabelSizeVariant::Tiny => "Tiny",
-        };
-    }
-
-    #[allow(unused)]
-    pub fn all() -> &'static [LabelSizeVariant] {
-        return &[
-            LabelSizeVariant::Large,
-            LabelSizeVariant::Default,
-            LabelSizeVariant::Small,
-            LabelSizeVariant::Tiny,
-        ];
-    }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, strum::Display, strum::EnumIter, Default)]
 pub enum LabelStyleVariant {
+    #[default]
     Default,
     Mild,
     Ghost,
 }
 
-impl LabelStyleVariant {
+impl Variant for LabelStyleVariant {
     fn classes(&self) -> &'static str {
         return match self {
             LabelStyleVariant::Default => "text-[#ffffff]",
             LabelStyleVariant::Mild => "text-[#b4b4b4]",
             LabelStyleVariant::Ghost => "text-[#898989]",
         };
-    }
-
-    #[allow(unused)]
-    pub fn all() -> &'static [LabelStyleVariant] {
-        return &[
-            LabelStyleVariant::Default,
-            LabelStyleVariant::Mild,
-            LabelStyleVariant::Ghost,
-        ];
     }
 }
 
@@ -72,8 +47,8 @@ pub fn Label(
     size: Option<LabelSizeVariant>,
     children: Element,
 ) -> Element {
-    let size = size.unwrap_or(LabelSizeVariant::Default);
-    let style = style.unwrap_or(LabelStyleVariant::Default);
+    let size = size.unwrap_or_default();
+    let style = style.unwrap_or_default();
     let class = format!(
         "{} {} {}",
         class.unwrap_or(""),
