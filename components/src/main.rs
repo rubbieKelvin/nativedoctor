@@ -4,6 +4,7 @@ use dioxus_free_icons::{Icon, icons::ld_icons};
 mod button;
 mod label;
 mod pane;
+mod buttongroup;
 
 fn main() {
     dioxus::launch(App);
@@ -88,6 +89,67 @@ fn App() -> Element {
                             class: "p-8 rounded-md",
                             style: style.clone(),
                             "Hello"
+                        }
+                    }
+                }
+            }
+
+            // Button group
+            div {
+                class: "flex gap-2 flex-col",
+                h1 { "Button group" }
+
+                div {
+                    h1 {
+                        "Single select"
+                    }
+
+                    buttongroup::ButtonGroup {
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 1"
+                            }
+                        }
+
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 2"
+                            }
+                        }
+
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 3"
+                            }
+                        }
+                    }
+                }
+
+                div {
+                    h1 {
+                        "Multi select"
+                    }
+                    
+                    buttongroup::ButtonGroup {
+                        multiselect: true,
+                        active_style: button::ButtonStyleVariant::Secondary,
+                        
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 1"
+                            }
+                        }
+
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 2"
+                            }
+                        }
+
+                        buttongroup::GroupButton {
+                            label::Label {
+                                "Group 3"
+                            }
                         }
                     }
                 }

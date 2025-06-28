@@ -94,18 +94,22 @@ impl ButtonSizeVariant {
     }
 }
 
+#[derive(Props, PartialEq, Clone)]
+pub struct ButtonProps {
+    pub children: Element,
+    pub class: Option<&'static str>,
+    pub style: Option<ButtonStyleVariant>,
+    pub size: Option<ButtonSizeVariant>,
+    pub onclick: Option<EventHandler<Event<MouseData>>>,
+}
+
 #[component]
-pub fn Button(
-    children: Element,
-    class: Option<&'static str>,
-    style: Option<ButtonStyleVariant>,
-    size: Option<ButtonSizeVariant>,
-) -> Element {
-    let style = style.unwrap_or(ButtonStyleVariant::Default);
-    let size = size.unwrap_or(ButtonSizeVariant::Default);
+pub fn Button(props: ButtonProps) -> Element {
+    let style = props.style.unwrap_or(ButtonStyleVariant::Default);
+    let size = props.size.unwrap_or(ButtonSizeVariant::Default);
     let class = format!(
         "{} {} {}",
-        class.unwrap_or(""),
+        props.class.unwrap_or(""),
         style.classes(),
         size.classes()
     );
@@ -113,7 +117,14 @@ pub fn Button(
     return rsx! {
         button {
             class,
-            {children}
+            onclick: move |e| {
+                if props.onclick.is_none(){
+                    return;
+                }
+
+                props.onclick.unwrap().call(e)
+            },
+            {props.children}
         }
     };
 }

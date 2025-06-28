@@ -2,7 +2,7 @@
 
 - [x] Buttons
 - [x] Labels
-- [ ] Button Groups
+- [x] Button Groups
 - [ ] Text inputs
 - [ ] Number inputs
 - [ ] Tabs
@@ -12,4 +12,4 @@
 - [ ] Dropdown Select
 - [ ] Dialogs
 - [ ] Empty States
-- [ ] Pane
+- [x] Pane
