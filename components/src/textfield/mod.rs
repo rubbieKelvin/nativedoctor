@@ -15,9 +15,9 @@ impl Variant for TextFieldStyleVariant {
     fn classes(&self) -> &'static str {
         match self {
             TextFieldStyleVariant::Default => {
-                "bg-[#3d3d3d] border border-[#82857e] focus:border-[#ffffff]"
+                "bg-[#3d3d3d] border border-[#82857e] focus-within:border-[#ffffff]"
             }
-            TextFieldStyleVariant::Ghost => "bg-transparent border border-transparent hover:bg-[#3d3d3d] focus:bg-[#3d3d3d]",
+            TextFieldStyleVariant::Ghost => "bg-transparent border border-transparent hover:bg-[#3d3d3d] focus-within:bg-[#3d3d3d]",
             TextFieldStyleVariant::Void => "bg-transparent border border-transparent",
         }
     }
@@ -52,6 +52,8 @@ pub fn TextField(
     style: Option<TextFieldStyleVariant>,
     class: Option<&'static str>,
     oninput: Option<EventHandler<Event<FormData>>>,
+    before: Option<Element>,
+    after: Option<Element>,
     autocomplete: Option<bool>,
 ) -> Element {
     let style = style.unwrap_or_default();
@@ -59,27 +61,39 @@ pub fn TextField(
     let placeholder = placeholder.unwrap_or("Enter text...");
     let autocomplete = autocomplete.unwrap_or(false);
     let class = format!(
-        "{} {} {} focus:outline-none",
+        "{} {} {} flex gap-2",
         class.unwrap_or_default(),
         style.classes(),
         size.classes()
     );
 
     rsx! {
-        input {
-            r#type: "text",
+        div {
             class,
-            value: "{value}",
-            placeholder: placeholder,
-            autocomplete: if autocomplete {None} else {"off"},
-            spellcheck: if autocomplete {None} else {"false"},
-            autocapitalize: if autocomplete {None} else {"off"},
-            oninput: move |e| {
-                value.set(e.value());
-                if let Some(oninput_handler) = oninput {
-                    oninput_handler.call(e);
-                }
-            },
+            
+            if let Some(before) = before {
+                {before}
+            }
+
+            input {
+                r#type: "text",
+                class: "focus:outline-none bg-transparent flex-grow",
+                value: "{value}",
+                placeholder: placeholder,
+                autocomplete: if autocomplete {None} else {"off"},
+                spellcheck: if autocomplete {None} else {"false"},
+                autocapitalize: if autocomplete {None} else {"off"},
+                oninput: move |e| {
+                    value.set(e.value());
+                    if let Some(oninput_handler) = oninput {
+                        oninput_handler.call(e);
+                    }
+                },
+            }
+
+            if let Some(after) = after {
+                {after}
+            }
         }
     }
 }

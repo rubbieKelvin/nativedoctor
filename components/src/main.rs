@@ -142,8 +142,19 @@ fn TextFields() -> Element {
     return rsx! {
         div {
             h1 { "Text field ("{text}")" }
+            
+            textfield::TextField {
+                value: text,
+                before: rsx!{
+                    p {
+                        "X"
+                    }
+                }
+            }
+
             for size in textfield::TextFieldSizeVariant::iter() {
                 div {
+                    class: "flex",
                     for style in textfield::TextFieldStyleVariant::iter() {
                         textfield::TextField {
                             value: text,
@@ -192,12 +203,12 @@ fn App() -> Element {
         div { class: "flex gap-4 flex-col p-4",
             h1 { class: "mb-4", "Preview" }
 
+            TextFields {}
             NumberInputs {  }
             Buttons {}
             Labels {}
             Panes {}
             ButtonGroups {}
-            TextFields {}
         }
     };
 }
