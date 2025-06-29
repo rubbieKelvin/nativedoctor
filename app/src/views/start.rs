@@ -1,10 +1,8 @@
-use std::path::PathBuf;
-
 use components_lib::button::Button;
 use dioxus::prelude::*;
-use nativedoctor_core::{create_project_template, fs::FileObject};
 
 use crate::components::WmDragArea;
+use crate::session::Session;
 use crate::PageScreen;
 use components_lib::label::Label;
 use components_lib::pane::{Pane, PaneStyleVariant};
@@ -14,15 +12,7 @@ pub fn StartScreenView() -> Element {
     let mut screen_state = use_context::<Signal<PageScreen>>();
 
     let create_new_project = move |_: Event<MouseData>| {
-        let mut screen_write = screen_state.write();
-        let (project, requests) = create_project_template("Untitled");
-        *screen_write = PageScreen::ProjectScreen(
-            FileObject::new(PathBuf::new(), project),
-            requests
-                .iter()
-                .map(|r| FileObject::new(PathBuf::new(), r.clone()))
-                .collect(),
-        );
+        screen_state.set(PageScreen::ProjectScreen(Session::template()));
     };
 
     return rsx! {

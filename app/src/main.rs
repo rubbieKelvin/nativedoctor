@@ -4,14 +4,16 @@ use nativedoctor_core::{
     schema::roots::{ProjectRootSchema, RequestRootSchema},
 };
 
+use crate::session::Session;
+
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
 mod components;
+mod session;
 mod states;
 mod views;
-mod session;
 
 fn main() {
     #[cfg(feature = "desktop")]
@@ -53,17 +55,22 @@ fn main() {
 #[derive(Clone, PartialEq)]
 pub enum PageScreen {
     StartScreen,
-    ProjectScreen(
-        FileObject<ProjectRootSchema>,
-        Vec<FileObject<RequestRootSchema>>,
-    ),
+    ProjectScreen(Session),
 }
 
 #[component]
 fn App() -> Element {
     // State
     // let state = ApplicationState::provide();
-    let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
+    let mut screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
+
+    // TODO: remove
+    // On debug move to project page
+    #[cfg(debug_assertions)]
+    {
+        use crate::session::Session;
+        screen_state.set(PageScreen::ProjectScreen(Session::template()));
+    }
 
     // Ui element
     return rsx! {
@@ -75,10 +82,9 @@ fn App() -> Element {
             PageScreen::StartScreen => rsx!{
                 views::start::StartScreenView {  }
             },
-            PageScreen::ProjectScreen(schema, requests) => rsx!{
+            PageScreen::ProjectScreen(session) => rsx!{
                 views::project::ProjectView {
-                    schema,
-                    requests
+                    session
                 }
             }
         }

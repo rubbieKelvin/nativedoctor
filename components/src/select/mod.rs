@@ -4,7 +4,7 @@ use dioxus_free_icons::{Icon, icons::ld_icons};
 use crate::{
     border::Border,
     button::Button,
-    label::Label,
+    label::{Label, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
 };
 
@@ -50,7 +50,9 @@ pub fn Select<T: Clone + PartialEq + Into<String> + 'static>(
                 Button {
                     class: "flex {class} item-center gap-2",
                     onclick: move |_| is_open.set(!is_open()),
-                    Label { class: "flex-grow text-start",
+                    Label {
+                        class: "flex-grow text-start",
+                        style: if value().is_some() { LabelStyleVariant::Default } else { LabelStyleVariant::Ghost },
                         if let Some(v) = &value() {
                             "{v.clone().into()}"
                         } else {

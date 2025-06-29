@@ -1,21 +1,23 @@
-use std::{
-    collections::{HashMap, HashSet},
-    path::PathBuf,
-};
+use std::{collections::HashMap, path::PathBuf};
 
 use nativedoctor_core::schema::{
     request_body::RequestBodySchema, request_config::RetryConfigSchema,
 };
 
-#[derive(PartialEq, Clone)]
+const _NANOID_ALPHA: [char; 19] = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'x', 'y', 'z',
+];
+
+#[derive(PartialEq, Clone, Default)]
 pub struct Session {
-    path: PathBuf,
-    name: String,
-    description: String,
-    version: String,
-    requests: Vec<RequestDefination>,
-    calls: HashMap<String, Vec<String>>,
-    env: HashMap<String, HashMap<String, String>>,
+    pub path: PathBuf,
+    pub name: String,
+    pub description: String,
+    pub version: String,
+    pub requests: Vec<RequestDefination>,
+    pub calls: HashMap<String, Vec<String>>,
+    pub current_env: Option<String>,
+    pub env: HashMap<String, HashMap<String, String>>,
 }
 
 impl Session {
@@ -43,27 +45,45 @@ impl Session {
                 ),
             ]),
             requests: vec![RequestDefination {
+                id: uuid::Uuid::new_v4(),
                 name: "hello".to_string(),
                 method: "GET".to_string(),
                 url: "{{baseurl}}/get".to_string(),
                 ..Default::default()
             }],
             calls: HashMap::from_iter([("main".to_string(), vec!["hello".to_string()])]),
+            ..Default::default()
         };
+    }
+
+    pub fn get_environments(&self) -> Vec<String> {
+        return self.env.keys().map(|k| k.clone()).collect();
+    }
+
+    pub fn new_empty_request(&mut self) -> uuid::Uuid {
+        let id = uuid::Uuid::new_v4();
+        self.requests.push(RequestDefination {
+            id: id.clone(),
+            name: "untitled".to_string(),
+            method: "GET".to_string(),
+            ..Default::default()
+        });
+        return id;
     }
 }
 
-#[derive(PartialEq, Clone, Default)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct RequestDefination {
-    name: String,
-    method: String,
-    url: String,
-    doc: String,
-    headers: HashMap<String, String>,
-    dependencies: Vec<String>,
-    timeout: u32,
-    retries: RetryConfigSchema,
-    query: Vec<(String, String)>,
-    body: Option<RequestBodySchema>,
-    class: String,
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub method: String,
+    pub url: String,
+    pub doc: String,
+    pub headers: HashMap<String, String>,
+    pub dependencies: Vec<String>,
+    pub timeout: u32,
+    pub retries: RetryConfigSchema,
+    pub query: Vec<(String, String)>,
+    pub body: Option<RequestBodySchema>,
+    pub class: String,
 }
