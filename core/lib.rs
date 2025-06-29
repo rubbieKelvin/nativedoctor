@@ -60,6 +60,7 @@ pub fn create_project_template(name: &str) -> (ProjectRootSchema, Vec<RequestRoo
 }
 
 // Initializes a new project at path
+#[cfg(feature = "desktop")]
 pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
     // Create schemas
     let (project_schema, requests) = create_project_template(name);

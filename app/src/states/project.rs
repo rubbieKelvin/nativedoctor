@@ -46,8 +46,18 @@ impl ProjectState {
         });
     }
 
-    /// Save the project to disk.
     pub async fn save(&self) -> Result<(), String> {
+        #[cfg(feature = "desktop")]
+        return self.save_to_disk().await;
+
+        // todo: implement for web
+        #[cfg(feature = "web")]
+        return Ok(());
+    }
+
+    #[cfg(feature = "desktop")]
+    /// Save the project to disk.
+    async fn save_to_disk(&self) -> Result<(), String> {
         tracing::info!("Starting save project");
 
         let mut project_signal = self.project.clone();

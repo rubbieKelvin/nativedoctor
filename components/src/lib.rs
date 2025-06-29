@@ -8,6 +8,8 @@ pub mod contextmenu;
 pub mod dialog;
 pub mod toast;
 pub mod border;
+pub mod select;
+pub mod popup;
 
 // #[cfg(test)]
 // mod tests {

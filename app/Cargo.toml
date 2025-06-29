@@ -12,13 +12,13 @@ dioxus-free-icons = { version = "0.9", features = [
     "hero-icons-outline",
     "hero-icons-solid",
 ] }
-uuid = { version = "1.17.0", features = ["v4"] }
+uuid = { version = "1.17.0", features = ["v4", "js"] }
 nativedoctor-core = { path = "../core" }
 rfd = "0.15.3"
 tracing = "0.1.41"
-tokio = { version = "1.45.0", features = ["full"] }
 dioxus-logger = "0.6.2"
-
+components = {path = "../components"}
+tokio = { version = "1.45.1", features = ["full"] }
 
 [features]
 default = ["desktop"]

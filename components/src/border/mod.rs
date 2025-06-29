@@ -17,11 +17,41 @@ impl Border {
     }
 
     pub fn none() -> Border {
-        return Border{
+        return Border {
             left: None,
             top: None,
             right: None,
-            bottom: None
+            bottom: None,
+        };
+    }
+
+    #[allow(unused)]
+    pub fn left() -> Border {
+        return Border {
+            left: Some(BorderSide),
+            top: None,
+            right: None,
+            bottom: None,
+        };
+    }
+
+    #[allow(unused)]
+    pub fn right() -> Border {
+        return Border {
+            right: Some(BorderSide),
+            top: None,
+            left: None,
+            bottom: None,
+        };
+    }
+
+    #[allow(unused)]
+    pub fn bottom() -> Border {
+        return Border {
+            bottom: Some(BorderSide),
+            top: None,
+            left: None,
+            right: None,
         };
     }
 }

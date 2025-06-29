@@ -3,7 +3,6 @@ use strum;
 
 use crate::traits::Variant;
 
-
 #[derive(PartialEq, Clone, strum::EnumIter, strum::Display, Default)]
 pub enum ButtonStyleVariant {
     #[default]
@@ -12,6 +11,7 @@ pub enum ButtonStyleVariant {
     Destructive,
     Outline,
     Ghost,
+    Transparent,
     Link,
 }
 
@@ -26,6 +26,7 @@ impl Variant for ButtonStyleVariant {
             ButtonStyleVariant::Outline => {
                 "border border-[#82857e] hover:border-[#ffffff] active:bg-[#36373a]"
             }
+            ButtonStyleVariant::Transparent => "bg-transparent",
             ButtonStyleVariant::Ghost => "hover:bg-[#353535] active:bg-[#4b4b4b]",
             ButtonStyleVariant::Link => "text-[#5c95ff] hover:underline",
         };
@@ -49,27 +50,24 @@ impl Variant for ButtonSizeVariant {
             ButtonSizeVariant::Default => "px-2 py-0.5 rounded",
             ButtonSizeVariant::Small => "rounded px-1",
             ButtonSizeVariant::Tiny => "rounded-sm px-0.5",
-            ButtonSizeVariant::Icon => "w-6 h-6 rounded flex items-center justify-center",
+            ButtonSizeVariant::Icon => "rounded p-1 flex items-center justify-center",
         };
     }
 }
 
-#[derive(Props, PartialEq, Clone)]
-pub struct ButtonProps {
-    pub children: Element,
-    pub class: Option<&'static str>,
-    pub style: Option<ButtonStyleVariant>,
-    pub size: Option<ButtonSizeVariant>,
-    pub onclick: Option<EventHandler<Event<MouseData>>>,
-}
-
 #[component]
-pub fn Button(props: ButtonProps) -> Element {
-    let style = props.style.unwrap_or_default();
-    let size = props.size.unwrap_or_default();
+pub fn Button(
+    children: Element,
+    class: Option<String>,
+    style: Option<ButtonStyleVariant>,
+    size: Option<ButtonSizeVariant>,
+    onclick: Option<EventHandler<Event<MouseData>>>,
+) -> Element {
+    let style = style.unwrap_or_default();
+    let size = size.unwrap_or_default();
     let class = format!(
         "{} {} {}",
-        props.class.unwrap_or(""),
+        class.unwrap_or_default(),
         style.classes(),
         size.classes()
     );
@@ -78,13 +76,13 @@ pub fn Button(props: ButtonProps) -> Element {
         button {
             class,
             onclick: move |e| {
-                if props.onclick.is_none(){
+                if onclick.is_none(){
                     return;
                 }
 
-                props.onclick.unwrap().call(e)
+                onclick.unwrap().call(e)
             },
-            {props.children}
+            {children}
         }
     };
 }

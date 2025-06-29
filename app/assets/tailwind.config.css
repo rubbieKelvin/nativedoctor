@@ -21,7 +21,6 @@
   --color-text-secondary: #999999;
 }
 
-html,
-body {
-  @apply bg-white text-gray-900 text-base;
+:root {
+  @apply text-white;
 }

@@ -1,11 +1,13 @@
 use std::path::PathBuf;
 
+use components_lib::button::{Button, ButtonStyleVariant};
 use dioxus::prelude::*;
-use nativedoctor_core::{
-    create_project_template, fs::FileObject, schema::roots::ProjectRootSchema,
-};
+use nativedoctor_core::{create_project_template, fs::FileObject};
 
+use crate::components::WmDragArea;
 use crate::PageScreen;
+use components_lib::label::Label;
+use components_lib::pane::{Pane, PaneStyleVariant};
 
 #[component]
 pub fn StartScreenView() -> Element {
@@ -24,24 +26,19 @@ pub fn StartScreenView() -> Element {
     };
 
     return rsx! {
-        div{
-            class: "flex items-center justify-center h-full",
-            div {
-                class: "flex flex-col gap-4",
-                h1 {
-                    class: "text-3xl text-center",
-                    "Native Doctor"
-                }
-                div {
-                    class: "flex gap-2",
-                    button {
-                        class: "flex-grow px-3 py-2 bg-gray-200 hover:bg-gray-300",
-                        onclick: create_new_project,
-                        "Create project",
-                    }
-                    button {
-                        class: "flex-grow px-3 py-2 bg-gray-200 hover:bg-gray-300",
-                        "Open project"
+        WmDragArea { class: "h-full",
+            Pane {
+                style: PaneStyleVariant::Darker,
+                class: "flex items-center justify-center h-full",
+                div { class: "flex flex-col gap-4",
+                    Label { class: "text-3xl text-center", "Native Doctor" }
+                    div { class: "flex gap-2",
+                        Button { onclick: create_new_project,
+                            Label { "Create project" }
+                        }
+                        Button {
+                            Label { "Open project" }
+                        }
                     }
                 }
             }

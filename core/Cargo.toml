@@ -10,8 +10,7 @@ path = "lib.rs"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = { version = "0.9.34" }
-uuid = { version = "1.16.0", features = ["v4", "serde"] }
-tokio = { version = "1.45.0", features = ["full"] }
-tokio-stream = "0.1.17"
+uuid = { version = "1.16.0", features = ["v4", "serde", "js"] }
+tokio = { version = "1.45.1", features = ["full"] }
 tracing = "0.1.41"
 anyhow = "1.0.98"

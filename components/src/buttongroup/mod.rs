@@ -8,6 +8,7 @@ pub struct ButtonGroupInjection {
     pub multiselect: bool,
     pub selected_many: HashSet<uuid::Uuid>, // all selected button id
     pub selected_single: Option<uuid::Uuid>, // single selected button id
+    pub size: button::ButtonSizeVariant,
     pub active_style: button::ButtonStyleVariant,
     pub inactive_style: button::ButtonStyleVariant,
 }
@@ -15,12 +16,14 @@ pub struct ButtonGroupInjection {
 #[component]
 pub fn ButtonGroup(
     multiselect: Option<bool>,
-    class: Option<&'static str>,
+    class: Option<String>,
     children: Element,
+    size: Option<button::ButtonSizeVariant>,
     active_style: Option<button::ButtonStyleVariant>,
     inactive_style: Option<button::ButtonStyleVariant>,
 ) -> Element {
     let multiselect = multiselect.unwrap_or(false);
+    let size = size.unwrap_or_default();
     let active_style = active_style.unwrap_or_default();
     let inactive_style = inactive_style.unwrap_or_else(|| button::ButtonStyleVariant::Ghost);
 
@@ -30,6 +33,7 @@ pub fn ButtonGroup(
             multiselect,
             selected_many: HashSet::new(),
             selected_single: None,
+            size,
             active_style,
             inactive_style,
         })
@@ -50,8 +54,7 @@ pub fn ButtonGroup(
 #[component]
 pub fn GroupButton(
     children: Element,
-    class: Option<&'static str>,
-    size: Option<button::ButtonSizeVariant>,
+    class: Option<String>,
     onclick: Option<EventHandler<Event<MouseData>>>,
 ) -> Element {
     let id = use_signal(|| uuid::Uuid::new_v4());
@@ -86,7 +89,7 @@ pub fn GroupButton(
         button::Button {
             class,
             style: if is_selected() { button_group_injection_signal().active_style } else { button_group_injection_signal().inactive_style },
-            size,
+            size: button_group_injection_signal().size,
             onclick: move |e| {
                 let id = id();
                 let mut data = button_group_injection_signal.write();
