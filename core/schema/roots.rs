@@ -12,8 +12,6 @@ use serde::{Deserialize, Serialize};
 pub struct ProjectRootSchema {
     pub project: ProjectDefinationSchema,
     #[serde(default)]
-    pub requests_dir: Option<String>,
-    #[serde(default)]
     pub env: HashMap<String, EnvironmentVariableSchema>,
     pub calls: CallSchema,
 }

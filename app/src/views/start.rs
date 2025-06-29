@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use components_lib::button::{Button, ButtonStyleVariant};
+use components_lib::button::Button;
 use dioxus::prelude::*;
 use nativedoctor_core::{create_project_template, fs::FileObject};
 

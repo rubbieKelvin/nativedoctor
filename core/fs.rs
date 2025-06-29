@@ -85,10 +85,7 @@ impl FileObject<ProjectRootSchema> {
             .parent()
             .context("Cannot get project file parent")
             .unwrap();
-        return dir.join(match &self.object.requests_dir {
-            Some(dir) => dir,
-            None => "requests",
-        });
+        return dir.join("requests");
     }
 
     // pub async fn get_requests(&self) -> anyhow::Result<Vec<FileObject<RequestRootSchema>>> {

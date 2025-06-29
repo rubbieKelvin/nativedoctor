@@ -11,6 +11,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 mod components;
 mod states;
 mod views;
+mod session;
 
 fn main() {
     #[cfg(feature = "desktop")]

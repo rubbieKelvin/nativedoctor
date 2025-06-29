@@ -1,4 +1,4 @@
 // mod app;
 mod project;
 
-pub use project::{ProjectState, WritableRequest, WritableRequestProperty};
+pub use project::{ProjectState, WritableRequest};

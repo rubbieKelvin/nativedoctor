@@ -7,7 +7,6 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
-    --color-red-200: oklch(88.5% 0.062 18.334);
     --color-red-300: oklch(80.8% 0.114 19.571);
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-red-500: oklch(63.7% 0.237 25.331);
@@ -303,15 +302,6 @@
   .h-4 {
     height: calc(var(--spacing) * 4);
   }
-  .h-5 {
-    height: calc(var(--spacing) * 5);
-  }
-  .h-5\.5 {
-    height: calc(var(--spacing) * 5.5);
-  }
-  .h-6 {
-    height: calc(var(--spacing) * 6);
-  }
   .h-7 {
     height: calc(var(--spacing) * 7);
   }
@@ -330,15 +320,6 @@
   .w-4 {
     width: calc(var(--spacing) * 4);
   }
-  .w-5 {
-    width: calc(var(--spacing) * 5);
-  }
-  .w-5\.5 {
-    width: calc(var(--spacing) * 5.5);
-  }
-  .w-6 {
-    width: calc(var(--spacing) * 6);
-  }
   .w-24 {
     width: calc(var(--spacing) * 24);
   }
@@ -350,9 +331,6 @@
   }
   .w-\[36px\] {
     width: 36px;
-  }
-  .w-\[50\%\] {
-    width: 50%;
   }
   .w-\[300px\] {
     width: 300px;
@@ -562,15 +540,6 @@
   .bg-gray-50 {
     background-color: var(--color-gray-50);
   }
-  .bg-gray-200 {
-    background-color: var(--color-gray-200);
-  }
-  .bg-gray-300 {
-    background-color: var(--color-gray-300);
-  }
-  .bg-gray-400 {
-    background-color: var(--color-gray-400);
-  }
   .bg-green-500 {
     background-color: var(--color-green-500);
   }
@@ -579,9 +548,6 @@
   }
   .bg-item-hover-bg {
     background-color: var(--color-item-hover-bg);
-  }
-  .bg-red-400 {
-    background-color: var(--color-red-400);
   }
   .bg-transparent {
     background-color: transparent;
@@ -856,13 +822,6 @@
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--color-accent) 70%, transparent);
         }
-      }
-    }
-  }
-  .hover\:bg-gray-400 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-gray-400);
       }
     }
   }
