@@ -4,6 +4,7 @@ pub mod label;
 pub mod pane;
 pub mod textfield;
 pub mod traits;
+pub mod contextmenu;
 
 // #[cfg(test)]
 // mod tests {

@@ -4,6 +4,7 @@ use strum::IntoEnumIterator;
 
 mod button;
 mod buttongroup;
+mod contextmenu;
 mod label;
 mod numberfield;
 mod pane;
@@ -72,13 +73,61 @@ fn Labels() -> Element {
 
 #[component]
 fn Panes() -> Element {
+    let menu: Vec<contextmenu::MenuItem> = vec![
+        contextmenu::MenuItem {
+            label: "Copy".to_string(),
+            onclick: Some(EventHandler::new(move |_| tracing::info!("Copy clicked!"))),
+            icon: Some(rsx!{
+                Icon{
+                    height: 14,
+                    width: 14,
+                    icon: ld_icons::LdCopy,
+                }
+            }),
+            ..contextmenu::MenuItem::default() // Use default for other fields
+        },
+        contextmenu::MenuItem {
+            label: "Paste".to_string(),
+            onclick: Some(EventHandler::new(move |_| tracing::info!("Paste clicked!"))),
+            icon: Some(rsx!{
+                Icon{
+                    height: 14,
+                    width: 14,
+                    icon: ld_icons::LdClipboardPaste,
+                }
+            }),
+            ..contextmenu::MenuItem::default()
+        },
+        contextmenu::MenuItem {
+            label: "Share".to_string(),
+            disabled: true, // This item will be unclickable
+            icon: Some(rsx!{
+                Icon{
+                    height: 14,
+                    width: 14,
+                    icon: ld_icons::LdShare2,
+                }
+            }),
+            ..contextmenu::MenuItem::default()
+        },
+        // An item without an icon
+        contextmenu::MenuItem {
+            label: "Delete".to_string(),
+            onclick: Some(EventHandler::new(move |_| tracing::info!("Delete clicked!"))),
+            ..contextmenu::MenuItem::default()
+        },
+    ];
+
     return rsx! {
         div { class: "flex gap-2 flex-col",
             h1 { "Pane" }
 
             div { class: "flex gap-2",
                 for style in pane::PaneStyleVariant::iter() {
-                    pane::Pane { class: "p-8 rounded-md", style: style.clone(), "{style}" }
+                    contextmenu::ContextMenu{
+                        items: menu.clone(),
+                        pane::Pane { class: "p-8 rounded-md", style: style.clone(), "{style}" }
+                    }
                 }
             }
         }
@@ -138,11 +187,10 @@ fn ButtonGroups() -> Element {
 fn TextFields() -> Element {
     let text = use_signal(|| String::new());
 
-
     return rsx! {
         div {
             h1 { "Text field ("{text}")" }
-            
+
             textfield::TextField {
                 value: text,
                 before: rsx!{
@@ -172,7 +220,7 @@ fn TextFields() -> Element {
 fn NumberInputs() -> Element {
     let value = use_signal(|| 0);
 
-    return rsx!{
+    return rsx! {
         div {
             h1{"Number input"}
             div {
