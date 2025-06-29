@@ -49,7 +49,7 @@ impl Variant for ButtonSizeVariant {
             ButtonSizeVariant::Default => "px-2 py-0.5 rounded",
             ButtonSizeVariant::Small => "rounded px-1",
             ButtonSizeVariant::Tiny => "rounded-sm px-0.5",
-            ButtonSizeVariant::Icon => "w-6 h-6 rounded",
+            ButtonSizeVariant::Icon => "w-6 h-6 rounded flex items-center justify-center",
         };
     }
 }

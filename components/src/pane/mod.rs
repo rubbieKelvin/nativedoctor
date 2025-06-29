@@ -1,6 +1,6 @@
+use super::traits::Variant;
+use crate::border::Border;
 use dioxus::prelude::*;
-
-use crate::traits::Variant;
 
 #[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
 pub enum PaneStyleVariant {
@@ -22,11 +22,22 @@ impl Variant for PaneStyleVariant {
 }
 
 #[component]
-pub fn Pane(class: Option<&'static str>, style: Option<PaneStyleVariant>, children: Element) -> Element {
+pub fn Pane(
+    class: Option<String>,
+    style: Option<PaneStyleVariant>,
+    border: Option<Border>,
+    children: Element,
+) -> Element {
+    let border = border.unwrap_or_else(|| Border::none());
     let style = style.unwrap_or(PaneStyleVariant::Default);
-    let class = format!("{} {}", class.unwrap_or(""), style.classes());
+    let class = format!(
+        "{} {} {}",
+        class.unwrap_or("".to_string()),
+        style.classes(),
+        border.classes()
+    );
 
-    return rsx!{
+    return rsx! {
         div {
             class,
             {children}

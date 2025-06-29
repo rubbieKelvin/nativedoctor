@@ -5,6 +5,9 @@ pub mod pane;
 pub mod textfield;
 pub mod traits;
 pub mod contextmenu;
+pub mod dialog;
+pub mod toast;
+pub mod border;
 
 // #[cfg(test)]
 // mod tests {

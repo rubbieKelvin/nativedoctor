@@ -2,6 +2,9 @@ use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons};
 use strum::IntoEnumIterator;
 
+use crate::toast::use_toast;
+
+mod border;
 mod button;
 mod buttongroup;
 mod contextmenu;
@@ -9,6 +12,7 @@ mod label;
 mod numberfield;
 mod pane;
 mod textfield;
+mod toast;
 mod traits;
 
 fn main() {
@@ -17,6 +21,35 @@ fn main() {
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_JS: Asset = asset!("/assets/tailwind.js");
+
+#[component]
+fn Toasts() -> Element {
+    let mut toast = use_toast();
+
+    return rsx! {
+        div {
+            h1 { "Toasts" }
+
+            div { class: "flex gap-2",
+                for variant in toast::ToastVariant::iter() {
+                    button::Button {
+                        onclick: move |_| {
+                            toast
+                                .push(
+                                    toast::ToastConfig::new(
+                                        variant.to_string(),
+                                        variant.clone(),
+                                        toast::ToastCloseMethod::Button,
+                                    ),
+                                );
+                        },
+                        "{variant}"
+                    }
+                }
+            }
+        }
+    };
+}
 
 #[component]
 fn Buttons() -> Element {
@@ -77,7 +110,7 @@ fn Panes() -> Element {
         contextmenu::MenuItem {
             label: "Copy".to_string(),
             onclick: Some(EventHandler::new(move |_| tracing::info!("Copy clicked!"))),
-            icon: Some(rsx!{
+            icon: Some(rsx! {
                 Icon{
                     height: 14,
                     width: 14,
@@ -89,7 +122,7 @@ fn Panes() -> Element {
         contextmenu::MenuItem {
             label: "Paste".to_string(),
             onclick: Some(EventHandler::new(move |_| tracing::info!("Paste clicked!"))),
-            icon: Some(rsx!{
+            icon: Some(rsx! {
                 Icon{
                     height: 14,
                     width: 14,
@@ -101,7 +134,7 @@ fn Panes() -> Element {
         contextmenu::MenuItem {
             label: "Share".to_string(),
             disabled: true, // This item will be unclickable
-            icon: Some(rsx!{
+            icon: Some(rsx! {
                 Icon{
                     height: 14,
                     width: 14,
@@ -113,7 +146,9 @@ fn Panes() -> Element {
         // An item without an icon
         contextmenu::MenuItem {
             label: "Delete".to_string(),
-            onclick: Some(EventHandler::new(move |_| tracing::info!("Delete clicked!"))),
+            onclick: Some(EventHandler::new(move |_| {
+                tracing::info!("Delete clicked!")
+            })),
             ..contextmenu::MenuItem::default()
         },
     ];
@@ -124,8 +159,7 @@ fn Panes() -> Element {
 
             div { class: "flex gap-2",
                 for style in pane::PaneStyleVariant::iter() {
-                    contextmenu::ContextMenu{
-                        items: menu.clone(),
+                    contextmenu::ContextMenu { items: menu.clone(),
                         pane::Pane { class: "p-8 rounded-md", style: style.clone(), "{style}" }
                     }
                 }
@@ -189,26 +223,23 @@ fn TextFields() -> Element {
 
     return rsx! {
         div {
-            h1 { "Text field ("{text}")" }
+            h1 {
+                "Text field ("
+                {text}
+                ")"
+            }
 
             textfield::TextField {
                 value: text,
-                before: rsx!{
-                    p {
-                        "X"
-                    }
-                }
+                before: rsx! {
+                    p { "X" }
+                },
             }
 
             for size in textfield::TextFieldSizeVariant::iter() {
-                div {
-                    class: "flex",
+                div { class: "flex",
                     for style in textfield::TextFieldStyleVariant::iter() {
-                        textfield::TextField {
-                            value: text,
-                            style,
-                            size: size.clone()
-                        }
+                        textfield::TextField { value: text, style, size: size.clone() }
                     }
                 }
             }
@@ -222,18 +253,16 @@ fn NumberInputs() -> Element {
 
     return rsx! {
         div {
-            h1{"Number input"}
-            div {
-                class: "flex flex-col gap-2",
-                for size in numberfield::NumberFieldSizeVariant::iter(){
-                    div {
-                        class: "flex gap-2",
-                        for style in numberfield::NumberFieldStyleVariant::iter(){
+            h1 { "Number input" }
+            div { class: "flex flex-col gap-2",
+                for size in numberfield::NumberFieldSizeVariant::iter() {
+                    div { class: "flex gap-2",
+                        for style in numberfield::NumberFieldStyleVariant::iter() {
                             numberfield::NumberField {
                                 class: "flex-grow",
                                 style,
                                 value,
-                                size: size.clone()
+                                size: size.clone(),
                             }
                         }
                     }
@@ -250,9 +279,9 @@ fn App() -> Element {
         document::Script { src: TAILWIND_JS }
         div { class: "flex gap-4 flex-col p-4",
             h1 { class: "mb-4", "Preview" }
-
+            toast::ToastProvider { Toasts {} }
             TextFields {}
-            NumberInputs {  }
+            NumberInputs {}
             Buttons {}
             Labels {}
             Panes {}

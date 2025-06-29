@@ -1,6 +1,4 @@
 
 pub trait Variant {
-    fn classes(&self) -> &'static str {
-        return "";
-    }
+    fn classes(&self) -> &'static str;
 }
