@@ -9,7 +9,7 @@ use crate::{
 };
 
 use crate::tabs::utils::TabGenerics;
-pub use crate::tabs::utils::{TabItemData, TabState, TabPayload, TabSet};
+pub use crate::tabs::utils::{TabItemData, TabPayload, TabSet, TabState};
 
 mod utils;
 
@@ -42,12 +42,12 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     emptystate: Option<Element>,
     children: Element,
 ) -> Element {
-    let mut selected_tab: Signal<Option<Uuid>> = use_signal(|| tabs().first().map(|tab| tab.id));
-
     // when the tabs list changes, ensure a tab is selected if possible.
     use_effect(move || {
-        if selected_tab.with(|id| id.is_none()) && !tabs.with(|t| t.is_empty()) {
-            selected_tab.set(tabs.with(|t| t.first().map(|tab| tab.id)));
+        let mut tabset = tabs.write();
+        if tabset.is_empty() {
+            let first_id = tabset.first().map(|t| t.id);
+            tabset.select(first_id);
         }
     });
 
@@ -65,12 +65,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     };
 
     // full data for the selected tab.
-    let selected_tab_data = use_memo(move || {
-        if let Some(selected_id) = selected_tab() {
-            return tabs().iter().find(|t| t.id == selected_id).cloned();
-        }
-        None
-    });
+    let selected_tab_data = use_memo(move || tabs().get_selected().cloned());
 
     rsx! {
         div { class: main_class,
@@ -83,7 +78,6 @@ pub fn TabsManager<T: TabGenerics + 'static>(
                         key: "{tab.id}",
                         tab,
                         tabs,
-                        selected_tab,
                         child: pill.clone()
                     }
                 }
@@ -96,7 +90,6 @@ pub fn TabsManager<T: TabGenerics + 'static>(
                         key: "{tab.id}",
                         tab: tab.clone(),
                         tabs,
-                        selected_tab,
                         {children}
                     }
                 } else if let Some(es) = emptystate {
@@ -112,14 +105,9 @@ pub fn TabsManager<T: TabGenerics + 'static>(
 fn TabListItem<T: TabGenerics + 'static>(
     tab: TabItemData<T>,
     tabs: Signal<TabSet<T>>,
-    selected_tab: Signal<Option<Uuid>>,
     child: Option<Element>,
 ) -> Element {
-    use_context_provider(|| TabState {
-        tab,
-        tabs,
-        selected_tab,
-    });
+    use_context_provider(|| TabState { tab, tabs });
 
     return match child {
         Some(child) => rsx! {{child}},
@@ -134,8 +122,8 @@ fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
 
     let name = tabstate.tab.payload.get_title();
     let is_selected = tabstate
-        .selected_tab
-        .with(|id| *id == Some(tabstate.tab.id));
+        .tabs
+        .with(|tabset| tabset.get_selected().map(|t| t.id) == Some(tabstate.tab.id));
 
     let button_style = if is_selected {
         ButtonStyleVariant::Default
@@ -149,9 +137,11 @@ fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
                 class: "gap-1 px-2 flex items-center w-full",
                 style: button_style,
                 onclick: {
-                    let mut selected_tab = tabstate.selected_tab;
+                    let mut tabs = tabstate.tabs;
                     move |_| {
-                        selected_tab.set(Some(tabstate.tab.id.clone()));
+                        tabs.with_mut(|tabset| {
+                            tabset.select(Some(tabstate.tab.id.clone()));
+                        })
                     }
                 },
 
@@ -182,13 +172,11 @@ fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
 fn TabContent<T: TabGenerics + 'static>(
     tab: TabItemData<T>,
     tabs: Signal<TabSet<T>>,
-    selected_tab: Signal<Option<Uuid>>,
     children: Element,
 ) -> Element {
     use_context_provider(|| TabState {
         tab,
         tabs,
-        selected_tab,
     });
 
     return rsx! {{children}};

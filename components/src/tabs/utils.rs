@@ -43,15 +43,19 @@ impl<T: TabGenerics> TabItemData<T> {
 }
 
 #[derive(PartialEq, Clone)]
-pub struct TabSet<T: TabGenerics>(Vec<TabItemData<T>>);
+pub struct TabSet<T: TabGenerics>(Option<uuid::Uuid>, Vec<TabItemData<T>>);
 
 impl<T: TabGenerics> TabSet<T> {
     pub fn new(vector: Vec<TabItemData<T>>) -> Self {
-        return TabSet(vector);
+        return TabSet(
+            // set the selected id to the first item in the tabset
+            vector.first().map(|t| t.id.clone()),
+            vector,
+        );
     }
 
     pub fn iter(&self) -> Iter<'_, TabItemData<T>> {
-        return self.0.iter();
+        return self.1.iter();
     }
 
     #[allow(unused)]
@@ -65,27 +69,37 @@ impl<T: TabGenerics> TabSet<T> {
             return;
         }
 
-        self.0.push(item);
+        self.1.push(item);
     }
 
     pub fn remove_via_index(&mut self, index: usize) {
-        self.0.remove(index);
+        self.1.remove(index);
     }
 
     pub fn len(&self) -> usize {
-        return self.0.len();
+        return self.1.len();
     }
 
     pub fn is_empty(&self) -> bool {
-        return self.0.is_empty();
+        return self.1.is_empty();
     }
 
     pub fn get(&self, index: usize) -> Option<&TabItemData<T>> {
-        return self.0.get(index);
+        return self.1.get(index);
     }
 
     pub fn first(&self) -> Option<&TabItemData<T>> {
-        return self.0.first();
+        return self.1.first();
+    }
+
+    pub fn get_selected(&self) -> Option<&TabItemData<T>> {
+        return self
+            .0
+            .map(|id| self.1.iter().filter(|t| t.id == id).last().unwrap());
+    }
+
+    pub fn select(&mut self, id: Option<uuid::Uuid>) {
+        self.0 = id;
     }
 }
 
@@ -94,7 +108,7 @@ impl<T: TabGenerics> IntoIterator for TabSet<T> {
     type IntoIter = IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+        self.1.into_iter()
     }
 }
 
@@ -103,7 +117,6 @@ impl<T: TabGenerics> IntoIterator for TabSet<T> {
 pub struct TabState<T: TabGenerics + 'static> {
     pub tab: TabItemData<T>,
     pub tabs: Signal<TabSet<T>>,
-    pub selected_tab: Signal<Option<Uuid>>,
 }
 
 impl<T: TabGenerics + 'static> TabState<T> {
@@ -111,36 +124,36 @@ impl<T: TabGenerics + 'static> TabState<T> {
     pub fn remove(&self) {
         let tab_id_to_remove = self.tab.id;
         let mut tabs = self.tabs;
-        let mut selected_tab: Signal<Option<Uuid>> = self.selected_tab;
 
-        let currently_selected_id = selected_tab.cloned();
+        let currently_selected_id = tabs().get_selected().map(|t| t.id.clone());
 
-        tabs.with_mut(|tabs_vec| {
-            let Some(index_to_remove) = tabs_vec.iter().position(|t| t.id == tab_id_to_remove)
+        tabs.with_mut(|tabs_set| {
+            let Some(index_to_remove) = tabs_set.iter().position(|t| t.id == tab_id_to_remove)
             else {
                 tracing::warn!("Tried to remove a tab that does not exist.");
                 return;
             };
 
             // Remove the tab.
-            tabs_vec.remove_via_index(index_to_remove);
+            tabs_set.remove_via_index(index_to_remove);
             tracing::info!(
                 "Removed tab at index {}. New count: {}",
                 index_to_remove,
-                tabs_vec.len()
+                tabs_set.len()
             );
 
             // If the removed tab was the selected one, we need to select a new one.
             if currently_selected_id == Some(tab_id_to_remove) {
-                if tabs_vec.is_empty() {
+                if tabs_set.is_empty() {
                     // No tabs left, so clear selection.
-                    selected_tab.set(None);
+                    tabs_set.select(None);
                 } else {
                     // Select the item at the same index, or the new last item
                     // if the original last item was the one removed.
-                    let new_index = index_to_remove.min(tabs_vec.len() - 1);
-                    let new_selected_id = tabs_vec.get(new_index).map(|t| t.id);
-                    selected_tab.set(new_selected_id);
+                    let new_index = index_to_remove.min(tabs_set.len() - 1);
+                    let new_selected_id = tabs_set.get(new_index).map(|t| t.id);
+                    tabs_set.select(new_selected_id);
+                    
                 }
             }
         });
