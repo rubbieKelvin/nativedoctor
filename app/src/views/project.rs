@@ -208,7 +208,19 @@ fn RequestListItem(
                 let request = request.clone();
                 move |_| {
                     let mut tabs = tabs.write();
-                    tabs.add_tab(TabItemData::new(WorkspaceTab::Request(request.clone())));
+                    let tabdata = TabItemData::new(WorkspaceTab::Request(request.clone()));
+
+                    // check if tab tabdata already exists in the set
+                    let similar = tabs.get_similar(&tabdata).cloned();
+
+                    if let Some(tabdata) = similar {
+                        tabs.select(Some(tabdata.id));
+                        return;
+                    }
+
+                    let id = tabdata.id.clone();
+                    tabs.add_tab(tabdata);
+                    tabs.select(Some(id));
                 }
             },
             Label {

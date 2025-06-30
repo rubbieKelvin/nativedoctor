@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons::LdX};
-use uuid::Uuid;
 
 use crate::{
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},

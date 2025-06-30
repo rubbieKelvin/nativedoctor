@@ -60,16 +60,18 @@ impl<T: TabGenerics> TabSet<T> {
 
     #[allow(unused)]
     pub fn add_tab(&mut self, item: TabItemData<T>) {
-        let uid = item.payload.unique_identifier();
-        let has_similar = self
-            .iter()
-            .any(|item| item.payload.unique_identifier() == uid);
-
-        if has_similar {
+        if self.get_similar(&item).is_some() {
             return;
         }
 
         self.1.push(item);
+    }
+
+    pub fn get_similar(&self, item: &TabItemData<T>) -> Option<&TabItemData<T>> {
+        let uid = item.payload.unique_identifier();
+        return self
+            .iter()
+            .find(|item| item.payload.unique_identifier() == uid);
     }
 
     pub fn remove_via_index(&mut self, index: usize) {
@@ -95,7 +97,7 @@ impl<T: TabGenerics> TabSet<T> {
     pub fn get_selected(&self) -> Option<&TabItemData<T>> {
         return self
             .0
-            .map(|id| self.1.iter().filter(|t| t.id == id).last().unwrap());
+            .map(|id| self.1.iter().filter(|t| t.id == id).last())?;
     }
 
     pub fn select(&mut self, id: Option<uuid::Uuid>) {
