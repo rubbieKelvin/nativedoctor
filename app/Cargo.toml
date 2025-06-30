@@ -20,6 +20,7 @@ dioxus-logger = "0.6.2"
 components = {path = "../components"}
 tokio = { version = "1.45.1", features = ["full"] }
 serde_yaml = { version = "0.9.34" }
+slug = "0.1.6"
 
 
 [features]

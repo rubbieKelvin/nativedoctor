@@ -1,7 +1,4 @@
-use crate::{
-    session::{RequestDefination, Session},
-    states::WritableRequest,
-};
+use crate::session::{RequestDefination, Session};
 use components_lib::{
     border::{Border, BorderStyleVariant},
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},

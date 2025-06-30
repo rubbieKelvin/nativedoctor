@@ -4,41 +4,13 @@ use uuid::Uuid;
 
 use crate::{
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
-    label::{Label, LabelSizeVariant, LabelStyleVariant},
+    label::{Label, LabelStyleVariant},
     traits::Variant,
 };
 
-#[derive(Clone, Default, PartialEq)]
-pub struct TabString(pub String);
+pub use crate::tabs::utils::{Tab, TabItemData, TabState, TabString};
 
-impl From<String> for TabString {
-    fn from(s: String) -> Self {
-        TabString(s)
-    }
-}
-
-impl Into<String> for TabString {
-    fn into(self) -> String {
-        self.0
-    }
-}
-
-#[derive(Clone, PartialEq)]
-pub struct TabItemData<T: PartialEq + Clone + Into<TabString>> {
-    pub id: Uuid,
-    pub item: T,
-    pub closable: bool,
-}
-
-impl<T: PartialEq + Clone + Into<TabString>> TabItemData<T> {
-    pub fn new(item: T) -> Self {
-        TabItemData {
-            id: Uuid::new_v4(),
-            item,
-            closable: true,
-        }
-    }
-}
+mod utils;
 
 #[allow(unused)]
 #[derive(Clone, PartialEq, Default, strum::EnumIter)]
@@ -57,58 +29,9 @@ impl Variant for TabOrientationVariant {
     }
 }
 
-/// Context passed to each tab pill and its children.
-#[derive(Clone, PartialEq)]
-pub struct TabState<T: PartialEq + Clone + Into<TabString> + 'static> {
-    pub tab: TabItemData<T>,
-    pub tabs: Signal<Vec<TabItemData<T>>>,
-    pub selected_tab: Signal<Option<Uuid>>,
-}
-
-impl<T: PartialEq + Clone + Into<TabString> + 'static> TabState<T> {
-    /// Removes the current tab from the list and handles re-selection.
-    fn remove(&self) {
-        let tab_id_to_remove = self.tab.id;
-        let mut tabs = self.tabs;
-        let mut selected_tab = self.selected_tab;
-
-        let currently_selected_id = selected_tab.cloned();
-
-        tabs.with_mut(|tabs_vec| {
-            let Some(index_to_remove) = tabs_vec.iter().position(|t| t.id == tab_id_to_remove)
-            else {
-                tracing::warn!("Tried to remove a tab that does not exist.");
-                return;
-            };
-
-            // Remove the tab.
-            tabs_vec.remove(index_to_remove);
-            tracing::info!(
-                "Removed tab at index {}. New count: {}",
-                index_to_remove,
-                tabs_vec.len()
-            );
-
-            // If the removed tab was the selected one, we need to select a new one.
-            if currently_selected_id == Some(tab_id_to_remove) {
-                if tabs_vec.is_empty() {
-                    // No tabs left, so clear selection.
-                    selected_tab.set(None);
-                } else {
-                    // Select the item at the same index, or the new last item
-                    // if the original last item was the one removed.
-                    let new_index = index_to_remove.min(tabs_vec.len() - 1);
-                    let new_selected_id = tabs_vec.get(new_index).map(|t| t.id);
-                    selected_tab.set(new_selected_id);
-                }
-            }
-        });
-    }
-}
-
 // main shi
 #[component]
-pub fn TabsManager<T: PartialEq + Clone + Into<TabString> + 'static>(
+pub fn TabsManager<T: Tab + 'static>(
     tabs: Signal<Vec<TabItemData<T>>>,
     class: Option<String>,
     list_class: Option<String>,
@@ -129,7 +52,11 @@ pub fn TabsManager<T: PartialEq + Clone + Into<TabString> + 'static>(
 
     let orientation = orientation.unwrap_or_default();
     let content_class = content_class.unwrap_or_default();
-    let tablist_class = format!("flex {} {}", orientation.classes(), list_class.unwrap_or_default());
+    let tablist_class = format!(
+        "flex {} {}",
+        orientation.classes(),
+        list_class.unwrap_or_default()
+    );
     let main_class = class.unwrap_or_default();
     let main_class = match orientation {
         TabOrientationVariant::Horizontal => format!("{main_class} flex flex-col"),
@@ -181,7 +108,7 @@ pub fn TabsManager<T: PartialEq + Clone + Into<TabString> + 'static>(
 
 /// individual item in the tab list to provides the `TabState` context for children pills.
 #[component]
-fn TabListItem<T: PartialEq + Clone + Into<TabString> + 'static>(
+fn TabListItem<T: Tab + 'static>(
     tab: TabItemData<T>,
     tabs: Signal<Vec<TabItemData<T>>>,
     selected_tab: Signal<Option<Uuid>>,
@@ -201,7 +128,7 @@ fn TabListItem<T: PartialEq + Clone + Into<TabString> + 'static>(
 
 /// default visual representation of a single tab pill.
 #[component]
-fn DefaultTabPill<T: PartialEq + Clone + Into<TabString> + 'static>() -> Element {
+fn DefaultTabPill<T: Tab + 'static>() -> Element {
     let tabstate = use_context::<TabState<T>>();
 
     let name: TabString = tabstate.tab.item.clone().into();
@@ -231,7 +158,6 @@ fn DefaultTabPill<T: PartialEq + Clone + Into<TabString> + 'static>() -> Element
                 Label {
                     class: "flex-grow text-start",
                     style: LabelStyleVariant::Mild,
-                    size: LabelSizeVariant::Small,
                     "{name}"
                 }
 
@@ -253,7 +179,7 @@ fn DefaultTabPill<T: PartialEq + Clone + Into<TabString> + 'static>() -> Element
 }
 
 #[component]
-fn TabContent<T: PartialEq + Clone + Into<TabString> + 'static>(
+fn TabContent<T: Tab + 'static>(
     tab: TabItemData<T>,
     tabs: Signal<Vec<TabItemData<T>>>,
     selected_tab: Signal<Option<Uuid>>,

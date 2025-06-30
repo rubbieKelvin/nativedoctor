@@ -186,4 +186,11 @@ pub struct RequestDefination {
     pub query: Vec<(String, String)>,
     pub body: Option<RequestBodySchema>,
     pub class: String,
+    pub path: Option<PathBuf>
+}
+
+impl RequestDefination {
+    pub fn slug(&self) -> String {
+        return slug::slugify(self.name.clone());
+    }
 }
