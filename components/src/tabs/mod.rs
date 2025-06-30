@@ -106,10 +106,7 @@ impl<T: PartialEq + Clone + Into<TabString> + 'static> TabState<T> {
     }
 }
 
-/// The main Tabs component.
-///
-/// It manages the state for a list of tabs and renders the tab pills
-/// and the content for the currently active tab.
+// main shi
 #[component]
 pub fn TabsManager<T: PartialEq + Clone + Into<TabString> + 'static>(
     tabs: Signal<Vec<TabItemData<T>>>,

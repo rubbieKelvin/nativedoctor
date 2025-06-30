@@ -9,6 +9,7 @@ use components_lib::{
     label::{Label, LabelSizeVariant, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
+    tabs::{TabItemData, TabString, TabsManager},
 };
 use dioxus::prelude::*;
 
@@ -19,16 +20,28 @@ use dioxus_free_icons::{
 
 use crate::components::WmDragArea;
 
+#[derive(PartialEq, Clone)]
+enum WorkspaceTab {
+    Request(RequestDefination),
+}
+
+impl Into<TabString> for WorkspaceTab {
+    fn into(self) -> TabString {
+        match self {
+            WorkspaceTab::Request(request) => TabString(request.name),
+        }
+    }
+}
+
 #[component]
 pub fn ProjectView(session: Session) -> Element {
     use_context_provider(|| Signal::new(session));
+    let opentabs: Signal<Vec<TabItemData<WorkspaceTab>>> = use_signal(|| vec![]);
 
     return rsx! {
         div { class: "h-full flex",
-            WmDragArea { class: "h-8 w-full items-center fixed z-[9999]" }
-
-            SideBar {}
-            Pane { class: "flex-grow", style: PaneStyleVariant::Dark }
+            SideBar { tabs: opentabs }
+            Workspace { tabs: opentabs }
         }
     };
 }
@@ -41,7 +54,7 @@ enum SideBarList {
 
 // Manages the current ui state of the requests list
 #[component]
-fn SideBar() -> Element {
+fn SideBar(tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
     // let project_state = ProjectState::inject();
     // let open_request_signal = project_state.open_request.clone();
     // let project_signal = project_state.project.clone();
@@ -70,7 +83,8 @@ fn SideBar() -> Element {
         Pane {
             style: PaneStyleVariant::Darker,
             border: Border::right(),
-            class: "w-[300px] h-full flex flex-col",
+            class: "w-[300px] h-full flex flex-col relative",
+            WmDragArea { class: "h-8 w-full items-center absolute" }
 
             // name and version
             div { class: "pl-18 pt-1",
@@ -140,7 +154,7 @@ fn SideBar() -> Element {
             div { class: "flex-grow h-0 overflow-y-auto",
 
                 if current_list() == SideBarList::Requests {
-                    RequestList { class: "" }
+                    RequestList { tabs }
                 } else {
                     div { "Calls" }
                 }
@@ -150,29 +164,30 @@ fn SideBar() -> Element {
 }
 
 #[component]
-fn RequestList(class: Option<String>) -> Element {
+fn RequestList(class: Option<String>, tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
     let session = use_context::<Signal<Session>>();
 
     return rsx! {
         div { class,
             for request in session().requests {
-                RequestListItem {
-                    request
-                }
+                RequestListItem { tabs, request }
             }
         }
     };
 }
 
 #[component]
-fn RequestListItem(request: RequestDefination) -> Element {
+fn RequestListItem(
+    request: RequestDefination,
+    tabs: Signal<Vec<TabItemData<WorkspaceTab>>>,
+) -> Element {
     let method_style = match request.method.to_lowercase().as_str() {
         "get" => LabelStyleVariant::Success,
         "post" => LabelStyleVariant::Info,
         "patch" => LabelStyleVariant::Warning,
         "delete" => LabelStyleVariant::Danger,
         "put" => LabelStyleVariant::Debug,
-        _ => LabelStyleVariant::Mild
+        _ => LabelStyleVariant::Mild,
     };
 
     return rsx! {
@@ -180,6 +195,13 @@ fn RequestListItem(request: RequestDefination) -> Element {
             class: "flex gap-2 px-2 items-center group/requestitem hover:bg-[#202020] py-1",
             style: PaneStyleVariant::Transparent,
             border: Border::bottom().with_style(BorderStyleVariant::Mild),
+            onclick: {
+                let request = request.clone();
+                move |_| {
+                    let mut tabs = tabs.write();
+                    tabs.push(TabItemData::new(WorkspaceTab::Request(request.clone())));
+                }
+            },
             Label {
                 class: "uppercase w-10",
                 size: LabelSizeVariant::Small,
@@ -203,43 +225,10 @@ fn RequestListItem(request: RequestDefination) -> Element {
 }
 
 #[component]
-pub fn RequestPanel(request: WritableRequest) -> Element {
-    // let mut name = use_signal(|| String::new());
-    // let request_memo = {
-    //     let project_state = project_state.clone();
-    //     use_memo(move || project_state.get_selected_request())
-    // };
-
-    // use_effect(move || {
-    //     match request_memo() {
-    //         Some(request) => {
-    //             let n = request.get_name().unwrap_or_else(|| String::new());
-    //             name.with_mut(|name_mut| {
-    //                 *name_mut = n;
-    //             });
-    //         },
-    //         None => {}
-    //     };
-    // });
-
-    // let request_name = {
-    //     let request = request_memo();
-    //     use_memo(move || match &request {
-    //         Some(r) => r.get_name().unwrap_or_else(|| String::new()),
-    //         None => String::new(),
-    //     })
-    // };
-
-    // use_effect(move || {
-    //     let name = name();
-    //     match request_memo() {
-    //         Some(mut request_copy) => {
-    //             request_copy.set_name(&name, &project().path);
-    //             // project_state.update_request(request_copy);
-    //         }
-    //         None => {}
-    //     };
-    // });
-
-    return rsx! {};
+fn Workspace(tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
+    return rsx! {
+        Pane { class: "flex-grow", style: PaneStyleVariant::Dark,
+            TabsManager::<WorkspaceTab> { tabs }
+        }
+    };
 }
