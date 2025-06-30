@@ -67,7 +67,7 @@ impl Session {
             requests: vec![
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "get_request_with_params".to_string(),
+                    name: "Get request with params".to_string(),
                     method: "GET".to_string(),
                     url: "{{baseurl}}/get".to_string(),
                     doc: "Sends a GET request with query parameters.".to_string(),
@@ -79,7 +79,7 @@ impl Session {
                 },
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "post_json_data".to_string(),
+                    name: "Post json data".to_string(),
                     method: "POST".to_string(),
                     url: "{{baseurl}}/post".to_string(),
                     doc: "Sends a POST request with a JSON body.".to_string(),
@@ -93,7 +93,7 @@ impl Session {
                 },
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "put_request".to_string(),
+                    name: "Put request".to_string(),
                     method: "PUT".to_string(),
                     url: "{{baseurl}}/put".to_string(),
                     doc: "Sends a PUT request, similar to POST.".to_string(),
@@ -107,7 +107,7 @@ impl Session {
                 },
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "upload_file_multipart".to_string(),
+                    name: "Upload file multipart".to_string(),
                     method: "POST".to_string(),
                     url: "{{baseurl}}/post".to_string(),
                     doc: "Sends a multipart/form-data request with fields and a file.".to_string(),
@@ -122,7 +122,7 @@ impl Session {
                 },
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "delete_request".to_string(),
+                    name: "Delete something".to_string(),
                     method: "DELETE".to_string(),
                     url: "{{baseurl}}/delete".to_string(),
                     doc: "Sends a DELETE request.".to_string(),
@@ -130,7 +130,7 @@ impl Session {
                 },
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
-                    name: "check_bearer_token".to_string(),
+                    name: "Check bearer".to_string(),
                     method: "GET".to_string(),
                     url: "{{baseurl}}/bearer".to_string(),
                     doc: "Tests bearer token authentication.".to_string(),

@@ -3,7 +3,6 @@ use dioxus_free_icons::{Icon, icons::ld_icons::LdX};
 
 use crate::{
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
-    label::{Label, LabelStyleVariant},
     traits::Variant,
 };
 
@@ -119,10 +118,10 @@ fn TabListItem<T: TabGenerics + 'static>(
 fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
     let tabstate = use_context::<TabState<T>>();
 
-    let name = tabstate.tab.payload.get_title();
     let is_selected = tabstate
         .tabs
         .with(|tabset| tabset.get_selected().map(|t| t.id) == Some(tabstate.tab.id));
+    let title = tabstate.tab.payload.render_title(is_selected);
 
     let button_style = if is_selected {
         ButtonStyleVariant::Default
@@ -144,11 +143,7 @@ fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
                     }
                 },
 
-                Label {
-                    class: "flex-grow text-start",
-                    style: LabelStyleVariant::Mild,
-                    "{name}"
-                }
+                {title}
 
                 if tabstate.tab.closable {
                     Button {
@@ -173,10 +168,7 @@ fn TabContent<T: TabGenerics + 'static>(
     tabs: Signal<TabSet<T>>,
     children: Element,
 ) -> Element {
-    use_context_provider(|| TabState {
-        tab,
-        tabs,
-    });
+    use_context_provider(|| TabState { tab, tabs });
 
     return rsx! {{children}};
 }

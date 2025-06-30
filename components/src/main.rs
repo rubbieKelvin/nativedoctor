@@ -32,8 +32,14 @@ struct TabBook {
 impl TabPayload for TabBook {
     type Identifier = String;
 
-    fn get_title(&self) -> String {
-        return self.name.clone();
+    fn render_title(&self, _selected: bool) -> Element {
+        return rsx! {
+            label::Label {
+                class: "flex-grow text-start",
+                style: label::LabelStyleVariant::Mild,
+                "{self.name}"
+            }
+        };
     }
 
     fn unique_identifier(&self) -> Self::Identifier {
@@ -61,13 +67,13 @@ fn Tabs() -> Element {
     });
 
     return rsx! {
-        for orientation in tabs::TabOrientationVariant::iter(){
+        for orientation in tabs::TabOrientationVariant::iter() {
 
             tabs::TabsManager {
                 class: "border border-[#3b3b3b] p-1 rounded-md gap-2",
                 tabs: tablist,
                 orientation,
-                _TabContent{ }
+                _TabContent {}
             }
         }
     };
@@ -79,17 +85,10 @@ fn _TabContent() -> Element {
     let name = state.tab.payload.name;
     let description = state.tab.payload.description;
 
-    return rsx!{
-        div {
-            class: "border border-[#3b3b3b] w-full h-full rounded-md p-2",
-            label::Label {
-                size: label::LabelSizeVariant::Large,
-                "{name}"
-            }
-            label::Label {
-                size: label::LabelSizeVariant::Small,
-                "{description}"
-            }
+    return rsx! {
+        div { class: "border border-[#3b3b3b] w-full h-full rounded-md p-2",
+            label::Label { size: label::LabelSizeVariant::Large, "{name}" }
+            label::Label { size: label::LabelSizeVariant::Small, "{description}" }
         }
     };
 }
@@ -351,7 +350,7 @@ fn App() -> Element {
         document::Script { src: TAILWIND_JS }
         div { class: "flex gap-4 flex-col p-4",
             h1 { class: "mb-4", "Preview" }
-            Tabs {  }
+            Tabs {}
             toast::ToastProvider { Toasts {} }
             TextFields {}
             NumberInputs {}

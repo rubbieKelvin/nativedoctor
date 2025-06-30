@@ -6,37 +6,78 @@ use components_lib::{
     label::{Label, LabelSizeVariant, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
-    tabs::{TabItemData, TabPayload, TabSet, TabsManager},
+    tabs::{TabItemData, TabPayload, TabSet, TabState, TabsManager},
 };
 use dioxus::prelude::*;
 
+use dioxus_desktop::wry::http::method;
 use dioxus_free_icons::{
-    icons::ld_icons::{LdEllipsisVertical, LdPencil, LdPlus},
+    icons::ld_icons::{LdEllipsisVertical, LdGithub, LdHome, LdMail, LdPencil, LdPlus, LdTwitter},
     Icon,
 };
 
 use crate::components::WmDragArea;
 
+fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant {
+    let method = method.as_ref();
+    let method = method.to_lowercase();
+    return match method.as_str() {
+        "get" => LabelStyleVariant::Success,
+        "post" => LabelStyleVariant::Info,
+        "patch" => LabelStyleVariant::Warning,
+        "delete" => LabelStyleVariant::Danger,
+        "put" => LabelStyleVariant::Debug,
+        _ => LabelStyleVariant::Mild,
+    };
+}
+
 #[derive(PartialEq, Clone)]
 enum WorkspaceTab {
+    Welcome,
     Request(RequestDefination),
 }
 
 #[derive(PartialEq, Clone)]
 enum WorkspaceTabId {
+    Welcome,
     Request(uuid::Uuid),
 }
 
 impl TabPayload for WorkspaceTab {
     type Identifier = WorkspaceTabId;
-    fn get_title(&self) -> String {
+    fn render_title(&self, selected: bool) -> Element {
         return match self {
-            WorkspaceTab::Request(request) => request.name.clone(),
+            WorkspaceTab::Welcome => rsx! {
+                div { class: "flex gap-1 items-center",
+                    Icon { icon: LdHome, height: 12, width: 12 }
+                    Label {
+                        class: "flex-grow text-start",
+                        style: LabelStyleVariant::Mild,
+                        "Home"
+                    }
+                }
+            },
+            WorkspaceTab::Request(request) => rsx! {
+                div { class: "flex gap-1 items-center",
+                    Label {
+                        class: "uppercase",
+                        size: LabelSizeVariant::Tiny,
+                        style: get_label_style_for_method(&request.method),
+                        "{request.method}"
+                    }
+                    Label {
+                        class: "flex-grow",
+                        style: if selected { LabelStyleVariant::Default } else { LabelStyleVariant::Mild },
+                        "{request.name}"
+                    }
+                }
+            },
         };
     }
 
     fn unique_identifier(&self) -> Self::Identifier {
         return match self {
+            WorkspaceTab::Welcome => WorkspaceTabId::Welcome,
             WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
         };
     }
@@ -45,7 +86,17 @@ impl TabPayload for WorkspaceTab {
 #[component]
 pub fn ProjectView(session: Session) -> Element {
     use_context_provider(|| Signal::new(session));
-    let opentabs: Signal<TabSet<WorkspaceTab>> = use_signal(|| TabSet::new(vec![]));
+    let mut opentabs: Signal<TabSet<WorkspaceTab>> = use_signal(|| TabSet::new(vec![]));
+
+    // create the welcome tabs
+    use_hook(|| {
+        let mut opentabs = opentabs.write();
+        let tabdata = TabItemData::new(WorkspaceTab::Welcome).set_closable(false);
+        let id = tabdata.id.clone();
+
+        opentabs.add_tab(tabdata);
+        opentabs.select(Some(id));
+    });
 
     return rsx! {
         div { class: "h-full flex",
@@ -186,18 +237,8 @@ fn RequestList(class: Option<String>, tabs: Signal<TabSet<WorkspaceTab>>) -> Ele
 }
 
 #[component]
-fn RequestListItem(
-    request: RequestDefination,
-    tabs: Signal<TabSet<WorkspaceTab>>,
-) -> Element {
-    let method_style = match request.method.to_lowercase().as_str() {
-        "get" => LabelStyleVariant::Success,
-        "post" => LabelStyleVariant::Info,
-        "patch" => LabelStyleVariant::Warning,
-        "delete" => LabelStyleVariant::Danger,
-        "put" => LabelStyleVariant::Debug,
-        _ => LabelStyleVariant::Mild,
-    };
+fn RequestListItem(request: RequestDefination, tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
+    let method_style = get_label_style_for_method(&request.method);
 
     return rsx! {
         Pane {
@@ -209,15 +250,11 @@ fn RequestListItem(
                 move |_| {
                     let mut tabs = tabs.write();
                     let tabdata = TabItemData::new(WorkspaceTab::Request(request.clone()));
-
-                    // check if tab tabdata already exists in the set
                     let similar = tabs.get_similar(&tabdata).cloned();
-
                     if let Some(tabdata) = similar {
                         tabs.select(Some(tabdata.id));
                         return;
                     }
-
                     let id = tabdata.id.clone();
                     tabs.add_tab(tabdata);
                     tabs.select(Some(id));
@@ -249,7 +286,86 @@ fn RequestListItem(
 fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     return rsx! {
         Pane { class: "flex-grow", style: PaneStyleVariant::Dark,
-            TabsManager::<WorkspaceTab> { tabs }
+            TabsManager::<WorkspaceTab> { tabs, class: "p-2 h-full", TabContent {} }
+        }
+    };
+}
+
+#[component]
+fn TabContent() -> Element {
+    let state = use_context::<TabState<WorkspaceTab>>();
+    return match state.tab.payload {
+        WorkspaceTab::Welcome => rsx! {
+            WelcomePage { state }
+        },
+        _ => rsx! {},
+    };
+}
+
+#[component]
+fn WelcomePage(state: TabState<WorkspaceTab>) -> Element {
+    return rsx! {
+        div { class: "h-full flex items-center justify-center",
+            div { class: "flex flex-col gap-4 min-w-[40%]",
+
+                div { class: "flex items-center",
+                    div { class: "flex-grow",
+                        Label {
+                            size: LabelSizeVariant::Large,
+                            style: LabelStyleVariant::Mild,
+                            "Native Doctor"
+                        }
+
+                        Label {
+                            size: LabelSizeVariant::Small,
+                            style: LabelStyleVariant::Ghost,
+                            "Let's get started"
+                        }
+                    }
+
+                    div { class: "flex gap-4 items-center",
+                        Button {
+                            size: ButtonSizeVariant::Icon,
+                            style: ButtonStyleVariant::Ghost,
+                            class: "flex gap-2 items-center",
+                            Icon { icon: LdTwitter, height: 14, width: 14 }
+                        }
+
+                        Button {
+                            size: ButtonSizeVariant::Icon,
+                            style: ButtonStyleVariant::Ghost,
+                            class: "flex gap-2 items-center",
+                            Icon { icon: LdGithub, height: 14, width: 14 }
+                        }
+
+                        Button {
+                            size: ButtonSizeVariant::Icon,
+                            style: ButtonStyleVariant::Ghost,
+                            class: "flex gap-2 items-center",
+                            Icon { icon: LdMail, height: 14, width: 14 }
+                        }
+                    }
+                }
+
+                // buttons
+                Pane {
+                    class: "rounded-md flex flex-col p-2 gap-2",
+                    border: Border::all(),
+
+                    Button {
+                        style: ButtonStyleVariant::Ghost,
+                        class: "flex gap-2 items-center",
+                        Icon { icon: LdPlus, height: 14, width: 14 }
+                        Label { "Add a request" }
+                    }
+                    Button {
+                        style: ButtonStyleVariant::Ghost,
+                        class: "flex gap-2 items-center",
+                        Icon { icon: LdPencil, height: 14, width: 14 }
+                        Label { "Edit environment" }
+                    }
+                }
+            }
         }
     };
 }

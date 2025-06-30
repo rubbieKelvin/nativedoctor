@@ -12,7 +12,7 @@ impl<T> TabGenerics for T where T: PartialEq + Clone + TabPayload {}
 pub trait TabPayload {
     type Identifier: Clone + PartialEq;
     /// we need a title for the tab button.
-    fn get_title(&self) -> String;
+    fn render_title(&self, selected: bool) -> Element;
 
     /// we need a way to uniquely identify a page so we dont open one page twice per tab
     fn unique_identifier(&self) -> Self::Identifier;
