@@ -6,7 +6,7 @@ use components_lib::{
     label::{Label, LabelSizeVariant, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
-    tabs::{TabItemData, TabString, TabsManager},
+    tabs::{TabItemData, TabPayload, TabSet, TabsManager},
 };
 use dioxus::prelude::*;
 
@@ -22,18 +22,30 @@ enum WorkspaceTab {
     Request(RequestDefination),
 }
 
-impl Into<TabString> for WorkspaceTab {
-    fn into(self) -> TabString {
-        match self {
-            WorkspaceTab::Request(request) => TabString(request.name),
-        }
+#[derive(PartialEq, Clone)]
+enum WorkspaceTabId {
+    Request(uuid::Uuid),
+}
+
+impl TabPayload for WorkspaceTab {
+    type Identifier = WorkspaceTabId;
+    fn get_title(&self) -> String {
+        return match self {
+            WorkspaceTab::Request(request) => request.name.clone(),
+        };
+    }
+
+    fn unique_identifier(&self) -> Self::Identifier {
+        return match self {
+            WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
+        };
     }
 }
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
     use_context_provider(|| Signal::new(session));
-    let opentabs: Signal<Vec<TabItemData<WorkspaceTab>>> = use_signal(|| vec![]);
+    let opentabs: Signal<TabSet<WorkspaceTab>> = use_signal(|| TabSet::new(vec![]));
 
     return rsx! {
         div { class: "h-full flex",
@@ -51,7 +63,7 @@ enum SideBarList {
 
 // Manages the current ui state of the requests list
 #[component]
-fn SideBar(tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
+fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     // let project_state = ProjectState::inject();
     // let open_request_signal = project_state.open_request.clone();
     // let project_signal = project_state.project.clone();
@@ -161,7 +173,7 @@ fn SideBar(tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
 }
 
 #[component]
-fn RequestList(class: Option<String>, tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
+fn RequestList(class: Option<String>, tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     let session = use_context::<Signal<Session>>();
 
     return rsx! {
@@ -176,7 +188,7 @@ fn RequestList(class: Option<String>, tabs: Signal<Vec<TabItemData<WorkspaceTab>
 #[component]
 fn RequestListItem(
     request: RequestDefination,
-    tabs: Signal<Vec<TabItemData<WorkspaceTab>>>,
+    tabs: Signal<TabSet<WorkspaceTab>>,
 ) -> Element {
     let method_style = match request.method.to_lowercase().as_str() {
         "get" => LabelStyleVariant::Success,
@@ -196,7 +208,7 @@ fn RequestListItem(
                 let request = request.clone();
                 move |_| {
                     let mut tabs = tabs.write();
-                    tabs.push(TabItemData::new(WorkspaceTab::Request(request.clone())));
+                    tabs.add_tab(TabItemData::new(WorkspaceTab::Request(request.clone())));
                 }
             },
             Label {
@@ -222,7 +234,7 @@ fn RequestListItem(
 }
 
 #[component]
-fn Workspace(tabs: Signal<Vec<TabItemData<WorkspaceTab>>>) -> Element {
+fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     return rsx! {
         Pane { class: "flex-grow", style: PaneStyleVariant::Dark,
             TabsManager::<WorkspaceTab> { tabs }

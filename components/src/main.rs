@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons};
 use strum::IntoEnumIterator;
 
-use crate::toast::use_toast;
+use crate::{tabs::TabPayload, toast::use_toast};
 
 mod border;
 mod button;
@@ -29,16 +29,22 @@ struct TabBook {
     description: String,
 }
 
-impl Into<tabs::TabString> for TabBook {
-    fn into(self) -> tabs::TabString {
-        return tabs::TabString(self.name);
+impl TabPayload for TabBook {
+    type Identifier = String;
+
+    fn get_title(&self) -> String {
+        return self.name.clone();
+    }
+
+    fn unique_identifier(&self) -> Self::Identifier {
+        return self.name.clone();
     }
 }
 
 #[component]
 fn Tabs() -> Element {
-    let tablist: Signal<Vec<tabs::TabItemData<TabBook>>> = use_signal(|| {
-        vec![
+    let tablist: Signal<tabs::TabSet<TabBook>> = use_signal(|| {
+        tabs::TabSet::new(vec![
             tabs::TabItemData::new(TabBook {
                 name: "Rubbie".to_string(),
                 description: "Rubbie is rubbie the one".to_string(),
@@ -51,7 +57,7 @@ fn Tabs() -> Element {
                 name: "Rust".to_string(),
                 description: "Rust is a fucked up language. but i like it".to_string(),
             }),
-        ]
+        ])
     });
 
     return rsx! {
@@ -70,8 +76,8 @@ fn Tabs() -> Element {
 #[component]
 fn _TabContent() -> Element {
     let state = use_context::<tabs::TabState<TabBook>>();
-    let name = state.tab.item.name;
-    let description = state.tab.item.description;
+    let name = state.tab.payload.name;
+    let description = state.tab.payload.description;
 
     return rsx!{
         div {

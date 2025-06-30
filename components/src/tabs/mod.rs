@@ -8,7 +8,8 @@ use crate::{
     traits::Variant,
 };
 
-pub use crate::tabs::utils::{Tab, TabItemData, TabState, TabString};
+use crate::tabs::utils::TabGenerics;
+pub use crate::tabs::utils::{TabItemData, TabState, TabPayload, TabSet};
 
 mod utils;
 
@@ -31,8 +32,8 @@ impl Variant for TabOrientationVariant {
 
 // main shi
 #[component]
-pub fn TabsManager<T: Tab + 'static>(
-    tabs: Signal<Vec<TabItemData<T>>>,
+pub fn TabsManager<T: TabGenerics + 'static>(
+    tabs: Signal<TabSet<T>>,
     class: Option<String>,
     list_class: Option<String>,
     content_class: Option<String>,
@@ -108,9 +109,9 @@ pub fn TabsManager<T: Tab + 'static>(
 
 /// individual item in the tab list to provides the `TabState` context for children pills.
 #[component]
-fn TabListItem<T: Tab + 'static>(
+fn TabListItem<T: TabGenerics + 'static>(
     tab: TabItemData<T>,
-    tabs: Signal<Vec<TabItemData<T>>>,
+    tabs: Signal<TabSet<T>>,
     selected_tab: Signal<Option<Uuid>>,
     child: Option<Element>,
 ) -> Element {
@@ -128,11 +129,10 @@ fn TabListItem<T: Tab + 'static>(
 
 /// default visual representation of a single tab pill.
 #[component]
-fn DefaultTabPill<T: Tab + 'static>() -> Element {
+fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
     let tabstate = use_context::<TabState<T>>();
 
-    let name: TabString = tabstate.tab.item.clone().into();
-    let name: String = name.into();
+    let name = tabstate.tab.payload.get_title();
     let is_selected = tabstate
         .selected_tab
         .with(|id| *id == Some(tabstate.tab.id));
@@ -179,9 +179,9 @@ fn DefaultTabPill<T: Tab + 'static>() -> Element {
 }
 
 #[component]
-fn TabContent<T: Tab + 'static>(
+fn TabContent<T: TabGenerics + 'static>(
     tab: TabItemData<T>,
-    tabs: Signal<Vec<TabItemData<T>>>,
+    tabs: Signal<TabSet<T>>,
     selected_tab: Signal<Option<Uuid>>,
     children: Element,
 ) -> Element {

@@ -1,58 +1,116 @@
+use std::{slice::Iter, vec::IntoIter};
+
 use dioxus::prelude::*;
 use uuid::Uuid;
 
 // defined these marker trait here so i dont have to do T: ..
-// i can just do T: Tab
-pub trait Tab: PartialEq + Clone + Into<TabString> {}
-impl<T> Tab for T where T: PartialEq + Clone + Into<TabString> {}
+// i can just do T: TabGenerics
+pub trait TabGenerics: PartialEq + Clone + TabPayload {}
+impl<T> TabGenerics for T where T: PartialEq + Clone + TabPayload {}
 
-// Tab string so we can render text on the tab button
-#[derive(Clone, Default, PartialEq)]
-pub struct TabString(pub String);
+// Tab payload must implement this trait
+pub trait TabPayload {
+    type Identifier: Clone + PartialEq;
+    /// we need a title for the tab button.
+    fn get_title(&self) -> String;
 
-impl From<String> for TabString {
-    fn from(s: String) -> Self {
-        TabString(s)
-    }
-}
-
-impl Into<String> for TabString {
-    fn into(self) -> String {
-        self.0
-    }
+    /// we need a way to uniquely identify a page so we dont open one page twice per tab
+    fn unique_identifier(&self) -> Self::Identifier;
 }
 
 // data that the tab can work with. this would wrap a payload that holds the actual data
 #[derive(Clone, PartialEq)]
-pub struct TabItemData<T: Tab> {
+pub struct TabItemData<T: TabGenerics> {
     pub id: Uuid,
-    pub item: T,
+    pub payload: T,
     pub closable: bool,
 }
 
-impl<T: Tab> TabItemData<T> {
-    pub fn new(item: T) -> Self {
+impl<T: TabGenerics> TabItemData<T> {
+    pub fn new(payload: T) -> Self {
         TabItemData {
             id: Uuid::new_v4(),
-            item,
+            payload,
             closable: true,
         }
+    }
+
+    #[allow(unused)]
+    pub fn set_closable(mut self, closable: bool) -> Self {
+        self.closable = closable;
+        return self;
+    }
+}
+
+#[derive(PartialEq, Clone)]
+pub struct TabSet<T: TabGenerics>(Vec<TabItemData<T>>);
+
+impl<T: TabGenerics> TabSet<T> {
+    pub fn new(vector: Vec<TabItemData<T>>) -> Self {
+        return TabSet(vector);
+    }
+
+    pub fn iter(&self) -> Iter<'_, TabItemData<T>> {
+        return self.0.iter();
+    }
+
+    #[allow(unused)]
+    pub fn add_tab(&mut self, item: TabItemData<T>) {
+        let uid = item.payload.unique_identifier();
+        let has_similar = self
+            .iter()
+            .any(|item| item.payload.unique_identifier() == uid);
+
+        if has_similar {
+            return;
+        }
+
+        self.0.push(item);
+    }
+
+    pub fn remove_via_index(&mut self, index: usize) {
+        self.0.remove(index);
+    }
+
+    pub fn len(&self) -> usize {
+        return self.0.len();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        return self.0.is_empty();
+    }
+
+    pub fn get(&self, index: usize) -> Option<&TabItemData<T>> {
+        return self.0.get(index);
+    }
+
+    pub fn first(&self) -> Option<&TabItemData<T>> {
+        return self.0.first();
+    }
+}
+
+impl<T: TabGenerics> IntoIterator for TabSet<T> {
+    type Item = TabItemData<T>;
+    type IntoIter = IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
 /// Context passed to each tab pill and its children.
 #[derive(Clone, PartialEq)]
-pub struct TabState<T: Tab + 'static> {
+pub struct TabState<T: TabGenerics + 'static> {
     pub tab: TabItemData<T>,
-    pub tabs: Signal<Vec<TabItemData<T>>>, // TODO: this should be a set
+    pub tabs: Signal<TabSet<T>>,
     pub selected_tab: Signal<Option<Uuid>>,
 }
 
-impl<T: Tab + 'static> TabState<T> {
+impl<T: TabGenerics + 'static> TabState<T> {
     /// Removes the current tab from the list and handles re-selection.
     pub fn remove(&self) {
         let tab_id_to_remove = self.tab.id;
-        let mut tabs: Signal<Vec<TabItemData<T>>> = self.tabs;
+        let mut tabs = self.tabs;
         let mut selected_tab: Signal<Option<Uuid>> = self.selected_tab;
 
         let currently_selected_id = selected_tab.cloned();
@@ -65,7 +123,7 @@ impl<T: Tab + 'static> TabState<T> {
             };
 
             // Remove the tab.
-            tabs_vec.remove(index_to_remove);
+            tabs_vec.remove_via_index(index_to_remove);
             tracing::info!(
                 "Removed tab at index {}. New count: {}",
                 index_to_remove,
