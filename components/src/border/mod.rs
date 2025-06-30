@@ -1,6 +1,7 @@
 use crate::traits::Variant;
 
 #[derive(PartialEq, Clone)]
+#[allow(unused)]
 pub enum BorderStyleVariant {
     Default,
     Mild,

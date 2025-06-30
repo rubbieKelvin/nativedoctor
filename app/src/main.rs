@@ -1,9 +1,4 @@
 use dioxus::prelude::*;
-use nativedoctor_core::{
-    fs::FileObject,
-    schema::roots::{ProjectRootSchema, RequestRootSchema},
-};
-
 use crate::session::Session;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");

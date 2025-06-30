@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::{Icon, icons::ld_icons};
 
 #[derive(Props, PartialEq, Clone)]
 pub struct MenuItem {
