@@ -158,8 +158,9 @@ pub fn RequestList(class: Option<String>) -> Element {
                 div {
                     class: "flex gap-2 px-2 items-center group/requestitem hover:bg-[#202020] py-1",
                     Label {
-                        class: "lowercase",
+                        class: "uppercase w-10",
                         size: LabelSizeVariant::Small,
+                        style: LabelStyleVariant::Mild,
                         "{request.method}"
                     }
                     Label {
