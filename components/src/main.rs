@@ -55,10 +55,35 @@ fn Tabs() -> Element {
     });
 
     return rsx! {
-        tabs::TabManager {
-            class: "border border-gray-400",
-            tabs: tablist,
-            orientation: tabs::TabOrientationVariant::Horizontal
+        for orientation in tabs::TabOrientationVariant::iter(){
+
+            tabs::TabsManager {
+                class: "border border-[#3b3b3b] p-1 rounded-md gap-2",
+                tabs: tablist,
+                orientation,
+                _TabContent{ }
+            }
+        }
+    };
+}
+
+#[component]
+fn _TabContent() -> Element {
+    let state = use_context::<tabs::TabState<TabBook>>();
+    let name = state.tab.item.name;
+    let description = state.tab.item.description;
+
+    return rsx!{
+        div {
+            class: "border border-[#3b3b3b] w-full h-full rounded-md p-2",
+            label::Label {
+                size: label::LabelSizeVariant::Large,
+                "{name}"
+            }
+            label::Label {
+                size: label::LabelSizeVariant::Small,
+                "{description}"
+            }
         }
     };
 }

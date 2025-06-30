@@ -489,6 +489,9 @@
   .border-\[\#2b2b2b\] {
     border-color: #2b2b2b;
   }
+  .border-\[\#3b3b3b\] {
+    border-color: #3b3b3b;
+  }
   .border-\[\#3e3e3e\] {
     border-color: #3e3e3e;
   }
@@ -497,6 +500,9 @@
   }
   .border-\[\#212121\] {
     border-color: #212121;
+  }
+  .border-\[\#b3b3b3\] {
+    border-color: #b3b3b3;
   }
   .border-blue-500 {
     border-color: var(--color-blue-500);
@@ -579,6 +585,9 @@
   .bg-item-hover-bg {
     background-color: var(--color-item-hover-bg);
   }
+  .bg-red-500 {
+    background-color: var(--color-red-500);
+  }
   .bg-transparent {
     background-color: transparent;
   }
@@ -593,6 +602,9 @@
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
+  }
+  .p-3 {
+    padding: calc(var(--spacing) * 3);
   }
   .p-4 {
     padding: calc(var(--spacing) * 4);
