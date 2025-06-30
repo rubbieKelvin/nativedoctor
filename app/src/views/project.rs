@@ -1,6 +1,9 @@
-use crate::{session::Session, states::WritableRequest};
+use crate::{
+    session::{RequestDefination, Session},
+    states::WritableRequest,
+};
 use components_lib::{
-    border::Border,
+    border::{Border, BorderStyleVariant},
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
     buttongroup::{ButtonGroup, GroupButton},
     label::{Label, LabelSizeVariant, LabelStyleVariant},
@@ -18,8 +21,7 @@ use crate::components::WmDragArea;
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
-    let mut saving = use_signal(|| false);
-    let session = use_context_provider(|| Signal::new(session));
+    use_context_provider(|| Signal::new(session));
 
     return rsx! {
         div { class: "h-full flex",
@@ -138,7 +140,7 @@ fn SideBar() -> Element {
             div { class: "flex-grow h-0 overflow-y-auto",
 
                 if current_list() == SideBarList::Requests {
-                    RequestList { class: ""}
+                    RequestList { class: "" }
                 } else {
                     div { "Calls" }
                 }
@@ -148,36 +150,52 @@ fn SideBar() -> Element {
 }
 
 #[component]
-pub fn RequestList(class: Option<String>) -> Element {
+fn RequestList(class: Option<String>) -> Element {
     let session = use_context::<Signal<Session>>();
 
     return rsx! {
-        div {
-            class,
+        div { class,
             for request in session().requests {
-                div {
-                    class: "flex gap-2 px-2 items-center group/requestitem hover:bg-[#202020] py-1",
-                    Label {
-                        class: "uppercase w-10",
-                        size: LabelSizeVariant::Small,
-                        style: LabelStyleVariant::Mild,
-                        "{request.method}"
-                    }
-                    Label {
-                        class: "flex-grow",
-                        "{request.name}"
-                    }
-                    Button {
-                        class: "opacity-0 group-hover/requestitem:opacity-100",
-                        style: ButtonStyleVariant::Transparent,
-                        size: ButtonSizeVariant::Icon,
-                        Icon{
-                            width: 16,
-                            height: 16,
-                            class: "text-white",
-                            icon: LdEllipsisVertical
-                        }
-                    }
+                RequestListItem {
+                    request
+                }
+            }
+        }
+    };
+}
+
+#[component]
+fn RequestListItem(request: RequestDefination) -> Element {
+    let method_style = match request.method.to_lowercase().as_str() {
+        "get" => LabelStyleVariant::Success,
+        "post" => LabelStyleVariant::Info,
+        "patch" => LabelStyleVariant::Warning,
+        "delete" => LabelStyleVariant::Danger,
+        "put" => LabelStyleVariant::Debug,
+        _ => LabelStyleVariant::Mild
+    };
+
+    return rsx! {
+        Pane {
+            class: "flex gap-2 px-2 items-center group/requestitem hover:bg-[#202020] py-1",
+            style: PaneStyleVariant::Transparent,
+            border: Border::bottom().with_style(BorderStyleVariant::Mild),
+            Label {
+                class: "uppercase w-10",
+                size: LabelSizeVariant::Small,
+                style: method_style,
+                "{request.method}"
+            }
+            Label { class: "flex-grow", "{request.name}" }
+            Button {
+                class: "opacity-0 group-hover/requestitem:opacity-100",
+                style: ButtonStyleVariant::Transparent,
+                size: ButtonSizeVariant::Icon,
+                Icon {
+                    width: 16,
+                    height: 16,
+                    class: "text-white",
+                    icon: LdEllipsisVertical,
                 }
             }
         }
@@ -223,30 +241,5 @@ pub fn RequestPanel(request: WritableRequest) -> Element {
     //     };
     // });
 
-    return rsx! {
-        // div { class: "flex-grow",
-        //     "{request.id}"
-        //     br {}
-        //     span { "Name" }
-        //     input {
-        //         value: "{name}",
-        //         placeholder: "Request name",
-        //         oninput: move |e| {
-        //             let mut name = name.write();
-        //             *name = e.value().to_ascii_lowercase();
-        //         },
-        //                 // {
-        //     //     let mut project_state = project_state.clone();
-
-        //     //     move |e: Event<FormData>| {
-        //     //         let value = e.value();
-        //     //         let value = value.to_lowercase();
-        //     //         let mut request = request_memo().unwrap();
-        //     //         request.set_name(&value, &project().unwrap().path);
-        //     //         project_state.update_request(request);
-        //     //     }
-        //     // },
-        //     }
-        // }
-    };
+    return rsx! {};
 }

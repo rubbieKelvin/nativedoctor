@@ -471,11 +471,17 @@
     border-left-style: var(--tw-border-style);
     border-left-width: 1px;
   }
+  .border-\[\#2b2b2b\] {
+    border-color: #2b2b2b;
+  }
   .border-\[\#3e3e3e\] {
     border-color: #3e3e3e;
   }
   .border-\[\#82857e\] {
     border-color: #82857e;
+  }
+  .border-\[\#212121\] {
+    border-color: #212121;
   }
   .border-blue-500 {
     border-color: var(--color-blue-500);
@@ -666,14 +672,29 @@
   .whitespace-nowrap {
     white-space: nowrap;
   }
+  .text-\[\#1e7069\] {
+    color: #1e7069;
+  }
   .text-\[\#5c95ff\] {
     color: #5c95ff;
+  }
+  .text-\[\#44d1df\] {
+    color: #44d1df;
   }
   .text-\[\#898989\] {
     color: #898989;
   }
   .text-\[\#b4b4b4\] {
     color: #b4b4b4;
+  }
+  .text-\[\#f2c43d\] {
+    color: #f2c43d;
+  }
+  .text-\[\#f17c37\] {
+    color: #f17c37;
+  }
+  .text-\[\#f44560\] {
+    color: #f44560;
   }
   .text-\[\#ffffff\] {
     color: #ffffff;

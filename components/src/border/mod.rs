@@ -1,9 +1,27 @@
+use crate::traits::Variant;
+
+#[derive(PartialEq, Clone)]
+pub enum BorderStyleVariant {
+    Default,
+    Mild,
+}
+
+impl Variant for BorderStyleVariant {
+    fn classes(&self) -> &'static str {
+        match self {
+            BorderStyleVariant::Default => "border-[#3e3e3e]",
+            BorderStyleVariant::Mild => "border-[#212121]",
+        }
+    }
+}
+
 #[derive(PartialEq, Clone)]
 pub struct Border {
     pub left: Option<BorderSide>,
     pub top: Option<BorderSide>,
     pub right: Option<BorderSide>,
     pub bottom: Option<BorderSide>,
+    pub style: BorderStyleVariant,
 }
 
 impl Border {
@@ -13,6 +31,7 @@ impl Border {
             right: Some(BorderSide),
             top: Some(BorderSide),
             bottom: Some(BorderSide),
+            style: BorderStyleVariant::Default,
         };
     }
 
@@ -22,6 +41,7 @@ impl Border {
             top: None,
             right: None,
             bottom: None,
+            style: BorderStyleVariant::Default,
         };
     }
 
@@ -32,6 +52,7 @@ impl Border {
             top: None,
             right: None,
             bottom: None,
+            style: BorderStyleVariant::Default,
         };
     }
 
@@ -42,6 +63,7 @@ impl Border {
             top: None,
             left: None,
             bottom: None,
+            style: BorderStyleVariant::Default,
         };
     }
 
@@ -52,7 +74,14 @@ impl Border {
             top: None,
             left: None,
             right: None,
+            style: BorderStyleVariant::Default,
         };
+    }
+
+    #[allow(unused)]
+    pub fn with_style(mut self, style: BorderStyleVariant) -> Self {
+        self.style = style;
+        return self;
     }
 }
 
@@ -80,7 +109,7 @@ impl Border {
         }
 
         if c.len() > 0 {
-            c.push("border-[#3e3e3e]");
+            c.push(self.style.classes());
         }
 
         let classes = c.join(" ");

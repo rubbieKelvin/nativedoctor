@@ -28,6 +28,11 @@ pub enum LabelStyleVariant {
     Default,
     Mild,
     Ghost,
+    Success,
+    Danger,
+    Info,
+    Warning,
+    Debug
 }
 
 impl Variant for LabelStyleVariant {
@@ -36,6 +41,11 @@ impl Variant for LabelStyleVariant {
             LabelStyleVariant::Default => "text-[#ffffff]",
             LabelStyleVariant::Mild => "text-[#b4b4b4]",
             LabelStyleVariant::Ghost => "text-[#898989]",
+            LabelStyleVariant::Success => "text-[#1e7069]",
+            LabelStyleVariant::Danger => "text-[#f44560]",
+            LabelStyleVariant::Info => "text-[#44d1df]",
+            LabelStyleVariant::Warning => "text-[#f2c43d]",
+            LabelStyleVariant::Debug => "text-[#f17c37]",
         };
     }
 }
