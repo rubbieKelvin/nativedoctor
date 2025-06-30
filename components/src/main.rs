@@ -11,6 +11,7 @@ mod contextmenu;
 mod label;
 mod numberfield;
 mod pane;
+mod tabs;
 mod textfield;
 mod toast;
 mod traits;
@@ -21,6 +22,46 @@ fn main() {
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_JS: Asset = asset!("/assets/tailwind.js");
+
+#[derive(PartialEq, Clone)]
+struct TabBook {
+    name: String,
+    description: String,
+}
+
+impl Into<tabs::TabString> for TabBook {
+    fn into(self) -> tabs::TabString {
+        return tabs::TabString(self.name);
+    }
+}
+
+#[component]
+fn Tabs() -> Element {
+    let tablist: Signal<Vec<tabs::TabItemData<TabBook>>> = use_signal(|| {
+        vec![
+            tabs::TabItemData::new(TabBook {
+                name: "Rubbie".to_string(),
+                description: "Rubbie is rubbie the one".to_string(),
+            }),
+            tabs::TabItemData::new(TabBook {
+                name: "Bank".to_string(),
+                description: "The bank is where you store money".to_string(),
+            }),
+            tabs::TabItemData::new(TabBook {
+                name: "Rust".to_string(),
+                description: "Rust is a fucked up language. but i like it".to_string(),
+            }),
+        ]
+    });
+
+    return rsx! {
+        tabs::TabManager {
+            class: "border border-gray-400",
+            tabs: tablist,
+            orientation: tabs::TabOrientationVariant::Horizontal
+        }
+    };
+}
 
 #[component]
 fn Toasts() -> Element {
@@ -279,6 +320,7 @@ fn App() -> Element {
         document::Script { src: TAILWIND_JS }
         div { class: "flex gap-4 flex-col p-4",
             h1 { class: "mb-4", "Preview" }
+            Tabs {  }
             toast::ToastProvider { Toasts {} }
             TextFields {}
             NumberInputs {}

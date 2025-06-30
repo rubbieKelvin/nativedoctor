@@ -10,6 +10,7 @@ pub mod toast;
 pub mod border;
 pub mod select;
 pub mod popup;
+pub mod tabs;
 
 // #[cfg(test)]
 // mod tests {
