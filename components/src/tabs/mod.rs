@@ -105,7 +105,7 @@ fn TabListItem<T: TabGenerics + 'static>(
     tabs: Signal<TabSet<T>>,
     child: Option<Element>,
 ) -> Element {
-    use_context_provider(|| TabState { tab, tabs });
+    use_context_provider::<TabState<T>>(|| TabState { tab, tabs });
 
     return match child {
         Some(child) => rsx! {{child}},

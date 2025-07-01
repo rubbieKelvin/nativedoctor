@@ -61,6 +61,7 @@ impl<T: TabGenerics> TabSet<T> {
     #[allow(unused)]
     pub fn add_tab(&mut self, item: TabItemData<T>) {
         if self.get_similar(&item).is_some() {
+            tracing::info!("Already has a tab with similar content. Skipping");
             return;
         }
 
@@ -98,6 +99,11 @@ impl<T: TabGenerics> TabSet<T> {
         return self
             .0
             .map(|id| self.1.iter().filter(|t| t.id == id).last())?;
+    }
+
+    #[allow(unused)]
+    pub fn clear(&mut self) {
+        self.1.retain(|t| !t.closable);
     }
 
     pub fn select(&mut self, id: Option<uuid::Uuid>) {

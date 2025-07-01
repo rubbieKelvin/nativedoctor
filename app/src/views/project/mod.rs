@@ -1,4 +1,7 @@
-use crate::session::{RequestDefination, Session};
+use crate::{
+    session::{RequestDefination, Session},
+    views::project::utils::{get_label_style_for_method, WorkspaceTab},
+};
 use components_lib::{
     border::{Border, BorderStyleVariant},
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
@@ -6,82 +9,18 @@ use components_lib::{
     label::{Label, LabelSizeVariant, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
-    tabs::{TabItemData, TabPayload, TabSet, TabState, TabsManager},
+    tabs::{TabItemData, TabSet, TabState, TabsManager},
 };
 use dioxus::prelude::*;
-
-use dioxus_desktop::wry::http::method;
 use dioxus_free_icons::{
-    icons::ld_icons::{LdEllipsisVertical, LdGithub, LdHome, LdMail, LdPencil, LdPlus, LdTwitter},
+    icons::ld_icons::{LdEllipsisVertical, LdGithub, LdMail, LdPencil, LdPlus, LdTwitter},
     Icon,
 };
+use request_tab::RequestPage;
 
+mod request_tab;
+mod utils;
 use crate::components::WmDragArea;
-
-fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant {
-    let method = method.as_ref();
-    let method = method.to_lowercase();
-    return match method.as_str() {
-        "get" => LabelStyleVariant::Success,
-        "post" => LabelStyleVariant::Info,
-        "patch" => LabelStyleVariant::Warning,
-        "delete" => LabelStyleVariant::Danger,
-        "put" => LabelStyleVariant::Debug,
-        _ => LabelStyleVariant::Mild,
-    };
-}
-
-#[derive(PartialEq, Clone)]
-enum WorkspaceTab {
-    Welcome,
-    Request(RequestDefination),
-}
-
-#[derive(PartialEq, Clone)]
-enum WorkspaceTabId {
-    Welcome,
-    Request(uuid::Uuid),
-}
-
-impl TabPayload for WorkspaceTab {
-    type Identifier = WorkspaceTabId;
-    fn render_title(&self, selected: bool) -> Element {
-        return match self {
-            WorkspaceTab::Welcome => rsx! {
-                div { class: "flex gap-1 items-center",
-                    Icon { icon: LdHome, height: 12, width: 12 }
-                    Label {
-                        class: "flex-grow text-start",
-                        style: LabelStyleVariant::Mild,
-                        "Home"
-                    }
-                }
-            },
-            WorkspaceTab::Request(request) => rsx! {
-                div { class: "flex gap-1 items-center",
-                    Label {
-                        class: "uppercase",
-                        size: LabelSizeVariant::Tiny,
-                        style: get_label_style_for_method(&request.method),
-                        "{request.method}"
-                    }
-                    Label {
-                        class: "flex-grow",
-                        style: if selected { LabelStyleVariant::Default } else { LabelStyleVariant::Mild },
-                        "{request.name}"
-                    }
-                }
-            },
-        };
-    }
-
-    fn unique_identifier(&self) -> Self::Identifier {
-        return match self {
-            WorkspaceTab::Welcome => WorkspaceTabId::Welcome,
-            WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
-        };
-    }
-}
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
@@ -115,9 +54,6 @@ enum SideBarList {
 // Manages the current ui state of the requests list
 #[component]
 fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
-    // let project_state = ProjectState::inject();
-    // let open_request_signal = project_state.open_request.clone();
-    // let project_signal = project_state.project.clone();
     let mut session = use_context::<Signal<Session>>();
 
     let mut current_list = use_signal(|| SideBarList::Requests);
@@ -176,7 +112,12 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                     style: ButtonStyleVariant::Ghost,
                     onclick: move |_| {
                         let mut session = session.write();
-                        session.new_empty_request();
+                        let created_defination = session.new_empty_request();
+
+                        let mut tabset = tabs.write();
+                        let tabitem = TabItemData::new(WorkspaceTab::Request(created_defination));
+                        tabset.add_tab(tabitem.clone());
+                        tabset.select(Some(tabitem.id));
                     },
                     Icon { width: 14, height: 14, icon: LdPlus }
                 }
@@ -296,14 +237,21 @@ fn TabContent() -> Element {
     let state = use_context::<TabState<WorkspaceTab>>();
     return match state.tab.payload {
         WorkspaceTab::Welcome => rsx! {
-            WelcomePage { state }
+            WelcomePage {}
+        },
+        WorkspaceTab::Request(_) => rsx! {
+            RequestPage { }
         },
         _ => rsx! {},
     };
 }
 
 #[component]
-fn WelcomePage(state: TabState<WorkspaceTab>) -> Element {
+fn WelcomePage() -> Element {
+    let state = use_context::<TabState<WorkspaceTab>>();
+    let mut tabset = state.tabs;
+    let mut session = use_context::<Signal<Session>>();
+
     return rsx! {
         div { class: "h-full flex items-center justify-center",
             div { class: "flex flex-col gap-4 min-w-[40%]",
@@ -319,7 +267,7 @@ fn WelcomePage(state: TabState<WorkspaceTab>) -> Element {
                         Label {
                             size: LabelSizeVariant::Small,
                             style: LabelStyleVariant::Ghost,
-                            "Let's get started"
+                            "Let's f*#ing go!"
                         }
                     }
 
@@ -355,6 +303,16 @@ fn WelcomePage(state: TabState<WorkspaceTab>) -> Element {
                     Button {
                         style: ButtonStyleVariant::Ghost,
                         class: "flex gap-2 items-center",
+                        onclick: move |_| {
+                            let mut session = session.write();
+                            let created_defination = session.new_empty_request();
+
+                            let mut tabset = tabset.write();
+                            let tabitem = TabItemData::new(WorkspaceTab::Request(created_defination));
+                            
+                            tabset.add_tab(tabitem.clone());
+                            tabset.select(Some(tabitem.id));
+                        },
                         Icon { icon: LdPlus, height: 14, width: 14 }
                         Label { "Add a request" }
                     }

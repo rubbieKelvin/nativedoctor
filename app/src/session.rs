@@ -18,6 +18,7 @@ pub struct Session {
 }
 
 impl Session {
+    // TODO: simplify this
     #[allow(unused)]
     pub fn template() -> Self {
         let mut post_mapping = Mapping::new();
@@ -70,6 +71,7 @@ impl Session {
                     name: "Get request with params".to_string(),
                     method: "GET".to_string(),
                     url: "{{baseurl}}/get".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     doc: "Sends a GET request with query parameters.".to_string(),
                     query: vec![
                         ("source".to_string(), "nativedoctor".to_string()),
@@ -80,6 +82,7 @@ impl Session {
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
                     name: "Post json data".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     method: "POST".to_string(),
                     url: "{{baseurl}}/post".to_string(),
                     doc: "Sends a POST request with a JSON body.".to_string(),
@@ -95,6 +98,7 @@ impl Session {
                     id: uuid::Uuid::new_v4(),
                     name: "Put request".to_string(),
                     method: "PUT".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     url: "{{baseurl}}/put".to_string(),
                     doc: "Sends a PUT request, similar to POST.".to_string(),
                     headers: HashMap::from_iter([
@@ -109,6 +113,7 @@ impl Session {
                     id: uuid::Uuid::new_v4(),
                     name: "Upload file multipart".to_string(),
                     method: "POST".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     url: "{{baseurl}}/post".to_string(),
                     doc: "Sends a multipart/form-data request with fields and a file.".to_string(),
                     body: Some(RequestBodySchema::Multipart {
@@ -124,6 +129,7 @@ impl Session {
                     id: uuid::Uuid::new_v4(),
                     name: "Delete something".to_string(),
                     method: "DELETE".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     url: "{{baseurl}}/delete".to_string(),
                     doc: "Sends a DELETE request.".to_string(),
                     ..Default::default()
@@ -132,6 +138,7 @@ impl Session {
                     id: uuid::Uuid::new_v4(),
                     name: "Check bearer".to_string(),
                     method: "GET".to_string(),
+                    ref_id: nanoid::nanoid!(8),
                     url: "{{baseurl}}/bearer".to_string(),
                     doc: "Tests bearer token authentication.".to_string(),
                     headers: HashMap::from_iter([
@@ -160,21 +167,28 @@ impl Session {
         return self.env.keys().map(|k| k.clone()).collect();
     }
 
-    pub fn new_empty_request(&mut self) -> uuid::Uuid {
+    pub fn new_empty_request(&mut self) -> RequestDefination {
         let id = uuid::Uuid::new_v4();
-        self.requests.push(RequestDefination {
+        let defination = RequestDefination {
             id: id.clone(),
             name: "untitled".to_string(),
             method: "GET".to_string(),
             ..Default::default()
-        });
-        return id;
+        };
+
+        self.requests.push(defination.clone());
+        return defination;
     }
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
 pub struct RequestDefination {
+    /// this id is used as keys for the ui.
+    /// this is not always the same every time this struct is created
     pub id: uuid::Uuid,
+    /// ref id is used to identify this object.
+    /// it's persisted and will be saved with the request in file
+    pub ref_id: String,
     pub name: String,
     pub method: String,
     pub url: String,
