@@ -36,7 +36,7 @@ jobs:
       run: |
         dx build -p app --platform desktop --release
     - name: Upload desktop build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: desktop-build-${{ matrix.os }}
         path: app/dist/
@@ -48,7 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
