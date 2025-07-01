@@ -56,7 +56,7 @@ impl TabPayload for WorkspaceTab {
                 }
             },
             WorkspaceTab::Request(request) => rsx! {
-                div { class: "flex gap-1 items-center",
+                div { class: "flex gap-1 items-center text-nowrap",
                     Label {
                         class: "uppercase",
                         size: LabelSizeVariant::Tiny,

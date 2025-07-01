@@ -31,6 +31,7 @@ impl Variant for TabOrientationVariant {
 // main shi
 #[component]
 pub fn TabsManager<T: TabGenerics + 'static>(
+    id: Option<String>,
     tabs: Signal<TabSet<T>>,
     class: Option<String>,
     list_class: Option<String>,
@@ -39,6 +40,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     orientation: Option<TabOrientationVariant>,
     emptystate: Option<Element>,
     children: Element,
+    onscroll: Option<EventHandler<Event<ScrollData>>>
 ) -> Element {
     // when the tabs list changes, ensure a tab is selected if possible.
     use_effect(move || {
@@ -49,6 +51,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
         }
     });
 
+    let id = id.unwrap_or_else(|| nanoid::nanoid!());
     let orientation = orientation.unwrap_or_default();
     let content_class = content_class.unwrap_or_default();
     let tablist_class = format!(
@@ -69,10 +72,17 @@ pub fn TabsManager<T: TabGenerics + 'static>(
         div { class: main_class,
             // list
             div {
+                id: "{id}_tablist",
                 class: tablist_class,
                 role: "tablist",
+                onscroll: move |e| {
+                    if let Some(onscroll) = onscroll {
+                        onscroll.call(e);
+                    }
+                },
                 for tab in tabs() {
                     TabListItem {
+                        id: id.clone(),
                         key: "{tab.id}",
                         tab,
                         tabs,
@@ -101,6 +111,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
 /// individual item in the tab list to provides the `TabState` context for children pills.
 #[component]
 fn TabListItem<T: TabGenerics + 'static>(
+    id: Option<String>,
     tab: TabItemData<T>,
     tabs: Signal<TabSet<T>>,
     child: Option<Element>,

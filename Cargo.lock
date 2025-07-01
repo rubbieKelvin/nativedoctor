@@ -37,6 +37,7 @@ dependencies = [
  "rfd 0.15.3",
  "serde_yaml",
  "slug",
+ "strum",
  "tokio",
  "tracing",
  "uuid",
@@ -543,6 +544,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "dioxus-free-icons",
+ "nanoid",
  "rfd 0.15.3",
  "strum",
  "tracing",

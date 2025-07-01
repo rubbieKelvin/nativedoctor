@@ -48,7 +48,7 @@ pub fn Select<T: Clone + PartialEq + Into<String> + 'static>(
             } else {
                 // We'd should a default if display is not set
                 Button {
-                    class: "flex {class} item-center gap-2",
+                    class: "flex {class} items-center gap-2",
                     onclick: move |_| is_open.set(!is_open()),
                     Label {
                         class: "flex-grow text-start",

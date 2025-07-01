@@ -113,7 +113,6 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                     onclick: move |_| {
                         let mut session = session.write();
                         let created_defination = session.new_empty_request();
-
                         let mut tabset = tabs.write();
                         let tabitem = TabItemData::new(WorkspaceTab::Request(created_defination));
                         tabset.add_tab(tabitem.clone());
@@ -226,8 +225,65 @@ fn RequestListItem(request: RequestDefination, tabs: Signal<TabSet<WorkspaceTab>
 #[component]
 fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     return rsx! {
-        Pane { class: "flex-grow", style: PaneStyleVariant::Dark,
-            TabsManager::<WorkspaceTab> { tabs, class: "p-2 h-full", TabContent {} }
+        style {
+            "
+            #workspace-tab_tablist{{
+                align-items: center;
+                overflow-x: auto;
+                white-space: nowrap;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }}
+
+            #workspace-tab_tablist::-webkit-scrollbar {{
+                display: none;
+            }}
+
+            #workspace-tab_tablist::before,
+            #workspace-tab_tablist::after {{
+                content: "
+            ";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 50px;
+                pointer-events: none;
+                transition: opacity 0.2s ease-in-out;
+            }}
+
+            /* Left shadow */
+            #workspace-tab_tablist::before {{
+                left: 0;
+                background: linear-gradient(to right, #1E1E1E, transparent);
+            }}
+
+            /* Right shadow */
+            #workspace-tab_tablist::after {{
+                right: 0;
+                background: linear-gradient(to left, #1E1E1E, transparent);
+            }}
+
+            /* classes to control visibility from JavaScript */
+            #workspace-tab_tablist.show-start-shadow::before,
+            #workspace-tab_tablist.show-end-shadow::after {{
+                opacity: 1;
+            }}
+
+            #workspace-tab_tablist::before,
+            #workspace-tab_tablist::after {{
+                opacity: 0;
+            }}
+            "
+        }
+
+        Pane { class: "flex-grow w-0 relative", style: PaneStyleVariant::Dark,
+            TabsManager::<WorkspaceTab> {
+                id: "workspace-tab",
+                tabs,
+                class: "p-2 h-full workspace-tab-wrapper",
+                list_class: "overflow-y-auto",
+                TabContent {}
+            }
         }
     };
 }
@@ -240,7 +296,7 @@ fn TabContent() -> Element {
             WelcomePage {}
         },
         WorkspaceTab::Request(_) => rsx! {
-            RequestPage { }
+            RequestPage {}
         },
         _ => rsx! {},
     };
@@ -306,10 +362,8 @@ fn WelcomePage() -> Element {
                         onclick: move |_| {
                             let mut session = session.write();
                             let created_defination = session.new_empty_request();
-
                             let mut tabset = tabset.write();
                             let tabitem = TabItemData::new(WorkspaceTab::Request(created_defination));
-                            
                             tabset.add_tab(tabitem.clone());
                             tabset.select(Some(tabitem.id));
                         },
