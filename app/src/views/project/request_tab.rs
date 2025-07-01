@@ -3,7 +3,7 @@ use components_lib::{
     button::{Button, ButtonStyleVariant},
     buttongroup::{ButtonGroup, GroupButton},
     label::Label,
-    pane::{Pane},
+    pane::Pane,
     select::Select,
     tabs::TabState,
     textfield::TextField,
@@ -18,7 +18,7 @@ const HTTP_METHODS: [&'static str; 9] = [
 ];
 
 #[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
-enum RequestTab {
+enum RequestInputTab {
     Params,
     Authorization,
     Headers,
@@ -27,6 +27,12 @@ enum RequestTab {
     Scripts,
     Docs,
     Config,
+}
+
+#[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
+enum RequestOutputTab {
+    Request,
+    Response
 }
 
 #[component]
@@ -58,26 +64,37 @@ pub fn RequestPage() -> Element {
             }
 
             // Body
-            div { class: "flex-grow flex gap-2",
-                div { class: "flex-grow flex-col gap-2 flex",
-                    Pane { class: "p-1 rounded-md flex items-center",
-                        ButtonGroup {
-                            class: "flex items-center gap-1",
-                            for tab in RequestTab::iter(){
-                                GroupButton {
-                                    key: "{tab}",
-                                    Label { "{tab}" }
-                                }
+            Pane {
+                class: "flex-grow flex gap-2 overflow-clip rounded-md",
+                border: Border::all(),
+                // Input
+                div { class: "flex-grow flex-col gap-2 flex p-2",
+                    ButtonGroup { class: "flex items-center gap-1",
+                        for tab in RequestInputTab::iter() {
+                            GroupButton { key: "{tab}",
+                                Label { "{tab}" }
                             }
                         }
                     }
 
-                    Pane { class: "rounded-md flex-grow", border: Border::all() }
+                    Pane { class: "rounded-md flex-grow" }
                 }
+
+                // Output
                 Pane {
-                    class: "w-[35%] max-w-[500px] rounded-md",
+                    class: "w-[35%] max-w-[500px] p-2",
                     // style: PaneStyleVariant::Darker,
-                    border: Border::all(),
+                    border: Border::left(),
+
+                    ButtonGroup { class: "flex items-center gap-1",
+                        for tab in RequestOutputTab::iter() {
+                            GroupButton { key: "{tab}",
+                                Label { "{tab}" }
+                            }
+                        }
+                    }
+
+                    Pane { class: "rounded-md flex-grow" }
                 }
             }
         }

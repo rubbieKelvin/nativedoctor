@@ -8,7 +8,6 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-red-200: oklch(88.5% 0.062 18.334);
-    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-400: oklch(70.7% 0.022 261.325);
     --color-gray-700: oklch(37.3% 0.034 259.733);
@@ -277,15 +276,6 @@
   .w-10 {
     width: calc(var(--spacing) * 10);
   }
-  .w-18 {
-    width: calc(var(--spacing) * 18);
-  }
-  .w-20 {
-    width: calc(var(--spacing) * 20);
-  }
-  .w-24 {
-    width: calc(var(--spacing) * 24);
-  }
   .w-96 {
     width: calc(var(--spacing) * 96);
   }
@@ -301,14 +291,8 @@
   .w-max {
     width: max-content;
   }
-  .max-w-24 {
-    max-width: calc(var(--spacing) * 24);
-  }
   .max-w-\[500px\] {
     max-width: 500px;
-  }
-  .min-w-24 {
-    min-width: calc(var(--spacing) * 24);
   }
   .min-w-\[40\%\] {
     min-width: 40%;
@@ -318,9 +302,6 @@
   }
   .min-w-\[180px\] {
     min-width: 180px;
-  }
-  .flex-\[35\%\] {
-    flex: 35%;
   }
   .flex-\[50\%\] {
     flex: 50%;
@@ -342,9 +323,6 @@
   }
   .cursor-pointer {
     cursor: pointer;
-  }
-  .resize {
-    resize: both;
   }
   .appearance-none {
     appearance: none;
@@ -447,6 +425,9 @@
   .bg-\[\#245c80\] {
     background-color: #245c80;
   }
+  .bg-\[\#101010\] {
+    background-color: #101010;
+  }
   .bg-\[\#141414\] {
     background-color: #141414;
   }
@@ -464,9 +445,6 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-black) 40%, transparent);
     }
-  }
-  .bg-red-200 {
-    background-color: var(--color-red-200);
   }
   .bg-transparent {
     background-color: transparent;

@@ -19,7 +19,7 @@ impl Variant for PaneStyleVariant {
             PaneStyleVariant::Lighter => "bg-[#202020]",
             PaneStyleVariant::Default => "bg-[#1b1b1b]",
             PaneStyleVariant::Dark => "bg-[#141414]",
-            PaneStyleVariant::Darker => "bg-[#0e1011]",
+            PaneStyleVariant::Darker => "bg-[#101010]",
             PaneStyleVariant::Evil => "bg-[#0a0a0a]",
         };
     }

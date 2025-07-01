@@ -1,11 +1,17 @@
 name: Build and Release
 
 on:
-  push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub release'
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.0.0)'
+        required: false
+        type: string
 
 env:
   CARGO_TERM_COLOR: always
@@ -52,7 +58,7 @@ jobs:
   release:
     needs: [build-desktop]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: inputs.create_release
     steps:
     - uses: actions/checkout@v4
     - name: Download all artifacts
@@ -60,6 +66,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ inputs.tag_name || github.sha }}
         files: |
           desktop-build-*/**/*
         generate_release_notes: true
