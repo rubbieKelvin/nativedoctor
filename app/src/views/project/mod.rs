@@ -263,6 +263,7 @@ fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                 background: linear-gradient(to left, #1E1E1E, transparent);
             }}
 
+            /* TODO: Fix; doesn't work yet */
             /* classes to control visibility from JavaScript */
             #workspace-tab_tablist.show-start-shadow::before,
             #workspace-tab_tablist.show-end-shadow::after {{
