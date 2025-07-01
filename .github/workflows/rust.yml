@@ -34,8 +34,7 @@ jobs:
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
     - name: Build desktop app
       run: |
-        cd app
-        dx build --platform desktop --release
+        dx build -p app --platform desktop --release
     - name: Upload desktop build artifacts
       uses: actions/upload-artifact@v3
       with:
