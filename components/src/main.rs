@@ -11,11 +11,11 @@ mod contextmenu;
 mod label;
 mod numberfield;
 mod pane;
+mod tableinput;
 mod tabs;
 mod textfield;
 mod toast;
 mod traits;
-mod tableinput;
 
 fn main() {
     dioxus::launch(App);
@@ -100,7 +100,7 @@ enum Columns {
     Value,
 }
 
-impl tableinput::TableInputColumn for Columns {
+impl tableinput::TableInputCell for Columns {
     fn identifier(&self) -> String {
         return self.to_string();
     }
@@ -111,16 +111,27 @@ impl tableinput::TableInputColumn for Columns {
         };
     }
 
-    fn render_input(&self) -> Element {
+    fn render_input(
+        &self,
+        value: tableinput::CellValue,
+        set: impl Fn(tableinput::CellValue) + 'static,
+    ) -> Element {
         return match self {
             Columns::Identifier => rsx! {
                 textfield::TextField {
-                    value: "",
+                    value: value.to_string(),
+                    oninput: move |e: Event<FormData>| {
+                        let value = e.value();
+                        set(tableinput::CellValue::Text(value))
+                    },
                 }
             },
             Columns::Value => rsx! {
                 numberfield::NumberField {
-                    value: 0,
+                    value: value.to_i64().map(|i| i as i32),
+                    onchange: move |e: i32| {
+                        set(tableinput::CellValue::Number(e.into()))
+                    },
                 }
             },
         };
