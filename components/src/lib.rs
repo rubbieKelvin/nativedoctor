@@ -11,6 +11,7 @@ pub mod border;
 pub mod select;
 pub mod popup;
 pub mod tabs;
+pub mod tableinput;
 
 // #[cfg(test)]
 // mod tests {

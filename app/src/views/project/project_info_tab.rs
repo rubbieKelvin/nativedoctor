@@ -19,8 +19,8 @@ pub fn ProjectInfoTab(
     let mut tabset = tab_state.tabs;
     let mut session = use_context::<Signal<Session>>();
 
-    let project_name = use_signal(|| name.clone());
-    let project_description = use_signal(|| description);
+    let mut project_name = use_signal(|| name.clone());
+    let mut project_description = use_signal(|| description);
     let project_envs = use_signal(|| envs);
 
     // the tab holds some data that the page might need when recreated
@@ -67,12 +67,13 @@ pub fn ProjectInfoTab(
             div { class: "flex flex-col gap-1",
                 TextField {
                     placeholder: "Name",
-                    value: project_name,
+                    value: "{project_name}",
                     style: TextFieldStyleVariant::Ghost,
                     size: TextFieldSizeVariant::Large,
                     oninput: {
                         let mut save_tab_data = save_tab_data.clone();
-                        move |_| {
+                        move |e: Event<FormData>| {
+                            project_name.set(e.value());
                             save_tab_data();
                         }
                     },
@@ -91,11 +92,12 @@ pub fn ProjectInfoTab(
                 }
                 TextField {
                     placeholder: "Description",
-                    value: project_description,
+                    value: "{project_description}",
                     style: TextFieldStyleVariant::Ghost,
                     oninput: {
                         let mut save_tab_data = save_tab_data.clone();
-                        move |_| {
+                        move |e: Event<FormData>| {
+                            project_description.set(e.value());
                             save_tab_data();
                         }
                     },

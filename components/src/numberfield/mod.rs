@@ -41,7 +41,7 @@ impl Variant for NumberFieldSizeVariant {
 
 #[component]
 pub fn NumberField(
-    value: Signal<i32>,
+    value: Option<i32>,
     step: Option<u32>,
     min: Option<i32>,
     max: Option<i32>,
@@ -50,18 +50,19 @@ pub fn NumberField(
     style: Option<NumberFieldStyleVariant>,
     onchange: Option<EventHandler<i32>>,
 ) -> Element {
+    let value = value.unwrap_or_default();
     let step = step.unwrap_or(1) as i32;
     let style = style.unwrap_or_default();
     let size = size.unwrap_or_default();
     let class = format!("{} {} {}", class.unwrap_or_default(), style.classes(), size.classes());
 
     let is_dec_disabled = if min.is_some() {
-        value() <= min.unwrap()
+        value <= min.unwrap()
     } else {
         false
     };
     let is_inc_disabled = if max.is_some() {
-        value() >= max.unwrap()
+        value >= max.unwrap()
     } else {
         false
     };
@@ -116,7 +117,6 @@ pub fn NumberField(
             && (min.is_none() || new_val >= min.unwrap());
 
         if is_valid {
-            value.set(new_val);
             // If the on_change handler exists, call it with the new value
             if let Some(handler) = &onchange {
                 handler.call(new_val);
@@ -147,7 +147,7 @@ pub fn NumberField(
                 class: "{button_classes}",
                 disabled: is_dec_disabled,
                 onclick: move |_| {
-                    let new_val = value() - step;
+                    let new_val = value - step;
                     set_value.clone()(new_val);
                 },
                 Icon{
@@ -196,7 +196,7 @@ pub fn NumberField(
                 class: "{button_classes}",
                 disabled: is_inc_disabled,
                 onclick: move |_| {
-                    let new_val = value() + step;
+                    let new_val = value + step;
                     set_value.clone()(new_val);
                 },
                 Icon{

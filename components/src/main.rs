@@ -15,6 +15,7 @@ mod tabs;
 mod textfield;
 mod toast;
 mod traits;
+mod tableinput;
 
 fn main() {
     dioxus::launch(App);
@@ -89,6 +90,51 @@ fn _TabContent() -> Element {
         div { class: "border border-[#3b3b3b] w-full h-full rounded-md p-2",
             label::Label { size: label::LabelSizeVariant::Large, "{name}" }
             label::Label { size: label::LabelSizeVariant::Small, "{description}" }
+        }
+    };
+}
+
+#[derive(PartialEq, Clone, strum::Display)]
+enum Columns {
+    Identifier,
+    Value,
+}
+
+impl tableinput::TableInputColumn for Columns {
+    fn identifier(&self) -> String {
+        return self.to_string();
+    }
+
+    fn render_header(&self) -> Element {
+        return rsx! {
+            p { class: "text-start", "{self}" }
+        };
+    }
+
+    fn render_input(&self) -> Element {
+        return rsx!{};
+        // return match self {
+        //     Columns::Identifier => rsx! {
+        //         textfield::TextField {
+        //             value: use_signal(|| String::new()),
+        //         }
+        //     },
+        //     Columns::Value => rsx! {
+        //         numberfield::NumberField {
+        //             value: use_signal(|| 0),
+        //         }
+        //     },
+        // };
+    }
+}
+
+#[component]
+fn TableInputs() -> Element {
+    return rsx! {
+        tableinput::TableInput {
+            class: "rounded-md p-2",
+            border: Some(border::Border::all()),
+            columns: vec![Columns::Identifier, Columns::Value],
         }
     };
 }
@@ -290,7 +336,7 @@ fn ButtonGroups() -> Element {
 
 #[component]
 fn TextFields() -> Element {
-    let text = use_signal(|| String::new());
+    let mut text = use_signal(|| String::new());
 
     return rsx! {
         div {
@@ -301,7 +347,10 @@ fn TextFields() -> Element {
             }
 
             textfield::TextField {
-                value: text,
+                value: "{text}",
+                oninput: move |e: Event<FormData>| {
+                    text.set(e.value());
+                },
                 before: rsx! {
                     p { "X" }
                 },
@@ -310,7 +359,14 @@ fn TextFields() -> Element {
             for size in textfield::TextFieldSizeVariant::iter() {
                 div { class: "flex",
                     for style in textfield::TextFieldStyleVariant::iter() {
-                        textfield::TextField { value: text, style, size: size.clone() }
+                        textfield::TextField {
+                            value: "{text}",
+                            style,
+                            size: size.clone(),
+                            oninput: move |e: Event<FormData>| {
+                                text.set(e.value());
+                            },
+                        }
                     }
                 }
             }
@@ -320,7 +376,7 @@ fn TextFields() -> Element {
 
 #[component]
 fn NumberInputs() -> Element {
-    let value = use_signal(|| 0);
+    let mut value = use_signal(|| 0);
 
     return rsx! {
         div {
@@ -332,8 +388,11 @@ fn NumberInputs() -> Element {
                             numberfield::NumberField {
                                 class: "flex-grow",
                                 style,
-                                value,
+                                value: value(),
                                 size: size.clone(),
+                                onchange: move |e: i32| {
+                                    value.set(e);
+                                },
                             }
                         }
                     }
@@ -350,6 +409,7 @@ fn App() -> Element {
         document::Script { src: TAILWIND_JS }
         div { class: "flex gap-4 flex-col p-4",
             h1 { class: "mb-4", "Preview" }
+            TableInputs {}
             Tabs {}
             toast::ToastProvider { Toasts {} }
             TextFields {}

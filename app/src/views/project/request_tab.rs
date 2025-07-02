@@ -38,14 +38,17 @@ enum RequestOutputTab {
 #[component]
 pub fn RequestPage() -> Element {
     let _state = use_context::<TabState<WorkspaceTab>>();
-    let url = use_signal(|| String::new());
+    let mut url = use_signal(|| String::new());
     let method = use_signal(|| Some("GET".to_string()));
 
     return rsx! {
         div { class: "h-full flex flex-col pt-2 gap-2",
             // method send and input
             TextField {
-                value: url,
+                value: "{url}",
+                oninput: move |e: Event<FormData>| {
+                    url.set(e.value());
+                },
                 placeholder: "https://httpbin.org/get",
                 before: rsx! {
                     Select::<String> {

@@ -48,7 +48,7 @@ impl Variant for TextFieldSizeVariant {
 /// A customizable text input component.
 #[component]
 pub fn TextField(
-    value: Signal<String>,
+    value: Option<String>,
     placeholder: Option<&'static str>,
     size: Option<TextFieldSizeVariant>,
     style: Option<TextFieldStyleVariant>,
@@ -62,6 +62,7 @@ pub fn TextField(
     onkeydown: Option<EventHandler<Event<KeyboardData>>>,
     onreturn: Option<EventHandler<Event<KeyboardData>>>,
 ) -> Element {
+    let value = value.unwrap_or_default();
     let style = style.unwrap_or_default();
     let size = size.unwrap_or_default();
     let placeholder = placeholder.unwrap_or("Enter text...");
@@ -100,7 +101,6 @@ pub fn TextField(
                     }
                 },
                 oninput: move |e| {
-                    value.set(e.value());
                     if let Some(oninput_handler) = oninput {
                         oninput_handler.call(e);
                     }

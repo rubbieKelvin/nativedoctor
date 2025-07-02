@@ -25,6 +25,12 @@ pub struct Border {
     pub style: BorderStyleVariant,
 }
 
+impl Default for Border {
+    fn default() -> Self {
+        return Border::none();
+    }
+}
+
 impl Border {
     pub fn all() -> Border {
         return Border {
