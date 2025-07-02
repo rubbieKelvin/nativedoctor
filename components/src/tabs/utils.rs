@@ -101,6 +101,12 @@ impl<T: TabGenerics> TabSet<T> {
             .map(|id| self.1.iter().filter(|t| t.id == id).last())?;
     }
 
+    pub fn get_selected_mut(&mut self) -> Option<&mut TabItemData<T>> {
+        return self
+            .0
+            .map(|id| self.1.iter_mut().filter(|t| t.id == id).last())?;
+    }
+
     #[allow(unused)]
     pub fn clear(&mut self) {
         self.1.retain(|t| !t.closable);

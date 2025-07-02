@@ -8,6 +8,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-red-200: oklch(88.5% 0.062 18.334);
+    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-400: oklch(70.7% 0.022 261.325);
     --color-gray-700: oklch(37.3% 0.034 259.733);
@@ -21,6 +22,8 @@
     --text-sm--line-height: calc(1.25 / 0.875);
     --text-base: 12px;
     --text-base--line-height: calc(1.5 / 1);
+    --text-lg: 14px;
+    --text-lg--line-height: calc(1.75 / 1.125);
     --text-xl: 16px;
     --text-xl--line-height: calc(1.75 / 1.25);
     --text-2xl: 20px;
@@ -410,9 +413,6 @@
   .bg-\[\#0a0a0a\] {
     background-color: #0a0a0a;
   }
-  .bg-\[\#0e1011\] {
-    background-color: #0e1011;
-  }
   .bg-\[\#1b1b1b\] {
     background-color: #1b1b1b;
   }
@@ -517,6 +517,10 @@
   .text-base {
     font-size: var(--text-base);
     line-height: var(--tw-leading, var(--text-base--line-height));
+  }
+  .text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
   }
   .text-sm {
     font-size: var(--text-sm);

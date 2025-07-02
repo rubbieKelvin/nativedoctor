@@ -40,6 +40,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     orientation: Option<TabOrientationVariant>,
     emptystate: Option<Element>,
     children: Element,
+    tab_real_estate: Option<Element>,
     onscroll: Option<EventHandler<Event<ScrollData>>>
 ) -> Element {
     // when the tabs list changes, ensure a tab is selected if possible.
@@ -55,7 +56,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     let orientation = orientation.unwrap_or_default();
     let content_class = content_class.unwrap_or_default();
     let tablist_class = format!(
-        "flex {} {}",
+        "flex gap-1 {} {}",
         orientation.classes(),
         list_class.unwrap_or_default()
     );
@@ -89,6 +90,13 @@ pub fn TabsManager<T: TabGenerics + 'static>(
                         child: pill.clone()
                     }
                 }
+
+                // tab real estate, the space on the tab row where there're no tab pill
+                // TODO: Not sure if this would work well when orientation is vertical
+                if let Some(tre) = tab_real_estate {
+                    {tre}
+                }
+                
             }
 
             // content
@@ -137,7 +145,7 @@ fn DefaultTabPill<T: TabGenerics + 'static>() -> Element {
     let button_style = if is_selected {
         ButtonStyleVariant::Default
     } else {
-        ButtonStyleVariant::Transparent
+        ButtonStyleVariant::Ghost
     };
 
     rsx! {

@@ -1,8 +1,16 @@
-use components_lib::{label::{Label, LabelSizeVariant, LabelStyleVariant}, tabs::TabPayload};
-use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons::{LdBox, LdHome}, Icon};
+use std::collections::HashMap;
 
-use crate::session::RequestDefination;
+use components_lib::{
+    label::{Label, LabelSizeVariant, LabelStyleVariant},
+    tabs::TabPayload,
+};
+use dioxus::prelude::*;
+use dioxus_free_icons::{
+    icons::ld_icons::{LdBox, LdHome},
+    Icon,
+};
+
+use crate::session::{RequestDefination, Session};
 
 pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant {
     let method = method.as_ref();
@@ -20,7 +28,7 @@ pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant
 #[derive(PartialEq, Clone)]
 pub enum WorkspaceTab {
     Welcome,
-    Project,
+    Project(String, String, HashMap<String, HashMap<String, String>>),
     Request(RequestDefination),
 }
 
@@ -45,7 +53,7 @@ impl TabPayload for WorkspaceTab {
                     }
                 }
             },
-            WorkspaceTab::Project => rsx! {
+            WorkspaceTab::Project( .. ) => rsx! {
                 div { class: "flex gap-1 items-center",
                     Icon { icon: LdBox, height: 12, width: 12 }
                     Label {
@@ -75,9 +83,16 @@ impl TabPayload for WorkspaceTab {
 
     fn unique_identifier(&self) -> Self::Identifier {
         return match self {
-            WorkspaceTab::Project => WorkspaceTabId::Project,
             WorkspaceTab::Welcome => WorkspaceTabId::Welcome,
+            WorkspaceTab::Project( .. ) => WorkspaceTabId::Project,
             WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
         };
+    }
+}
+
+// create a workspace tab from a session
+impl Into<WorkspaceTab> for Session {
+    fn into(self) -> WorkspaceTab {
+        WorkspaceTab::Project(self.name, self.description, self.env)
     }
 }

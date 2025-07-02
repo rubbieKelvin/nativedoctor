@@ -37,7 +37,7 @@ enum RequestOutputTab {
 
 #[component]
 pub fn RequestPage() -> Element {
-    let state = use_context::<TabState<WorkspaceTab>>();
+    let _state = use_context::<TabState<WorkspaceTab>>();
     let url = use_signal(|| String::new());
     let method = use_signal(|| Some("GET".to_string()));
 

@@ -26,6 +26,7 @@ impl Variant for TextFieldStyleVariant {
 /// Represents the different size variants for a text field.
 #[derive(PartialEq, Clone, Default, strum::EnumIter)]
 pub enum TextFieldSizeVariant {
+    Large,
     #[default]
     Default,
     Small,
@@ -36,6 +37,7 @@ impl Variant for TextFieldSizeVariant {
     /// Returns the appropriate Tailwind CSS classes for the text field size.
     fn classes(&self) -> &'static str {
         match self {
+            TextFieldSizeVariant::Large => "rounded-md px-2 py-1 text-lg",
             TextFieldSizeVariant::Default => "rounded-md px-2 py-1 text-base",
             TextFieldSizeVariant::Small => "rounded px-1 py-0.5 text-sm",
             TextFieldSizeVariant::Tiny => "rounded-sm p-0.5 text-xs",
@@ -55,6 +57,10 @@ pub fn TextField(
     before: Option<Element>,
     after: Option<Element>,
     autocomplete: Option<bool>,
+    onblur: Option<EventHandler<Event<FocusData>>>,
+    onfocus: Option<EventHandler<Event<FocusData>>>,
+    onkeydown: Option<EventHandler<Event<KeyboardData>>>,
+    onreturn: Option<EventHandler<Event<KeyboardData>>>,
 ) -> Element {
     let style = style.unwrap_or_default();
     let size = size.unwrap_or_default();
@@ -83,10 +89,28 @@ pub fn TextField(
                 autocomplete: if autocomplete {None} else {"off"},
                 spellcheck: if autocomplete {None} else {"false"},
                 autocapitalize: if autocomplete {None} else {"off"},
+                onfocus: move |e| {
+                    if let Some(onfocus_handler) = onfocus {
+                        onfocus_handler.call(e);
+                    }
+                },
+                onblur: move |e| {
+                    if let Some(onblur_handler) = onblur {
+                        onblur_handler.call(e);
+                    }
+                },
                 oninput: move |e| {
                     value.set(e.value());
                     if let Some(oninput_handler) = oninput {
                         oninput_handler.call(e);
+                    }
+                },
+                onkeydown: move |e| {
+                    if e.key() == Key::Enter && let Some(onreturn_handler) = onreturn {
+                        onreturn_handler.call(e.clone());
+                    }
+                    if let Some(onkeydown_handler) = onkeydown {
+                        onkeydown_handler.call(e);
                     }
                 },
             }
