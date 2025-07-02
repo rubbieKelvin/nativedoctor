@@ -112,19 +112,18 @@ impl tableinput::TableInputColumn for Columns {
     }
 
     fn render_input(&self) -> Element {
-        return rsx!{};
-        // return match self {
-        //     Columns::Identifier => rsx! {
-        //         textfield::TextField {
-        //             value: use_signal(|| String::new()),
-        //         }
-        //     },
-        //     Columns::Value => rsx! {
-        //         numberfield::NumberField {
-        //             value: use_signal(|| 0),
-        //         }
-        //     },
-        // };
+        return match self {
+            Columns::Identifier => rsx! {
+                textfield::TextField {
+                    value: "",
+                }
+            },
+            Columns::Value => rsx! {
+                numberfield::NumberField {
+                    value: 0,
+                }
+            },
+        };
     }
 }
 
