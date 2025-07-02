@@ -40,8 +40,7 @@ pub fn ProjectView(session: Session) -> Element {
         let welcome_tabdata = TabItemData::new(WorkspaceTab::Welcome).set_closable(false);
 
         opentabs.select(Some(project_tabdata.id.clone()));
-        opentabs.add_tab(welcome_tabdata);
-        opentabs.add_tab(project_tabdata);
+        opentabs.add_tabs(vec![welcome_tabdata, project_tabdata]);
     });
 
     return rsx! {

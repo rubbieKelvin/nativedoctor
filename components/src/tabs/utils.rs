@@ -68,6 +68,13 @@ impl<T: TabGenerics> TabSet<T> {
         self.1.push(item);
     }
 
+    #[allow(unused)]
+    pub fn add_tabs(&mut self, items: Vec<TabItemData<T>>) {
+        for item in items {
+            self.add_tab(item);
+        }
+    }
+
     pub fn get_similar(&self, item: &TabItemData<T>) -> Option<&TabItemData<T>> {
         let uid = item.payload.unique_identifier();
         return self
@@ -101,6 +108,7 @@ impl<T: TabGenerics> TabSet<T> {
             .map(|id| self.1.iter().filter(|t| t.id == id).last())?;
     }
 
+    #[allow(unused)]
     pub fn get_selected_mut(&mut self) -> Option<&mut TabItemData<T>> {
         return self
             .0
