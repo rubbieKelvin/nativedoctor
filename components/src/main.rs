@@ -121,6 +121,7 @@ impl tableinput::TableInputCell for Columns {
         return match self {
             Columns::Identifier => rsx! {
                 textfield::TextField {
+                    size: textfield::TextFieldSizeVariant::Small,
                     value: value.to_string(),
                     oninput: move |e: Event<FormData>| {
                         let value = e.value();
