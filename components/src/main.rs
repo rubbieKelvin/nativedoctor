@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use dioxus::prelude::*;
 use dioxus_free_icons::{Icon, icons::ld_icons};
 use strum::IntoEnumIterator;
@@ -122,7 +124,12 @@ impl tableinput::TableInputCell for Columns {
                     value: value.to_string(),
                     oninput: move |e: Event<FormData>| {
                         let value = e.value();
-                        set(tableinput::CellValue::Text(value))
+                        let value = value.trim();
+                        if value.is_empty() {
+                            set(tableinput::CellValue::Empty)
+                        } else {
+                            set(tableinput::CellValue::Text(value.to_string()))
+                        }
                     },
                 }
             },
@@ -130,7 +137,12 @@ impl tableinput::TableInputCell for Columns {
                 numberfield::NumberField {
                     value: value.to_i64().map(|i| i as i32),
                     onchange: move |e: i32| {
-                        set(tableinput::CellValue::Number(e.into()))
+                        let value: i64 = e.into();
+                        if value == 0 {
+                            set(tableinput::CellValue::Empty)
+                        } else {
+                            set(tableinput::CellValue::Number(value));
+                        }
                     },
                 }
             },
@@ -140,11 +152,46 @@ impl tableinput::TableInputCell for Columns {
 
 #[component]
 fn TableInputs() -> Element {
+    let mut rows = use_signal::<Vec<HashMap<String, tableinput::CellValue>>>(|| {
+        vec![HashMap::from_iter(vec![
+            (
+                "Identifier".to_string(),
+                tableinput::CellValue::Text("Hello rubbie".to_string()),
+            ),
+            ("Value".to_string(), tableinput::CellValue::Number(5)),
+        ])]
+    });
+    let text = format!("{:?}", rows());
+
     return rsx! {
+        h1 { "Table input" }
+
+        label::Label {
+            size: label::LabelSizeVariant::Tiny,
+            style: label::LabelStyleVariant::Mild,
+            "{text}"
+        }
+
         tableinput::TableInput {
             class: "rounded-md p-2",
             border: Some(border::Border::all()),
+            value: rows(),
             columns: vec![Columns::Identifier, Columns::Value],
+            onchange: move |new_value| {
+                let mut rows = rows.write();
+                *rows = new_value;
+            },
+        }
+
+        tableinput::TableInput {
+            class: "rounded-md p-2",
+            border: Some(border::Border::all()),
+            value: rows(),
+            columns: vec![Columns::Identifier, Columns::Value],
+            onchange: move |new_value| {
+                let mut rows = rows.write();
+                *rows = new_value;
+            },
         }
     };
 }
