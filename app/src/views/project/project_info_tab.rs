@@ -1,12 +1,71 @@
 use std::collections::HashMap;
 
 use components_lib::{
+    border::Border,
+    label::Label,
+    pane::{Pane, PaneStyleVariant},
+    tableinput::{CellValue, TableInput, TableInputCell},
     tabs::TabState,
     textfield::{TextField, TextFieldSizeVariant, TextFieldStyleVariant},
 };
 use dioxus::prelude::*;
 
 use crate::{session::Session, views::project::utils::WorkspaceTab};
+
+#[derive(Clone, PartialEq, strum::Display)]
+enum EnvHeader {
+    NameColumn,
+    EnvColumn(String),
+}
+
+impl TableInputCell for EnvHeader {
+    fn identifier(&self) -> String {
+        return match self {
+            EnvHeader::NameColumn => String::new(),
+            EnvHeader::EnvColumn(s) => s.clone(),
+        };
+    }
+
+    fn render_input(
+        &self,
+        value: CellValue,
+        _row: HashMap<String, CellValue>,
+        set: impl Fn(CellValue) + 'static,
+        _set_partial: impl Fn(HashMap<String, CellValue>) + 'static,
+    ) -> Element {
+        rsx! {
+            TextField {
+                class: format!(
+                    "w-48 {}",
+                    match self {
+                        EnvHeader::EnvColumn(n) => {
+                            if n == "Default" {
+                                "!bg-[#f2c43d]/10 !rounded-none".to_string()
+                            } else {
+                                "".to_string()
+                            }
+                        }
+                        _ => "".to_string(),
+                    },
+                ),
+                value: value.to_string(),
+                placeholder: match self {
+                    EnvHeader::NameColumn => "name",
+                    EnvHeader::EnvColumn(_) => "value",
+                },
+                style: TextFieldStyleVariant::Ghost,
+                oninput: move |e: Event<FormData>| {
+                    let value = e.value();
+                    if value.trim() == "" {
+                        set(CellValue::Empty);
+                    } else {
+                        set(CellValue::Text(value.to_string()));
+                    }
+                },
+            }
+        }
+    }
+}
 
 #[component]
 pub fn ProjectInfoTab(
@@ -62,6 +121,19 @@ pub fn ProjectInfoTab(
         session.description = new_description.to_string();
     };
 
+    let mut env: Signal<Vec<HashMap<String, CellValue>>> = use_signal(|| vec![]);
+    let environments = use_memo(move || session().get_environments());
+    let columns = use_memo(move || {
+        vec![
+            vec![EnvHeader::NameColumn],
+            environments()
+                .iter()
+                .map(|e| EnvHeader::EnvColumn(e.clone()))
+                .collect::<Vec<EnvHeader>>(),
+        ]
+        .concat()
+    });
+
     return rsx! {
         div { class: "h-full flex flex-col gap-4 pt-2",
             div { class: "flex flex-col gap-1",
@@ -112,6 +184,39 @@ pub fn ProjectInfoTab(
                         move |_| {
                             on_project_description_updated();
                         }
+                    },
+                }
+            }
+
+            div {
+                Pane { class: "flex gap-1 border-b", border: Border::bottom(),
+                    for col in columns() {
+                        match col {
+                            EnvHeader::NameColumn => rsx! {
+                                Pane { class: "w-48", style: PaneStyleVariant::Dark }
+                            },
+                            EnvHeader::EnvColumn(s) => {
+                                if s == "Default" {
+                                    rsx! {
+                                        Label { class: "w-48 !bg-[#f2c43d]/10 p-2", "{s}" }
+                                    }
+                                } else {
+                                    rsx! {
+                                        
+                                        Label { class: "w-48 p-2", "{s}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                TableInput {
+                    value: env(),
+                    row_class: "gap-1 flex",
+                    columns: columns(),
+                    onchange: move |rows| {
+                        env.set(rows);
                     },
                 }
             }

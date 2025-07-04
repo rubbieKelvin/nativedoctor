@@ -49,10 +49,10 @@ impl Variant for TextFieldSizeVariant {
 #[component]
 pub fn TextField(
     value: Option<String>,
-    placeholder: Option<&'static str>,
+    placeholder: Option<String>,
     size: Option<TextFieldSizeVariant>,
     style: Option<TextFieldStyleVariant>,
-    class: Option<&'static str>,
+    class: Option<String>,
     oninput: Option<EventHandler<Event<FormData>>>,
     before: Option<Element>,
     after: Option<Element>,
@@ -65,7 +65,7 @@ pub fn TextField(
     let value = value.unwrap_or_default();
     let style = style.unwrap_or_default();
     let size = size.unwrap_or_default();
-    let placeholder = placeholder.unwrap_or("Enter text...");
+    let placeholder = placeholder.unwrap_or("Enter text...".to_string());
     let autocomplete = autocomplete.unwrap_or(false);
     let class = format!(
         "{} {} {} flex gap-2",

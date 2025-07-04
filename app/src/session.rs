@@ -164,7 +164,10 @@ impl Session {
     }
 
     pub fn get_environments(&self) -> Vec<String> {
-        return self.env.keys().map(|k| k.clone()).collect();
+        let mut result = vec!["Default".to_string()];
+        let mut extended = self.env.keys().map(|k| k.clone()).collect::<Vec<String>>();
+        result.append(&mut extended);
+        return result;
     }
 
     pub fn new_empty_request(&mut self) -> RequestDefination {
