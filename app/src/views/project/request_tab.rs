@@ -1,7 +1,7 @@
 use components_lib::{
     border::Border,
     button::{Button, ButtonStyleVariant},
-    buttongroup::{ButtonGroup, GroupButton},
+    buttongroup::{ButtonGroup, ButtonGroupInner},
     label::Label,
     pane::Pane,
     select::Select,
@@ -29,10 +29,26 @@ enum RequestInputTab {
     Config,
 }
 
+impl ButtonGroupInner for RequestInputTab {
+    fn render(&self) -> Element {
+        return rsx! {
+            Label { "{self}" }
+        };
+    }
+}
+
 #[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
 enum RequestOutputTab {
     Request,
-    Response
+    Response,
+}
+
+impl ButtonGroupInner for RequestOutputTab {
+    fn render(&self) -> Element {
+        return rsx! {
+            Label { "{self}" }
+        };
+    }
 }
 
 #[component]
@@ -40,6 +56,8 @@ pub fn RequestPage() -> Element {
     let _state = use_context::<TabState<WorkspaceTab>>();
     let mut url = use_signal(|| String::new());
     let method = use_signal(|| Some("GET".to_string()));
+    let mut request_tab_value = use_signal(|| RequestInputTab::Params);
+    let mut response_tab_value = use_signal(|| RequestOutputTab::Request);
 
     return rsx! {
         div { class: "h-full flex flex-col pt-2 gap-2",
@@ -72,11 +90,12 @@ pub fn RequestPage() -> Element {
                 border: Border::all(),
                 // Input
                 div { class: "flex-grow flex-col gap-2 flex p-2",
-                    ButtonGroup { class: "flex items-center gap-1",
-                        for tab in RequestInputTab::iter() {
-                            GroupButton { key: "{tab}",
-                                Label { "{tab}" }
-                            }
+                    ButtonGroup<RequestInputTab> {
+                        class: "flex items-center gap-1",
+                        value: request_tab_value(),
+                        buttons: RequestInputTab::iter().collect::<Vec<RequestInputTab>>(),
+                        onselect: move |v| {
+                            request_tab_value.set(v);
                         }
                     }
 
@@ -89,11 +108,12 @@ pub fn RequestPage() -> Element {
                     // style: PaneStyleVariant::Darker,
                     border: Border::left(),
 
-                    ButtonGroup { class: "flex items-center gap-1",
-                        for tab in RequestOutputTab::iter() {
-                            GroupButton { key: "{tab}",
-                                Label { "{tab}" }
-                            }
+                    ButtonGroup<RequestOutputTab> {
+                        class: "flex items-center gap-1",
+                        value: response_tab_value(),
+                        buttons: RequestOutputTab::iter().collect::<Vec<RequestOutputTab>>(),
+                        onselect: move |v| {
+                            response_tab_value.set(v);
                         }
                     }
 

@@ -6,13 +6,26 @@ use strum::Display;
 use crate::border::Border;
 
 pub trait TableInputCell {
-    fn is_required(&self) -> bool {
+    fn identifier(&self) -> String;
+    fn render_input(
+        &self,
+        value: CellValue,
+        row: HashMap<String, CellValue>,
+        set: impl Fn(CellValue) + 'static,
+        set_partial: impl Fn(HashMap<String, CellValue>) + 'static,
+    ) -> Element;
+    fn internally_treat_as_empty(&self) -> bool {
         return false;
     }
+}
 
-    fn identifier(&self) -> String;
-    fn render_header(&self) -> Element;
-    fn render_input(&self, value: CellValue, set: impl Fn(CellValue) + 'static) -> Element;
+pub fn row_is_empty<T: TableInputCell>(row: &HashMap<String, CellValue>, column: T) -> bool {
+    row.iter().all(|(key, cell)| {
+        // if the column for that key should be internally as empty
+        (column.identifier() == *key && column.internally_treat_as_empty())
+        // or the cell itself is empty...
+        || matches!(cell, CellValue::Empty)
+    })
 }
 
 #[allow(unused)]
@@ -57,6 +70,7 @@ impl CellValue {
 #[component]
 pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
     class: Option<String>,
+    row_class: Option<String>,
     border: Option<Border>,
     columns: Vec<T>,
     value: Vec<HashMap<String, CellValue>>,
@@ -66,12 +80,25 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
     let class = format!("{} {}", class.unwrap_or_default(), border.classes());
     let columns = use_context_provider::<Vec<T>>(|| columns);
 
-    let remove_excess_empty_rows = |rows: &mut Vec<HashMap<String, CellValue>>| {
+    let remove_excess_empty_rows = |rows: &mut Vec<HashMap<String, CellValue>>,
+                                    columns: &Vec<T>| {
         let empty_row_indexes = rows
             .iter()
             .enumerate()
             .filter_map(|(index, row)| {
-                if row.values().all(|cell| matches!(cell, CellValue::Empty)) {
+                if row.iter().all(|(key, cell)| {
+                    // if the column for that key should be internally as empty
+                    columns
+                        .get(index)
+                        .map(|config| {
+                            config.identifier() == *key && config.internally_treat_as_empty()
+                        })
+                        .unwrap_or(false)
+                    // or the cell itself is empty...
+                    || matches!(cell, CellValue::Empty)
+                })
+                // if all the cells in the row passes the check above...
+                {
                     return Some(index);
                 }
                 return None;
@@ -147,7 +174,7 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
             ensure_empty_row(&mut rows, &columns);
 
             // if there are exccess empty rows remove them
-            remove_excess_empty_rows(&mut rows);
+            remove_excess_empty_rows(&mut rows, &columns);
 
             if let Some(onchange) = onchange {
                 onchange.call(rows);
@@ -156,25 +183,17 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
     };
 
     return rsx! {
-        table { class,
-            thead {
-                tr {
-                    for column in columns.iter() {
-                        th { class: "font-normal", {column.render_header()} }
-                    }
-                }
-            }
-            tbody {
-                for (index , row) in value.iter().enumerate() {
-                    InputRow::<T> {
-                        value: row.clone(),
-                        onchange: {
-                            let push_update_to_row_cell = push_update_to_row_cell.clone();
-                            move |(key, cell_value)| {
-                                push_update_to_row_cell(index, key, cell_value);
-                            }
-                        },
-                    }
+        div { class,
+            for (index , row) in value.iter().enumerate() {
+                InputRow::<T> {
+                    class: row_class.clone().unwrap_or_else(|| "flex".to_string()),
+                    value: row.clone(),
+                    onchange: {
+                        let push_update_to_row_cell = push_update_to_row_cell.clone();
+                        move |(key, cell_value)| {
+                            push_update_to_row_cell(index, key, cell_value);
+                        }
+                    },
                 }
             }
         }
@@ -183,6 +202,7 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
 
 #[derive(Props, PartialEq, Clone)]
 struct InputRowProps {
+    class: String,
     value: HashMap<String, CellValue>,
     onchange: EventHandler<(String, CellValue)>,
 }
@@ -192,18 +212,20 @@ fn InputRow<T: TableInputCell + PartialEq + Clone + 'static>(props: InputRowProp
     let columns = use_context::<Vec<T>>();
 
     return rsx! {
-        tr {
+        div {
+            class: props.class,
             for column in columns {
                 TableInputColumn::<T> {
                     column: column.clone(),
+                    row: props.value.clone(),
                     value: {
                         let column_value = props.value.get(&column.identifier());
                         let column_value = column_value.map(|v| v.clone());
                         column_value.unwrap_or_default()
                     },
                     onchange: {
-                        move |new| {
-                            props.onchange.call((column.identifier().clone(), new));
+                        move |(key, new)| {
+                            props.onchange.call((key, new));
                         }
                     },
                 }
@@ -216,9 +238,23 @@ fn InputRow<T: TableInputCell + PartialEq + Clone + 'static>(props: InputRowProp
 fn TableInputColumn<T: TableInputCell + PartialEq + Clone + 'static>(
     column: T,
     value: CellValue,
-    onchange: EventHandler<CellValue>,
+    row: HashMap<String, CellValue>,
+    onchange: EventHandler<(String, CellValue)>,
 ) -> Element {
+    let identifier = column.identifier();
     return rsx! {
-        td { {column.render_input(value, move |new_value| { onchange.call(new_value) })} }
+        {
+            column
+                .render_input(
+                    value,
+                    row.clone(),
+                    move |new_value| { onchange.call((identifier.clone(), new_value)) },
+                    move |new_partial_row| {
+                        for (key, cell_value) in new_partial_row.iter() {
+                            onchange.call((key.clone(), cell_value.clone()));
+                        }
+                    }
+                )
+        }
     };
 }

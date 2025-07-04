@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use crate::{session::Session, views::project::utils::WorkspaceTab};
 use components_lib::{
     border::Border,
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
-    buttongroup::{ButtonGroup, GroupButton},
+    buttongroup::{ButtonGroup, ButtonGroupInner},
     label::{Label, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
@@ -18,6 +16,7 @@ use dioxus_free_icons::{
 use project_info_tab::ProjectInfoTab;
 use request_list::RequestList;
 use request_tab::RequestPage;
+use strum::IntoEnumIterator;
 use welcome_tab::WelcomePage;
 
 mod project_info_tab;
@@ -51,10 +50,18 @@ pub fn ProjectView(session: Session) -> Element {
     };
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, strum::EnumIter, strum::Display)]
 enum SideBarList {
     Requests,
     Calls,
+}
+
+impl ButtonGroupInner for SideBarList {
+    fn render(&self) -> Element {
+        return rsx! {
+            Label { "{self}" }
+        };
+    }
 }
 
 // Manages the current ui state of the requests list
@@ -108,15 +115,12 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                     style: ButtonStyleVariant::Ghost,
                     onclick: move |_| {
                         let mut tabs = tabs.write();
-
                         let tabdata: TabItemData<WorkspaceTab> = TabItemData::new(session().into());
                         let similar = tabs.get_similar(&tabdata).cloned();
-
                         if let Some(tabdata) = similar {
                             tabs.select(Some(tabdata.id));
                             return;
                         }
-                        
                         let id = tabdata.id.clone();
                         tabs.add_tab(tabdata);
                         tabs.select(Some(id));
@@ -145,23 +149,15 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
 
             // list tab
             div { class: "px-2 mb-2",
-                ButtonGroup {
+                ButtonGroup::<SideBarList> {
                     class: "flex gap-2",
+                    child_class: "flex-[50%]",
+                    value: current_list(),
+                    buttons: SideBarList::iter().collect::<Vec<SideBarList>>(),
                     inactive_style: ButtonStyleVariant::Ghost,
-                    GroupButton {
-                        class: "flex-[50%]",
-                        onclick: move |_| {
-                            current_list.set(SideBarList::Requests);
-                        },
-                        Label { "Requests" }
-                    }
-                    GroupButton {
-                        class: "flex-[50%]",
-                        onclick: move |_| {
-                            current_list.set(SideBarList::Calls);
-                        },
-                        Label { "Calls" }
-                    }
+                    onselect: move |v| {
+                        current_list.set(v);
+                    },
                 }
             }
 

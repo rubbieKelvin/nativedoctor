@@ -100,6 +100,7 @@ fn _TabContent() -> Element {
 enum Columns {
     Identifier,
     Value,
+    Delete,
 }
 
 impl tableinput::TableInputCell for Columns {
@@ -107,20 +108,17 @@ impl tableinput::TableInputCell for Columns {
         return self.to_string();
     }
 
-    fn render_header(&self) -> Element {
-        return rsx! {
-            p { class: "text-start", "{self}" }
-        };
-    }
-
     fn render_input(
         &self,
         value: tableinput::CellValue,
+        row: HashMap<String, tableinput::CellValue>,
         set: impl Fn(tableinput::CellValue) + 'static,
+        set_partial: impl Fn(HashMap<String, tableinput::CellValue>) + 'static,
     ) -> Element {
         return match self {
             Columns::Identifier => rsx! {
                 textfield::TextField {
+                    class: "flex-grow",
                     size: textfield::TextFieldSizeVariant::Small,
                     value: value.to_string(),
                     oninput: move |e: Event<FormData>| {
@@ -136,6 +134,7 @@ impl tableinput::TableInputCell for Columns {
             },
             Columns::Value => rsx! {
                 numberfield::NumberField {
+                    class: "flex-grow",
                     value: value.to_i64().map(|i| i as i32),
                     onchange: move |e: i32| {
                         let value: i64 = e.into();
@@ -147,21 +146,32 @@ impl tableinput::TableInputCell for Columns {
                     },
                 }
             },
+            Columns::Delete => {
+                if tableinput::row_is_empty(&row, self.clone()) {
+                    rsx! {}
+                } else {
+                    rsx! {
+                        button::Button {
+                            style: button::ButtonStyleVariant::Destructive,
+                            onclick: move |_| {
+                                let mut row = HashMap::new();
+                                row.insert(Columns::Identifier.to_string(), tableinput::CellValue::Empty);
+                                row.insert(Columns::Value.to_string(), tableinput::CellValue::Empty);
+                                row.insert(Columns::Delete.to_string(), tableinput::CellValue::Empty);
+                                set_partial(row)
+                            },
+                            "Delete"
+                        }
+                    }
+                }
+            }
         };
     }
 }
 
 #[component]
 fn TableInputs() -> Element {
-    let mut rows = use_signal::<Vec<HashMap<String, tableinput::CellValue>>>(|| {
-        vec![HashMap::from_iter(vec![
-            (
-                "Identifier".to_string(),
-                tableinput::CellValue::Text("Hello rubbie".to_string()),
-            ),
-            ("Value".to_string(), tableinput::CellValue::Number(5)),
-        ])]
-    });
+    let mut rows = use_signal::<Vec<HashMap<String, tableinput::CellValue>>>(|| vec![]);
     let text = format!("{:?}", rows());
 
     return rsx! {
@@ -188,7 +198,7 @@ fn TableInputs() -> Element {
             class: "rounded-md p-2",
             border: Some(border::Border::all()),
             value: rows(),
-            columns: vec![Columns::Identifier, Columns::Value],
+            columns: vec![Columns::Identifier, Columns::Value, Columns::Delete],
             onchange: move |new_value| {
                 let mut rows = rows.write();
                 *rows = new_value;
@@ -345,46 +355,19 @@ fn Panes() -> Element {
 
 #[component]
 fn ButtonGroups() -> Element {
+    let mut value = use_signal(|| "button 1".to_string());
+
     return rsx! {
         div { class: "flex gap-2 flex-col",
             h1 { "Button group" }
 
             div {
                 h1 { "Single select" }
-
-                buttongroup::ButtonGroup {
-                    buttongroup::GroupButton {
-                        label::Label { "Group 1" }
-                    }
-
-                    buttongroup::GroupButton {
-                        label::Label { "Group 2" }
-                    }
-
-                    buttongroup::GroupButton {
-                        label::Label { "Group 3" }
-                    }
-                }
-            }
-
-            div {
-                h1 { "Multi select" }
-
-                buttongroup::ButtonGroup {
-                    class: "flex gap-2",
-                    multiselect: true,
-                    active_style: button::ButtonStyleVariant::Secondary,
-
-                    buttongroup::GroupButton {
-                        label::Label { "Group 1" }
-                    }
-
-                    buttongroup::GroupButton {
-                        label::Label { "Group 2" }
-                    }
-
-                    buttongroup::GroupButton {
-                        label::Label { "Group 3" }
+                buttongroup::ButtonGroup::<String> {
+                    value: value(),
+                    buttons: vec!["button 1".to_string(), "button 2".to_string(), "button 3".to_string()],
+                    onselect: move |v| {
+                        value.set(v);
                     }
                 }
             }

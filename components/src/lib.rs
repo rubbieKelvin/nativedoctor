@@ -12,14 +12,3 @@ pub mod select;
 pub mod popup;
 pub mod tabs;
 pub mod tableinput;
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn it_works() {
-//         let result = add(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }
