@@ -4,9 +4,10 @@ use nativedoctor_core::schema::{
 };
 use serde_yaml::{Mapping, Value};
 use std::{collections::HashMap, path::PathBuf};
+use uuid::Uuid;
 
 #[derive(PartialEq, Clone, Default)]
-pub struct Session {
+pub(crate) struct Session {
     pub path: PathBuf,
     pub name: String,
     pub description: String,
@@ -14,11 +15,17 @@ pub struct Session {
     pub requests: Vec<RequestDefination>,
     pub calls: HashMap<String, Vec<String>>,
     pub current_env: Option<String>,
-    pub env: HashMap<String, HashMap<String, String>>,
+    pub default_environment: EnvironmentDefination,
+    pub custom_environments: Vec<EnvironmentDefination>,
 }
 
 impl Session {
-    // TODO: simplify this
+    pub fn get_environments(&self) -> Vec<EnvironmentDefination> {
+        let mut envs = vec![self.default_environment.clone()];
+        envs.extend(self.custom_environments.iter().map(|e| e.clone()));
+        return envs;
+    }
+
     #[allow(unused)]
     pub fn template() -> Self {
         let mut post_mapping = Mapping::new();
@@ -47,24 +54,16 @@ impl Session {
             name: "httpbin.org API Demo".to_string(),
             description: "A session template demonstrating various API calls and body types using httpbin.org.".to_string(),
             version: "1.1.0".to_string(),
-            env: HashMap::from_iter([
-                (
-                    "production".to_string(),
-                    HashMap::from_iter([
-                        ("baseurl".to_string(), "https://httpbin.org".to_string()),
-                        ("auth_token".to_string(), "your-secret-token-here".to_string()),
-                        ("item_id".to_string(), "12345".to_string())
-                    ]),
-                ),
-                (
-                    "development".to_string(),
-                    HashMap::from_iter([
-                        ("baseurl".to_string(), "http://localhost:8080".to_string()),
-                        ("auth_token".to_string(), "local-dev-token".to_string()),
-                        ("item_id".to_string(), "abcde".to_string())
-                    ]),
-                ),
-            ]),
+            default_environment: EnvironmentDefination { id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Default".to_string(), path: None, variables: HashMap::from_iter([
+                ("baseurl".to_string(), VariableValue::new("http://localhost:8080")),
+                ("auth_token".to_string(), VariableValue::new("local-dev-token")),
+                ("item_id".to_string(), VariableValue::new("abcde")),
+            ]) },
+            custom_environments: vec![EnvironmentDefination{id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Production".to_string(), path: None, variables: HashMap::from_iter([
+                ("baseurl".to_string(), VariableValue::new("https://httpbin.org")),
+                ("auth_token".to_string(), VariableValue::new("your-secret-token-here")),
+                ("item_id".to_string(), VariableValue::new("12345")),
+            ])}],
             requests: vec![
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
@@ -163,13 +162,6 @@ impl Session {
         };
     }
 
-    pub fn get_environments(&self) -> Vec<String> {
-        let mut result = vec!["Default".to_string()];
-        let mut extended = self.env.keys().map(|k| k.clone()).collect::<Vec<String>>();
-        result.append(&mut extended);
-        return result;
-    }
-
     pub fn new_empty_request(&mut self) -> RequestDefination {
         let id = uuid::Uuid::new_v4();
         let defination = RequestDefination {
@@ -185,7 +177,7 @@ impl Session {
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
-pub struct RequestDefination {
+pub(crate) struct RequestDefination {
     /// this id is used as keys for the ui.
     /// this is not always the same every time this struct is created
     pub id: uuid::Uuid,
@@ -203,11 +195,59 @@ pub struct RequestDefination {
     pub query: Vec<(String, String)>,
     pub body: Option<RequestBodySchema>,
     pub class: String,
-    pub path: Option<PathBuf>
+    pub path: Option<PathBuf>,
 }
 
 impl RequestDefination {
     pub fn slug(&self) -> String {
         return slug::slugify(self.name.clone());
+    }
+}
+
+#[derive(PartialEq, Clone, Default, Debug)]
+pub(crate) struct EnvironmentDefination {
+    pub id: uuid::Uuid,
+    pub ref_id: String,
+    pub name: String,
+    pub path: Option<PathBuf>,
+    pub variables: HashMap<String, VariableValue>,
+}
+
+impl Into<String> for EnvironmentDefination {
+    fn into(self) -> String {
+        return self.name.clone();
+    }
+}
+
+#[derive(PartialEq, Clone, Default, Debug)]
+pub(crate) struct VariableValue {
+    pub value: String,
+    pub sensitive: bool,
+    pub description: String,
+}
+
+impl VariableValue {
+    pub fn new(value: &str) -> Self {
+        return VariableValue {
+            value: value.to_string(),
+            sensitive: false,
+            description: String::new(),
+        };
+    }
+}
+
+impl Into<String> for VariableValue {
+    fn into(self) -> String {
+        return self.value;
+    }
+}
+
+impl Into<VariableValue> for String {
+    fn into(self) -> VariableValue {
+        return VariableValue {
+            value: self,
+            sensitive: false,
+            description: String::new(),
+        };
     }
 }

@@ -1,4 +1,7 @@
-use crate::{session::Session, views::project::utils::WorkspaceTab};
+use crate::{
+    session::{EnvironmentDefination, Session},
+    views::project::utils::WorkspaceTab,
+};
 use components_lib::{
     border::Border,
     button::{Button, ButtonSizeVariant, ButtonStyleVariant},
@@ -85,7 +88,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
     use_effect(move || {
         let mut session = session.write();
         let selected_env = selected_env();
-        session.current_env = selected_env;
+        session.current_env = selected_env.map(|e| e.ref_id);
     });
 
     return rsx! {
@@ -103,7 +106,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
             // env selector and buttons
             div { class: "flex px-2 py-2 items-center gap-2",
 
-                Select::<String> {
+                Select::<EnvironmentDefination> {
                     class: "w-full h-full",
                     wrapper_class: "flex-grow",
                     value: selected_env,
@@ -260,8 +263,8 @@ fn TabContent() -> Element {
         WorkspaceTab::Request(_) => rsx! {
             RequestPage {}
         },
-        WorkspaceTab::Project(name, description, envs) => rsx! {
-            ProjectInfoTab { name, description, envs }
+        WorkspaceTab::Project(name, description) => rsx! {
+            ProjectInfoTab { name, description }
         }, // _ => rsx! {},
     };
 }

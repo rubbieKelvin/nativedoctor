@@ -7,7 +7,6 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
-    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-400: oklch(70.7% 0.022 261.325);
     --color-gray-700: oklch(37.3% 0.034 259.733);
@@ -29,7 +28,6 @@
     --text-2xl--line-height: calc(2 / 1.5);
     --text-3xl: 28px;
     --text-3xl--line-height: calc(2.25 / 1.875);
-    --font-weight-normal: 400;
     --font-weight-semibold: 600;
     --radius-sm: 0.25rem;
     --radius-md: 0.375rem;
@@ -255,9 +253,6 @@
   .hidden {
     display: none;
   }
-  .table {
-    display: table;
-  }
   .h-0 {
     height: calc(var(--spacing) * 0);
   }
@@ -285,12 +280,6 @@
   .w-48 {
     width: calc(var(--spacing) * 48);
   }
-  .w-52 {
-    width: calc(var(--spacing) * 52);
-  }
-  .w-64 {
-    width: calc(var(--spacing) * 64);
-  }
   .w-96 {
     width: calc(var(--spacing) * 96);
   }
@@ -308,9 +297,6 @@
   }
   .max-w-\[500px\] {
     max-width: 500px;
-  }
-  .min-w-48 {
-    min-width: calc(var(--spacing) * 48);
   }
   .min-w-\[40\%\] {
     min-width: 40%;
@@ -428,14 +414,8 @@
   .\!bg-\[\#5d5120\] {
     background-color: #5d5120 !important;
   }
-  .\!bg-\[\#f2c43d\] {
-    background-color: #f2c43d !important;
-  }
   .\!bg-\[\#f2c43d\]\/10 {
     background-color: color-mix(in oklab, #f2c43d 10%, transparent) !important;
-  }
-  .\!bg-red-500 {
-    background-color: var(--color-red-500) !important;
   }
   .bg-\[\#0a0a0a\] {
     background-color: #0a0a0a;
@@ -472,9 +452,6 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-black) 40%, transparent);
     }
-  }
-  .bg-red-500 {
-    background-color: var(--color-red-500);
   }
   .bg-transparent {
     background-color: transparent;
@@ -563,10 +540,6 @@
   .text-xs {
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
-  }
-  .font-normal {
-    --tw-font-weight: var(--font-weight-normal);
-    font-weight: var(--font-weight-normal);
   }
   .font-semibold {
     --tw-font-weight: var(--font-weight-semibold);
