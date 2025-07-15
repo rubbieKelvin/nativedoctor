@@ -254,28 +254,28 @@ fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                 tab_real_estate: rsx! {
                     WmDragArea { class: "flex-grow h-full" }
                 },
-                TabContent {}
+                // TabContent {}
             }
         }
     };
 }
 
-#[component]
-fn TabContent() -> Element {
-    let state = use_context::<TabState<WorkspaceTab>>();
+// #[component]
+// fn TabContent() -> Element {
+//     let state = use_context::<TabState<WorkspaceTab>>();
     
-    return match state.tab.payload {
-        WorkspaceTab::Welcome => rsx! {
-            WelcomePage {}
-        },
-        WorkspaceTab::Request(_) => rsx! {
-            RequestPage {}
-        },
-        WorkspaceTab::Project(name, description) => rsx! {
-            ProjectInfoTab { name, description }
-        },
-        WorkspaceTab::Environment(env) => rsx! {
-            EnvPage {env}
-        },
-    };
-}
+//     return match state.tab.payload {
+//         WorkspaceTab::Welcome => rsx! {
+//             WelcomePage {}
+//         },
+//         WorkspaceTab::Request(_) => rsx! {
+//             RequestPage {}
+//         },
+//         WorkspaceTab::Project(name, description) => rsx! {
+//             ProjectInfoTab { name, description }
+//         },
+//         WorkspaceTab::Environment(env) => rsx! {
+//             EnvPage {env}
+//         },
+//     };
+// }

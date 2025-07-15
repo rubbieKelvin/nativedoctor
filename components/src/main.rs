@@ -45,6 +45,12 @@ impl TabPayload for TabBook {
         };
     }
 
+    fn render_content(&self) -> Element {
+        return rsx! {
+            _TabContent{}
+        };
+    }
+
     fn unique_identifier(&self) -> Self::Identifier {
         return self.name.clone();
     }
@@ -76,7 +82,7 @@ fn Tabs() -> Element {
                 class: "border border-[#3b3b3b] p-1 rounded-md gap-2",
                 tabs: tablist,
                 orientation,
-                _TabContent {}
+                // _TabContent {}
             }
         }
     };

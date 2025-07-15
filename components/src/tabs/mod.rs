@@ -39,9 +39,8 @@ pub fn TabsManager<T: TabGenerics + 'static>(
     pill: Option<Element>,
     orientation: Option<TabOrientationVariant>,
     emptystate: Option<Element>,
-    children: Element,
     tab_real_estate: Option<Element>,
-    onscroll: Option<EventHandler<Event<ScrollData>>>
+    onscroll: Option<EventHandler<Event<ScrollData>>>,
 ) -> Element {
     // when the tabs list changes, ensure a tab is selected if possible.
     use_effect(move || {
@@ -66,9 +65,6 @@ pub fn TabsManager<T: TabGenerics + 'static>(
         TabOrientationVariant::Vertical => format!("{main_class} flex"),
     };
 
-    // full data for the selected tab.
-    let selected_tab_data = use_memo(move || tabs().get_selected().cloned());
-
     rsx! {
         div { class: main_class,
             // list
@@ -87,7 +83,7 @@ pub fn TabsManager<T: TabGenerics + 'static>(
                         key: "{tab.id}",
                         tab,
                         tabs,
-                        child: pill.clone()
+                        child: pill.clone(),
                     }
                 }
 
@@ -96,20 +92,18 @@ pub fn TabsManager<T: TabGenerics + 'static>(
                 if let Some(tre) = tab_real_estate {
                     {tre}
                 }
-                
             }
 
-            // content
-            div { class: "{content_class} flex-grow", role: "tabpanel",
-                if let Some(tab) = &selected_tab_data() {
-                    TabContent {
-                        key: "{tab.id}",
-                        tab: tab.clone(),
-                        tabs,
-                        {children}
+            for tab in tabs().iter() {
+                div {
+                    class: "{content_class} flex-grow",
+                    // TODO: Clean this up
+                    style: if tabs().get_selected_id().is_some()
+    && tabs().get_selected_id().unwrap() == tab.id { "" } else { "display: none;" },
+                    role: "tabpanel",
+                    TabContent { key: "{tab.id}", tab: tab.clone(), tabs,
+                        {tab.payload.render_content()}
                     }
-                } else if let Some(es) = emptystate {
-                    {es}
                 }
             }
         }
@@ -127,8 +121,12 @@ fn TabListItem<T: TabGenerics + 'static>(
     use_context_provider::<TabState<T>>(|| TabState { tab, tabs });
 
     return match child {
-        Some(child) => rsx! {{child}},
-        None => rsx! {DefaultTabPill::<T> {}},
+        Some(child) => rsx! {
+            {child}
+        },
+        None => rsx! {
+            DefaultTabPill::<T> {}
+        },
     };
 }
 
@@ -189,5 +187,7 @@ fn TabContent<T: TabGenerics + 'static>(
 ) -> Element {
     use_context_provider(|| TabState { tab, tabs });
 
-    return rsx! {{children}};
+    return rsx! {
+        {children}
+    };
 }

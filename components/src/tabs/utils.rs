@@ -14,6 +14,8 @@ pub trait TabPayload {
     /// we need a title for the tab button.
     fn render_title(&self, selected: bool) -> Element;
 
+    fn render_content(&self) -> Element;
+
     /// we need a way to uniquely identify a page so we dont open one page twice per tab
     fn unique_identifier(&self) -> Self::Identifier;
 }
@@ -108,6 +110,10 @@ impl<T: TabGenerics> TabSet<T> {
             .map(|id| self.1.iter().filter(|t| t.id == id).last())?;
     }
 
+    pub fn get_selected_id(&self) -> Option<uuid::Uuid> {
+        return self.0.clone();
+    }
+
     #[allow(unused)]
     pub fn get_selected_mut(&mut self) -> Option<&mut TabItemData<T>> {
         return self
@@ -175,7 +181,6 @@ impl<T: TabGenerics + 'static> TabState<T> {
                     let new_index = index_to_remove.min(tabs_set.len() - 1);
                     let new_selected_id = tabs_set.get(new_index).map(|t| t.id);
                     tabs_set.select(new_selected_id);
-                    
                 }
             }
         });

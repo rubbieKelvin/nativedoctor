@@ -184,6 +184,9 @@
   }
 }
 @layer utilities {
+  .visible {
+    visibility: visible;
+  }
   .absolute {
     position: absolute;
   }
@@ -250,6 +253,9 @@
   .ml-1 {
     margin-left: calc(var(--spacing) * 1);
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }
@@ -282,9 +288,6 @@
   }
   .w-10 {
     width: calc(var(--spacing) * 10);
-  }
-  .w-12 {
-    width: calc(var(--spacing) * 12);
   }
   .w-22 {
     width: calc(var(--spacing) * 22);
@@ -428,9 +431,6 @@
   }
   .\!bg-\[\#5d5120\] {
     background-color: #5d5120 !important;
-  }
-  .\!bg-\[\#f2c43d\]\/10 {
-    background-color: color-mix(in oklab, #f2c43d 10%, transparent) !important;
   }
   .bg-\[\#0a0a0a\] {
     background-color: #0a0a0a;
@@ -657,11 +657,6 @@
       background-color: #3d3d3d;
     }
   }
-  .focus-within\:bg-\[\#3d3d3d\]\/100 {
-    &:focus-within {
-      background-color: #3d3d3d;
-    }
-  }
   .focus-within\:bg-\[\#3e3e3e\]\/20 {
     &:focus-within {
       background-color: color-mix(in oklab, #3e3e3e 20%, transparent);
@@ -678,20 +673,6 @@
     &:hover {
       @media (hover: hover) {
         background-color: #3d3d3d;
-      }
-    }
-  }
-  .hover\:bg-\[\#3d3d3d\]\/20 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: color-mix(in oklab, #3d3d3d 20%, transparent);
-      }
-    }
-  }
-  .hover\:bg-\[\#3e3e3e\]\/20 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: color-mix(in oklab, #3e3e3e 20%, transparent);
       }
     }
   }

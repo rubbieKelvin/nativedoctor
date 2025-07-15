@@ -8,7 +8,13 @@ use dioxus_free_icons::{
     Icon,
 };
 
-use crate::session::{EnvironmentDefination, RequestDefination, Session};
+use crate::{
+    session::{EnvironmentDefination, RequestDefination, Session},
+    views::project::{
+        tab_page_env::EnvPage, tab_page_project_info::ProjectInfoTab,
+        tab_page_request::RequestPage, welcome_tab::WelcomePage,
+    },
+};
 
 pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant {
     let method = method.as_ref();
@@ -89,6 +95,23 @@ impl TabPayload for WorkspaceTab {
                         "{env.name}"
                     }
                 }
+            },
+        };
+    }
+
+    fn render_content(&self) -> Element {
+        return match self {
+            WorkspaceTab::Welcome => rsx! {
+                WelcomePage {}
+            },
+            WorkspaceTab::Request(_) => rsx! {
+                RequestPage {}
+            },
+            WorkspaceTab::Project(name, description) => rsx! {
+                ProjectInfoTab { name, description }
+            },
+            WorkspaceTab::Environment(env) => rsx! {
+                EnvPage {env: env.clone()}
             },
         };
     }
