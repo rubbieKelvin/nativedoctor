@@ -12,3 +12,4 @@ pub mod select;
 pub mod popup;
 pub mod tabs;
 pub mod tableinput;
+pub mod prelude;

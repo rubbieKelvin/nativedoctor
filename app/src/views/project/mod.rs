@@ -1,3 +1,6 @@
+use crate::components::WmDragArea;
+use crate::views::project::side_bar_env_list::EnvSideBarList;
+use crate::views::project::tab_page_env::EnvPage;
 use crate::{
     session::{EnvironmentDefination, Session},
     views::project::utils::WorkspaceTab,
@@ -16,18 +19,19 @@ use dioxus_free_icons::{
     icons::ld_icons::{LdPencil, LdPlus},
     Icon,
 };
-use project_info_tab::ProjectInfoTab;
-use request_list::RequestList;
-use request_tab::RequestPage;
+use side_bar_request_list::RequestList;
 use strum::IntoEnumIterator;
+use tab_page_project_info::ProjectInfoTab;
+use tab_page_request::RequestPage;
 use welcome_tab::WelcomePage;
 
-mod project_info_tab;
-mod request_list;
-mod request_tab;
+mod side_bar_env_list;
+mod side_bar_request_list;
+mod tab_page_env;
+mod tab_page_project_info;
+mod tab_page_request;
 mod utils;
 mod welcome_tab;
-use crate::components::WmDragArea;
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
@@ -57,6 +61,7 @@ pub fn ProjectView(session: Session) -> Element {
 enum SideBarList {
     Requests,
     Calls,
+    Environments,
 }
 
 impl ButtonGroupInner for SideBarList {
@@ -173,10 +178,10 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
             // requests
             div { class: "flex-grow h-0 overflow-y-auto",
 
-                if current_list() == SideBarList::Requests {
-                    RequestList { tabs }
-                } else {
-                    div { "Calls" }
+                match current_list() {
+                    SideBarList::Requests => rsx!{RequestList { tabs }},
+                    SideBarList::Calls => rsx!{div {"Calls"}},
+                    SideBarList::Environments => rsx!{EnvSideBarList{ tabs }}
                 }
             }
         }
@@ -265,6 +270,9 @@ fn TabContent() -> Element {
         },
         WorkspaceTab::Project(name, description) => rsx! {
             ProjectInfoTab { name, description }
-        }, // _ => rsx! {},
+        },
+        WorkspaceTab::Environment(_) => rsx! {
+            EnvPage {}
+        },
     };
 }

@@ -15,7 +15,7 @@ pub struct MenuItem {
 
 #[component]
 pub fn ContextMenu(
-    class: Option<&'static str>,
+    class: Option<String>,
     items: Vec<MenuItem>,
     children: Element,
 ) -> Element {

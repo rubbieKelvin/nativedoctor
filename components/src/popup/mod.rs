@@ -1,22 +1,14 @@
 use dioxus::prelude::*;
 
-#[derive(Props, PartialEq, Clone)]
-pub struct MenuItem {
-    pub label: String,
-    pub on_click: EventHandler<()>,
-    pub disabled: bool,
-    pub icon: Option<Element>,
-}
-
 #[component]
 pub fn Popup(
-    class: Option<&'static str>,
+    class: Option<String>,
     item: Element,
     content: Element,
     is_open: Signal<bool>,
 ) -> Element {
     // let mut position = use_signal(|| (0, 0));
-    let class = class.unwrap_or("");
+    let class = class.unwrap_or_default();
 
     rsx! {
         div {

@@ -4,11 +4,11 @@ use components_lib::{
 };
 use dioxus::prelude::*;
 use dioxus_free_icons::{
-    icons::ld_icons::{LdBox, LdHome},
+    icons::ld_icons::{LdBox, LdHome, LdLayers},
     Icon,
 };
 
-use crate::session::{RequestDefination, Session};
+use crate::session::{EnvironmentDefination, RequestDefination, Session};
 
 pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant {
     let method = method.as_ref();
@@ -23,18 +23,22 @@ pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant
     };
 }
 
+// defines the possible workspace tab (can include the kind of data they carry)
 #[derive(PartialEq, Clone)]
 pub enum WorkspaceTab {
     Welcome,
     Project(String, String),
     Request(RequestDefination),
+    Environment(EnvironmentDefination),
 }
 
+// defines how workspace tabs can be identified
 #[derive(PartialEq, Clone)]
 pub enum WorkspaceTabId {
     Welcome,
     Project,
     Request(uuid::Uuid),
+    Environment(uuid::Uuid),
 }
 
 impl TabPayload for WorkspaceTab {
@@ -76,6 +80,16 @@ impl TabPayload for WorkspaceTab {
                     }
                 }
             },
+            WorkspaceTab::Environment(env) => rsx! {
+                div { class: "flex gap-1 items-center",
+                    Icon { icon: LdLayers, height: 12, width: 12 }
+                    Label {
+                        class: "flex-grow text-start",
+                        style: LabelStyleVariant::Mild,
+                        "{env.name}"
+                    }
+                }
+            },
         };
     }
 
@@ -84,6 +98,7 @@ impl TabPayload for WorkspaceTab {
             WorkspaceTab::Welcome => WorkspaceTabId::Welcome,
             WorkspaceTab::Project(..) => WorkspaceTabId::Project,
             WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
+            WorkspaceTab::Environment(env) => WorkspaceTabId::Environment(env.id),
         };
     }
 }

@@ -361,9 +361,6 @@
   .overflow-y-auto {
     overflow-y: auto;
   }
-  .\!rounded-none {
-    border-radius: 0 !important;
-  }
   .rounded {
     border-radius: 0.25rem;
   }
