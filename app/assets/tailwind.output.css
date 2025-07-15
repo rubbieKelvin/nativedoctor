@@ -247,6 +247,9 @@
   .mb-4 {
     margin-bottom: calc(var(--spacing) * 4);
   }
+  .ml-1 {
+    margin-left: calc(var(--spacing) * 1);
+  }
   .flex {
     display: flex;
   }
@@ -279,6 +282,15 @@
   }
   .w-10 {
     width: calc(var(--spacing) * 10);
+  }
+  .w-12 {
+    width: calc(var(--spacing) * 12);
+  }
+  .w-22 {
+    width: calc(var(--spacing) * 22);
+  }
+  .w-24 {
+    width: calc(var(--spacing) * 24);
   }
   .w-48 {
     width: calc(var(--spacing) * 48);
@@ -645,6 +657,16 @@
       background-color: #3d3d3d;
     }
   }
+  .focus-within\:bg-\[\#3d3d3d\]\/100 {
+    &:focus-within {
+      background-color: #3d3d3d;
+    }
+  }
+  .focus-within\:bg-\[\#3e3e3e\]\/20 {
+    &:focus-within {
+      background-color: color-mix(in oklab, #3e3e3e 20%, transparent);
+    }
+  }
   .hover\:border-\[\#ffffff\] {
     &:hover {
       @media (hover: hover) {
@@ -656,6 +678,20 @@
     &:hover {
       @media (hover: hover) {
         background-color: #3d3d3d;
+      }
+    }
+  }
+  .hover\:bg-\[\#3d3d3d\]\/20 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in oklab, #3d3d3d 20%, transparent);
+      }
+    }
+  }
+  .hover\:bg-\[\#3e3e3e\]\/20 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in oklab, #3e3e3e 20%, transparent);
       }
     }
   }

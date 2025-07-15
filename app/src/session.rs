@@ -1,3 +1,6 @@
+// this file contains the struct that model project data internally (a project in session)
+
+use components_lib::prelude::CellValue;
 use nativedoctor_core::schema::{
     request_body::{MultipartPartSchema, RequestBodySchema},
     request_config::RetryConfigSchema,
@@ -5,6 +8,8 @@ use nativedoctor_core::schema::{
 use serde_yaml::{Mapping, Value};
 use std::{collections::HashMap, path::PathBuf};
 use uuid::Uuid;
+
+use crate::views::project::EnvTableColumn;
 
 #[derive(PartialEq, Clone, Default)]
 pub(crate) struct Session {
@@ -56,12 +61,12 @@ impl Session {
             version: "1.1.0".to_string(),
             default_environment: EnvironmentDefination { id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Default".to_string(), path: None, variables: HashMap::from_iter([
                 ("baseurl".to_string(), VariableValue::new("http://localhost:8080")),
-                ("auth_token".to_string(), VariableValue::new("local-dev-token")),
+                ("auth_token".to_string(), VariableValue::new("local-dev-token").as_secret()),
                 ("item_id".to_string(), VariableValue::new("abcde")),
             ]) },
             custom_environments: vec![EnvironmentDefination{id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Production".to_string(), path: None, variables: HashMap::from_iter([
                 ("baseurl".to_string(), VariableValue::new("https://httpbin.org")),
-                ("auth_token".to_string(), VariableValue::new("your-secret-token-here")),
+                ("auth_token".to_string(), VariableValue::new("your-secret-token-here").as_secret()),
                 ("item_id".to_string(), VariableValue::new("12345")),
             ])}],
             requests: vec![
@@ -213,6 +218,74 @@ pub(crate) struct EnvironmentDefination {
     pub variables: HashMap<String, VariableValue>,
 }
 
+impl EnvironmentDefination {
+    pub fn into_table_data(&self) -> Vec<HashMap<String, CellValue>> {
+        return self
+            .variables
+            .iter()
+            .map(|(name, data)| {
+                let mut map = HashMap::new();
+
+                map.insert(
+                    EnvTableColumn::Name.to_string(),
+                    CellValue::Text(name.clone()),
+                );
+                map.insert(
+                    EnvTableColumn::Sensitive.to_string(),
+                    CellValue::Boolean(data.sensitive),
+                );
+                map.insert(
+                    EnvTableColumn::InitialValue.to_string(),
+                    CellValue::Text(data.initial.clone()),
+                );
+                map.insert(
+                    EnvTableColumn::Value.to_string(),
+                    CellValue::Text(data.value.clone()),
+                );
+
+                return map;
+            })
+            .collect();
+    }
+
+    pub fn make_variables_from_table_data(
+        data: Vec<HashMap<String, CellValue>>,
+    ) -> HashMap<String, VariableValue> {
+        let mut result = HashMap::new();
+        
+        for row in data {
+            let name = row
+                .get(&EnvTableColumn::Name.to_string())
+                .map(|cell| cell.to_string().unwrap_or_default())
+                .unwrap_or_default();
+            let name = name.trim().to_string();
+
+            if name.len() == 0 {
+                continue;
+            }
+
+            let mut value = VariableValue::new("");
+            value.sensitive = row
+                .get(&EnvTableColumn::Sensitive.to_string())
+                .map(|cell| cell.to_boolean().unwrap_or_default())
+                .unwrap_or_default();
+
+            value.initial = row
+                .get(&EnvTableColumn::InitialValue.to_string())
+                .map(|cell| cell.to_string().unwrap_or_default())
+                .unwrap_or_default();
+
+            value.value = row
+                .get(&EnvTableColumn::Value.to_string())
+                .map(|cell| cell.to_string().unwrap_or_default())
+                .unwrap_or_default();
+
+            result.insert(name, value);
+        }
+        return result;
+    }
+}
+
 impl Into<String> for EnvironmentDefination {
     fn into(self) -> String {
         return self.name.clone();
@@ -235,6 +308,11 @@ impl VariableValue {
             sensitive: false,
             description: String::new(),
         };
+    }
+
+    pub fn as_secret(mut self) -> Self {
+        self.sensitive = true;
+        return self;
     }
 }
 

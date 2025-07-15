@@ -1,14 +1,24 @@
 use std::collections::HashMap;
 
-use components_lib::{button::{Button, ButtonSizeVariant, ButtonStyleVariant}, prelude::{
-    CellValue, TableInput, TableInputCell, TextField, TextFieldSizeVariant, TextFieldStyleVariant,
-}};
+use components_lib::{
+    button::{Button, ButtonSizeVariant, ButtonStyleVariant},
+    label::Label,
+    prelude::{
+        CellValue, TableInput, TableInputCell, TextField, TextFieldSizeVariant,
+        TextFieldStyleVariant,
+    },
+};
 use dioxus::prelude::*;
-use dioxus_free_icons::{icons::ld_icons::LdSquare, Icon};
+use dioxus_free_icons::{
+    icons::ld_icons::{LdSquare, LdSquareCheck},
+    Icon,
+};
 use strum::IntoEnumIterator;
 
+use crate::session::EnvironmentDefination;
+
 #[derive(PartialEq, Clone, strum::Display, strum::EnumIter)]
-enum EnvTableColumn {
+pub enum EnvTableColumn {
     Name,
     Sensitive,
     InitialValue,
@@ -20,29 +30,42 @@ impl TableInputCell for EnvTableColumn {
         return self.to_string();
     }
 
-    // fn internally_treat_as_empty(&self) -> bool {
-    //     return !matches!(self, EnvTableColumn::Name);
-    // }
+    fn internally_treat_as_empty(&self) -> bool {
+        return !matches!(self, EnvTableColumn::Name);
+    }
 
     fn render_input(
         &self,
         value: CellValue,
-        row: HashMap<String, CellValue>,
+        _row: HashMap<String, CellValue>,
         set: impl Fn(CellValue) + 'static,
-        set_partial: impl Fn(HashMap<String, CellValue>) + 'static,
+        _set_partial: impl Fn(HashMap<String, CellValue>) + 'static,
     ) -> Element {
         return match self {
             EnvTableColumn::Sensitive => rsx! {
-                Button {
-                    style: ButtonStyleVariant::Ghost,
-                    size: ButtonSizeVariant::Icon,
-                    Icon { height: 16, width: 16, icon: LdSquare }
+                div { class: "w-22 flex items-center",
+                    Button {
+                        style: ButtonStyleVariant::Ghost,
+                        size: ButtonSizeVariant::Icon,
+                        onclick: {
+                            let value = value.clone();
+                            move |_| {
+                                let value = value.clone();
+                                set(CellValue::Boolean(!value.to_boolean().unwrap_or_default()))
+                            }
+                        },
+                        if value.to_boolean().unwrap_or_default() {
+                            Icon { height: 16, width: 16, icon: LdSquareCheck }
+                        } else {
+                            Icon { height: 16, width: 16, icon: LdSquare }
+                        }
+                    }
                 }
             },
             EnvTableColumn::Value | EnvTableColumn::InitialValue => rsx! {
                 TextField {
-                    class: "flex-grow",
-                    style: TextFieldStyleVariant::Ghost,
+                    class: "flex-grow !rounded-none focus-within:bg-[#3e3e3e]/20",
+                    style: TextFieldStyleVariant::Void,
                     value: value.to_string(),
                     placeholder: "Value",
                     oninput: move |e: Event<FormData>| {
@@ -58,10 +81,10 @@ impl TableInputCell for EnvTableColumn {
             },
             _ => rsx! {
                 TextField {
-                    class: "w-48",
+                    class: "w-48 !rounded-none focus-within:bg-[#3e3e3e]/20",
                     value: value.to_string(),
                     placeholder: "Name",
-                    style: TextFieldStyleVariant::Ghost,
+                    style: TextFieldStyleVariant::Void,
                     oninput: move |e: Event<FormData>| {
                         let value = e.value();
                         if value.trim() == "" {
@@ -77,14 +100,24 @@ impl TableInputCell for EnvTableColumn {
 }
 
 #[component]
-pub fn EnvPage() -> Element {
-    let mut env_name = use_signal(|| String::new());
-    let mut env_table = use_signal::<Vec<HashMap<String, CellValue>>>(|| vec![]);
+pub fn EnvPage(env: EnvironmentDefination) -> Element {
+    let mut env_name = use_signal(|| env.name.clone());
+    let mut env_table = use_signal::<Vec<HashMap<String, CellValue>>>(|| env.into_table_data());
 
     return rsx! {
-        div { class: "h-full flex pt-2 flex-col",
+        style {
+            "
+            .env-page-table > div:first-child {{
+                border-top: 1px solid #3e3e3e;
+            }}
+            .env-page-table > div:not(:last-child) {{
+                border-bottom: 1px solid #3e3e3e;
+            }}
+            "
+        }
+        div { class: "h-full flex pt-2 flex-col gap-4",
             TextField {
-                placeholder: "Name",
+                placeholder: "Environment Name",
                 value: "{env_name}",
                 style: TextFieldStyleVariant::Ghost,
                 size: TextFieldSizeVariant::Large,
@@ -93,8 +126,18 @@ pub fn EnvPage() -> Element {
                     env_name.set(value);
                 },
             }
+
+            // table header
+            div { class: "flex",
+                Label { class: "w-48", "Name" }
+                Label { class: "w-24", "Secret" }
+                Label { class: "flex-grow", "Initial Value" }
+                Label { class: "flex-grow ml-1", "Current Value" }
+            }
+
             // table input
             TableInput {
+                class: "env-page-table",
                 value: env_table(),
                 columns: EnvTableColumn::iter().collect(),
                 onchange: move |new_value| {

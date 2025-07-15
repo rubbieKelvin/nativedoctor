@@ -25,6 +25,8 @@ use tab_page_project_info::ProjectInfoTab;
 use tab_page_request::RequestPage;
 use welcome_tab::WelcomePage;
 
+pub use tab_page_env::EnvTableColumn;
+
 mod side_bar_env_list;
 mod side_bar_request_list;
 mod tab_page_env;
@@ -261,6 +263,7 @@ fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
 #[component]
 fn TabContent() -> Element {
     let state = use_context::<TabState<WorkspaceTab>>();
+    
     return match state.tab.payload {
         WorkspaceTab::Welcome => rsx! {
             WelcomePage {}
@@ -271,8 +274,8 @@ fn TabContent() -> Element {
         WorkspaceTab::Project(name, description) => rsx! {
             ProjectInfoTab { name, description }
         },
-        WorkspaceTab::Environment(_) => rsx! {
-            EnvPage {}
+        WorkspaceTab::Environment(env) => rsx! {
+            EnvPage {env}
         },
     };
 }
