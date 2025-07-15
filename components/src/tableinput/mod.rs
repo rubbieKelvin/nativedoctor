@@ -80,23 +80,12 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
     let class = format!("{} {}", class.unwrap_or_default(), border.classes());
     let columns = use_context_provider::<Vec<T>>(|| columns);
 
-    let remove_excess_empty_rows = |rows: &mut Vec<HashMap<String, CellValue>>,
-                                    columns: &Vec<T>| {
+    let remove_excess_empty_rows = |rows: &mut Vec<HashMap<String, CellValue>>| {
         let empty_row_indexes = rows
             .iter()
             .enumerate()
             .filter_map(|(index, row)| {
-                if row.iter().all(|(key, cell)| {
-                    // if the column for that key should be internally as empty
-                    columns
-                        .get(index)
-                        .map(|config| {
-                            config.identifier() == *key && config.internally_treat_as_empty()
-                        })
-                        .unwrap_or(false)
-                    // or the cell itself is empty...
-                    || matches!(cell, CellValue::Empty)
-                })
+                if row.values().all(|cell| matches!(cell, CellValue::Empty))
                 // if all the cells in the row passes the check above...
                 {
                     return Some(index);
@@ -124,9 +113,20 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
     let ensure_empty_row = |rows: &mut Vec<HashMap<String, CellValue>>, columns: &Vec<T>| {
         // check if there is at least one non-empty column for each row
         // meaning in every row, one column has a value in it
-        let all_rows_are_satisfied = rows
-            .iter()
-            .all(|row| row.values().any(|value| !matches!(value, CellValue::Empty)));
+        let all_rows_are_satisfied = rows.iter().all(|row| {
+            row.iter().any(
+                |(key, value)| // if the column for that key should be internally as empty
+                    !columns
+                        // .get(index)
+                        .iter().find(|c| c.identifier() == *key)
+                        .map(|config| {
+                            config.internally_treat_as_empty()
+                        })
+                        .unwrap_or(false)
+                    // or the cell itself is empty...
+                    && !matches!(value, CellValue::Empty),
+            )
+        });
 
         // if all rows are satisfied, let's add one new row at the end (so there's an row for the user to use)
         if all_rows_are_satisfied {
@@ -174,7 +174,7 @@ pub fn TableInput<T: TableInputCell + PartialEq + Clone + 'static>(
             ensure_empty_row(&mut rows, &columns);
 
             // if there are exccess empty rows remove them
-            remove_excess_empty_rows(&mut rows, &columns);
+            remove_excess_empty_rows(&mut rows);
 
             if let Some(onchange) = onchange {
                 onchange.call(rows);

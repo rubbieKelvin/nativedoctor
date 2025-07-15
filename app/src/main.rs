@@ -48,7 +48,7 @@ fn main() {
 }
 
 #[derive(Clone, PartialEq)]
-pub enum PageScreen {
+pub(crate) enum PageScreen {
     StartScreen,
     ProjectScreen(Session),
 }

@@ -222,6 +222,7 @@ impl Into<String> for EnvironmentDefination {
 #[derive(PartialEq, Clone, Default, Debug)]
 pub(crate) struct VariableValue {
     pub value: String,
+    pub initial: String,
     pub sensitive: bool,
     pub description: String,
 }
@@ -230,6 +231,7 @@ impl VariableValue {
     pub fn new(value: &str) -> Self {
         return VariableValue {
             value: value.to_string(),
+            initial: value.to_string(),
             sensitive: false,
             description: String::new(),
         };
@@ -245,7 +247,8 @@ impl Into<String> for VariableValue {
 impl Into<VariableValue> for String {
     fn into(self) -> VariableValue {
         return VariableValue {
-            value: self,
+            value: self.clone(),
+            initial: self.clone(),
             sensitive: false,
             description: String::new(),
         };
