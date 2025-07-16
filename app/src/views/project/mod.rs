@@ -1,5 +1,6 @@
 use crate::components::WmDragArea;
 use crate::views::project::generic_add_button::GenericAddButtonForSideBar;
+use crate::views::project::keyboard_handler::KeypressListener;
 use crate::views::project::side_bar_env_list::EnvSideBarList;
 use crate::{
     session::{EnvironmentDefination, Session},
@@ -29,6 +30,7 @@ mod tab_page_project_info;
 mod tab_page_request;
 mod utils;
 mod welcome_tab;
+mod keyboard_handler;
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
@@ -48,6 +50,7 @@ pub fn ProjectView(session: Session) -> Element {
 
     return rsx! {
         div { class: "h-full flex",
+            KeypressListener{}
             SideBar { tabs: opentabs }
             Workspace { tabs: opentabs }
         }
@@ -245,28 +248,7 @@ fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                 tab_real_estate: rsx! {
                     WmDragArea { class: "flex-grow h-full" }
                 },
-                // TabContent {}
             }
         }
     };
 }
-
-// #[component]
-// fn TabContent() -> Element {
-//     let state = use_context::<TabState<WorkspaceTab>>();
-
-//     return match state.tab.payload {
-//         WorkspaceTab::Welcome => rsx! {
-//             WelcomePage {}
-//         },
-//         WorkspaceTab::Request(_) => rsx! {
-//             RequestPage {}
-//         },
-//         WorkspaceTab::Project(name, description) => rsx! {
-//             ProjectInfoTab { name, description }
-//         },
-//         WorkspaceTab::Environment(env) => rsx! {
-//             EnvPage {env}
-//         },
-//     };
-// }

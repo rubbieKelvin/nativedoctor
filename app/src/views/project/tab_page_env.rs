@@ -7,6 +7,7 @@ use components_lib::{
         CellValue, TableInput, TableInputCell, TextField, TextFieldSizeVariant,
         TextFieldStyleVariant,
     },
+    tabs::TabState,
 };
 use dioxus::prelude::*;
 use dioxus_free_icons::{
@@ -15,7 +16,7 @@ use dioxus_free_icons::{
 };
 use strum::IntoEnumIterator;
 
-use crate::session::EnvironmentDefination;
+use crate::{session::EnvironmentDefination, views::project::utils::WorkspaceTab};
 
 #[derive(PartialEq, Clone, strum::Display, strum::EnumIter)]
 pub enum EnvTableColumn {
@@ -101,8 +102,39 @@ impl TableInputCell for EnvTableColumn {
 
 #[component]
 pub fn EnvPage(env: EnvironmentDefination) -> Element {
+    // TODO: cleanup
+    let env_page_id = use_memo(|| nanoid::nanoid!());
+
     let mut env_name = use_signal(|| env.name.clone());
     let mut env_table = use_signal::<Vec<HashMap<String, CellValue>>>(|| env.into_table_data());
+
+    let tab_state = use_context::<TabState<WorkspaceTab>>();
+
+    let tab = tab_state.tab.clone();
+    let tab_set = tab_state.tabs.clone();
+
+    let is_current_tab = use_memo(move || {
+        let tab_set = tab_set();
+        let selected_id = tab_set.get_selected_id();
+
+        return match selected_id {
+            Some(id) => id == tab.id,
+            None => false,
+        };
+    });
+
+    // Function to save env to project session and save project
+    let save_env = move || {};
+
+    // We need to give focus to this component when it loads
+    // use_effect(|| {
+    //     // we need to make sure this page is the active focus fallback when it's active in selected tab
+    //     document::eval(format!("
+    //         function ensureFallback(){{
+    //             const fallback = document.getElementById('{env_page_id}')
+    //         }}
+    //     ").as_str());
+    // });
 
     return rsx! {
         style {
@@ -115,7 +147,10 @@ pub fn EnvPage(env: EnvironmentDefination) -> Element {
             }}
             "
         }
-        div { class: "h-full flex pt-2 flex-col gap-4",
+        div {
+            id: env_page_id,
+            class: "h-full flex pt-2 flex-col gap-4",
+            tabindex: -1,
             TextField {
                 placeholder: "Environment Name",
                 value: "{env_name}",

@@ -184,6 +184,24 @@ impl Session {
         // self.requests.push(defination.clone());
         return defination;
     }
+
+    pub fn save_to_fs(&self) -> Result<(), String> { // TODO: Update return type
+        // IDEA: we can keep track of what changed so we dont have to rewite the whole project
+        // We're taking the project session (self) and writing it to disk
+        tracing::warn!("Not implemented yet");
+        return Ok(());
+    }
+
+    pub fn load_from_fs() -> Self {
+        tracing::warn!("Not implemented yet");
+        return Session {
+            path: PathBuf::new(),
+            name: "NotImplementedYet".to_string(),
+            description: String::new(),
+            version: "0.0.1".to_string(),
+            ..Default::default()
+        };
+    }
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
@@ -209,6 +227,9 @@ pub(crate) struct RequestDefination {
 }
 
 impl RequestDefination {
+    // TODO: i'm not sure if i need this (REMOVE)
+    // If i need this, add a doc string...
+    #[allow(unused)]
     pub fn slug(&self) -> String {
         return slug::slugify(self.name.clone());
     }
