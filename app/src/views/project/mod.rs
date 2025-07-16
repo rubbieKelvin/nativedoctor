@@ -1,6 +1,6 @@
 use crate::components::WmDragArea;
+use crate::views::project::generic_add_button::GenericAddButtonForSideBar;
 use crate::views::project::side_bar_env_list::EnvSideBarList;
-use crate::views::project::tab_page_env::EnvPage;
 use crate::{
     session::{EnvironmentDefination, Session},
     views::project::utils::WorkspaceTab,
@@ -12,21 +12,16 @@ use components_lib::{
     label::{Label, LabelStyleVariant},
     pane::{Pane, PaneStyleVariant},
     select::Select,
-    tabs::{TabItemData, TabSet, TabState, TabsManager},
+    tabs::{TabItemData, TabSet, TabsManager},
 };
 use dioxus::prelude::*;
-use dioxus_free_icons::{
-    icons::ld_icons::{LdPencil, LdPlus},
-    Icon,
-};
+use dioxus_free_icons::{icons::ld_icons::LdPencil, Icon};
 use side_bar_request_list::RequestList;
 use strum::IntoEnumIterator;
-use tab_page_project_info::ProjectInfoTab;
-use tab_page_request::RequestPage;
-use welcome_tab::WelcomePage;
 
 pub use tab_page_env::EnvTableColumn;
 
+mod generic_add_button;
 mod side_bar_env_list;
 mod side_bar_request_list;
 mod tab_page_env;
@@ -120,6 +115,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                     placeholder: "--No env--",
                     items: environments(),
                 }
+
                 Button {
                     size: ButtonSizeVariant::Icon,
                     style: ButtonStyleVariant::Ghost,
@@ -137,23 +133,18 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                     },
                     Icon { width: 14, height: 14, icon: LdPencil }
                 }
+
                 Pane {
                     class: "h-full",
                     style: PaneStyleVariant::Transparent,
                     border: Border::right(),
                 }
-                Button {
-                    size: ButtonSizeVariant::Icon,
-                    style: ButtonStyleVariant::Ghost,
-                    onclick: move |_| {
-                        let mut session = session.write();
-                        let created_defination = session.new_empty_request();
-                        let mut tabset = tabs.write();
-                        let tabitem = TabItemData::new(WorkspaceTab::Request(created_defination));
-                        tabset.add_tab(tabitem.clone());
-                        tabset.select(Some(tabitem.id));
-                    },
-                    Icon { width: 14, height: 14, icon: LdPlus }
+
+                // This button should be a function of the current side bar tab
+                GenericAddButtonForSideBar {
+                    tabset: tabs,
+                    session: session,
+                    tab: current_list()
                 }
             }
 
@@ -263,7 +254,7 @@ fn Workspace(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
 // #[component]
 // fn TabContent() -> Element {
 //     let state = use_context::<TabState<WorkspaceTab>>();
-    
+
 //     return match state.tab.payload {
 //         WorkspaceTab::Welcome => rsx! {
 //             WelcomePage {}

@@ -168,6 +168,10 @@ impl Session {
     }
 
     pub fn new_empty_request(&mut self) -> RequestDefination {
+        // TODO: If we can use this without adding to the session
+        // let's remove this abstraction
+        // we should create a ::new function
+        // the same applies to other project resources, (calls, envs)
         let id = uuid::Uuid::new_v4();
         let defination = RequestDefination {
             id: id.clone(),
@@ -176,7 +180,8 @@ impl Session {
             ..Default::default()
         };
 
-        self.requests.push(defination.clone());
+        // maybe do not add this to the request list yet...
+        // self.requests.push(defination.clone());
         return defination;
     }
 }
@@ -219,6 +224,16 @@ pub(crate) struct EnvironmentDefination {
 }
 
 impl EnvironmentDefination {
+    pub fn new(name: String) -> Self {
+        return EnvironmentDefination {
+            id: uuid::Uuid::new_v4(),
+            ref_id: nanoid::nanoid!(),
+            name,
+            path: None,
+            variables: HashMap::new(),
+        };
+    }
+
     pub fn into_table_data(&self) -> Vec<HashMap<String, CellValue>> {
         return self
             .variables
@@ -252,7 +267,7 @@ impl EnvironmentDefination {
         data: Vec<HashMap<String, CellValue>>,
     ) -> HashMap<String, VariableValue> {
         let mut result = HashMap::new();
-        
+
         for row in data {
             let name = row
                 .get(&EnvTableColumn::Name.to_string())

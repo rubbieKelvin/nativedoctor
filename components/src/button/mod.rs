@@ -58,6 +58,7 @@ impl Variant for ButtonSizeVariant {
 #[component]
 pub fn Button(
     children: Element,
+    title: Option<String>,
     class: Option<String>,
     style: Option<ButtonStyleVariant>,
     size: Option<ButtonSizeVariant>,
@@ -75,6 +76,7 @@ pub fn Button(
     return rsx! {
         button {
             class,
+            title,
             onclick: move |e| {
                 if onclick.is_none(){
                     return;
