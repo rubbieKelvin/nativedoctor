@@ -23,6 +23,7 @@ use strum::IntoEnumIterator;
 pub use tab_page_env::EnvTableColumn;
 
 mod generic_add_button;
+mod keyboard_handler;
 mod side_bar_env_list;
 mod side_bar_request_list;
 mod tab_page_env;
@@ -30,12 +31,37 @@ mod tab_page_project_info;
 mod tab_page_request;
 mod utils;
 mod welcome_tab;
-mod keyboard_handler;
 
 #[component]
 pub fn ProjectView(session: Session) -> Element {
     let session = use_context_provider(|| Signal::new(session));
     let mut opentabs: Signal<TabSet<WorkspaceTab>> = use_signal(|| TabSet::new(vec![]));
+    let mut is_saving = use_signal(|| false);
+
+    // save project to fs
+    let mut save_project = move || {
+        if is_saving() {
+            return;
+        }
+
+        is_saving.set(true);
+        
+        spawn(async move {
+            // TODO: handle err
+            tracing::info!("Saving to fs");
+            session().save_to_fs().await.unwrap();
+            is_saving.set(false);
+        });
+    };
+    
+    
+    // Listen for key
+    let mut handle_key_press = move |combination: String| match combination.to_lowercase().as_str() {
+        "meta+s" => {
+            save_project();
+        }
+        _ => {}
+    };
 
     // create the welcome tabs
     use_hook(move || {
@@ -50,7 +76,9 @@ pub fn ProjectView(session: Session) -> Element {
 
     return rsx! {
         div { class: "h-full flex",
-            KeypressListener{}
+            KeypressListener{
+                onkeypress: move |combination| handle_key_press(combination)
+            }
             SideBar { tabs: opentabs }
             Workspace { tabs: opentabs }
         }

@@ -2,8 +2,7 @@
 
 use components_lib::prelude::CellValue;
 use nativedoctor_core::schema::{
-    request_body::{MultipartPartSchema, RequestBodySchema},
-    request_config::RetryConfigSchema,
+    request_body::{MultipartPartSchema, RequestBodySchema}, request_config::RetryConfigSchema
 };
 use serde_yaml::{Mapping, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -11,9 +10,12 @@ use uuid::Uuid;
 
 use crate::views::project::EnvTableColumn;
 
+mod casting;
+mod fs;
+
 #[derive(PartialEq, Clone, Default)]
 pub(crate) struct Session {
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
     pub name: String,
     pub description: String,
     pub version: String,
@@ -55,7 +57,7 @@ impl Session {
         );
 
         return Session {
-            path: PathBuf::new(),
+            path: None,
             name: "httpbin.org API Demo".to_string(),
             description: "A session template demonstrating various API calls and body types using httpbin.org.".to_string(),
             version: "1.1.0".to_string(),
@@ -183,24 +185,6 @@ impl Session {
         // maybe do not add this to the request list yet...
         // self.requests.push(defination.clone());
         return defination;
-    }
-
-    pub fn save_to_fs(&self) -> Result<(), String> { // TODO: Update return type
-        // IDEA: we can keep track of what changed so we dont have to rewite the whole project
-        // We're taking the project session (self) and writing it to disk
-        tracing::warn!("Not implemented yet");
-        return Ok(());
-    }
-
-    pub fn load_from_fs() -> Self {
-        tracing::warn!("Not implemented yet");
-        return Session {
-            path: PathBuf::new(),
-            name: "NotImplementedYet".to_string(),
-            description: String::new(),
-            version: "0.0.1".to_string(),
-            ..Default::default()
-        };
     }
 }
 

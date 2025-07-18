@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 #[component]
-pub fn KeypressListener() -> Element {
+pub fn KeypressListener(onkeypress: EventHandler<String>) -> Element {
     use_effect(move || {
         let mut eval = document::eval(
             "document.addEventListener(
@@ -29,10 +29,11 @@ pub fn KeypressListener() -> Element {
         spawn(async move {
             while let Ok(data) = eval.recv::<String>().await {
                 tracing::info!("Recived keypress from javascript: {}", data);
+                onkeypress.call(data)
             }
         });
     });
 
     // return empty fragment
-    return rsx!{};
+    return rsx! {};
 }

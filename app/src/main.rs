@@ -7,7 +7,6 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 
 mod components;
 mod session;
-mod states;
 mod views;
 
 fn main() {

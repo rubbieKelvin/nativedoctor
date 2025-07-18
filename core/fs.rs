@@ -2,13 +2,13 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Ok, bail};
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncReadExt;
 
 use crate::{
     EXTENSION_FOR_REQUEST,
     schema::roots::{ProjectRootSchema, RequestRootSchema},
 };
 
+#[deprecated]
 #[derive(Clone, PartialEq)]
 pub struct FileObject<T: Clone + PartialEq + Deserialize<'static> + Serialize> {
     pub id: uuid::Uuid,
