@@ -241,6 +241,9 @@
   .mt-2 {
     margin-top: calc(var(--spacing) * 2);
   }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
   }
@@ -309,6 +312,9 @@
   }
   .max-w-\[500px\] {
     max-width: 500px;
+  }
+  .min-w-\[30\%\] {
+    min-width: 30%;
   }
   .min-w-\[40\%\] {
     min-width: 40%;
@@ -468,6 +474,9 @@
   .\!p-0 {
     padding: calc(var(--spacing) * 0) !important;
   }
+  .\!p-0\.5 {
+    padding: calc(var(--spacing) * 0.5) !important;
+  }
   .p-0\.5 {
     padding: calc(var(--spacing) * 0.5);
   }
@@ -510,6 +519,9 @@
   .pt-2 {
     padding-top: calc(var(--spacing) * 2);
   }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
+  }
   .pl-18 {
     padding-left: calc(var(--spacing) * 18);
   }
@@ -525,10 +537,6 @@
   .text-2xl {
     font-size: var(--text-2xl);
     line-height: var(--tw-leading, var(--text-2xl--line-height));
-  }
-  .text-3xl {
-    font-size: var(--text-3xl);
-    line-height: var(--tw-leading, var(--text-3xl--line-height));
   }
   .text-base {
     font-size: var(--text-base);
@@ -562,6 +570,9 @@
   }
   .text-\[\#5c95ff\] {
     color: #5c95ff;
+  }
+  .text-\[\#5e5e5e\] {
+    color: #5e5e5e;
   }
   .text-\[\#44d1df\] {
     color: #44d1df;

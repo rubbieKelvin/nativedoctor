@@ -12,3 +12,4 @@ pub use crate::select::*;
 pub use crate::popup::*;
 pub use crate::tabs::*;
 pub use crate::tableinput::*;
+pub use crate::separator::*;

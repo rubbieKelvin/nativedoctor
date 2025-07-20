@@ -2,6 +2,7 @@ use crate::components::WmDragArea;
 use crate::views::project::generic_add_button::GenericAddButtonForSideBar;
 use crate::views::project::keyboard_handler::KeypressListener;
 use crate::views::project::side_bar_env_list::EnvSideBarList;
+use crate::PageScreen;
 use crate::{
     session::{EnvironmentDefination, Session},
     views::project::utils::WorkspaceTab,
@@ -16,6 +17,7 @@ use components_lib::{
     tabs::{TabItemData, TabSet, TabsManager},
 };
 use dioxus::prelude::*;
+use dioxus_free_icons::icons::ld_icons::{LdEllipsis, LdX};
 use dioxus_free_icons::{icons::ld_icons::LdPencil, Icon};
 use side_bar_request_list::RequestList;
 use strum::IntoEnumIterator;
@@ -45,7 +47,7 @@ pub fn ProjectView(session: Session) -> Element {
         }
 
         is_saving.set(true);
-        
+
         spawn(async move {
             // TODO: handle err
             tracing::info!("Saving to fs");
@@ -53,10 +55,10 @@ pub fn ProjectView(session: Session) -> Element {
             is_saving.set(false);
         });
     };
-    
-    
+
     // Listen for key
-    let mut handle_key_press = move |combination: String| match combination.to_lowercase().as_str() {
+    let mut handle_key_press = move |combination: String| match combination.to_lowercase().as_str()
+    {
         "meta+s" => {
             save_project();
         }
@@ -76,9 +78,7 @@ pub fn ProjectView(session: Session) -> Element {
 
     return rsx! {
         div { class: "h-full flex",
-            KeypressListener{
-                onkeypress: move |combination| handle_key_press(combination)
-            }
+            KeypressListener { onkeypress: move |combination| handle_key_press(combination) }
             SideBar { tabs: opentabs }
             Workspace { tabs: opentabs }
         }
@@ -103,6 +103,7 @@ impl ButtonGroupInner for SideBarList {
 // Manages the current ui state of the requests list
 #[component]
 fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
+    let mut app_state = use_context::<Signal<PageScreen>>();
     let mut session = use_context::<Signal<Session>>();
 
     let mut current_list = use_signal(|| SideBarList::Requests);
@@ -124,21 +125,42 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
         session.current_env = selected_env.map(|e| e.ref_id);
     });
 
+    // closes the session and oes 
+    let mut close_project = move || {
+        let mut session = session.write();
+        let mut app_state = app_state.write();
+
+        session.close();
+        *app_state = PageScreen::StartScreen;
+    };
+
     return rsx! {
         Pane {
             style: PaneStyleVariant::Darker,
             border: Border::right(),
             class: "w-[300px] h-full flex flex-col relative",
-            WmDragArea { class: "h-8 w-full items-center absolute" }
+            
+            WmDragArea { class: "h-8 w-full items-center absolute",
+                // name and version
+                div { class: "pl-18 pt-1 pr-2 flex items-center",
 
-            // name and version
-            div { class: "pl-18 pt-1",
-                Label { style: LabelStyleVariant::Ghost, "{session().name}" }
+                    Label { style: LabelStyleVariant::Ghost, class: "flex-grow", "{session().name}" }
+                    Button {
+                        size: ButtonSizeVariant::Icon,
+                        style: ButtonStyleVariant::Ghost,
+                        class: "text-[#5e5e5e] !p-0.5",
+                        onclick: move |_| {
+                            close_project()
+                        },
+                        Icon { icon: LdX, width: 12, height: 12 }
+                    }
+                }
             }
 
             // env selector and buttons
-            div { class: "flex px-2 py-2 items-center gap-2",
+            div { class: "flex px-2 py-2 mt-6 items-center gap-2",
 
+                // environment
                 Select::<EnvironmentDefination> {
                     class: "w-full h-full",
                     wrapper_class: "flex-grow",
@@ -172,11 +194,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                 }
 
                 // This button should be a function of the current side bar tab
-                GenericAddButtonForSideBar {
-                    tabset: tabs,
-                    session: session,
-                    tab: current_list()
-                }
+                GenericAddButtonForSideBar { tabset: tabs, session, tab: current_list() }
             }
 
             // list tab
@@ -203,9 +221,15 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
             div { class: "flex-grow h-0 overflow-y-auto",
 
                 match current_list() {
-                    SideBarList::Requests => rsx!{RequestList { tabs }},
-                    SideBarList::Calls => rsx!{div {"Calls"}},
-                    SideBarList::Environments => rsx!{EnvSideBarList{ tabs }}
+                    SideBarList::Requests => rsx! {
+                        RequestList { tabs }
+                    },
+                    SideBarList::Calls => rsx! {
+                        div { "Calls" }
+                    },
+                    SideBarList::Environments => rsx! {
+                        EnvSideBarList { tabs }
+                    },
                 }
             }
         }

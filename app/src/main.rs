@@ -33,8 +33,7 @@ fn main() {
             window_builder = window_builder
                 .with_titlebar_transparent(true)
                 .with_title_hidden(true)
-                .with_fullsize_content_view(true)
-            // .with_titlebar_buttons_hidden(false);
+                .with_fullsize_content_view(true);
         }
 
         dioxus::LaunchBuilder::desktop()
@@ -55,16 +54,7 @@ pub(crate) enum PageScreen {
 #[component]
 fn App() -> Element {
     // State
-    // let state = ApplicationState::provide();
-    let mut screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
-
-    // TODO: remove
-    // On debug move to project page
-    #[cfg(debug_assertions)]
-    {
-        use crate::session::Session;
-        screen_state.set(PageScreen::ProjectScreen(Session::template()));
-    }
+    let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
 
     // Ui element
     return rsx! {

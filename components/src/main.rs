@@ -18,6 +18,7 @@ mod tabs;
 mod textfield;
 mod toast;
 mod traits;
+mod separator;
 
 fn main() {
     dioxus::launch(App);

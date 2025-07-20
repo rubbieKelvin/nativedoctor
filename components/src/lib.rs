@@ -13,3 +13,4 @@ pub mod popup;
 pub mod tabs;
 pub mod tableinput;
 pub mod prelude;
+pub mod separator;

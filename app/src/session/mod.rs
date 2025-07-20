@@ -186,6 +186,11 @@ impl Session {
         // self.requests.push(defination.clone());
         return defination;
     }
+
+    // TODO: finish
+    pub fn close(&mut self) {
+        tracing::warn!("Closing project. not implemented.");
+    }
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
