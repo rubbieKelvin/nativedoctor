@@ -11,7 +11,7 @@ mod views;
 mod meta;
 
 fn main() {
-    #[cfg(feature = "desktop")]
+    #[cfg(not(target_arch = "wasm32"))]
     {
         use dioxus::desktop::wry::dpi::Size;
         use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
@@ -42,8 +42,8 @@ fn main() {
             .launch(App);
     }
 
-    #[cfg(not(feature = "desktop"))]
-    dioxus::launch(App);
+    #[cfg(target_arch = "wasm32")]
+    dioxus::LaunchBuilder::web().launch(App);
 }
 
 #[derive(Clone, PartialEq)]

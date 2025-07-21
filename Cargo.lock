@@ -31,6 +31,7 @@ dependencies = [
  "dioxus",
  "dioxus-free-icons",
  "dioxus-logger",
+ "getrandom 0.2.16",
  "nanoid",
  "nativedoctor-core",
  "rfd 0.15.4",
@@ -877,7 +878,6 @@ dependencies = [
  "dioxus-hooks",
  "dioxus-html",
  "dioxus-logger",
- "dioxus-mobile",
  "dioxus-signals",
  "dioxus-web",
  "manganis",
@@ -1063,7 +1063,6 @@ dependencies = [
  "dioxus-devtools",
  "dioxus-history",
  "dioxus-lib",
- "dioxus-mobile",
  "dioxus-web",
  "dioxus_server_macro",
  "futures-channel",
@@ -1189,20 +1188,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-wasm",
-]
-
-[[package]]
-name = "dioxus-mobile"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d1295388909f427758993f32a571e0f8698d6ce0f125fa0e81b8bfdec3fa952"
-dependencies = [
- "dioxus-cli-config",
- "dioxus-desktop",
- "dioxus-lib",
- "jni",
- "libc",
- "once_cell",
 ]
 
 [[package]]
@@ -1823,8 +1808,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi 0.11.1+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2771,6 +2758,7 @@ name = "nativedoctor-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "getrandom 0.2.16",
  "serde",
  "serde_json",
  "serde_yaml",

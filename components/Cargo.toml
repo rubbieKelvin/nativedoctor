@@ -8,21 +8,27 @@ authors = ["rubbie kelvin <dev.rubbie@gmail.com>"]
 name = "components_lib"
 
 [dependencies]
-dioxus = { version = "0.6.1" }
 dioxus-free-icons = { version = "0.9", features = [
     "lucide",
     "hero-icons-outline",
     "hero-icons-solid",
 ] }
 uuid = { version = "1.17.0", features = ["v4", "js"] }
-rfd = "0.15.3"
 tracing = "0.1.41"
 strum = { version = "0.27.1", features = ["derive"] }
 nanoid = "0.4.0"
 
+# Web-only dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+dioxus = { version = "0.6.1", default-features = false, features = ["web", "macro"] }
+
+# Desktop-only dependencies (file dialogs don't work in browsers)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rfd = "0.15.3"
+dioxus = { version = "0.6.1", default-features = false, features = ["desktop", "macro"] }
 
 [features]
 default = ["desktop"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
+web = []
+desktop = []
+mobile = []

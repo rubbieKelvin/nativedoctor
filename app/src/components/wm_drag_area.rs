@@ -1,12 +1,12 @@
 // ui/draggable_header.rs
 use dioxus::{html::input_data::MouseButton, prelude::*};
 
-#[cfg(feature = "desktop")]
+#[cfg(not(target_arch = "wasm32"))]
 use dioxus::desktop::use_window;
 
 #[component]
 pub fn WmDragArea(class: Option<&'static str>, children: Element) -> Element {
-    #[cfg(feature = "desktop")]
+    #[cfg(not(target_arch = "wasm32"))]
     {
         let window = use_window();
         let mdwindow_handle = window.clone();
@@ -33,7 +33,7 @@ pub fn WmDragArea(class: Option<&'static str>, children: Element) -> Element {
         };
     }
 
-    #[cfg(not(feature = "desktop"))]
+    #[cfg(target_arch = "wasm32")]
     return rsx! {
         div { class, {children}}
     };
