@@ -8,7 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod fs;
 pub mod schema;
 #[cfg(test)]
 mod tests;
@@ -49,7 +48,7 @@ pub fn create_project_template(name: &str) -> (ProjectRootSchema, Vec<RequestRoo
 }
 
 // Initializes a new project at path
-pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
+pub fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
     // Create schemas
     let (project_schema, requests) = create_project_template(name);
     let hello_request = requests[0].clone();
@@ -60,13 +59,12 @@ pub async fn init(name: &str, path: &Path) -> anyhow::Result<PathBuf> {
     let home_folder = request_folder.join(format!("hello.{EXTENSION_FOR_REQUEST}").to_string());
 
     // create
-    tokio::fs::write(
+    std::fs::write(
         &project_path,
         serde_yaml::to_string(&project_schema).unwrap(),
-    )
-    .await?;
-    tokio::fs::create_dir(request_folder).await?;
-    tokio::fs::write(&home_folder, serde_yaml::to_string(&hello_request).unwrap()).await?;
+    )?;
+    std::fs::create_dir(request_folder)?;
+    std::fs::write(&home_folder, serde_yaml::to_string(&hello_request).unwrap())?;
 
     return Ok(project_path.to_path_buf());
 }

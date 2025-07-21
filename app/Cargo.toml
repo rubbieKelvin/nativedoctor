@@ -5,8 +5,7 @@ authors = ["rubbie kelvin <dev.rubbie@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-dioxus-desktop = "0.6.3"
-dioxus = { version = "0.6.0" }
+dioxus = { version = "0.6.1" }
 dioxus-free-icons = { version = "0.9", features = [
     "lucide",
     "hero-icons-outline",
@@ -17,7 +16,7 @@ nativedoctor-core = { path = "../core" }
 rfd = "0.15.3"
 tracing = "0.1.41"
 dioxus-logger = "0.6.2"
-components = {path = "../components"}
+components = { path = "../components" }
 serde_yaml = { version = "0.9.34" }
 slug = "0.1.6"
 nanoid = "0.4.0"

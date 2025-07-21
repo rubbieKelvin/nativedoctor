@@ -2,7 +2,7 @@
 use dioxus::{html::input_data::MouseButton, prelude::*};
 
 #[cfg(feature = "desktop")]
-use dioxus_desktop::use_window;
+use dioxus::desktop::use_window;
 
 #[component]
 pub fn WmDragArea(class: Option<&'static str>, children: Element) -> Element {

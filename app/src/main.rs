@@ -14,7 +14,7 @@ fn main() {
     #[cfg(feature = "desktop")]
     {
         use dioxus::desktop::wry::dpi::Size;
-        use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
+        use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
 
         let mut window_builder = WindowBuilder::new()
             .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
@@ -29,7 +29,7 @@ fn main() {
 
         #[cfg(target_os = "macos")]
         {
-            use dioxus_desktop::tao::platform::macos::WindowBuilderExtMacOS;
+            use dioxus::desktop::tao::platform::macos::WindowBuilderExtMacOS;
 
             window_builder = window_builder
                 .with_titlebar_transparent(true)
