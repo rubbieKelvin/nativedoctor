@@ -37,6 +37,7 @@ impl Session {
         #[cfg(target_arch = "wasm32")]
         {
             // File dialogs don't work in browsers
+            // I'll need to check if rfd supports wasm
             return None;
         }
     }

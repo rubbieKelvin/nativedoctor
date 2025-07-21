@@ -35,7 +35,7 @@ impl Session {
         };
 
         let environment_root_schemas: Vec<EnvironmentRootSchema> = self
-            .custom_environments
+            .environments
             .iter()
             .map(|e| e.to_environment_schema())
             .collect::<Vec<EnvironmentRootSchema>>();
@@ -125,7 +125,7 @@ impl Session {
             requests,
             calls: Session::cast_calls_schema_to_session_type(root.calls),
             current_env,
-            custom_environments: environments,
+            environments: environments,
         };
     }
 }

@@ -3,13 +3,12 @@
 use components_lib::prelude::CellValue;
 use nativedoctor_core::schema::{
     env::EnvironmentVariableSchema,
-    request_body::{MultipartPartSchema, RequestBodySchema},
+    request_body::RequestBodySchema,
     request_config::{RequestConfigSchema, RetryConfigSchema},
     roots::{EnvironmentRootSchema, RequestRootSchema},
 };
 use serde_yaml::{Mapping, Value};
 use std::{collections::HashMap, path::PathBuf};
-use uuid::Uuid;
 
 use crate::views::project::EnvTableColumn;
 
@@ -25,13 +24,13 @@ pub(crate) struct Session {
     pub requests: Vec<RequestDefination>,
     pub calls: HashMap<String, Vec<String>>,
     pub current_env: Option<String>,
-    pub custom_environments: Vec<EnvironmentDefination>,
+    pub environments: Vec<EnvironmentDefination>,
 }
 
 impl Session {
     pub fn get_environments(&self) -> Vec<EnvironmentDefination> {
         let envs = self
-            .custom_environments
+            .environments
             .iter()
             .map(|e| e.clone())
             .collect::<Vec<EnvironmentDefination>>();
@@ -40,6 +39,7 @@ impl Session {
 
     #[allow(unused)]
     pub fn template() -> Self {
+        // post Request body
         let mut post_mapping = Mapping::new();
         post_mapping.insert(
             Value::String("user".to_string()),
@@ -61,23 +61,51 @@ impl Session {
             Value::String("updated".to_string()),
         );
 
+        // Dev enviromnent
+        let dev_enviromnent = EnvironmentDefination::new("Dev").with_variables(vec![
+            (
+                "baseurl".to_string(),
+                VariableValue::new("http://localhost:8080"),
+            ),
+            (
+                "auth_token".to_string(),
+                VariableValue::new("secret-token-here").as_secret(),
+            ),
+            ("item_id".to_string(), VariableValue::new("00000")),
+        ]);
+
+        // Production environment
+        let production_env = EnvironmentDefination::new("Production").with_variables(vec![
+            (
+                "baseurl".to_string(),
+                VariableValue::new("https://httpbin.org"),
+            ),
+            (
+                "auth_token".to_string(),
+                VariableValue::new("your-secret-token-here").as_secret(),
+            ),
+            ("item_id".to_string(), VariableValue::new("12345")),
+        ]);
+
+        let get_request_ref_id = nanoid::nanoid!();
+        let post_request_ref_id = nanoid::nanoid!();
+
         return Session {
             path: None,
-            name: "httpbin.org API Demo".to_string(),
+            name: "Untitled Project".to_string(),
             description: "A session template demonstrating various API calls and body types using httpbin.org.".to_string(),
             version: "0.0.1".to_string(),
-            custom_environments: vec![EnvironmentDefination{id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Production".to_string(), path: None, variables: HashMap::from_iter([
-                ("baseurl".to_string(), VariableValue::new("https://httpbin.org")),
-                ("auth_token".to_string(), VariableValue::new("your-secret-token-here").as_secret()),
-                ("item_id".to_string(), VariableValue::new("12345")),
-            ])}],
+            environments: vec![
+                dev_enviromnent,
+                production_env
+            ],
             requests: vec![
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
+                    ref_id: get_request_ref_id.clone(),
                     name: "Get request with params".to_string(),
                     method: "GET".to_string(),
                     url: "{{baseurl}}/get".to_string(),
-                    ref_id: nanoid::nanoid!(8),
                     doc: "Sends a GET request with query parameters.".to_string(),
                     query: vec![
                         ("source".to_string(), "nativedoctor".to_string()),
@@ -88,7 +116,7 @@ impl Session {
                 RequestDefination {
                     id: uuid::Uuid::new_v4(),
                     name: "Post json data".to_string(),
-                    ref_id: nanoid::nanoid!(8),
+                    ref_id: post_request_ref_id.clone(),
                     method: "POST".to_string(),
                     url: "{{baseurl}}/post".to_string(),
                     doc: "Sends a POST request with a JSON body.".to_string(),
@@ -100,71 +128,16 @@ impl Session {
                     }),
                     ..Default::default()
                 },
-                RequestDefination {
-                    id: uuid::Uuid::new_v4(),
-                    name: "Put request".to_string(),
-                    method: "PUT".to_string(),
-                    ref_id: nanoid::nanoid!(8),
-                    url: "{{baseurl}}/put".to_string(),
-                    doc: "Sends a PUT request, similar to POST.".to_string(),
-                    headers: HashMap::from_iter([
-                        ("Content-Type".to_string(), "application/json".to_string()),
-                    ]),
-                    body: Some(RequestBodySchema::Json {
-                        content: Value::Mapping(put_mapping)
-                    }),
-                    ..Default::default()
-                },
-                RequestDefination {
-                    id: uuid::Uuid::new_v4(),
-                    name: "Upload file multipart".to_string(),
-                    method: "POST".to_string(),
-                    ref_id: nanoid::nanoid!(8),
-                    url: "{{baseurl}}/post".to_string(),
-                    doc: "Sends a multipart/form-data request with fields and a file.".to_string(),
-                    body: Some(RequestBodySchema::Multipart {
-                        parts: vec![
-                            MultipartPartSchema::Field { name: "description".to_string(), value: "A sample file upload".to_string() },
-                            MultipartPartSchema::Field { name: "user_id".to_string(), value: "{{item_id}}".to_string() },
-                            MultipartPartSchema::File { name: "upload_file".to_string(), path: "/path/to/your/file.txt".to_string(), mime_type: Some("text/plain".to_string()) }
-                        ]
-                    }),
-                    ..Default::default()
-                },
-                RequestDefination {
-                    id: uuid::Uuid::new_v4(),
-                    name: "Delete something".to_string(),
-                    method: "DELETE".to_string(),
-                    ref_id: nanoid::nanoid!(8),
-                    url: "{{baseurl}}/delete".to_string(),
-                    doc: "Sends a DELETE request.".to_string(),
-                    ..Default::default()
-                },
-                RequestDefination {
-                    id: uuid::Uuid::new_v4(),
-                    name: "Check bearer".to_string(),
-                    method: "GET".to_string(),
-                    ref_id: nanoid::nanoid!(8),
-                    url: "{{baseurl}}/bearer".to_string(),
-                    doc: "Tests bearer token authentication.".to_string(),
-                    headers: HashMap::from_iter([
-                        ("Authorization".to_string(), "Bearer {{auth_token}}".to_string()),
-                    ]),
-                    ..Default::default()
-                },
             ],
             calls: HashMap::from_iter([
-                ("full_http_methods_test".to_string(), vec![
-                    "get_request_with_params".to_string(),
-                    "post_json_data".to_string(),
-                    "put_request".to_string(),
-                    "delete_request".to_string()
-                    ]),
-                ("auth_and_upload_flow".to_string(), vec![
-                    "check_bearer_token".to_string(),
-                    "upload_file_multipart".to_string()
-                    ]),
-                ]),
+                (
+                    "main".to_string(),
+                    vec![
+                        get_request_ref_id,
+                        post_request_ref_id
+                    ]
+                ),
+            ]),
             ..Default::default()
         };
     }
@@ -264,14 +237,23 @@ pub(crate) struct EnvironmentDefination {
 }
 
 impl EnvironmentDefination {
-    pub fn new(name: String) -> Self {
+    pub fn new<S: AsRef<str>>(name: S) -> Self {
+        let name = name.as_ref();
+
         return EnvironmentDefination {
             id: uuid::Uuid::new_v4(),
             ref_id: nanoid::nanoid!(),
-            name,
+            name: name.to_string(),
             path: None,
             variables: HashMap::new(),
         };
+    }
+
+    pub fn with_variables(mut self, variables: Vec<(String, VariableValue)>) -> Self {
+        for (key, variable) in variables {
+            self.variables.insert(key, variable);
+        }
+        return self;
     }
 
     pub fn into_table_data(&self) -> Vec<HashMap<String, CellValue>> {
@@ -303,6 +285,8 @@ impl EnvironmentDefination {
             .collect();
     }
 
+    // TODO: Check if i still need this after implementing the env table
+    #[allow(unused)]
     pub fn make_variables_from_table_data(
         data: Vec<HashMap<String, CellValue>>,
     ) -> HashMap<String, VariableValue> {
