@@ -1,13 +1,17 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use components_lib::border::Border;
 use components_lib::button::{Button, ButtonSizeVariant, ButtonStyleVariant};
 use components_lib::prelude::HorizontalSeparator;
 use dioxus::prelude::*;
 use dioxus_free_icons::icons::ld_icons::{
-    LdCircleHelp, LdFileBox, LdFolderOpen, LdFolderPlus, LdGithub, LdMail, LdTwitter
+    LdCircleHelp, LdFileBox, LdFolderOpen, LdFolderPlus, LdGithub, LdMail, LdTwitter,
 };
 use dioxus_free_icons::Icon;
 
 use crate::components::WmDragArea;
+use crate::meta::recents::{RecentProject, RecentProjects};
 use crate::session::Session;
 use crate::PageScreen;
 use components_lib::label::{Label, LabelSizeVariant, LabelStyleVariant};
@@ -16,9 +20,56 @@ use components_lib::pane::{Pane, PaneStyleVariant};
 #[component]
 pub fn StartScreenView() -> Element {
     let mut screen_state = use_context::<Signal<PageScreen>>();
+    let recent_projects = use_context::<Signal<RecentProjects>>();
 
     let create_new_project = move |_: Event<MouseData>| {
         screen_state.set(PageScreen::ProjectScreen(Session::template()));
+    };
+
+    let open_project = move |_: Event<MouseData>| {
+        let mut recent_projects = recent_projects.clone();
+
+        spawn(async move {
+            let mut recent_projects = recent_projects.write();
+            let session = Session::load_from_fs_from_dialog().await;
+            match session {
+                Ok(Some(session)) => {
+                    let path = session.path.clone().unwrap();
+
+                    recent_projects
+                        .add(RecentProject::new(
+                            path.to_string_lossy().to_string(),
+                            session.name.clone(),
+                            session.current_env.clone(),
+                        ))
+                        .unwrap();
+                    screen_state.set(PageScreen::ProjectScreen(session));
+                }
+                Ok(None) => {
+                    // TODO: show error
+                    tracing::error!("No project selected");
+                }
+                Err(e) => {
+                    // TODO: show error
+                    tracing::error!("Error loading project: {}", e);
+                }
+            }
+        });
+    };
+
+    let mut open_project_from_recent = move |recent: RecentProject| {
+        match PathBuf::from_str(&recent.path.as_str()) {
+            Ok(path) => {
+                if path.try_exists().unwrap_or_default() {
+                    if let Ok(session) = Session::load_from_fs_from_path(path) {
+                        screen_state.set(PageScreen::ProjectScreen(session));
+                    }
+                }
+            }
+            Err(_) => {
+                tracing::info!("Error open");
+            }
+        };
     };
 
     return rsx! {
@@ -85,9 +136,11 @@ pub fn StartScreenView() -> Element {
                                 "Ctrl+N"
                             }
                         }
+
                         Button {
                             style: ButtonStyleVariant::Ghost,
                             class: "flex gap-2 items-center",
+                            onclick: open_project,
                             Icon { icon: LdFolderOpen, height: 14, width: 14 }
                             Label { class: "flex-grow text-start", "Open project" }
                             Label {
@@ -96,7 +149,15 @@ pub fn StartScreenView() -> Element {
                                 "Ctrl+O"
                             }
                         }
-                        RecentProjects {}
+
+                        if !recent_projects().is_empty() {
+                            RecentProjectList {
+                                projects: recent_projects().projects.clone(),
+                                onopen: move |r| {
+                                    open_project_from_recent(r)
+                                },
+                            }
+                        }
 
                         Button {
                             style: ButtonStyleVariant::Ghost,
@@ -117,7 +178,7 @@ pub fn StartScreenView() -> Element {
 }
 
 #[component]
-fn RecentProjects() -> Element {
+fn RecentProjectList(projects: Vec<RecentProject>, onopen: EventHandler<RecentProject>) -> Element {
     return rsx! {
         div { class: "flex gap-2 items-center",
             Label {
@@ -129,13 +190,22 @@ fn RecentProjects() -> Element {
             HorizontalSeparator {}
         }
 
-        Button {
-            style: ButtonStyleVariant::Ghost,
-            class: "flex gap-2 items-center",
-
-            Icon { icon: LdFileBox, height: 14, width: 14 }
-            Label { class: "flex-grow text-start", "Untitled" }
-            Label { style: LabelStyleVariant::Mild, "/Users/rubbiekelvin/Desktop/Untitled/nativedoctor.nd-project" }
+        for project in projects {
+            Button {
+                style: ButtonStyleVariant::Ghost,
+                class: "flex gap-2 items-center",
+                onclick: {
+                    let project = project.clone();
+                    let onopen = onopen.clone();
+                    move |_| {
+                        let p = project.clone();
+                        onopen.clone().call(p.clone());
+                    }
+                },
+                Icon { icon: LdFileBox, height: 14, width: 14 }
+                Label { class: "flex-grow text-start", "{project.name}" }
+                Label { style: LabelStyleVariant::Mild, "{project.path}" }
+            }
         }
 
         HorizontalSeparator {}

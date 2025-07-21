@@ -12,17 +12,18 @@ dioxus-free-icons = { version = "0.9", features = [
     "hero-icons-outline",
     "hero-icons-solid",
 ] }
-uuid = { version = "1.17.0", features = ["v4", "js"] }
+uuid = { version = "1.17.0", features = ["v4", "js", "serde"] }
 nativedoctor-core = { path = "../core" }
 rfd = "0.15.3"
 tracing = "0.1.41"
 dioxus-logger = "0.6.2"
 components = {path = "../components"}
-tokio = { version = "1.45.1", features = ["full"] }
 serde_yaml = { version = "0.9.34" }
 slug = "0.1.6"
 nanoid = "0.4.0"
 strum = { version = "0.27.1", features = ["derive"] }
+serde = "1.0.219"
+serde_json = "1.0.141"
 
 
 [features]

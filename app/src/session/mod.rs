@@ -2,7 +2,10 @@
 
 use components_lib::prelude::CellValue;
 use nativedoctor_core::schema::{
-    request_body::{MultipartPartSchema, RequestBodySchema}, request_config::RetryConfigSchema
+    env::EnvironmentVariableSchema,
+    request_body::{MultipartPartSchema, RequestBodySchema},
+    request_config::{RequestConfigSchema, RetryConfigSchema},
+    roots::{EnvironmentRootSchema, RequestRootSchema},
 };
 use serde_yaml::{Mapping, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -22,14 +25,16 @@ pub(crate) struct Session {
     pub requests: Vec<RequestDefination>,
     pub calls: HashMap<String, Vec<String>>,
     pub current_env: Option<String>,
-    pub default_environment: EnvironmentDefination,
     pub custom_environments: Vec<EnvironmentDefination>,
 }
 
 impl Session {
     pub fn get_environments(&self) -> Vec<EnvironmentDefination> {
-        let mut envs = vec![self.default_environment.clone()];
-        envs.extend(self.custom_environments.iter().map(|e| e.clone()));
+        let envs = self
+            .custom_environments
+            .iter()
+            .map(|e| e.clone())
+            .collect::<Vec<EnvironmentDefination>>();
         return envs;
     }
 
@@ -60,12 +65,7 @@ impl Session {
             path: None,
             name: "httpbin.org API Demo".to_string(),
             description: "A session template demonstrating various API calls and body types using httpbin.org.".to_string(),
-            version: "1.1.0".to_string(),
-            default_environment: EnvironmentDefination { id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Default".to_string(), path: None, variables: HashMap::from_iter([
-                ("baseurl".to_string(), VariableValue::new("http://localhost:8080")),
-                ("auth_token".to_string(), VariableValue::new("local-dev-token").as_secret()),
-                ("item_id".to_string(), VariableValue::new("abcde")),
-            ]) },
+            version: "0.0.1".to_string(),
             custom_environments: vec![EnvironmentDefination{id: Uuid::new_v4(), ref_id: nanoid::nanoid!(), name: "Production".to_string(), path: None, variables: HashMap::from_iter([
                 ("baseurl".to_string(), VariableValue::new("https://httpbin.org")),
                 ("auth_token".to_string(), VariableValue::new("your-secret-token-here").as_secret()),
@@ -169,6 +169,7 @@ impl Session {
         };
     }
 
+    #[deprecated]
     pub fn new_empty_request(&mut self) -> RequestDefination {
         // TODO: If we can use this without adding to the session
         // let's remove this abstraction
@@ -221,6 +222,35 @@ impl RequestDefination {
     #[allow(unused)]
     pub fn slug(&self) -> String {
         return slug::slugify(self.name.clone());
+    }
+
+    // Convert tp request to save in schema
+    pub fn to_request_schema(&self) -> RequestRootSchema {
+        return RequestRootSchema {
+            ref_id: self.ref_id.clone(),
+            method: self.method.clone(),
+            name: self.name.clone(),
+            url: self.url.clone(),
+            doc: self.doc.clone(),
+            headers: if self.headers.is_empty() {
+                None
+            } else {
+                Some(self.headers.clone())
+            },
+            query: if self.query.is_empty() {
+                None
+            } else {
+                Some(self.query.clone())
+            },
+            config: Some(RequestConfigSchema {
+                require: self.dependencies.clone(),
+                timeout: Some(self.timeout.clone()),
+                class: Some(self.class.clone()),
+                retries: self.retries.clone(),
+                ..Default::default()
+            }),
+            body: self.body.clone(),
+        };
     }
 }
 
@@ -308,6 +338,25 @@ impl EnvironmentDefination {
             result.insert(name, value);
         }
         return result;
+    }
+
+    // Convert this struct to the schema we can save in file
+    pub fn to_environment_schema(&self) -> EnvironmentRootSchema {
+        return EnvironmentRootSchema {
+            ref_id: self.ref_id.clone(),
+            name: self.name.clone(),
+            description: "".to_string(),
+            variables: self
+                .variables
+                .iter()
+                .map(|(key, value)| EnvironmentVariableSchema {
+                    name: key.clone(),
+                    value: serde_yaml::Value::String(value.value.clone()),
+                    description: value.description.clone(),
+                    secret: value.sensitive.clone(),
+                })
+                .collect::<Vec<EnvironmentVariableSchema>>(),
+        };
     }
 }
 

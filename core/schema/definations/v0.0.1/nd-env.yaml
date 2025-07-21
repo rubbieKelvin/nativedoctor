@@ -1,0 +1,46 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Native doctor environment file
+description: Defines a single environment for native doctor
+type: object
+properties: 
+  name:
+    type: string
+    description: The name of the environment
+  
+  description:
+    type: string
+
+  ref_id:
+    type: string
+
+  variables:
+    type: object
+    $ref: "#/definitions/EnvironmentVariable"
+
+required:
+  - name
+  - ref_id
+  - variables
+
+definitions:
+  EnvironmentVariable:
+    type: object
+    description: Represents a single environment variable definition. Field names are snake_case as per Rust struct's serde attribute.
+    properties:
+      name:
+        type: string
+        description: The name of the variable
+      value:
+        type: string
+        description: The value of the variable
+      sensitive:
+        type: boolean
+        description: Whether the environment variable is sensitive
+      description:
+        type: string
+        description: The description of the environment variable
+
+    required:
+      - name
+      - value
+      - description

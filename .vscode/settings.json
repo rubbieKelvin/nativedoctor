@@ -7,14 +7,15 @@
         "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml",
         "http://json-schema.org/draft-07/schema": [
             "core/src/schema/definations/*/nd-project.yaml",
-            "core/src/schema/definations/*/nd.yaml"
+            "core/src/schema/definations/*/nd.yaml",
+            "file:///Users/rubbiekelvin/Projects/nativedoctor/core/schema/definations/v0.0.1/nd-env.yaml"
         ],
         "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/schema/definations/v0.0.1/nd.yaml": [
             "**/*.nd"
         ],
         "https://raw.githubusercontent.com/rubbieKelvin/nativedoctor/refs/heads/main/core/schema/definations/v0.0.1/nd-project.yaml": [
             "**/*.nd-project"
-        ],
+        ]
     },
     "tailwindCSS.experimental.classRegex": [
         "class: \"(.*)\""

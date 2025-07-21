@@ -253,6 +253,9 @@
   .ml-1 {
     margin-left: calc(var(--spacing) * 1);
   }
+  .contents {
+    display: contents;
+  }
   .flex {
     display: flex;
   }

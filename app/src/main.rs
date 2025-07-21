@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::session::Session;
+use crate::{meta::recents::RecentProjects, session::Session};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -8,6 +8,7 @@ const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
 mod components;
 mod session;
 mod views;
+mod meta;
 
 fn main() {
     #[cfg(feature = "desktop")]
@@ -54,6 +55,7 @@ pub(crate) enum PageScreen {
 #[component]
 fn App() -> Element {
     // State
+    use_context_provider(|| Signal::new(RecentProjects::init()));
     let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
 
     // Ui element

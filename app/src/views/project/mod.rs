@@ -1,4 +1,5 @@
 use crate::components::WmDragArea;
+use crate::meta::recents::{RecentProject, RecentProjects};
 use crate::views::project::generic_add_button::GenericAddButtonForSideBar;
 use crate::views::project::keyboard_handler::KeypressListener;
 use crate::views::project::side_bar_env_list::EnvSideBarList;
@@ -17,7 +18,7 @@ use components_lib::{
     tabs::{TabItemData, TabSet, TabsManager},
 };
 use dioxus::prelude::*;
-use dioxus_free_icons::icons::ld_icons::{LdEllipsis, LdX};
+use dioxus_free_icons::icons::ld_icons::LdX;
 use dioxus_free_icons::{icons::ld_icons::LdPencil, Icon};
 use side_bar_request_list::RequestList;
 use strum::IntoEnumIterator;
@@ -37,11 +38,15 @@ mod welcome_tab;
 #[component]
 pub fn ProjectView(session: Session) -> Element {
     let session = use_context_provider(|| Signal::new(session));
+    let recents = use_context::<Signal<RecentProjects>>();
+
     let mut opentabs: Signal<TabSet<WorkspaceTab>> = use_signal(|| TabSet::new(vec![]));
     let mut is_saving = use_signal(|| false);
 
     // save project to fs
     let mut save_project = move || {
+        let session = session.clone();
+        let mut recents = recents.clone();
         if is_saving() {
             return;
         }
@@ -50,8 +55,31 @@ pub fn ProjectView(session: Session) -> Element {
 
         spawn(async move {
             // TODO: handle err
+            let session = session();
+            let mut recents = recents.write();
+
             tracing::info!("Saving to fs");
-            session().save_to_fs().await.unwrap();
+
+            if let Ok(_) = session.save_to_fs().await {
+                tracing::info!("Saved to file system");
+
+                let name = session.name.clone();
+                let a_env = session.current_env.clone();
+
+                match session
+                    .path
+                    .clone()
+                    .map(|e| e.to_string_lossy().to_string())
+                {
+                    Some(path) => {
+                        if let Ok(_) = recents.add(RecentProject::new(path, name, a_env)) {
+                            tracing::info!("Added project to recents");
+                        }
+                    }
+                    None => {}
+                };
+            }
+
             is_saving.set(false);
         });
     };
@@ -125,7 +153,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
         session.current_env = selected_env.map(|e| e.ref_id);
     });
 
-    // closes the session and oes 
+    // closes the session and oes
     let mut close_project = move || {
         let mut session = session.write();
         let mut app_state = app_state.write();
@@ -139,7 +167,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
             style: PaneStyleVariant::Darker,
             border: Border::right(),
             class: "w-[300px] h-full flex flex-col relative",
-            
+
             WmDragArea { class: "h-8 w-full items-center absolute",
                 // name and version
                 div { class: "pl-18 pt-1 pr-2 flex items-center",
