@@ -20,15 +20,17 @@ pub fn KeypressListener(onkeypress: EventHandler<String>) -> Element {
                         keys.push(key);
                     }
 
-                    const combo = keys.join('+');
-                    dioxus.send(combo);
+                    if (keys.length > 1) {
+                        const combo = keys.join('+');
+                        dioxus.send(combo);
+                    }
                 }
             );",
         );
 
         spawn(async move {
             while let Ok(data) = eval.recv::<String>().await {
-                tracing::info!("Recived keypress from javascript: {}", data);
+                tracing::info!("Received keypress from javascript: {}", data);
                 onkeypress.call(data)
             }
         });

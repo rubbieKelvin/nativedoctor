@@ -1,5 +1,4 @@
 use crate::schema::{
-    calls::CallSchema,
     project::ProjectDefinationSchema,
     roots::{ProjectRootSchema, RequestRootSchema},
 };
@@ -31,10 +30,7 @@ pub fn create_project_template(name: &str) -> (ProjectRootSchema, Vec<RequestRoo
             description: "Native doctor project".to_string(),
             version: Some("0.1.0".to_string()),
         },
-        calls: CallSchema {
-            main: vec!["hello".to_string()],
-            overrides: HashMap::new(),
-        },
+        calls: HashMap::from_iter([("main".to_string(), vec!["hello".to_string()])]),
         ..Default::default()
     };
 

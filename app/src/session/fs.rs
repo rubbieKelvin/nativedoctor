@@ -12,7 +12,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::meta::recents::RecentProjects;
-use crate::session::Session;
+use crate::session::{RequestDefination, Session};
 
 impl Session {
     /// gets the path where the project was or should be stored
@@ -33,7 +33,7 @@ impl Session {
                 return root;
             });
         }
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // File dialogs don't work in browsers
@@ -47,27 +47,82 @@ impl Session {
         {
             // TODO: Update return type
             // IDEA: we can keep track of what changed so we dont have to rewite the whole project
-            // 01: We need to save the project meta data
-            // 02: We need to save all requests into a sub /request folder
-            let (project_root, _, _) = self.to_fs_schema();
-            let path = self.get_project_path().await;
+            let project_root = self.to_fs_schema();
 
-            if path.is_none() {
+            // Get project path and make sure it exists
+            let project_path = self.get_project_path().await;
+
+            if project_path.is_none() {
+                tracing::error!("No file path available");
                 return Err("Could not get file path".to_string());
             }
 
-            let path = path.unwrap();
-            tracing::debug!("Path: {:?}", path);
+            let project_path = project_path.unwrap();
+
+            // Get parent folder
+            let parent_folder = project_path.parent().map(|p| p.to_path_buf());
+
+            if parent_folder.is_none() {
+                tracing::error!("Cannot get parent folder");
+                return Err("No parent folder".to_string());
+            }
+
+            let parent_folder = parent_folder.unwrap();
+
+            // Create requests and environment folders from parent folder
+            let requests_path = parent_folder.join(REQUEST_FOLDER_NAME);
+            let environments_path = parent_folder.join(ENVIRONMENT_FOLDER_NAME);
+
+            // Create the request/enviroment folder if they do not exist
+            if !requests_path.try_exists().unwrap_or_default() {
+                fs::create_dir(&requests_path).map_err(|e| e.to_string())?;
+            }
+
+            if !environments_path.try_exists().unwrap_or_default() {
+                fs::create_dir(&environments_path).map_err(|e| e.to_string())?;
+            }
+
+            // Build request files
+            for request in self.requests.iter() {
+                let filename = requests_path.clone().join(format!(
+                    "{}.{}",
+                    request.ref_id.clone(),
+                    EXTENSION_FOR_REQUEST
+                ));
+
+                let schema = request.to_request_schema();
+
+                let content = serde_yaml::to_string(&schema).map_err(|e| e.to_string())?;
+                let mut file = fs::File::create(filename).map_err(|e| e.to_string())?;
+                file.write_all(content.as_bytes())
+                    .map_err(|e| e.to_string())?;
+            }
+
+            // Build Environment files
+            for env in self.environments.iter() {
+                let filename = environments_path.clone().join(format!(
+                    "{}.{}",
+                    env.ref_id.clone(),
+                    EXTENSION_FOR_ENVIRONMENT
+                ));
+
+                let schema = env.to_environment_schema();
+
+                let content = serde_yaml::to_string(&schema).map_err(|e| e.to_string())?;
+                let mut file = fs::File::create(filename).map_err(|e| e.to_string())?;
+                file.write_all(content.as_bytes())
+                    .map_err(|e| e.to_string())?;
+            }
 
             // TODO: handle these errors better
             let content = serde_yaml::to_string(&project_root).map_err(|e| e.to_string())?;
-            let mut file = fs::File::create(path).map_err(|e| e.to_string())?;
+            let mut file = fs::File::create(project_path).map_err(|e| e.to_string())?;
             file.write_all(content.as_bytes())
                 .map_err(|e| e.to_string())?;
 
             return Ok(());
         }
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // File system operations not supported in browsers
@@ -107,7 +162,8 @@ impl Session {
                     .map_err(|e| e.to_string())?
                     .map(|e| e.unwrap().path())
                     .filter(|e| {
-                        e.is_file() && e.extension().unwrap_or_default() == EXTENSION_FOR_ENVIRONMENT
+                        e.is_file()
+                            && e.extension().unwrap_or_default() == EXTENSION_FOR_ENVIRONMENT
                     })
                     .collect::<Vec<PathBuf>>()
             } else {
@@ -115,7 +171,8 @@ impl Session {
             };
 
             // project file content
-            let project_root_content = fs::read_to_string(project_file).map_err(|e| e.to_string())?;
+            let project_root_content =
+                fs::read_to_string(project_file).map_err(|e| e.to_string())?;
 
             // request file contents
             let request_root_contents: Vec<(PathBuf, String)> = request_files
@@ -171,11 +228,13 @@ impl Session {
                     .collect(),
                 environment_root_schemas
                     .iter()
-                    .map(|e| Session::cast_environment_schema_to_session_type(e.0.clone(), e.1.clone()))
+                    .map(|e| {
+                        Session::cast_environment_schema_to_session_type(e.0.clone(), e.1.clone())
+                    })
                     .collect(),
             ));
         }
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // File system operations not supported in browsers
@@ -201,7 +260,7 @@ impl Session {
                 }
             }
         }
-        
+
         #[cfg(target_arch = "wasm32")]
         {
             // File dialogs don't work in browsers

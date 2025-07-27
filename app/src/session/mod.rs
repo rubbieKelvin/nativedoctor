@@ -37,6 +37,14 @@ impl Session {
         return envs;
     }
 
+    pub fn get_calls(&self) -> Vec<(String, Vec<String>)> {
+        return self
+            .calls
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+    }
+
     #[allow(unused)]
     pub fn template() -> Self {
         // post Request body
@@ -200,7 +208,6 @@ impl RequestDefination {
     // Convert tp request to save in schema
     pub fn to_request_schema(&self) -> RequestRootSchema {
         return RequestRootSchema {
-            ref_id: self.ref_id.clone(),
             method: self.method.clone(),
             name: self.name.clone(),
             url: self.url.clone(),
@@ -327,7 +334,6 @@ impl EnvironmentDefination {
     // Convert this struct to the schema we can save in file
     pub fn to_environment_schema(&self) -> EnvironmentRootSchema {
         return EnvironmentRootSchema {
-            ref_id: self.ref_id.clone(),
             name: self.name.clone(),
             description: "".to_string(),
             variables: self

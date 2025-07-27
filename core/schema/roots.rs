@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::schema::{
-    calls::CallSchema, env::EnvironmentVariableSchema, request_body::RequestBodySchema,
+    env::EnvironmentVariableSchema, request_body::RequestBodySchema,
     request_config::RequestConfigSchema,
 };
 
@@ -11,12 +11,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct ProjectRootSchema {
     pub project: ProjectDefinationSchema,
-    pub calls: CallSchema,
+    pub calls: HashMap<String, Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct RequestRootSchema {
-    pub ref_id: String,
+    // i'll use this as the file name instead
+    // pub ref_id: String,
     pub name: String,
     pub method: String,
     pub url: String,
@@ -34,7 +35,7 @@ pub struct RequestRootSchema {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct EnvironmentRootSchema {
-    pub ref_id: String,
+    // pub ref_id: String,
     pub name: String,
     pub description: String,
     pub variables: Vec<EnvironmentVariableSchema>,

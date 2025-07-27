@@ -3,7 +3,6 @@ use std::{collections::HashMap, path::PathBuf};
 use uuid::Uuid;
 
 use nativedoctor_core::schema::{
-    calls::CallSchema,
     project::ProjectDefinationSchema,
     roots::{EnvironmentRootSchema, ProjectRootSchema},
 };
@@ -11,13 +10,7 @@ use nativedoctor_core::schema::{
 use crate::session::{EnvironmentDefination, RequestDefination, Session, VariableValue};
 
 impl Session {
-    pub fn to_fs_schema(
-        &self,
-    ) -> (
-        ProjectRootSchema,
-        Vec<EnvironmentRootSchema>,
-        Vec<RequestRootSchema>,
-    ) {
+    pub fn to_fs_schema(&self) -> ProjectRootSchema {
         let project_root_schema = ProjectRootSchema {
             project: ProjectDefinationSchema {
                 name: self.name.clone(),
@@ -28,38 +21,29 @@ impl Session {
                     Some(self.version.clone())
                 },
             },
-            calls: CallSchema {
-                main: vec![],
-                overrides: HashMap::new(),
-            },
+            calls: self.calls.clone(),
         };
 
-        let environment_root_schemas: Vec<EnvironmentRootSchema> = self
-            .environments
-            .iter()
-            .map(|e| e.to_environment_schema())
-            .collect::<Vec<EnvironmentRootSchema>>();
-
-        let request_root_schemas: Vec<RequestRootSchema> = self
-            .requests
-            .iter()
-            .map(|r| r.to_request_schema())
-            .collect::<Vec<RequestRootSchema>>();
-
-        return (
-            project_root_schema,
-            environment_root_schemas,
-            request_root_schemas,
-        );
+        return project_root_schema;
     }
 
     pub fn cast_environment_schema_to_session_type(
         path: PathBuf,
         root: EnvironmentRootSchema,
     ) -> EnvironmentDefination {
+        let filename = if path.try_exists().unwrap_or_default() {
+            path.file_stem()
+                .map(|s| s.to_str())
+                .flatten()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| nanoid::nanoid!())
+        } else {
+            nanoid::nanoid!()
+        };
+
         return EnvironmentDefination {
             id: Uuid::new_v4(),
-            ref_id: root.ref_id,
+            ref_id: filename,
             name: root.name,
             path: Some(path),
             variables: root
@@ -85,10 +69,19 @@ impl Session {
         root: RequestRootSchema,
     ) -> RequestDefination {
         let config = root.config.unwrap_or_default();
+        let filename = if path.try_exists().unwrap_or_default() {
+            path.file_stem()
+                .map(|s| s.to_str())
+                .flatten()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| nanoid::nanoid!())
+        } else {
+            nanoid::nanoid!()
+        };
 
         return RequestDefination {
             id: Uuid::new_v4(),
-            ref_id: root.ref_id,
+            ref_id: filename,
             name: root.name,
             method: root.method,
             url: root.url,
@@ -104,12 +97,6 @@ impl Session {
         };
     }
 
-    pub fn cast_calls_schema_to_session_type(root: CallSchema) -> HashMap<String, Vec<String>> {
-        let mut calls = root.overrides.clone();
-        calls.insert(root.main.join("main"), root.main);
-        return calls;
-    }
-
     pub fn from_fs_schema(
         path: PathBuf,
         current_env: Option<String>,
@@ -123,7 +110,7 @@ impl Session {
             description: root.project.description,
             version: root.project.version.unwrap_or("0.0.1".to_string()),
             requests,
-            calls: Session::cast_calls_schema_to_session_type(root.calls),
+            calls: root.calls.clone(),
             current_env,
             environments: environments,
         };

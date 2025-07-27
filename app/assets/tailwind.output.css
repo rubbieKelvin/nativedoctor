@@ -26,8 +26,6 @@
     --text-xl--line-height: calc(1.75 / 1.25);
     --text-2xl: 20px;
     --text-2xl--line-height: calc(2 / 1.5);
-    --text-3xl: 28px;
-    --text-3xl--line-height: calc(2.25 / 1.875);
     --font-weight-semibold: 600;
     --radius-sm: 0.25rem;
     --radius-md: 0.375rem;
@@ -304,8 +302,11 @@
   .w-\[35\%\] {
     width: 35%;
   }
-  .w-\[300px\] {
-    width: 300px;
+  .w-\[360px\] {
+    width: 360px;
+  }
+  .w-\[400px\] {
+    width: 400px;
   }
   .w-full {
     width: 100%;

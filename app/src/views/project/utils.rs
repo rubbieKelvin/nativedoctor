@@ -4,14 +4,14 @@ use components_lib::{
 };
 use dioxus::prelude::*;
 use dioxus_free_icons::{
-    icons::ld_icons::{LdBox, LdHome, LdLayers},
+    icons::ld_icons::{LdBox, LdHome, LdLayers, LdNetwork},
     Icon,
 };
 
 use crate::{
     session::{EnvironmentDefination, RequestDefination, Session},
     views::project::{
-        tab_page_env::EnvPage, tab_page_project_info::ProjectInfoTab,
+        tab_page_call::CallPage, tab_page_env::EnvPage, tab_page_project_info::ProjectInfoTab,
         tab_page_request::RequestPage, welcome_tab::WelcomePage,
     },
 };
@@ -33,6 +33,7 @@ pub fn get_label_style_for_method<S: AsRef<str>>(method: S) -> LabelStyleVariant
 #[derive(PartialEq, Clone)]
 pub enum WorkspaceTab {
     Welcome,
+    Call(String),
     Project(String, String),
     Request(RequestDefination),
     Environment(EnvironmentDefination),
@@ -43,6 +44,7 @@ pub enum WorkspaceTab {
 pub enum WorkspaceTabId {
     Welcome,
     Project,
+    Call(String),
     Request(uuid::Uuid),
     Environment(uuid::Uuid),
 }
@@ -96,6 +98,16 @@ impl TabPayload for WorkspaceTab {
                     }
                 }
             },
+            WorkspaceTab::Call(call) => rsx! {
+                div { class: "flex gap-1 items-center",
+                    Icon { icon: LdNetwork, height: 12, width: 12 }
+                    Label {
+                        class: "flex-grow text-start",
+                        style: LabelStyleVariant::Mild,
+                        "{call}"
+                    }
+                }
+            },
         };
     }
 
@@ -113,6 +125,9 @@ impl TabPayload for WorkspaceTab {
             WorkspaceTab::Environment(env) => rsx! {
                 EnvPage {env: env.clone()}
             },
+            WorkspaceTab::Call(_) => rsx! {
+                CallPage {  }
+            },
         };
     }
 
@@ -122,6 +137,7 @@ impl TabPayload for WorkspaceTab {
             WorkspaceTab::Project(..) => WorkspaceTabId::Project,
             WorkspaceTab::Request(request) => WorkspaceTabId::Request(request.id),
             WorkspaceTab::Environment(env) => WorkspaceTabId::Environment(env.id),
+            WorkspaceTab::Call(call) => WorkspaceTabId::Call(call.clone()),
         };
     }
 }

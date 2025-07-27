@@ -2,6 +2,7 @@ use crate::components::WmDragArea;
 use crate::meta::recents::{RecentProject, RecentProjects};
 use crate::views::project::generic_add_button::GenericAddButtonForSideBar;
 use crate::views::project::keyboard_handler::KeypressListener;
+use crate::views::project::side_bar_call_list::CallSideBarList;
 use crate::views::project::side_bar_env_list::EnvSideBarList;
 use crate::PageScreen;
 use crate::{
@@ -27,8 +28,10 @@ pub use tab_page_env::EnvTableColumn;
 
 mod generic_add_button;
 mod keyboard_handler;
+mod side_bar_call_list;
 mod side_bar_env_list;
 mod side_bar_request_list;
+mod tab_page_call;
 mod tab_page_env;
 mod tab_page_project_info;
 mod tab_page_request;
@@ -60,24 +63,30 @@ pub fn ProjectView(session: Session) -> Element {
 
             tracing::info!("Saving to fs");
 
-            if let Ok(_) = session.save_to_fs().await {
-                tracing::info!("Saved to file system");
+            // if let Ok(_) = session.save_to_fs().await
+            match session.save_to_fs().await {
+                Ok(_) => {
+                    tracing::info!("Saved to file system");
 
-                let name = session.name.clone();
-                let a_env = session.current_env.clone();
+                    let name = session.name.clone();
+                    let a_env = session.current_env.clone();
 
-                match session
-                    .path
-                    .clone()
-                    .map(|e| e.to_string_lossy().to_string())
-                {
-                    Some(path) => {
-                        if let Ok(_) = recents.add(RecentProject::new(path, name, a_env)) {
-                            tracing::info!("Added project to recents");
+                    match session
+                        .path
+                        .clone()
+                        .map(|e| e.to_string_lossy().to_string())
+                    {
+                        Some(path) => {
+                            if let Ok(_) = recents.add(RecentProject::new(path, name, a_env)) {
+                                tracing::info!("Added project to recents");
+                            }
                         }
-                    }
-                    None => {}
-                };
+                        None => {}
+                    };
+                }
+                Err(e) => {
+                    tracing::error!(e);
+                }
             }
 
             is_saving.set(false);
@@ -166,7 +175,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
         Pane {
             style: PaneStyleVariant::Darker,
             border: Border::right(),
-            class: "w-[300px] h-full flex flex-col relative",
+            class: "w-[360px] h-full flex flex-col relative",
 
             WmDragArea { class: "h-8 w-full items-center absolute",
                 // name and version
@@ -177,9 +186,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                         size: ButtonSizeVariant::Icon,
                         style: ButtonStyleVariant::Ghost,
                         class: "text-[#5e5e5e] !p-0.5",
-                        onclick: move |_| {
-                            close_project()
-                        },
+                        onclick: move |_| { close_project() },
                         Icon { icon: LdX, width: 12, height: 12 }
                     }
                 }
@@ -253,7 +260,7 @@ fn SideBar(tabs: Signal<TabSet<WorkspaceTab>>) -> Element {
                         RequestList { tabs }
                     },
                     SideBarList::Calls => rsx! {
-                        div { "Calls" }
+                        CallSideBarList { tabs }
                     },
                     SideBarList::Environments => rsx! {
                         EnvSideBarList { tabs }
