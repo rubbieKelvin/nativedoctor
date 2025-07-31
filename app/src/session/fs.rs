@@ -5,6 +5,7 @@ use nativedoctor_core::{
     ENVIRONMENT_FOLDER_NAME, EXTENSION_FOR_ENVIRONMENT, EXTENSION_FOR_PROJECT,
     EXTENSION_FOR_REQUEST, REQUEST_FOLDER_NAME,
 };
+
 #[cfg(not(target_arch = "wasm32"))]
 use rfd::AsyncFileDialog;
 use std::fs;
@@ -12,7 +13,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::meta::recents::RecentProjects;
-use crate::session::{RequestDefination, Session};
+use crate::session::Session;
 
 impl Session {
     /// gets the path where the project was or should be stored

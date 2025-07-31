@@ -15,6 +15,7 @@ use crate::views::project::EnvTableColumn;
 mod casting;
 mod fs;
 
+
 #[derive(PartialEq, Clone, Default)]
 pub(crate) struct Session {
     pub path: Option<PathBuf>,
@@ -25,6 +26,7 @@ pub(crate) struct Session {
     pub calls: HashMap<String, Vec<String>>,
     pub current_env: Option<String>,
     pub environments: Vec<EnvironmentDefination>,
+    pub project_definition_updated: bool
 }
 
 impl Session {
@@ -45,7 +47,6 @@ impl Session {
             .collect();
     }
 
-    #[allow(unused)]
     pub fn template() -> Self {
         // post Request body
         let mut post_mapping = Mapping::new();
@@ -119,6 +120,7 @@ impl Session {
                         ("source".to_string(), "nativedoctor".to_string()),
                         ("page".to_string(), "1".to_string())
                         ],
+                    updated: true,
                     ..Default::default()
                 },
                 RequestDefination {
@@ -134,6 +136,7 @@ impl Session {
                     body: Some(RequestBodySchema::Json {
                         content: Value::Mapping(post_mapping)
                     }),
+                    updated: true,
                     ..Default::default()
                 },
             ],
@@ -146,6 +149,7 @@ impl Session {
                     ]
                 ),
             ]),
+            project_definition_updated: true,
             ..Default::default()
         };
     }
@@ -195,6 +199,7 @@ pub(crate) struct RequestDefination {
     pub body: Option<RequestBodySchema>,
     pub class: String,
     pub path: Option<PathBuf>,
+    pub updated: bool
 }
 
 impl RequestDefination {
@@ -241,6 +246,7 @@ pub(crate) struct EnvironmentDefination {
     pub name: String,
     pub path: Option<PathBuf>,
     pub variables: HashMap<String, VariableValue>,
+    pub updated: bool
 }
 
 impl EnvironmentDefination {
@@ -253,6 +259,7 @@ impl EnvironmentDefination {
             name: name.to_string(),
             path: None,
             variables: HashMap::new(),
+            ..Default::default()
         };
     }
 

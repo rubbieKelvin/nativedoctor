@@ -61,6 +61,7 @@ impl Session {
                     )
                 })
                 .collect::<HashMap<String, VariableValue>>(),
+            ..Default::default()
         };
     }
 
@@ -94,6 +95,7 @@ impl Session {
             body: root.body,
             class: config.class.unwrap_or("".to_string()),
             path: Some(path),
+            ..Default::default()
         };
     }
 
@@ -113,6 +115,7 @@ impl Session {
             calls: root.calls.clone(),
             current_env,
             environments: environments,
+            ..Default::default()
         };
     }
 }
