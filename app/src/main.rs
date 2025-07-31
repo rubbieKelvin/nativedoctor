@@ -1,78 +1,58 @@
-use dioxus::prelude::*;
-use crate::{meta::recents::RecentProjects, session::Session};
+use eframe::egui::{self, StrokeKind};
+use egui::{Color32, Pos2, Stroke};
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
+struct CanvasApp {
+    points: Vec<Pos2>, // Store points for drawing
+}
 
-mod components;
-mod session;
-mod views;
-mod meta;
-
-fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        use dioxus::desktop::wry::dpi::Size;
-        use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
-
-        let mut window_builder = WindowBuilder::new()
-            .with_inner_size(Size::Logical(LogicalSize::new(1200.0, 800.0)))
-            .with_resizable(true)
-            .with_focused(true)
-            .with_visible(true);
-
-        #[cfg(debug_assertions)]
-        {
-            window_builder = window_builder.with_always_on_top(true);
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            use dioxus::desktop::tao::platform::macos::WindowBuilderExtMacOS;
-
-            window_builder = window_builder
-                .with_titlebar_transparent(true)
-                .with_title_hidden(true)
-                .with_fullsize_content_view(true);
-        }
-
-        dioxus::LaunchBuilder::desktop()
-            .with_cfg(Config::new().with_window(window_builder))
-            .launch(App);
+impl CanvasApp {
+    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        Self { points: Vec::new() }
     }
-
-    #[cfg(target_arch = "wasm32")]
-    dioxus::LaunchBuilder::web().launch(App);
 }
 
-#[derive(Clone, PartialEq)]
-pub(crate) enum PageScreen {
-    StartScreen,
-    ProjectScreen(Session),
-}
+impl eframe::App for CanvasApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // Define the canvas area
+            let canvas_size = egui::vec2(400.0, 300.0);
+            let (response, painter) = ui.allocate_painter(canvas_size, egui::Sense::drag());
 
-#[component]
-fn App() -> Element {
-    // State
-    use_context_provider(|| Signal::new(RecentProjects::init()));
-    let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
+            // Get the canvas rectangle
+            let canvas_rect = response.rect;
 
-    // Ui element
-    return rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+            // Draw a white background for the canvas
+            painter.rect_filled(canvas_rect, 0.0, Color32::WHITE);
 
-        match screen_state() {
-            PageScreen::StartScreen => rsx!{
-                views::start::StartScreenView {  }
-            },
-            PageScreen::ProjectScreen(session) => rsx!{
-                views::project::ProjectView {
-                    session
+            // Handle mouse input to draw points
+            if response.dragged() {
+                if let Some(pos) = response.interact_pointer_pos() {
+                    self.points.push(pos - canvas_rect.min.to_vec2()); // Convert to Vec2 and adjust
                 }
             }
-        }
-    };
+
+            // Draw all stored points
+            for &point in &self.points {
+                let abs_point = point + canvas_rect.min.to_vec2();
+                painter.circle_filled(abs_point, 2.0, Color32::BLACK);
+            }
+
+            // Optional: Draw a border around the canvas
+            painter.rect_stroke(
+                canvas_rect,
+                0.0,                              // Rounding
+                Stroke::new(1.0, Color32::BLACK), // Stroke width and color
+                StrokeKind::Middle,               // Add StrokeKind
+            );
+        });
+    }
+}
+
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Egui Canvas",
+        options,
+        Box::new(|cc| Ok(Box::new(CanvasApp::new(cc)))),
+    )
 }
