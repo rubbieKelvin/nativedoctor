@@ -7,6 +7,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod models;
+#[deprecated]
 pub mod schema;
 #[cfg(test)]
 mod tests;
@@ -15,7 +17,7 @@ pub const REQUEST_FOLDER_NAME: &str = "requests";
 pub const ENVIRONMENT_FOLDER_NAME: &str = "environments";
 pub const EXTENSION_FOR_REQUEST: &str = "nd";
 pub const EXTENSION_FOR_ENVIRONMENT: &str = "nd-env";
-pub const EXTENSION_FOR_PROJECT: &str = "nd-project";
+pub const EXTENSION_FOR_PROJECT: &str = "nativedoctor";
 
 pub fn create_project_template(name: &str) -> (ProjectRootSchema, Vec<RequestRootSchema>) {
     let name = if name.len() == 0 {
