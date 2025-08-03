@@ -3,7 +3,7 @@
 @source "../../components/src/**/*.{rs,css}";
 
 @theme {
-  --text-xs: 8px;
+  /* --text-xs: 8px;
   --text-sm: 10px;
   --text-base: 12px;
   --text-lg: 14px;
@@ -18,7 +18,7 @@
   --color-info: #778da9;
   --color-bg-light: #e0e1dd;
   --color-item-hover-bg: #1a1a1a;
-  --color-text-secondary: #999999;
+  --color-text-secondary: #999999; */
 }
 
 :root {

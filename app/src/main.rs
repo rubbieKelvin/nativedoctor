@@ -1,14 +1,10 @@
 use dioxus::prelude::*;
-use crate::{meta::recents::RecentProjects, session::Session};
+
+mod session;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.output.css");
-
-mod components;
-mod session;
-mod views;
-mod meta;
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -46,33 +42,13 @@ fn main() {
     dioxus::LaunchBuilder::web().launch(App);
 }
 
-#[derive(Clone, PartialEq)]
-pub(crate) enum PageScreen {
-    StartScreen,
-    ProjectScreen(Session),
-}
 
 #[component]
 fn App() -> Element {
-    // State
-    use_context_provider(|| Signal::new(RecentProjects::init()));
-    let screen_state = use_context_provider(|| Signal::new(PageScreen::StartScreen));
-
     // Ui element
     return rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
-
-        match screen_state() {
-            PageScreen::StartScreen => rsx!{
-                views::start::StartScreenView {  }
-            },
-            PageScreen::ProjectScreen(session) => rsx!{
-                views::project::ProjectView {
-                    session
-                }
-            }
-        }
     };
 }

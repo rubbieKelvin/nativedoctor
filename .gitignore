@@ -5,3 +5,5 @@ example/
 node_modules
 src-tauri
 recents.json
+*.gitignore.*
+.old/

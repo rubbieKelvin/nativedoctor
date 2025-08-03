@@ -14,17 +14,17 @@
     --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
-    --text-xs: 8px;
+    --text-xs: 0.75rem;
     --text-xs--line-height: calc(1 / 0.75);
-    --text-sm: 10px;
+    --text-sm: 0.875rem;
     --text-sm--line-height: calc(1.25 / 0.875);
-    --text-base: 12px;
+    --text-base: 1rem;
     --text-base--line-height: calc(1.5 / 1);
-    --text-lg: 14px;
+    --text-lg: 1.125rem;
     --text-lg--line-height: calc(1.75 / 1.125);
-    --text-xl: 16px;
+    --text-xl: 1.25rem;
     --text-xl--line-height: calc(1.75 / 1.25);
-    --text-2xl: 20px;
+    --text-2xl: 1.5rem;
     --text-2xl--line-height: calc(2 / 1.5);
     --font-weight-semibold: 600;
     --radius-sm: 0.25rem;
@@ -33,7 +33,6 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --color-bg-secondary: #090909;
   }
 }
 @layer base {
@@ -305,9 +304,6 @@
   .w-\[360px\] {
     width: 360px;
   }
-  .w-\[400px\] {
-    width: 400px;
-  }
   .w-full {
     width: 100%;
   }
@@ -462,9 +458,6 @@
   }
   .bg-\[\#c50004\] {
     background-color: #c50004;
-  }
-  .bg-bg-secondary {
-    background-color: var(--color-bg-secondary);
   }
   .bg-black\/40 {
     background-color: color-mix(in srgb, #000 40%, transparent);
