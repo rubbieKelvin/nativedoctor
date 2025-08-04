@@ -1,6 +1,6 @@
 [workspace]
 resolver = '2'
-members = ["core", "app", "components"]
+members = ["crates/app", "crates/models"]
 
 [profile.wasm-dev]
 inherits = "dev"
