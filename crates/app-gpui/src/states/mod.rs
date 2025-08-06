@@ -1,4 +1,4 @@
-use gpui::{App, Entity, Global};
+use gpui::{App, AppContext, Entity, Global};
 
 #[derive(Default, Clone, Copy)]
 pub struct AppState {
@@ -30,7 +30,7 @@ impl AppState {
     pub fn increment_counter(cx: &mut App) {
         let state = Self::global(cx);
         state.update(cx, |state, cx| {
-            state.counter += 1;
+            // state.counter += 1;
             cx.notify(); // Important: notify observers of changes
         });
     }
@@ -38,7 +38,7 @@ impl AppState {
     pub fn decrement_counter(cx: &mut App) {
         let state = Self::global(cx);
         state.update(cx, |state, cx| {
-            state.counter -= 1;
+            // state.counter -= 1;
             cx.notify();
         });
     }
@@ -46,7 +46,7 @@ impl AppState {
     pub fn reset_counter(cx: &mut App) {
         let state = Self::global(cx);
         state.update(cx, |state, cx| {
-            state.counter = 0;
+            // state.counter = 0;
             cx.notify();
         });
     }
