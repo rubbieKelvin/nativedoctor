@@ -26,7 +26,21 @@ impl NativeDoctor {
 impl eframe::App for NativeDoctor {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Menu bar
-        self.menubar.show(ctx, &mut self.state, &mut self.runtime);
+        egui::TopBottomPanel::top("menu_bar")
+            .frame(
+                egui::Frame::default()
+                    .inner_margin(egui::Margin {
+                        left: 80,
+                        top: 8,
+                        bottom: 8,
+                        ..Default::default()
+                    })
+                    .fill(ctx.style().visuals.panel_fill),
+            )
+            .show(ctx, |ui| {
+                self.menubar.show(ui, &mut self.state, &mut self.runtime);
+            });
+
         self.pagemanager
             .show(ctx, &mut self.state, &mut self.runtime);
     }

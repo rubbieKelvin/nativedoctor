@@ -1,6 +1,20 @@
-use crate::{commands::Command, pages::Page};
+use crate::{
+    commands::Command,
+    components::{self, Component},
+    pages::Page,
+};
 
-pub struct RequestPage;
+pub struct RequestPage {
+    panel: components::requestpanel::RequestPanel,
+}
+
+impl RequestPage {
+    pub fn new() -> Self {
+        return RequestPage {
+            panel: components::requestpanel::RequestPanel::new(),
+        };
+    }
+}
 
 impl Page for RequestPage {
     fn show(
@@ -10,7 +24,7 @@ impl Page for RequestPage {
         runtime: &mut crate::runtime::RuntimeData,
     ) -> Option<Command> {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Hello World!");
+            self.panel.show(ui, state, runtime);
         });
         return None;
     }

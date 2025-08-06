@@ -28,7 +28,7 @@ pub struct PageManager {
 impl PageManager {
     pub fn new() -> Self {
         let mut pages: HashMap<PageType, Box<dyn Page>> = HashMap::new();
-        pages.insert(PageType::RequestPage, Box::new(request::RequestPage {}));
+        pages.insert(PageType::RequestPage, Box::new(request::RequestPage::new()));
 
         return PageManager {
             current: PageType::default(),

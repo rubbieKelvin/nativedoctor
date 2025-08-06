@@ -288,6 +288,7 @@ dependencies = [
  "log",
  "nd-core",
  "serde 1.0.219",
+ "strum 0.27.2",
 ]
 
 [[package]]
