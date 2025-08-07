@@ -268,7 +268,10 @@ dependencies = [
 name = "app-gpui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "env_logger",
  "gpui",
+ "log",
  "nd-core",
 ]
 

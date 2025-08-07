@@ -4,5 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.98"
+env_logger = "0.11.8"
 gpui = { git = "https://github.com/rubbieKelvin/zed" }
+log = "0.4.27"
 nd-core = { path = "../nd-core" }
+
+[package.metadata.bundle]
+name = "Native doctor"
+identifier = "com.rubbietheone.nativedoctor"
+version = "0.1.0"

@@ -1,37 +1,52 @@
-use gpui::{App, Bounds, Render, TitlebarOptions, WindowBounds, WindowOptions, div, px, size};
+use gpui::{
+    App, AppContext, Bounds, Context, Entity, ParentElement, Render, Styled, TitlebarOptions,
+    Window, WindowBounds, WindowHandle, WindowOptions, div, px, rgb, size,
+};
 use nd_core::constants;
 
-pub struct NativeDoctorApp;
+use crate::{states::ApplicationState, views::ViewManager};
 
-impl NativeDoctorApp {
-    pub fn new() -> Self {
-        return NativeDoctorApp {};
-    }
+pub struct NativeDoctor {
+    view_manager: ViewManager,
+    state: Entity<ApplicationState>,
+}
 
-    pub fn new_window_option(cx: &App) -> WindowOptions {
-        return WindowOptions {
+impl NativeDoctor {
+    pub fn new(cx: &mut App) -> anyhow::Result<WindowHandle<Self>> {
+        let bounds = WindowBounds::Windowed(Bounds::centered(None, size(px(1200.), px(800.0)), cx));
+        let option = WindowOptions {
             app_id: Some(constants::APPLICATION_ID.to_string()),
             titlebar: Some(TitlebarOptions {
                 title: Some(constants::APPLICATION_NAME.into()),
                 appears_transparent: true,
                 ..Default::default()
             }),
-            window_bounds: Some(WindowBounds::Windowed(Bounds::centered(
-                None,
-                size(px(500.), px(500.0)),
-                cx,
-            ))),
+            window_bounds: Some(bounds),
             ..Default::default()
+        };
+
+        return cx.open_window(option, |window, cx| {
+            cx.new(|cx| NativeDoctor::new_window(window, cx))
+        });
+    }
+
+    fn new_window(_window: &mut Window, cx: &mut Context<Self>) -> Self {
+        return NativeDoctor {
+            state: cx.new(|cx| ApplicationState::new(cx)),
+            view_manager: ViewManager::new(),
         };
     }
 }
 
-impl Render for NativeDoctorApp {
+impl Render for NativeDoctor {
     fn render(
         &mut self,
-        window: &mut gpui::Window,
+        _window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        return div();
+        return div()
+            .size_full()
+            .bg(rgb(0x191919))
+            .child(self.view_manager.render(cx));
     }
 }

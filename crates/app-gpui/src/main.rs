@@ -1,12 +1,15 @@
-use gpui::{App, AppContext, Application};
+use gpui::{App, Application};
+
+use crate::app::NativeDoctor;
 
 mod app;
 mod menu;
+mod states;
+mod views;
 
 fn main() {
-    let app = Application::new();
-
-    app.run(|cx: &mut App| {
+    env_logger::init();
+    Application::new().run(|cx: &mut App| {
         // initialise menu bar
         menu::init(cx);
 
@@ -19,11 +22,7 @@ fn main() {
         .detach();
 
         // Open window
-        cx.open_window(app::NativeDoctorApp::new_window_option(cx), |_, cx| {
-            cx.new(|_| app::NativeDoctorApp::new())
-        })
-        .unwrap();
-
+        NativeDoctor::new(cx).unwrap();
         cx.activate(true);
     });
 }
