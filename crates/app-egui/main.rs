@@ -1,3 +1,4 @@
+// Hide terminal on windows
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use eframe::egui;
@@ -21,9 +22,9 @@ fn main() -> Result<(), eframe::Error> {
             .with_title(APPLICATION_NAME.to_string())
             .with_app_id(APPLICATION_ID.to_string())
             .with_min_inner_size((800.0, 600.0))
-            .with_fullsize_content_view(true)
-            .with_titlebar_shown(false)
-            .with_title_shown(false)
+            // .with_fullsize_content_view(true)
+            // .with_titlebar_shown(false)
+            // .with_title_shown(false)
             .with_icon(load_icon())
             .with_active(true),
         persist_window: true,

@@ -5,13 +5,13 @@ use crate::{
 };
 
 pub struct RequestPage {
-    panel: components::requestpanel::RequestPanel,
+    panel: components::requestpanel::RequestDashboard,
 }
 
 impl RequestPage {
     pub fn new() -> Self {
         return RequestPage {
-            panel: components::requestpanel::RequestPanel::new(),
+            panel: components::requestpanel::RequestDashboard::new(),
         };
     }
 }
