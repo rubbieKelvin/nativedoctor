@@ -1,9 +1,5 @@
-use gpui::{App, BorrowAppContext, Menu, MenuItem, actions};
-
-use crate::{
-    constants::APP_NAME,
-    states::{AppState, GlobalAppState},
-};
+use gpui::{App, Menu, MenuItem, actions};
+use nd_core::constants;
 
 // Define all actions
 actions!(
@@ -24,7 +20,7 @@ pub fn init(cx: &mut App) {
     cx.set_menus(vec![
         // App menu
         Menu {
-            name: APP_NAME.into(),
+            name: constants::APPLICATION_NAME.into(),
             items: vec![
                 MenuItem::action("About My App", About),
                 MenuItem::separator(),
@@ -109,15 +105,7 @@ fn save_document(_: &SaveDocument, cx: &mut App) {
 }
 
 fn increment_counter(_: &IncrementCounter, cx: &mut App) {
-    // let state = cx.global_mut::<GlobalAppState>();
-    let state = AppState::global_mut(cx);
-    println!("Incrementing counter...");
-
-    state.count += 1;
-    // cx.notify(entity_id);
-    // cx.update_global(|state: &mut AppState, cx: &mut App| {
-    //     sta
-    // });
+    println!("Stuff")
 }
 
 fn decrement_counter(_: &DecrementCounter, cx: &mut App) {
