@@ -1,15 +1,9 @@
-use std::collections::HashMap;
-
-use gpui::{Context, IntoElement, Styled, div, rgb};
+use gpui::{Context, IntoElement, Window};
 
 mod request;
 
 pub enum ViewType {
     Request,
-}
-
-pub trait View {
-    fn render<T>(&mut self, cx: &Context<T>) -> impl IntoElement;
 }
 
 pub struct ViewManager {
@@ -23,7 +17,9 @@ impl ViewManager {
         };
     }
 
-    pub fn render<T>(&mut self, cx: &mut Context<T>) -> impl IntoElement {
-        return div().bg(rgb(0xffffff)).size_full();
+    pub fn render<T>(&mut self, window: &mut Window, cx: &mut Context<T>) -> impl IntoElement {
+        return match self.current {
+            ViewType::Request => request::render(window, cx),
+        };
     }
 }

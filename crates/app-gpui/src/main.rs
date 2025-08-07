@@ -3,6 +3,7 @@ use gpui::{App, Application};
 use crate::app::NativeDoctor;
 
 mod app;
+mod components;
 mod menu;
 mod states;
 mod views;

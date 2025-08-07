@@ -1,5 +1,5 @@
 use gpui::{
-    App, AppContext, Bounds, Context, Entity, ParentElement, Render, Styled, TitlebarOptions,
+    App, AppContext, Bounds, Context, Entity, ParentElement, Render, Size, Styled, TitlebarOptions,
     Window, WindowBounds, WindowHandle, WindowOptions, div, px, rgb, size,
 };
 use nd_core::constants;
@@ -22,6 +22,7 @@ impl NativeDoctor {
                 ..Default::default()
             }),
             window_bounds: Some(bounds),
+            window_min_size: Some(Size::new(800.0.into(), 700.0.into())),
             ..Default::default()
         };
 
@@ -41,12 +42,12 @@ impl NativeDoctor {
 impl Render for NativeDoctor {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
         return div()
             .size_full()
             .bg(rgb(0x191919))
-            .child(self.view_manager.render(cx));
+            .child(self.view_manager.render(window, cx));
     }
 }

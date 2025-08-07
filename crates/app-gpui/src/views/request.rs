@@ -1,11 +1,7 @@
-use gpui::{div, IntoElement};
+use gpui::{Context, IntoElement, Window};
 
-use crate::views::View;
+use crate::components::requestboard;
 
-pub struct RequestView;
-
-impl View for RequestView {
-    fn render<T>(&mut self, cx: &gpui::Context<T>) -> impl IntoElement {
-        return div();
-    }
+pub fn render<T>(window: &mut Window, cx: &mut Context<T>) -> impl IntoElement {
+    return requestboard::render(window, cx);
 }
