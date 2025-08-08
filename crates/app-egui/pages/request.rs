@@ -23,9 +23,15 @@ impl Page for RequestPage {
         state: &mut crate::state::ApplicationState,
         runtime: &mut crate::runtime::RuntimeData,
     ) -> Option<Command> {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            self.panel.show(ui, state, runtime);
-        });
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::default()
+                    .inner_margin(egui::Margin::symmetric(16, 12))
+                    .fill(ctx.style().visuals.panel_fill)
+            )
+            .show(ctx, |ui| {
+                self.panel.show(ui, state, runtime);
+            });
         return None;
     }
 }

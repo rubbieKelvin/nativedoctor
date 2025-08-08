@@ -1,13 +1,13 @@
 use gpui::{
     App, AppContext, Bounds, Context, Entity, ParentElement, Render, Size, Styled, TitlebarOptions,
-    Window, WindowBounds, WindowHandle, WindowOptions, div, px, rgb, size,
+    Window, WindowBounds, WindowHandle, WindowOptions, div, px, size,
 };
 use nd_core::constants;
 
-use crate::{states::ApplicationState, views::ViewManager};
+use crate::{components, runtime::RuntimeData, states::ApplicationState};
 
 pub struct NativeDoctor {
-    view_manager: ViewManager,
+    runtime: Entity<RuntimeData>,
     state: Entity<ApplicationState>,
 }
 
@@ -34,7 +34,7 @@ impl NativeDoctor {
     fn new_window(_window: &mut Window, cx: &mut Context<Self>) -> Self {
         return NativeDoctor {
             state: cx.new(|cx| ApplicationState::new(cx)),
-            view_manager: ViewManager::new(),
+            runtime: cx.new(|_cx| RuntimeData::default()),
         };
     }
 }
@@ -45,9 +45,21 @@ impl Render for NativeDoctor {
         window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
+        let state = self.state.read(cx);
+        let vm = state.view.clone();
+        let theme = &state.theme;
+
         return div()
+            .flex()
+            .flex_col()
+            .bg(theme.background)
             .size_full()
-            .bg(rgb(0x191919))
-            .child(self.view_manager.render(window, cx));
+            .child(components::header::render(
+                window,
+                cx,
+                self.state.clone(),
+                self.runtime.clone(),
+            ))
+            .child(vm.render(window, cx, self.state.clone(), self.runtime.clone()));
     }
 }

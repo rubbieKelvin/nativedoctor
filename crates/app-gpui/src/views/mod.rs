@@ -1,11 +1,15 @@
-use gpui::{Context, IntoElement, Window};
+use gpui::{Context, Entity, IntoElement, Window};
+
+use crate::{app::NativeDoctor, runtime::RuntimeData, states::ApplicationState};
 
 mod request;
 
+#[derive(Clone)]
 pub enum ViewType {
     Request,
 }
 
+#[derive(Clone)]
 pub struct ViewManager {
     current: ViewType,
 }
@@ -17,9 +21,15 @@ impl ViewManager {
         };
     }
 
-    pub fn render<T>(&mut self, window: &mut Window, cx: &mut Context<T>) -> impl IntoElement {
+    pub fn render(
+        &self,
+        window: &mut Window,
+        cx: &mut Context<NativeDoctor>,
+        state: Entity<ApplicationState>,
+        runtime: Entity<RuntimeData>,
+    ) -> impl IntoElement {
         return match self.current {
-            ViewType::Request => request::render(window, cx),
+            ViewType::Request => request::render(window, cx, state, runtime),
         };
     }
 }

@@ -1,7 +1,14 @@
-use gpui::{Context, IntoElement, Window};
+use gpui::{Context, Entity, IntoElement, Window};
 
-use crate::components::requestboard;
+use crate::{
+    app::NativeDoctor, components::requestboard, runtime::RuntimeData, states::ApplicationState,
+};
 
-pub fn render<T>(window: &mut Window, cx: &mut Context<T>) -> impl IntoElement {
-    return requestboard::render(window, cx);
+pub fn render(
+    window: &mut Window,
+    cx: &mut Context<NativeDoctor>,
+    state: Entity<ApplicationState>,
+    runtime: Entity<RuntimeData>,
+) -> impl IntoElement {
+    return requestboard::render(window, cx, state, runtime);
 }

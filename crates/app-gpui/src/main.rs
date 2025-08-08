@@ -7,6 +7,7 @@ mod components;
 mod menu;
 mod states;
 mod views;
+mod runtime;
 
 fn main() {
     env_logger::init();

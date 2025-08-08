@@ -21,10 +21,18 @@ impl NativeDoctor {
         // for e.g. egui::PaintCallback.
         Self::default()
     }
+
+    fn setup_style(&mut self, ctx: &egui::Context) {
+        ctx.style_mut(|style| {
+            style.spacing.item_spacing = (8., 8.).into();
+        });
+    }
 }
 
 impl eframe::App for NativeDoctor {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.setup_style(ctx);
+
         // Menu bar
         // egui::TopBottomPanel::top("menu_bar")
         //     .frame(

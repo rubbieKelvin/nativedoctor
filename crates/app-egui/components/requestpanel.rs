@@ -15,6 +15,15 @@ enum RequestTab {
 }
 
 #[derive(strum::Display, strum::EnumIter, Default, Clone, PartialEq)]
+enum ResponseTab {
+    #[default]
+    Body,
+    Headers,
+    Cookies,
+    ScriptOutput,
+}
+
+#[derive(strum::Display, strum::EnumIter, Default, Clone, PartialEq)]
 enum Method {
     #[default]
     Get,
@@ -30,6 +39,7 @@ pub struct RequestDashboard {
     name: String,
     method: Method,
     request_tab: RequestTab,
+    response_tab: ResponseTab,
 }
 
 impl RequestDashboard {
@@ -38,6 +48,7 @@ impl RequestDashboard {
             name: String::new(),
             method: Method::default(),
             request_tab: RequestTab::default(),
+            response_tab: ResponseTab::default(),
         };
     }
 }
@@ -52,7 +63,7 @@ impl RequestDashboard {
         return ui.horizontal(|ui| {
             egui::ComboBox::from_id_salt("method")
                 .selected_text(format!("{}", self.method))
-                .width(90.0)
+                .width(80.0)
                 .show_ui(ui, |ui| {
                     for method in Method::iter() {
                         ui.selectable_value(&mut self.method, method.clone(), method.to_string());
@@ -61,18 +72,61 @@ impl RequestDashboard {
 
             let url_response = ui.add(
                 egui::TextEdit::singleline(&mut self.name)
+                    .interactive(true)
+                    .id_salt("url_input")
                     .hint_text("Enter url")
-                    .min_size((90.0, 20.0).into())
                     .desired_width(ui.available_width() - 105.0),
             );
 
-            let click_button = egui::Button::new("Send").min_size((90.0, 20.0).into());
-            
+            if url_response.clicked() {
+                url_response.request_focus();
+            }
+
+            let click_button = egui::Button::new("Send").min_size((60., 0.).into());
+
             if ui.add(click_button).clicked()
                 || (url_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)))
             {
                 println!("Sending {}", self.name);
             };
+        });
+    }
+
+    fn show_request_input_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        state: &mut state::ApplicationState,
+        runtime: &mut runtime::RuntimeData,
+    ) -> egui::InnerResponse<()> {
+        return ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                for tab in RequestTab::iter() {
+                    ui.selectable_value(&mut self.request_tab, tab.clone(), tab.to_string());
+                }
+            });
+
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                ui.label(self.request_tab.to_string());
+            });
+        });
+    }
+
+    fn show_response_output_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        state: &mut state::ApplicationState,
+        runtime: &mut runtime::RuntimeData,
+    ) -> egui::InnerResponse<()> {
+        return ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                for tab in ResponseTab::iter() {
+                    ui.selectable_value(&mut self.response_tab, tab.clone(), tab.to_string());
+                }
+            });
+
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                ui.label(self.response_tab.to_string());
+            });
         });
     }
 }
@@ -85,50 +139,14 @@ impl Component for RequestDashboard {
         state: &mut state::ApplicationState,
         runtime: &mut runtime::RuntimeData,
     ) -> Self::Response {
-        let visuals = ui.style().visuals.clone();
-
         return ui.vertical(|ui| {
-            // Select method, show url and show button
             self.show_top_input(ui, state, runtime);
-            ui.add_space(5f32);
 
-            // Request response panels
-            ui.with_layout(Layout::left_to_right(egui::Align::LEFT), |ui| {
-                // request panel
-                let spacing = 5f32;
-                let request_panel_frame =
-                    egui::Frame::default().stroke(visuals.widgets.noninteractive.bg_stroke);
+            ui.spacing();
+            self.show_request_input_panel(ui, state, runtime);
 
-                request_panel_frame.show(ui, |ui| {
-                    ui.add_space(spacing);
-                    ui.vertical(|ui| {
-                        // panel tab
-                        ui.add_space(spacing);
-                        ui.horizontal(|ui| {
-                            for tab in RequestTab::iter() {
-                                ui.selectable_value(
-                                    &mut self.request_tab,
-                                    tab.clone(),
-                                    tab.to_string(),
-                                );
-                            }
-                        });
-
-                        // show request panel input
-                        RequestInputPanel {
-                            tab: self.request_tab.clone(),
-                        }
-                        .show(ui, state, runtime);
-                        ui.add_space(spacing);
-                    });
-                    ui.add_space(spacing);
-                });
-
-                ui.vertical(|ui| {
-                    ui.label("The response will show here");
-                    ui.label("The response will show here");
-                })
-            });
+            ui.spacing();
+            self.show_response_output_panel(ui, state, runtime);
         });
     }
 }
