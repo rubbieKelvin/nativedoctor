@@ -1,7 +1,13 @@
 [workspace]
 resolver = '2'
-members = ["crates/app-egui", "crates/app-gpui", "crates/models", "crates/nd-core"]
-default-members = ["crates/app-egui"]
+members = [
+    "crates/app-ratatui",
+    "crates/app-egui",
+    "crates/app-gpui",
+    "crates/models",
+    "crates/nd-core",
+]
+default-members = ["crates/app-ratatui"]
 
 [profile.wasm-dev]
 inherits = "dev"
