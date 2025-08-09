@@ -321,9 +321,11 @@ dependencies = [
 name = "app-ratatui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "crossterm 0.29.0",
  "ratatui",
  "serde",
+ "tui-input",
 ]
 
 [[package]]
@@ -8023,6 +8025,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 dependencies = [
  "core_maths",
+]
+
+[[package]]
+name = "tui-input"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "911e93158bf80bbc94bad533b2b16e3d711e1132d69a6a6980c3920a63422c19"
+dependencies = [
+ "ratatui",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]
