@@ -2,8 +2,6 @@
 resolver = '2'
 members = [
     "crates/app-ratatui",
-    "crates/app-egui",
-    "crates/app-gpui",
     "crates/models",
     "crates/nd-core",
 ]

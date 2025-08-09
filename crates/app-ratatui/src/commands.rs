@@ -1,5 +1,10 @@
-/// app wide commands. when a ui want's to request an app wide command,
-/// eg: when we click a button we can send a command out of the ui.
+#[derive(Debug, Clone)]
+pub enum ActiveInput {
+    Url,
+}
+
 pub enum Command {
     Quit,
+    StartEditing(ActiveInput),
+    StopEditing,
 }

@@ -1,10 +1,13 @@
 use ratatui::{
     Frame,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
+    style::{Color, Modifier, Style, Stylize},
+    widgets::{Paragraph, StatefulWidget, Widget},
 };
 
-use crate::app::request::{SingleRequestApp, SingleRequestAppState};
+use crate::{
+    app::request::{InputState, SingleRequestApp, SingleRequestAppState},
+    commands::ActiveInput,
+};
 
 impl SingleRequestApp {
     pub fn draw(&mut self, frame: &mut Frame, state: &mut SingleRequestAppState) {
@@ -18,8 +21,34 @@ impl StatefulWidget for &mut SingleRequestApp {
         self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
-        _state: &mut Self::State,
+        state: &mut Self::State,
     ) {
-        Line::from("Request").render(area, buf);
+        let style = Style {
+            // empty state
+            fg: Some(if state.url.is_empty() {
+                Color::Gray
+            } else {
+                Color::White
+            }),
+            ..Default::default()
+        };
+
+        // active state
+        let style = if let InputState::Editing {
+            which: ActiveInput::Url,
+        } = state.input_state
+        {
+            style.underlined()
+        } else {
+            style
+        };
+
+        if state.url.is_empty() {
+            Paragraph::new("Ex: https://httpbin.org/get")
+                .style(style)
+                .render(area, buf);
+        } else {
+            Paragraph::new(state.url.clone()).render(area, buf);
+        }
     }
 }

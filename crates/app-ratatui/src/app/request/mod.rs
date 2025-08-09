@@ -3,14 +3,25 @@ use ratatui::{
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
 };
 
-use crate::commands::Command;
+use crate::commands::{ActiveInput, Command};
 
 mod commands;
 mod render;
 
+#[derive(Debug, Default, Clone)]
+pub enum InputState {
+    Editing {
+        which: ActiveInput,
+    },
+    #[default]
+    Normal,
+}
+
 #[derive(Debug, Default)]
 pub struct SingleRequestAppState {
+    pub url: String,
     pub running: bool,
+    pub input_state: InputState,
 }
 
 pub struct SingleRequestApp;
@@ -35,11 +46,42 @@ impl SingleRequestApp {
     fn handle_key_event(
         &mut self,
         key: KeyEvent,
-        _state: &mut SingleRequestAppState,
+        state: &mut SingleRequestAppState,
     ) -> Option<Command> {
         let command = match key.code {
-            KeyCode::Char('q') => Some(Command::Quit),
+            KeyCode::Char('q') => match state.input_state {
+                InputState::Normal => Some(Command::Quit),
+                InputState::Editing { .. } => None,
+            },
+            KeyCode::Char('u') => match state.input_state {
+                InputState::Normal => Some(Command::StartEditing(ActiveInput::Url)),
+                InputState::Editing { .. } => None,
+            },
+            KeyCode::Enter | KeyCode::Esc => match state.input_state {
+                InputState::Editing { .. } => Some(Command::StopEditing),
+                InputState::Normal => None,
+            },
             _ => None,
+        };
+
+        // handle text input
+        let input_state = state.input_state.clone();
+
+        if let InputState::Editing { which } = input_state {
+            // get the pointer to the string we'll like to manipulate
+            let active_buffer = match which {
+                ActiveInput::Url => &mut state.url,
+            };
+
+            match key.code {
+                KeyCode::Char(n) => {
+                    active_buffer.push(n);
+                }
+                KeyCode::Backspace => {
+                    active_buffer.pop();
+                }
+                _ => {}
+            };
         };
 
         return command;
