@@ -1,12 +1,11 @@
-use ratatui::{
-    Frame,
-    style::{Color, Modifier, Style, Stylize},
-    widgets::{Paragraph, StatefulWidget, Widget},
-};
-
 use crate::{
     app::request::{InputState, SingleRequestApp, SingleRequestAppState},
     commands::ActiveInput,
+};
+use ratatui::{
+    Frame,
+    style::{Color, Style, Stylize},
+    widgets::{Paragraph, StatefulWidget, Widget},
 };
 
 impl SingleRequestApp {
