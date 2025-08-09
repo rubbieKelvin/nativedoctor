@@ -3,7 +3,10 @@ use ratatui::{
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
 };
 
-use crate::commands::{ActiveInput, Command};
+use crate::{
+    commands::{ActiveInput, Command},
+    widgets::input::TextInputState,
+};
 
 mod commands;
 mod render;
@@ -19,7 +22,7 @@ pub enum InputState {
 
 #[derive(Debug, Default)]
 pub struct SingleRequestAppState {
-    pub url: String,
+    pub url: TextInputState,
     pub running: bool,
     pub input_state: InputState,
 }
@@ -70,7 +73,7 @@ impl SingleRequestApp {
         if let InputState::Editing { which } = input_state {
             // get the pointer to the string we'll like to manipulate
             let active_buffer = match which {
-                ActiveInput::Url => &mut state.url,
+                ActiveInput::Url => &mut state.url.value,
             };
 
             match key.code {

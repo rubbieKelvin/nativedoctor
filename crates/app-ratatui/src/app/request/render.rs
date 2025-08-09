@@ -1,12 +1,9 @@
 use crate::{
     app::request::{InputState, SingleRequestApp, SingleRequestAppState},
     commands::ActiveInput,
+    widgets::input::TextInput,
 };
-use ratatui::{
-    Frame,
-    style::{Color, Style, Stylize},
-    widgets::{Paragraph, StatefulWidget, Widget},
-};
+use ratatui::{Frame, widgets::StatefulWidget};
 
 impl SingleRequestApp {
     pub fn draw(&mut self, frame: &mut Frame, state: &mut SingleRequestAppState) {
@@ -22,32 +19,14 @@ impl StatefulWidget for &mut SingleRequestApp {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut Self::State,
     ) {
-        let style = Style {
-            // empty state
-            fg: Some(if state.url.is_empty() {
-                Color::Gray
-            } else {
-                Color::White
-            }),
-            ..Default::default()
-        };
-
-        // active state
-        let style = if let InputState::Editing {
-            which: ActiveInput::Url,
-        } = state.input_state
-        {
-            style.underlined()
-        } else {
-            style
-        };
-
-        if state.url.is_empty() {
-            Paragraph::new("Ex: https://httpbin.org/get")
-                .style(style)
-                .render(area, buf);
-        } else {
-            Paragraph::new(state.url.clone()).render(area, buf);
-        }
+        TextInput::default()
+            .set_placeholder("Ex: https://httpbin.org/get")
+            .set_active(matches!(
+                state.input_state,
+                InputState::Editing {
+                    which: ActiveInput::Url
+                }
+            ))
+            .render(area, buf, &mut state.url);
     }
 }

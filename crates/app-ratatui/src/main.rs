@@ -4,6 +4,7 @@ mod app;
 mod commands;
 mod runtime;
 mod state;
+mod widgets;
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
