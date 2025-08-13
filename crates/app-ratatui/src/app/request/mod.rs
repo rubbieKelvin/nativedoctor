@@ -48,14 +48,15 @@ impl RequestMethod {
     }
 
     fn span<'a>(&self) -> Span<'a> {
+        let s = self.to_string().to_uppercase();
         match self {
-            Self::Get => self.to_string().green(),
-            Self::Delete => self.to_string().red(),
-            Self::Post => self.to_string().blue(),
-            Self::Patch => self.to_string().magenta(),
-            Self::Put => self.to_string().yellow(),
-            Self::Head => self.to_string().gray(),
-            Self::Option => self.to_string().gray(),
+            Self::Get => s.green(),
+            Self::Delete => s.red(),
+            Self::Post => s.blue(),
+            Self::Patch => s.magenta(),
+            Self::Put => s.yellow(),
+            Self::Head => s.gray(),
+            Self::Option => s.gray(),
         }
     }
 }
@@ -84,13 +85,24 @@ impl RequestTab {
     }
 }
 
+#[derive(strum::Display, Default, Clone, PartialEq, Debug, strum::EnumIter)]
+pub enum ResponseTab {
+    Headers,
+    #[default]
+    Body,
+    Log,
+}
+
 #[derive(Debug, Default)]
 pub struct SingleRequestAppState {
     pub url: TextInputState,
+    pub name: TextInputState,
     pub method: RequestMethod,
     pub running: bool,
+    pub output_pane_visible: bool,
     pub input_state: InputState,
     pub request_tab: RequestTab,
+    pub response_tab: ResponseTab,
 }
 
 pub struct SingleRequestApp;
@@ -123,11 +135,19 @@ impl SingleRequestApp {
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('u') => match state.input_state {
-                InputState::Normal => Some(Command::StartEditing(ActiveInput::Url)),
+                InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestUrl)),
+                InputState::Editing { .. } => None,
+            },
+            KeyCode::Char('t') => match state.input_state {
+                InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestTitle)),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('m') => match state.input_state {
                 InputState::Normal => Some(Command::RotateHttpMethod),
+                InputState::Editing { .. } => None,
+            },
+            KeyCode::Char('o') => match state.input_state {
+                InputState::Normal => Some(Command::ToggleReqeustOutputPane),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Enter | KeyCode::Esc => match state.input_state {
@@ -151,7 +171,8 @@ impl SingleRequestApp {
         if let InputState::Editing { which } = input_state {
             // get the pointer to the string we'll like to manipulate
             let active_buffer = match which {
-                ActiveInput::Url => &mut state.url.value,
+                ActiveInput::RequestUrl => &mut state.url.value,
+                ActiveInput::RequestTitle => &mut state.name.value,
             };
 
             match key.code {

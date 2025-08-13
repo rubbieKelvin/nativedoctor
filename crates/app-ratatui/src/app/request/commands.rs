@@ -17,6 +17,9 @@ impl SingleRequestApp {
             Command::StopEditing => self.command_stop_editing(state),
             Command::RotateHttpMethod => self.command_rotate_method(state),
             Command::RotateRequestTab(dir) => self.command_rotate_request_tab(state, dir),
+            Command::ToggleReqeustOutputPane => {
+                state.output_pane_visible = !state.output_pane_visible;
+            }
         }
 
         return Ok(());

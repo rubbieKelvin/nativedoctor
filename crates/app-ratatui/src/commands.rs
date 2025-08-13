@@ -1,11 +1,12 @@
 #[derive(Debug, Clone, strum::Display)]
 pub enum ActiveInput {
-    Url,
+    RequestUrl,
+    RequestTitle,
 }
 
 pub enum XDirection {
     Left,
-    Right
+    Right,
 }
 
 pub enum Command {
@@ -13,5 +14,6 @@ pub enum Command {
     StartEditing(ActiveInput),
     StopEditing,
     RotateHttpMethod,
-    RotateRequestTab(XDirection)
+    RotateRequestTab(XDirection),
+    ToggleReqeustOutputPane,
 }
