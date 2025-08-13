@@ -16,17 +16,9 @@ impl SingleRequestApp {
     pub fn draw(&mut self, frame: &mut Frame, state: &mut SingleRequestAppState) {
         frame.render_stateful_widget(self, frame.area(), state);
     }
-}
 
-impl StatefulWidget for &mut SingleRequestApp {
-    type State = SingleRequestAppState;
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        let mut url_input = TextInput::default()
+    fn make_url_input(&mut self, state: &mut SingleRequestAppState) -> TextInput {
+        return TextInput::default()
             .set_placeholder("Ex: https://httpbin.org/get")
             .set_active(matches!(
                 state.input_state,
@@ -34,7 +26,9 @@ impl StatefulWidget for &mut SingleRequestApp {
                     which: ActiveInput::Url
                 }
             ));
+    }
 
+    fn make_request_tab_line(&mut self, state: &mut SingleRequestAppState) -> Vec<Span<'static>> {
         let mut request_tab_line: Vec<Span<'static>> =
             vec![Span::from(" < ").fg(KEY_SHORTCUT_FG_HINT)];
 
@@ -52,6 +46,12 @@ impl StatefulWidget for &mut SingleRequestApp {
             }
         }));
         request_tab_line.push(Span::from("> ").fg(KEY_SHORTCUT_FG_HINT));
+        return request_tab_line;
+    }
+
+    fn draw_request_input_block(&mut self, state: &mut SingleRequestAppState) -> Block<'static> {
+        let mut url_input = self.make_url_input(state);
+        let request_tab_line = self.make_request_tab_line(state);
 
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
@@ -90,6 +90,19 @@ impl StatefulWidget for &mut SingleRequestApp {
                 ]))
         };
 
-        block.render(area, buf);
+        return block;
+    }
+}
+
+impl StatefulWidget for &mut SingleRequestApp {
+    type State = SingleRequestAppState;
+    fn render(
+        self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        state: &mut Self::State,
+    ) {
+        let request_input_block = self.draw_request_input_block(state);
+        request_input_block.render(area, buf);
     }
 }
