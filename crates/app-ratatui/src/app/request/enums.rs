@@ -45,7 +45,7 @@ pub enum Command {
     StopEditing,
     RotateHttpMethod(Direction),
     RotateRequestTab(Direction),
-    ToggleReqeustOutputPane,
+    ToggleRequestOutputPane,
 }
 
 #[derive(Debug, Default, Clone)]

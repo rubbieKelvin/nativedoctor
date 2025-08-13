@@ -55,7 +55,7 @@ impl SingleRequestApp {
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('1') => match state.input_state {
-                InputState::Normal => Some(Command::ToggleReqeustOutputPane),
+                InputState::Normal => Some(Command::ToggleRequestOutputPane),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Enter | KeyCode::Esc => match state.input_state {
