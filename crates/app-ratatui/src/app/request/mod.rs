@@ -1,115 +1,23 @@
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
-    style::Stylize,
-    text::Span,
 };
 
-use crate::{
-    commands::{ActiveInput, Command, XDirection},
-    widgets::input::TextInputState,
-};
+use crate::app::request::{enums::{
+    ActiveInput, Command, Direction, InputState, RequestTab, ResponseTab,
+}, state::SingleRequestAppState};
 
 mod commands;
+mod enums;
 mod render;
+mod state;
 
-#[derive(Debug, Default, Clone)]
-pub enum InputState {
-    Editing {
-        which: ActiveInput,
-    },
-    #[default]
-    Normal,
-}
-
-#[derive(Debug, Default, Clone, strum::Display, PartialEq)]
-pub enum RequestMethod {
-    #[default]
-    Get,
-    Delete,
-    Post,
-    Patch,
-    Put,
-    Head,
-    Option,
-}
-
-impl RequestMethod {
-    pub fn all() -> Vec<Self> {
-        return vec![
-            Self::Get,
-            Self::Delete,
-            Self::Post,
-            Self::Patch,
-            Self::Put,
-            Self::Head,
-            Self::Option,
-        ];
-    }
-
-    fn span<'a>(&self) -> Span<'a> {
-        let s = self.to_string().to_uppercase();
-        match self {
-            Self::Get => s.green(),
-            Self::Delete => s.red(),
-            Self::Post => s.blue(),
-            Self::Patch => s.magenta(),
-            Self::Put => s.yellow(),
-            Self::Head => s.gray(),
-            Self::Option => s.gray(),
-        }
-    }
-}
-
-#[derive(strum::Display, Default, Clone, PartialEq, Debug)]
-pub enum RequestTab {
-    Params,
-    Header,
-    Auth,
-    #[default]
-    Body,
-    Doc,
-    Script,
-}
-
-impl RequestTab {
-    pub fn all() -> Vec<Self> {
-        return vec![
-            Self::Params,
-            Self::Header,
-            Self::Auth,
-            Self::Body,
-            Self::Doc,
-            Self::Script,
-        ];
-    }
-}
-
-#[derive(strum::Display, Default, Clone, PartialEq, Debug, strum::EnumIter)]
-pub enum ResponseTab {
-    Headers,
-    #[default]
-    Body,
-    Log,
-}
-
-#[derive(Debug, Default)]
-pub struct SingleRequestAppState {
-    pub url: TextInputState,
-    pub name: TextInputState,
-    pub method: RequestMethod,
-    pub running: bool,
-    pub output_pane_visible: bool,
-    pub input_state: InputState,
-    pub request_tab: RequestTab,
-    pub response_tab: ResponseTab,
-}
-
+#[derive(Default)]
 pub struct SingleRequestApp;
 
 impl SingleRequestApp {
     pub fn new() -> Self {
-        return SingleRequestApp;
+        return SingleRequestApp::default();
     }
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
@@ -143,10 +51,10 @@ impl SingleRequestApp {
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('m') => match state.input_state {
-                InputState::Normal => Some(Command::RotateHttpMethod),
+                InputState::Normal => Some(Command::RotateHttpMethod(Direction::Right)),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Char('o') => match state.input_state {
+            KeyCode::Char('1') => match state.input_state {
                 InputState::Normal => Some(Command::ToggleReqeustOutputPane),
                 InputState::Editing { .. } => None,
             },
@@ -155,11 +63,11 @@ impl SingleRequestApp {
                 InputState::Normal => None,
             },
             KeyCode::Left => match state.input_state {
-                InputState::Normal => Some(Command::RotateRequestTab(XDirection::Left)),
+                InputState::Normal => Some(Command::RotateRequestTab(Direction::Left)),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Right => match state.input_state {
-                InputState::Normal => Some(Command::RotateRequestTab(XDirection::Right)),
+                InputState::Normal => Some(Command::RotateRequestTab(Direction::Right)),
                 InputState::Editing { .. } => None,
             },
             _ => None,

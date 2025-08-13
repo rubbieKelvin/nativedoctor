@@ -1,10 +1,13 @@
 use crate::{
-    app::request::{InputState, RequestTab, ResponseTab, SingleRequestApp, SingleRequestAppState},
-    commands::{self, ActiveInput},
+    app::request::{
+        InputState, RequestTab, ResponseTab, SingleRequestApp, SingleRequestAppState,
+        enums::ActiveInput,
+    },
     style::KEY_SHORTCUT_FG_HINT,
     widgets::input::TextInput,
 };
 
+use nd_core::constants::APPLICATION_NAME;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout},
@@ -23,14 +26,14 @@ impl SingleRequestApp {
         let mut request_tab_line: Vec<Span<'static>> =
             vec![Span::from(" < ").fg(KEY_SHORTCUT_FG_HINT)];
 
-        request_tab_line.extend(RequestTab::all().iter().enumerate().map(|(index, t)| {
-            let s = Span::from(if index == RequestTab::all().len() - 1 {
+        request_tab_line.extend(RequestTab::iter().enumerate().map(|(index, t)| {
+            let s = Span::from(if index == RequestTab::iter().count() - 1 {
                 format!("{} ", t.to_string())
             } else {
                 format!("{} · ", t.to_string())
             });
 
-            if t.clone() == state.request_tab.clone() {
+            if index == state.request_tab_index {
                 s.fg(KEY_SHORTCUT_FG_HINT)
             } else {
                 s
@@ -45,13 +48,13 @@ impl SingleRequestApp {
             vec![Span::from(" b ").fg(KEY_SHORTCUT_FG_HINT)];
 
         request_tab_line.extend(ResponseTab::iter().enumerate().map(|(index, t)| {
-            let s = Span::from(if index == RequestTab::all().len() - 1 {
+            let s = Span::from(if index == RequestTab::iter().count() - 1 {
                 format!("{} ", t.to_string())
             } else {
                 format!("{} · ", t.to_string())
             });
 
-            if t.clone() == state.response_tab.clone() {
+            if index == state.response_tab_index {
                 s.fg(KEY_SHORTCUT_FG_HINT)
             } else {
                 s
@@ -79,7 +82,7 @@ impl SingleRequestApp {
             .title(Line::from("untitled.ndr").centered());
 
         block = if let InputState::Editing {
-            which: commands::ActiveInput::RequestTitle,
+            which: ActiveInput::RequestTitle,
         } = &state.input_state
         {
             block.title_bottom(" editing ⮐ ")
@@ -107,13 +110,19 @@ impl SingleRequestApp {
             .border_type(BorderType::Rounded)
             .title(vec![Span::from(" u").yellow(), Span::from("rl ")]);
 
-        block = if let InputState::Editing {
-            which: commands::ActiveInput::RequestUrl,
-        } = state.input_state.clone()
-        {
-            block.title_bottom(" editing ⮐ ")
+        block = if let InputState::Editing { which } = state.input_state.clone() {
+            match which {
+                ActiveInput::RequestUrl => block.title_bottom(" editing ⮐ "),
+                _ => block,
+            }
         } else {
-            block
+            block.title(
+                Line::from(vec![
+                    " send ".into(),
+                    "⮐ ".fg(KEY_SHORTCUT_FG_HINT),
+                ])
+                .right_aligned(),
+            )
         };
 
         let para = Paragraph::new(u_input.text(&mut state.url)).style(style);
@@ -124,7 +133,7 @@ impl SingleRequestApp {
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
             .title(vec![" m".fg(KEY_SHORTCUT_FG_HINT), "ethod ".into()]);
-        let para = Paragraph::new(state.method.span());
+        let para = Paragraph::new(state.get_method().span());
         return para.block(block);
     }
 
@@ -138,7 +147,7 @@ impl SingleRequestApp {
     fn render_response_output_area(&mut self, state: &mut SingleRequestAppState) -> Block<'static> {
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
-            .title(vec![" o".fg(KEY_SHORTCUT_FG_HINT), "utput ".into()])
+            .title(vec![" ¹".fg(KEY_SHORTCUT_FG_HINT), "output ".into()])
             .title(Line::from(self.make_response_tab_line(state)).right_aligned())
             .title_bottom(vec![" q".fg(KEY_SHORTCUT_FG_HINT), "uit ".into()])
             .title_bottom(
@@ -151,7 +160,7 @@ impl SingleRequestApp {
                 )
                 .blue(),
             )
-            .title_bottom(Line::from("nativedoctor v0.0.1 ").right_aligned());
+            .title_bottom(Line::from(APPLICATION_NAME.to_lowercase()).right_aligned());
         return block;
     }
 }

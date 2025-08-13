@@ -1,11 +1,12 @@
-use crate::{
-    app::request::{
-        InputState, RequestMethod, RequestTab, SingleRequestApp, SingleRequestAppState,
-    },
-    commands::{ActiveInput, Command, XDirection},
+use strum::IntoEnumIterator;
+
+use crate::app::request::{
+    SingleRequestApp, SingleRequestAppState,
+    enums::{ActiveInput, Command, Direction, InputState, RequestMethod, RequestTab},
 };
 
 impl SingleRequestApp {
+    /// Handles all commands gotten from the user/system
     pub fn run_command(
         &mut self,
         command: Command,
@@ -15,7 +16,7 @@ impl SingleRequestApp {
             Command::Quit => self.command_quit(state),
             Command::StartEditing(which) => self.command_start_editing(state, which),
             Command::StopEditing => self.command_stop_editing(state),
-            Command::RotateHttpMethod => self.command_rotate_method(state),
+            Command::RotateHttpMethod(dir) => self.command_rotate_method(state, dir),
             Command::RotateRequestTab(dir) => self.command_rotate_request_tab(state, dir),
             Command::ToggleReqeustOutputPane => {
                 state.output_pane_visible = !state.output_pane_visible;
@@ -37,30 +38,11 @@ impl SingleRequestApp {
         state.input_state = InputState::Normal;
     }
 
-    fn command_rotate_method(&mut self, state: &mut SingleRequestAppState) {
-        let methods = RequestMethod::all();
-        let index = methods
-            .iter()
-            .position(|c| c.clone() == state.method.clone())
-            .unwrap_or(0);
-        let new = methods.get((index + 1) % methods.len()).map(|m| m.clone());
-        state.method = new.unwrap_or_default();
+    fn command_rotate_method(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
+        dir.apply_usize(&mut state.method_index, RequestMethod::iter().count());
     }
 
-    fn command_rotate_request_tab(&mut self, state: &mut SingleRequestAppState, dir: XDirection) {
-        let dir: i32 = match dir {
-            XDirection::Left => -1,
-            XDirection::Right => 1,
-        };
-
-        let methods = RequestTab::all();
-        let index = methods
-            .iter()
-            .position(|c| c.clone() == state.request_tab.clone())
-            .unwrap_or(0);
-        let new = methods
-            .get(((index as i32 + dir) % methods.len() as i32) as usize)
-            .map(|m| m.clone());
-        state.request_tab = new.unwrap_or_default();
+    fn command_rotate_request_tab(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
+        dir.apply_usize(&mut state.request_tab_index, RequestTab::iter().count());
     }
 }
