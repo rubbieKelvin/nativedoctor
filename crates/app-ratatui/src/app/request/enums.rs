@@ -20,8 +20,20 @@ impl Direction {
     /// the `rem_euclid` method to handle wrapping correctly for both directions.
     pub fn apply_usize(&self, i: &mut usize, limit: usize) {
         *i = match self {
-            Direction::Left => *i - 1,
-            Direction::Right => *i + 1,
+            Direction::Left => {
+                if *i == 0 {
+                    limit-1
+                } else {
+                    *i - 1
+                }
+            }
+            Direction::Right => {
+                if *i == limit-1 {
+                    0
+                } else {
+                    *i + 1
+                }
+            }
         }
         .rem_euclid(limit);
     }
