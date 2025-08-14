@@ -45,7 +45,7 @@ impl SingleRequestApp {
 
     fn make_response_tab_line(&mut self, state: &mut SingleRequestAppState) -> Vec<Span<'static>> {
         let mut request_tab_line: Vec<Span<'static>> =
-            vec![Span::from(" b ").fg(KEY_SHORTCUT_FG_HINT)];
+            vec![Span::from("<b ").fg(KEY_SHORTCUT_FG_HINT)];
 
         request_tab_line.extend(ResponseTab::iter().enumerate().map(|(index, t)| {
             let s = Span::from(if index == RequestTab::iter().count() - 1 {
@@ -60,7 +60,7 @@ impl SingleRequestApp {
                 s
             }
         }));
-        request_tab_line.push(Span::from("n ").fg(KEY_SHORTCUT_FG_HINT));
+        request_tab_line.push(Span::from("n>").fg(KEY_SHORTCUT_FG_HINT));
         return request_tab_line;
     }
 

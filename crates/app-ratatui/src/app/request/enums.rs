@@ -102,3 +102,8 @@ pub enum ResponseTab {
     Body,
     Log,
 }
+
+
+pub enum ApplicationEvent {
+    Input(ratatui::crossterm::event::Event)
+}

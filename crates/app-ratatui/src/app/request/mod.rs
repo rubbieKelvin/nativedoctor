@@ -1,11 +1,16 @@
+use std::{sync::mpsc, thread::spawn};
+
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
 };
 
-use crate::app::request::{enums::{
-    ActiveInput, Command, Direction, InputState, RequestTab, ResponseTab,
-}, state::SingleRequestAppState};
+use crate::app::request::{
+    enums::{
+        ActiveInput, ApplicationEvent, Command, Direction, InputState, RequestTab, ResponseTab,
+    },
+    state::SingleRequestAppState,
+};
 
 mod commands;
 mod enums;
@@ -22,11 +27,24 @@ impl SingleRequestApp {
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
         let mut state = SingleRequestAppState::default();
-
         state.running = true;
+
+        let (tx, rx) = mpsc::channel::<ApplicationEvent>();
+
+        // spawn draw and input event ls
+        // here we're basically listening for crossterm events
+        spawn(move || -> anyhow::Result<()> {
+            loop {
+                let ev = event::read()?;
+                tx.send(ApplicationEvent::Input(ev))?;
+            }
+        });
+
+        // block on the multiple procuder single consumer channel
         while state.running {
             terminal.draw(|frame| self.draw(frame, &mut state))?;
-            self.handle_events(&mut state)?;
+            let app_event = rx.recv()?;
+            self.handle_events(app_event, &mut state)?;
         }
 
         return Ok(());
@@ -97,12 +115,20 @@ impl SingleRequestApp {
         return command;
     }
 
-    fn handle_events(&mut self, state: &mut SingleRequestAppState) -> anyhow::Result<()> {
-        let command = match event::read()? {
-            event::Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event, state)
-            }
-            _ => None,
+    fn handle_events(
+        &mut self,
+        event: ApplicationEvent,
+        state: &mut SingleRequestAppState,
+    ) -> anyhow::Result<()> {
+        let command = match event {
+            // input events
+            ApplicationEvent::Input(input_event) => match input_event {
+                event::Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                    self.handle_key_event(key_event, state)
+                }
+                _ => None,
+            },
+            // _ => None,
         };
 
         if let Some(command) = command {
