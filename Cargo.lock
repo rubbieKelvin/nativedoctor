@@ -36,6 +36,7 @@ dependencies = [
  "anyhow",
  "color-eyre",
  "crossterm 0.29.0",
+ "models",
  "nd-core",
  "ratatui",
  "serde",

@@ -1,20 +1,16 @@
 use strum::IntoEnumIterator;
 
-use crate::{
-    app::request::enums::{InputState, RequestMethod, RequestTab, ResponseTab},
-    widgets::input::TextInputState,
-};
+use crate::app::request::enums::{RequestMethod, RequestTab, ResponseTab};
 
 #[derive(Debug, Default)]
 pub struct SingleRequestAppState {
-    pub url: TextInputState,
-    pub name: TextInputState,
     pub running: bool,
     pub output_pane_visible: bool,
-    pub input_state: InputState,
     pub method_index: usize,
     pub request_tab_index: usize,
     pub response_tab_index: usize,
+    pub initial_model_state: Option<models::request_root::RequestRootModel>,
+    pub model_state: models::request_root::RequestRootModel,
 }
 
 impl SingleRequestAppState {
@@ -31,5 +27,13 @@ impl SingleRequestAppState {
     pub fn get_response_tab(&mut self) -> ResponseTab {
         let arr = ResponseTab::iter().collect::<Vec<ResponseTab>>();
         return arr[self.response_tab_index].clone();
+    }
+
+    /// Check if there's any change made to the loaded model
+    pub fn has_model_changed(&mut self) -> bool {
+        match &self.initial_model_state {
+            Some(model) => *model == self.model_state,
+            None => true,
+        }
     }
 }

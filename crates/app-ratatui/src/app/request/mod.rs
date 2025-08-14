@@ -1,16 +1,16 @@
-use std::{sync::mpsc, thread::spawn};
+use std::{sync::mpsc::{self, Sender}, thread::spawn};
 
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
 };
 
-use crate::app::request::{
+use crate::{app::request::{
     enums::{
         ActiveInput, ApplicationEvent, Command, Direction, InputState, RequestTab, ResponseTab,
     },
     state::SingleRequestAppState,
-};
+}, widgets::input::TextInputState};
 
 mod commands;
 mod enums;
@@ -18,7 +18,12 @@ mod render;
 mod state;
 
 #[derive(Default)]
-pub struct SingleRequestApp;
+pub struct SingleRequestApp{
+    pub input_state: InputState,
+    pub url_input_state: TextInputState,
+    pub title_input_state: TextInputState,
+    pub event_transmitter: Option<Sender<ApplicationEvent>>
+}
 
 impl SingleRequestApp {
     pub fn new() -> Self {
@@ -30,6 +35,7 @@ impl SingleRequestApp {
         state.running = true;
 
         let (tx, rx) = mpsc::channel::<ApplicationEvent>();
+        self.event_transmitter = Some(tx.clone());
 
         // spawn draw and input event ls
         // here we're basically listening for crossterm events
@@ -53,38 +59,42 @@ impl SingleRequestApp {
     fn handle_key_event(
         &mut self,
         key: KeyEvent,
-        state: &mut SingleRequestAppState,
+        _state: &mut SingleRequestAppState,
     ) -> Option<Command> {
         let command = match key.code {
-            KeyCode::Char('q') => match state.input_state {
+            KeyCode::Char('q') => match self.input_state {
                 InputState::Normal => Some(Command::Quit),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Char('u') => match state.input_state {
+            KeyCode::Char('u') => match self.input_state {
                 InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestUrl)),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Char('t') => match state.input_state {
+            KeyCode::Char('t') => match self.input_state {
                 InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestTitle)),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Char('m') => match state.input_state {
+            KeyCode::Char('m') => match self.input_state {
                 InputState::Normal => Some(Command::RotateHttpMethod(Direction::Right)),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Char('1') => match state.input_state {
+            KeyCode::Char('1') => match self.input_state {
                 InputState::Normal => Some(Command::ToggleRequestOutputPane),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Enter | KeyCode::Esc => match state.input_state {
+            KeyCode::Enter => match self.input_state {
                 InputState::Editing { .. } => Some(Command::StopEditing),
                 InputState::Normal => None,
             },
-            KeyCode::Left => match state.input_state {
+            KeyCode::Esc => match self.input_state {
+                InputState::Editing { .. } => Some(Command::StopEditing), // TODO: should be like AbortEditing
+                InputState::Normal => None,
+            },
+            KeyCode::Left => match self.input_state {
                 InputState::Normal => Some(Command::RotateRequestTab(Direction::Left)),
                 InputState::Editing { .. } => None,
             },
-            KeyCode::Right => match state.input_state {
+            KeyCode::Right => match self.input_state {
                 InputState::Normal => Some(Command::RotateRequestTab(Direction::Right)),
                 InputState::Editing { .. } => None,
             },
@@ -92,13 +102,13 @@ impl SingleRequestApp {
         };
 
         // handle text input
-        let input_state = state.input_state.clone();
+        let input_state = self.input_state.clone();
 
         if let InputState::Editing { which } = input_state {
             // get the pointer to the string we'll like to manipulate
             let active_buffer = match which {
-                ActiveInput::RequestUrl => &mut state.url.value,
-                ActiveInput::RequestTitle => &mut state.name.value,
+                ActiveInput::RequestUrl => &mut self.url_input_state.value,
+                ActiveInput::RequestTitle => &mut self.title_input_state.value,
             };
 
             match key.code {

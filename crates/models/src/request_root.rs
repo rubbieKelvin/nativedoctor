@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct RequestRootModel {
     pub name: String,
     pub method: String,
@@ -17,8 +17,6 @@ pub struct RequestRootModel {
     #[serde(default)]
     pub body: Option<RequestBodyModel>, // Optional body block
 }
-
-impl RequestRootModel {}
 
 /// Represents the body section of a request.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -72,7 +70,7 @@ pub struct RequestConfigModel {
     pub require: Vec<String>, // defaults to empty vec if not present
     pub timeout: Option<u32>, // e.g., "30s"
     #[serde(default)] // default to 0 if not present
-    pub retries: RetryConfigSchema,
+    pub retries: RetryConfigModel,
     #[serde(default)]
     pub class: Option<String>, // where to group this request
     #[serde(default)]
@@ -80,7 +78,7 @@ pub struct RequestConfigModel {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
-pub struct RetryConfigSchema {
+pub struct RetryConfigModel {
     pub count: u32,
     pub delay: u32,
     pub statuscodes: Vec<u8>,

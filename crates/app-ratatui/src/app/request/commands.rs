@@ -30,12 +30,25 @@ impl SingleRequestApp {
         state.running = false;
     }
 
-    fn command_start_editing(&mut self, state: &mut SingleRequestAppState, which: ActiveInput) {
-        state.input_state = InputState::Editing { which };
+    fn command_start_editing(&mut self, _state: &mut SingleRequestAppState, which: ActiveInput) {
+        self.input_state = InputState::Editing { which };
     }
 
     fn command_stop_editing(&mut self, state: &mut SingleRequestAppState) {
-        state.input_state = InputState::Normal;
+        // When we hit enter, we want to get the value from the input state and put it in our model
+        if let InputState::Editing { which } = &self.input_state {
+            match which {
+                ActiveInput::RequestUrl => {
+                    state.model_state.url = self.url_input_state.value.clone();
+                }
+                ActiveInput::RequestTitle => {
+                    state.model_state.name = self.title_input_state.value.clone();
+                }
+            }
+        }
+
+        // then set the input state back to normal
+        self.input_state = InputState::Normal;
     }
 
     fn command_rotate_method(&mut self, state: &mut SingleRequestAppState, dir: Direction) {

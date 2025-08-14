@@ -64,17 +64,17 @@ impl SingleRequestApp {
         return request_tab_line;
     }
 
-    fn render_title_block(&mut self, state: &mut SingleRequestAppState) -> Paragraph<'static> {
+    fn render_title_block(&mut self, _state: &mut SingleRequestAppState) -> Paragraph<'static> {
         let mut n_input = TextInput::default()
             .set_placeholder("title")
             .set_active(matches!(
-                state.input_state,
+                self.input_state,
                 InputState::Editing {
                     which: ActiveInput::RequestTitle
                 }
             ));
 
-        let style = n_input.get_input_style(&mut state.name);
+        let style = n_input.get_input_style(&mut self.title_input_state);
 
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
@@ -83,34 +83,34 @@ impl SingleRequestApp {
 
         block = if let InputState::Editing {
             which: ActiveInput::RequestTitle,
-        } = &state.input_state
+        } = &self.input_state
         {
             block.title_bottom(" editing ⮐ ")
         } else {
             block
         };
 
-        let para = Paragraph::new(n_input.text(&mut state.name)).style(style);
+        let para = Paragraph::new(n_input.text(&mut self.title_input_state)).style(style);
         return para.block(block);
     }
 
-    fn render_url_input_block(&mut self, state: &mut SingleRequestAppState) -> Paragraph<'static> {
+    fn render_url_input_block(&mut self, _state: &mut SingleRequestAppState) -> Paragraph<'static> {
         let mut u_input = TextInput::default()
             .set_placeholder("Ex: https://httpbin.org/get")
             .set_active(matches!(
-                state.input_state,
+                self.input_state,
                 InputState::Editing {
                     which: ActiveInput::RequestUrl
                 }
             ));
 
-        let style = u_input.get_input_style(&mut state.url);
+        let style = u_input.get_input_style(&mut self.url_input_state);
 
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .title(vec![Span::from(" u").yellow(), Span::from("rl ")]);
 
-        block = if let InputState::Editing { which } = state.input_state.clone() {
+        block = if let InputState::Editing { which } = self.input_state.clone() {
             match which {
                 ActiveInput::RequestUrl => block.title_bottom(" editing ⮐ "),
                 _ => block,
@@ -125,7 +125,7 @@ impl SingleRequestApp {
             )
         };
 
-        let para = Paragraph::new(u_input.text(&mut state.url)).style(style);
+        let para = Paragraph::new(u_input.text(&mut self.url_input_state)).style(style);
         return para.block(block);
     }
 
@@ -152,7 +152,7 @@ impl SingleRequestApp {
             .title_bottom(vec![" q".fg(KEY_SHORTCUT_FG_HINT), "uit ".into()])
             .title_bottom(
                 Line::from(
-                    if let InputState::Editing { which } = state.input_state.clone() {
+                    if let InputState::Editing { which } = self.input_state.clone() {
                         format!(" input mode: {} ", which.to_string().to_lowercase())
                     } else {
                         String::from(" command mode ")
