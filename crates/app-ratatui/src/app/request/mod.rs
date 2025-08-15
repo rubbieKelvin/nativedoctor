@@ -1,17 +1,22 @@
-use std::{sync::mpsc::{self, Sender}, thread::spawn};
+use std::{
+    sync::mpsc::{self, Sender},
+    thread::spawn,
+};
 
 use models::direction::Direction;
+use nd_core::executor::Executor;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
 };
 
-use crate::{app::request::{
-    enums::{
-        ActiveInput, ApplicationEvent, Command, InputState, RequestTab, ResponseTab,
+use crate::{
+    app::request::{
+        enums::{ActiveInput, ApplicationEvent, Command, InputState, RequestTab, ResponseTab},
+        state::SingleRequestAppState,
     },
-    state::SingleRequestAppState,
-}, widgets::input::TextInputState};
+    widgets::input::TextInputState,
+};
 
 mod commands;
 mod enums;
@@ -19,12 +24,12 @@ mod render;
 mod state;
 
 #[derive(Default)]
-pub struct SingleRequestApp{
+pub struct SingleRequestApp {
     pub input_state: InputState,
     pub url_input_state: TextInputState,
     pub title_input_state: TextInputState,
-    pub http_client: reqwest::Client,
-    pub event_transmitter: Option<Sender<ApplicationEvent>>
+    pub executor: Executor,
+    pub event_transmitter: Option<Sender<ApplicationEvent>>,
 }
 
 impl SingleRequestApp {
@@ -69,15 +74,15 @@ impl SingleRequestApp {
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('u') => match self.input_state {
-                InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestUrl)),
+                InputState::Normal => Some(Command::StartTextEditing(ActiveInput::RequestUrl)),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('t') => match self.input_state {
-                InputState::Normal => Some(Command::StartEditing(ActiveInput::RequestTitle)),
+                InputState::Normal => Some(Command::StartTextEditing(ActiveInput::RequestTitle)),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('m') => match self.input_state {
-                InputState::Normal => Some(Command::RotateHttpMethod(Direction::Right)),
+                InputState::Normal => Some(Command::RotateHttpMethod),
                 InputState::Editing { .. } => None,
             },
             KeyCode::Char('1') => match self.input_state {
@@ -85,11 +90,11 @@ impl SingleRequestApp {
                 InputState::Editing { .. } => None,
             },
             KeyCode::Enter => match self.input_state {
-                InputState::Editing { .. } => Some(Command::StopEditing),
+                InputState::Editing { .. } => Some(Command::FinishTextEditing),
                 InputState::Normal => Some(Command::SendRequest),
             },
             KeyCode::Esc => match self.input_state {
-                InputState::Editing { .. } => Some(Command::StopEditing), // TODO: should be like AbortEditing
+                InputState::Editing { .. } => Some(Command::AbortTextEditing),
                 InputState::Normal => None,
             },
             KeyCode::Left => match self.input_state {

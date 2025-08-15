@@ -1,9 +1,11 @@
+use std::thread::spawn;
+
 use models::direction::Direction;
 use strum::IntoEnumIterator;
 
 use crate::app::request::{
     SingleRequestApp, SingleRequestAppState,
-    enums::{ActiveInput, Command, InputState, RequestMethod, RequestTab},
+    enums::{ActiveInput, ApplicationEvent, Command, InputState, RequestTab},
 };
 
 impl SingleRequestApp {
@@ -15,9 +17,10 @@ impl SingleRequestApp {
     ) -> anyhow::Result<()> {
         match command {
             Command::Quit => self.command_quit(state),
-            Command::StartEditing(which) => self.command_start_editing(state, which),
-            Command::StopEditing => self.command_stop_editing(state),
-            Command::RotateHttpMethod(dir) => self.command_rotate_method(state, dir),
+            Command::StartTextEditing(which) => self.command_start_editing(state, which),
+            Command::FinishTextEditing => self.command_stop_editing(state),
+            Command::AbortTextEditing => self.command_abort_editing(state),
+            Command::RotateHttpMethod => self.command_rotate_method(state),
             Command::RotateRequestTab(dir) => self.command_rotate_request_tab(state, dir),
             Command::SendRequest => self.command_send_request(state),
             Command::ToggleRequestOutputPane => self.command_toggle_req_output(state),
@@ -34,23 +37,35 @@ impl SingleRequestApp {
         state.running = false;
     }
 
-    fn command_send_request(&mut self, _state: &mut SingleRequestAppState) {
-        todo!()
+    fn command_send_request(&mut self, state: &mut SingleRequestAppState) {
+        let model = state.requestmodel.clone();
+        let tx = self.event_transmitter.clone().unwrap();
+        let request = self
+            .executor
+            .build_request(model)
+            // We could manage this error better
+            .unwrap();
+
+        // send the request in a new thread
+        spawn(move || {
+            let response = request.send();
+            tx.send(ApplicationEvent::HttpRequestCallCompleted(response));
+        });
     }
 
     fn command_start_editing(&mut self, _state: &mut SingleRequestAppState, which: ActiveInput) {
         self.input_state = InputState::Editing { which };
     }
 
-    fn command_stop_editing(&mut self, state: &mut SingleRequestAppState) {
-        // When we hit enter, we want to get the value from the input state and put it in our model
+    fn command_abort_editing(&mut self, state: &mut SingleRequestAppState) {
+        // revert input to previous state
         if let InputState::Editing { which } = &self.input_state {
             match which {
                 ActiveInput::RequestUrl => {
-                    state.model_state.url = self.url_input_state.value.clone();
+                    self.url_input_state.value = state.requestmodel.url.clone();
                 }
                 ActiveInput::RequestTitle => {
-                    state.model_state.name = self.title_input_state.value.clone();
+                    self.title_input_state.value = state.requestmodel.name.clone();
                 }
             }
         }
@@ -59,8 +74,26 @@ impl SingleRequestApp {
         self.input_state = InputState::Normal;
     }
 
-    fn command_rotate_method(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
-        dir.apply_usize(&mut state.method_index, RequestMethod::iter().count());
+    fn command_stop_editing(&mut self, state: &mut SingleRequestAppState) {
+        // When we hit enter, we want to get the value from the input state and put it in our model
+        if let InputState::Editing { which } = &self.input_state {
+            match which {
+                ActiveInput::RequestUrl => {
+                    state.requestmodel.url = self.url_input_state.value.clone();
+                }
+                ActiveInput::RequestTitle => {
+                    state.requestmodel.name = self.title_input_state.value.clone();
+                }
+            }
+        }
+
+        // then set the input state back to normal
+        self.input_state = InputState::Normal;
+    }
+
+    fn command_rotate_method(&mut self, state: &mut SingleRequestAppState) {
+        let meth = &mut state.requestmodel.method;
+        meth.next();
     }
 
     fn command_rotate_request_tab(&mut self, state: &mut SingleRequestAppState, dir: Direction) {

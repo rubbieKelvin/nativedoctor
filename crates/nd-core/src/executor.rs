@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use models::requestroot::{HttpMethod, RequestRootModel};
 
+#[derive(Default)]
 pub struct Executor {
-    pub client: reqwest::blocking::Client,
+    client: reqwest::blocking::Client,
     env: HashMap<String, String>,     // env from .env files
     dyn_env: HashMap<String, String>, // runtime variables
 }
@@ -17,18 +18,18 @@ impl Executor {
     }
 
     // Takes a string and returns an evaluated string from the env store
-    pub fn process_string<S: AsRef<str>>(&self, string: S) -> String {
+    pub fn build_string<S: AsRef<str>>(&self, string: S) -> String {
         let string = string.as_ref();
         // TODO: work to do here
         return string.to_string();
     }
 
     // turns the request model into a callable request
-    pub fn process_request(
+    pub fn build_request(
         &self,
         model: RequestRootModel,
     ) -> Result<reqwest::blocking::RequestBuilder, anyhow::Error> {
-        let url = self.process_string(&model.url);
+        let url = self.build_string(&model.url);
 
         let request = match model.method {
             HttpMethod::Get => self.client.get(url),

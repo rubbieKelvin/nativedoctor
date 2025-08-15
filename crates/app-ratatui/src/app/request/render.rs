@@ -104,7 +104,7 @@ impl SingleRequestApp {
 
     fn render_url_input_block(&mut self, _state: &mut SingleRequestAppState) -> Paragraph<'static> {
         let mut u_input = TextInput::default()
-            .set_placeholder("Ex: https://httpbin.org/get")
+            .set_placeholder("https://httpbin.org/get")
             .set_active(matches!(
                 self.input_state,
                 InputState::Editing {
@@ -137,7 +137,7 @@ impl SingleRequestApp {
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
             .title(vec![" m".fg(KEY_SHORTCUT_FG_HINT), "ethod ".into()]);
-        let para = Paragraph::new(state.get_method().span());
+        let para = Paragraph::new(state.requestmodel.method.to_string());
         return para.block(block);
     }
 
