@@ -38,6 +38,10 @@ impl SingleRequestApp {
     }
 
     fn command_send_request(&mut self, state: &mut SingleRequestAppState) {
+        if state.is_making_request {
+            return;
+        }
+        
         let model = state.requestmodel.clone();
         let tx = self.event_transmitter.clone().unwrap();
         let request = self
@@ -47,9 +51,11 @@ impl SingleRequestApp {
             .unwrap();
 
         // send the request in a new thread
-        spawn(move || {
+        state.is_making_request = true;
+        spawn(move || -> Result<(), anyhow::Error> {
             let response = request.send();
-            tx.send(ApplicationEvent::HttpRequestCallCompleted(response));
+            tx.send(ApplicationEvent::HttpRequestCallCompleted(response))?;
+            return Ok(());
         });
     }
 

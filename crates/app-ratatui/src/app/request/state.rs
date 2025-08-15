@@ -1,3 +1,4 @@
+use reqwest::blocking::Response;
 use strum::IntoEnumIterator;
 
 use crate::app::request::enums::{RequestTab, ResponseTab};
@@ -6,10 +7,12 @@ use crate::app::request::enums::{RequestTab, ResponseTab};
 pub struct SingleRequestAppState {
     pub running: bool,
     pub output_pane_visible: bool,
+    pub is_making_request: bool,
     pub request_tab_index: usize,
     pub response_tab_index: usize,
     pub initial_requestmodel: Option<models::requestroot::RequestRootModel>,
     pub requestmodel: models::requestroot::RequestRootModel,
+    pub response: Option<reqwest::Result<Response>>,
 }
 
 impl SingleRequestAppState {

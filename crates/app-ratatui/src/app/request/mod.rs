@@ -145,7 +145,13 @@ impl SingleRequestApp {
                 }
                 _ => None,
             },
-            // _ => None,
+            ApplicationEvent::HttpRequestCallCompleted(result) => {
+                // TODO: might move this to another place for modularity
+                state.is_making_request = false;
+                state.output_pane_visible = true;
+                state.response = Some(result);
+                None
+            }
         };
 
         if let Some(command) = command {

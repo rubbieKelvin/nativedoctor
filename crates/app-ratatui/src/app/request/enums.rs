@@ -45,6 +45,7 @@ pub enum ResponseTab {
     Log,
 }
 
+#[derive(strum::Display)]
 pub enum ApplicationEvent {
     Input(ratatui::crossterm::event::Event),
     HttpRequestCallCompleted(reqwest::Result<reqwest::blocking::Response>),
