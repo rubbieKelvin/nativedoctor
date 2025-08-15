@@ -1,8 +1,9 @@
+use models::direction::Direction;
 use strum::IntoEnumIterator;
 
 use crate::app::request::{
     SingleRequestApp, SingleRequestAppState,
-    enums::{ActiveInput, Command, Direction, InputState, RequestMethod, RequestTab},
+    enums::{ActiveInput, Command, InputState, RequestMethod, RequestTab},
 };
 
 impl SingleRequestApp {
@@ -18,16 +19,23 @@ impl SingleRequestApp {
             Command::StopEditing => self.command_stop_editing(state),
             Command::RotateHttpMethod(dir) => self.command_rotate_method(state, dir),
             Command::RotateRequestTab(dir) => self.command_rotate_request_tab(state, dir),
-            Command::ToggleRequestOutputPane => {
-                state.output_pane_visible = !state.output_pane_visible;
-            }
+            Command::SendRequest => self.command_send_request(state),
+            Command::ToggleRequestOutputPane => self.command_toggle_req_output(state),
         }
 
         return Ok(());
     }
 
+    fn command_toggle_req_output(&mut self, state: &mut SingleRequestAppState) {
+        state.output_pane_visible = !state.output_pane_visible;
+    }
+
     fn command_quit(&mut self, state: &mut SingleRequestAppState) {
         state.running = false;
+    }
+
+    fn command_send_request(&mut self, _state: &mut SingleRequestAppState) {
+        todo!()
     }
 
     fn command_start_editing(&mut self, _state: &mut SingleRequestAppState, which: ActiveInput) {

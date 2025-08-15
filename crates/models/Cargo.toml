@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
+strum = { version = "0.27.2", features = ["derive"] }

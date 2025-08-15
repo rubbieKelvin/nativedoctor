@@ -64,7 +64,7 @@ impl SingleRequestApp {
         return request_tab_line;
     }
 
-    fn render_title_block(&mut self, _state: &mut SingleRequestAppState) -> Paragraph<'static> {
+    fn render_title_block(&mut self, state: &mut SingleRequestAppState) -> Paragraph<'static> {
         let mut n_input = TextInput::default()
             .set_placeholder("title")
             .set_active(matches!(
@@ -79,7 +79,15 @@ impl SingleRequestApp {
         let mut block = Block::bordered()
             .border_type(BorderType::Rounded)
             .title(vec![" t".fg(KEY_SHORTCUT_FG_HINT), "itle ".into()])
-            .title(Line::from("untitled.ndr").centered());
+            .title(
+                // Model change status
+                Line::from_iter([
+                    if state.has_model_changed() { "* " } else { "" },
+                    // Filename
+                    "untitled.ndr".into(),
+                ])
+                .centered(),
+            );
 
         block = if let InputState::Editing {
             which: ActiveInput::RequestTitle,
@@ -117,11 +125,7 @@ impl SingleRequestApp {
             }
         } else {
             block.title(
-                Line::from(vec![
-                    " send ".into(),
-                    "⮐ ".fg(KEY_SHORTCUT_FG_HINT),
-                ])
-                .right_aligned(),
+                Line::from(vec![" send ".into(), "⮐ ".fg(KEY_SHORTCUT_FG_HINT)]).right_aligned(),
             )
         };
 

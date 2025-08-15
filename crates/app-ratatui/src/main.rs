@@ -1,7 +1,6 @@
 use nd_core::constants::APPLICATION_NAME;
 
 mod app;
-mod runtime;
 mod style;
 mod widgets;
 

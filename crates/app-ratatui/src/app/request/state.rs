@@ -9,8 +9,8 @@ pub struct SingleRequestAppState {
     pub method_index: usize,
     pub request_tab_index: usize,
     pub response_tab_index: usize,
-    pub initial_model_state: Option<models::request_root::RequestRootModel>,
-    pub model_state: models::request_root::RequestRootModel,
+    pub initial_model_state: Option<models::requestroot::RequestRootModel>,
+    pub model_state: models::requestroot::RequestRootModel,
 }
 
 impl SingleRequestAppState {

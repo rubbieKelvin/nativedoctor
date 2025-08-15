@@ -1,5 +1,6 @@
 use std::{sync::mpsc::{self, Sender}, thread::spawn};
 
+use models::direction::Direction;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
@@ -7,7 +8,7 @@ use ratatui::{
 
 use crate::{app::request::{
     enums::{
-        ActiveInput, ApplicationEvent, Command, Direction, InputState, RequestTab, ResponseTab,
+        ActiveInput, ApplicationEvent, Command, InputState, RequestTab, ResponseTab,
     },
     state::SingleRequestAppState,
 }, widgets::input::TextInputState};
@@ -22,6 +23,7 @@ pub struct SingleRequestApp{
     pub input_state: InputState,
     pub url_input_state: TextInputState,
     pub title_input_state: TextInputState,
+    pub http_client: reqwest::Client,
     pub event_transmitter: Option<Sender<ApplicationEvent>>
 }
 
@@ -84,7 +86,7 @@ impl SingleRequestApp {
             },
             KeyCode::Enter => match self.input_state {
                 InputState::Editing { .. } => Some(Command::StopEditing),
-                InputState::Normal => None,
+                InputState::Normal => Some(Command::SendRequest),
             },
             KeyCode::Esc => match self.input_state {
                 InputState::Editing { .. } => Some(Command::StopEditing), // TODO: should be like AbortEditing

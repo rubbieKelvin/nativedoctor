@@ -1,10 +1,49 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use crate::direction::Direction;
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, strum::Display, Default)]
+pub enum HttpMethod {
+    #[default]
+    Get,
+    Post,
+    Put,
+    Delete,
+    Patch,
+    Head,
+    Options,
+    Custom(String),
+}
+
+impl HttpMethod {
+    fn all() -> Vec<Self> {
+        return vec![
+            Self::Get,
+            Self::Post,
+            Self::Put,
+            Self::Delete,
+            Self::Patch,
+            Self::Head,
+            Self::Options,
+        ];
+    }
+
+    // MOve the mothod one step to the right
+    pub fn next(&mut self) {
+        let all = Self::all();
+        let dir = Direction::Right;
+        let mut index = all.iter().position(|i| i == self).unwrap_or(0);
+
+        dir.apply_usize(&mut index, all.len());
+        *self = all[index].clone();
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct RequestRootModel {
     pub name: String,
-    pub method: String,
+    pub method: HttpMethod,
     pub url: String,
     #[serde(default)]
     pub doc: String,
