@@ -1,11 +1,10 @@
 use std::thread::spawn;
 
 use nd_core::{direction::Direction, iterself::CircularIterSelf};
-use strum::IntoEnumIterator;
 
 use crate::app::request::{
     SingleRequestApp, SingleRequestAppState,
-    enums::{ActiveInput, ApplicationEvent, Command, InputState, RequestTab},
+    enums::{ActiveInput, ApplicationEvent, Command, InputState},
 };
 
 impl SingleRequestApp {
@@ -24,6 +23,7 @@ impl SingleRequestApp {
             Command::RotateRequestTab(dir) => self.command_rotate_request_tab(state, dir),
             Command::SendRequest => self.command_send_request(state),
             Command::ToggleRequestOutputPane => self.command_toggle_req_output(state),
+            Command::RotateResponseTab(dir) => self.command_rotate_response_tab(state, dir),
         }
 
         return Ok(());
@@ -41,7 +41,7 @@ impl SingleRequestApp {
         if state.is_making_request {
             return;
         }
-        
+
         let model = state.requestmodel.clone();
         let tx = self.event_transmitter.clone().unwrap();
         let request = self
@@ -103,6 +103,10 @@ impl SingleRequestApp {
     }
 
     fn command_rotate_request_tab(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
-        dir.apply_usize(&mut state.request_tab_index, RequestTab::iter().count());
+        state.request_tab.movecursor(dir);
+    }
+
+    fn command_rotate_response_tab(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
+        state.response_tab.movecursor(dir);
     }
 }

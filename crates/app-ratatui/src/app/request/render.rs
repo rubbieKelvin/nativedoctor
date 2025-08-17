@@ -33,7 +33,7 @@ impl SingleRequestApp {
                 format!("{} · ", t.to_string())
             });
 
-            if index == state.request_tab_index {
+            if t == state.request_tab {
                 s.fg(KEY_SHORTCUT_FG_HINT)
             } else {
                 s
@@ -54,7 +54,7 @@ impl SingleRequestApp {
                 format!("{} · ", t.to_string())
             });
 
-            if index == state.response_tab_index {
+            if t == state.response_tab {
                 s.fg(KEY_SHORTCUT_FG_HINT)
             } else {
                 s
@@ -173,7 +173,23 @@ impl SingleRequestApp {
         &mut self,
         state: &mut SingleRequestAppState,
     ) -> impl Widget {
-        return "My stiff";
+        return match state.response_tab {
+            ResponseTab::Headers => self.render_response_header_tab(state),
+            ResponseTab::Body => self.render_response_body_tab(state),
+            ResponseTab::Log => self.render_response_log_tab(state),
+        };
+    }
+
+    fn render_response_header_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
+        return "Response headers";
+    }
+
+    fn render_response_body_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
+        return "Body";
+    }
+
+    fn render_response_log_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
+        return "Log";
     }
 }
 

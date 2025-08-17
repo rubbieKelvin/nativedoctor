@@ -85,6 +85,14 @@ impl SingleRequestApp {
                 InputState::Normal => Some(Command::RotateHttpMethod),
                 InputState::Editing { .. } => None,
             },
+            KeyCode::Char('b') => match self.input_state {
+                InputState::Normal => Some(Command::RotateResponseTab(Direction::Left)),
+                InputState::Editing { .. } => None,
+            },
+            KeyCode::Char('n') => match self.input_state {
+                InputState::Normal => Some(Command::RotateResponseTab(Direction::Right)),
+                InputState::Editing { .. } => None,
+            },
             KeyCode::Char('1') => match self.input_state {
                 InputState::Normal => Some(Command::ToggleRequestOutputPane),
                 InputState::Editing { .. } => None,
