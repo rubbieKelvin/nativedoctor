@@ -8,6 +8,7 @@ use nd_core::executor::Executor;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind},
+    layout::Position,
 };
 
 use crate::{
@@ -34,7 +35,37 @@ pub struct SingleRequestApp {
 
 impl SingleRequestApp {
     pub fn new() -> Self {
-        return SingleRequestApp::default();
+        return Self {
+            url_input_state: TextInputState {
+                position: Position::new(1, 4),
+                ..Default::default()
+            },
+            title_input_state: TextInputState {
+                position: Position::new(11, 1),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+    }
+
+    pub fn get_current_text_input_state(&self) -> Option<&TextInputState> {
+        return match &self.input_state {
+            InputState::Editing { which } => match which {
+                ActiveInput::RequestTitle => Some(&self.title_input_state),
+                ActiveInput::RequestUrl => Some(&self.url_input_state),
+            },
+            InputState::Normal => None,
+        };
+    }
+
+    pub fn get_current_text_input_state_mut(&mut self) -> Option<&mut TextInputState> {
+        return match &mut self.input_state {
+            InputState::Editing { which } => match which {
+                ActiveInput::RequestTitle => Some(&mut self.title_input_state),
+                ActiveInput::RequestUrl => Some(&mut self.url_input_state),
+            },
+            InputState::Normal => None,
+        };
     }
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
@@ -117,21 +148,27 @@ impl SingleRequestApp {
         };
 
         // handle text input
-        let input_state = self.input_state.clone();
+        let input_state = self.get_current_text_input_state_mut();
 
-        if let InputState::Editing { which } = input_state {
-            // get the pointer to the string we'll like to manipulate
-            let active_buffer = match which {
-                ActiveInput::RequestUrl => &mut self.url_input_state.value,
-                ActiveInput::RequestTitle => &mut self.title_input_state.value,
-            };
-
+        if let Some(input_state) = input_state {
             match key.code {
                 KeyCode::Char(n) => {
-                    active_buffer.push(n);
+                    input_state.push(n);
                 }
                 KeyCode::Backspace => {
-                    active_buffer.pop();
+                    input_state.pop();
+                }
+                KeyCode::Left => {
+                    if input_state.value.len() != 0 && input_state.index != 0 {
+                        input_state.index -= 1;
+                    }
+                }
+                KeyCode::Right => {
+                    if input_state.value.len() != 0
+                        && input_state.index != input_state.value.len() as u16
+                    {
+                        input_state.index += 1;
+                    }
                 }
                 _ => {}
             };

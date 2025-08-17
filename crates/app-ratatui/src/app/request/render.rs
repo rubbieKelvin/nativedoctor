@@ -10,7 +10,7 @@ use crate::{
 use nd_core::constants::APPLICATION_NAME;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Position},
     style::Stylize,
     text::{Line, Span},
     widgets::{Block, BorderType, Paragraph, StatefulWidget, Widget},
@@ -19,6 +19,12 @@ use strum::IntoEnumIterator;
 
 impl SingleRequestApp {
     pub fn draw(&mut self, frame: &mut Frame, state: &mut SingleRequestAppState) {
+        if let Some(input) = self.get_current_text_input_state() {
+            frame.set_cursor_position(Position::new(
+                input.position.x + input.index,
+                input.position.y,
+            ));
+        }
         frame.render_stateful_widget(self, frame.area(), state);
     }
 
@@ -175,13 +181,26 @@ impl SingleRequestApp {
     ) -> impl Widget {
         return match state.response_tab {
             ResponseTab::Headers => self.render_response_header_tab(state),
-            ResponseTab::Body => self.render_response_body_tab(state),
-            ResponseTab::Log => self.render_response_log_tab(state),
+            // ResponseTab::Body => self.render_response_body_tab(state),
+            // ResponseTab::Log => self.render_response_log_tab(state),
+            _ => {
+                ""
+                // todo!("Not implemented yet")
+            }
         };
     }
 
     fn render_response_header_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
-        return "Response headers";
+        return match &state.response {
+            Some(response) => match response {
+                Ok(response) => {
+                    let headers = response.headers();
+                    "H"
+                }
+                Err(e) => "Error processing request",
+            },
+            None => "No response",
+        };
     }
 
     fn render_response_body_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {

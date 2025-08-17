@@ -1,4 +1,5 @@
 use ratatui::{
+    layout::Position,
     style::{Color, Style, Stylize},
     text::{Line, Span},
     widgets::{StatefulWidget, Widget},
@@ -8,7 +9,9 @@ use crate::style::KEY_SHORTCUT_FG_HINT;
 
 #[derive(Default, Debug)]
 pub struct TextInputState {
+    pub index: u16,
     pub value: String,
+    pub position: Position,
 }
 
 impl Into<String> for TextInputState {
@@ -19,7 +22,10 @@ impl Into<String> for TextInputState {
 
 impl Into<TextInputState> for String {
     fn into(self) -> TextInputState {
-        return TextInputState { value: self };
+        return TextInputState {
+            value: self,
+            ..Default::default()
+        };
     }
 }
 
@@ -27,7 +33,31 @@ impl Into<TextInputState> for &'static str {
     fn into(self) -> TextInputState {
         return TextInputState {
             value: self.to_string(),
+            ..Default::default()
         };
+    }
+}
+
+impl TextInputState {
+    pub fn paste<S: AsRef<str>>(&mut self, string: S) {
+        let string = string.as_ref();
+        self.value.insert_str(self.index as usize, string);
+        self.index += string.len() as u16;
+    }
+
+    pub fn push(&mut self, ch: char) {
+
+        self.value.insert(self.index as usize, ch);
+        self.index += 1;
+    }
+
+    pub fn pop(&mut self) {
+        if self.index == 0 {
+            return;
+        }
+
+        self.index -= 1;
+        self.value.remove(self.index as usize);
     }
 }
 
