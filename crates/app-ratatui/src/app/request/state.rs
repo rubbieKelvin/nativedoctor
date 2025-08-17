@@ -1,3 +1,4 @@
+use nd_core::models::requestroot::RequestRootModel;
 use reqwest::blocking::Response;
 use strum::IntoEnumIterator;
 
@@ -10,8 +11,8 @@ pub struct SingleRequestAppState {
     pub is_making_request: bool,
     pub request_tab_index: usize,
     pub response_tab_index: usize,
-    pub initial_requestmodel: Option<models::requestroot::RequestRootModel>,
-    pub requestmodel: models::requestroot::RequestRootModel,
+    pub initial_requestmodel: Option<RequestRootModel>,
+    pub requestmodel: RequestRootModel,
     pub response: Option<reqwest::Result<Response>>,
 }
 

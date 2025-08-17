@@ -165,7 +165,15 @@ impl SingleRequestApp {
                 .blue(),
             )
             .title_bottom(Line::from(APPLICATION_NAME.to_lowercase()).right_aligned());
+
         return block;
+    }
+
+    fn render_inner_response_output_tab_area(
+        &mut self,
+        state: &mut SingleRequestAppState,
+    ) -> impl Widget {
+        return "My stiff";
     }
 }
 
@@ -200,7 +208,11 @@ impl StatefulWidget for &mut SingleRequestApp {
         self.render_title_block(state).render(title_area, buf);
         self.render_request_input_area(state)
             .render(request_input_area, buf);
-        self.render_response_output_area(state)
-            .render(response_output_area, buf);
+
+        let response_output_block = self.render_response_output_area(state);
+        let response_output_inner = response_output_block.inner(response_output_area);
+        response_output_block.render(response_output_area, buf);
+        self.render_inner_response_output_tab_area(state)
+            .render(response_output_inner, buf);
     }
 }

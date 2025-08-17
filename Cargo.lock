@@ -36,7 +36,6 @@ dependencies = [
  "anyhow",
  "color-eyre",
  "crossterm 0.29.0",
- "models",
  "nd-core",
  "ratatui",
  "reqwest",
@@ -930,15 +929,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "models"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_yaml",
- "strum 0.27.2",
-]
-
-[[package]]
 name = "native-tls"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -960,8 +950,10 @@ name = "nd-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "models",
  "reqwest",
+ "serde",
+ "serde_yaml",
+ "strum 0.27.2",
 ]
 
 [[package]]

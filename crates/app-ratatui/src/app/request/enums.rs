@@ -1,4 +1,4 @@
-use models::direction::Direction;
+use nd_core::direction::Direction;
 
 #[derive(Debug, Clone, strum::Display)]
 pub enum ActiveInput {

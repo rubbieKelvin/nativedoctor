@@ -3,7 +3,7 @@ use std::{
     thread::spawn,
 };
 
-use models::direction::Direction;
+use nd_core::direction::Direction;
 use nd_core::executor::Executor;
 use ratatui::{
     DefaultTerminal,

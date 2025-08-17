@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::direction::Direction;
+use crate::iterself::CircularIterSelf;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, strum::Display, Default)]
 pub enum HttpMethod {
@@ -16,7 +16,7 @@ pub enum HttpMethod {
     Custom(String),
 }
 
-impl HttpMethod {
+impl CircularIterSelf for HttpMethod {
     fn all() -> Vec<Self> {
         return vec![
             Self::Get,
@@ -27,16 +27,6 @@ impl HttpMethod {
             Self::Head,
             Self::Options,
         ];
-    }
-
-    // MOve the mothod one step to the right
-    pub fn next(&mut self) {
-        let all = Self::all();
-        let dir = Direction::Right;
-        let mut index = all.iter().position(|i| i == self).unwrap_or(0);
-
-        dir.apply_usize(&mut index, all.len());
-        *self = all[index].clone();
     }
 }
 

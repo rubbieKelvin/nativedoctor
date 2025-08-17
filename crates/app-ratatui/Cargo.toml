@@ -10,6 +10,5 @@ crossterm = "0.29.0"
 ratatui = { version = "0.29.0", features = ["all-widgets"] }
 serde = { version = "1.0.219", features = ["derive"] }
 nd-core = { path = "../nd-core" }
-models = { path = "../models" }
 strum = { version = "0.27.2", features = ["derive"] }
 reqwest = "0.12.23"

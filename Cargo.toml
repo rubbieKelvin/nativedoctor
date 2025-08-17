@@ -2,7 +2,6 @@
 resolver = '2'
 members = [
     "crates/app-ratatui",
-    "crates/models",
     "crates/nd-core",
 ]
 default-members = ["crates/app-ratatui"]

@@ -58,7 +58,7 @@ impl TextInput {
         let style = Style {
             // empty state
             fg: Some(if state.value.is_empty() {
-                Color::DarkGray
+                Color::Gray
             } else {
                 Color::White
             }),

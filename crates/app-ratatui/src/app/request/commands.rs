@@ -1,6 +1,6 @@
 use std::thread::spawn;
 
-use models::direction::Direction;
+use nd_core::{direction::Direction, iterself::CircularIterSelf};
 use strum::IntoEnumIterator;
 
 use crate::app::request::{
@@ -99,7 +99,7 @@ impl SingleRequestApp {
 
     fn command_rotate_method(&mut self, state: &mut SingleRequestAppState) {
         let meth = &mut state.requestmodel.method;
-        meth.next();
+        meth.movecursor(Direction::Right);
     }
 
     fn command_rotate_request_tab(&mut self, state: &mut SingleRequestAppState, dir: Direction) {
