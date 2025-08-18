@@ -10,10 +10,11 @@ use crate::{
 use nd_core::constants::APPLICATION_NAME;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Position},
+    crossterm::style::Color,
+    layout::{Constraint, Layout, Position, Rect},
     style::Stylize,
     text::{Line, Span},
-    widgets::{Block, BorderType, Paragraph, StatefulWidget, Widget},
+    widgets::{Block, BorderType, Paragraph, Row, Table},
 };
 use strum::IntoEnumIterator;
 
@@ -24,8 +25,12 @@ impl SingleRequestApp {
                 input.position.x + input.index,
                 input.position.y,
             ));
+        } else if state.is_making_request {
+            frame.set_cursor_position(Position::new(5, 40));
         }
-        frame.render_stateful_widget(self, frame.area(), state);
+        // frame.render_stateful_widget(self, frame.area(), state);
+        let area = frame.area();
+        self.render(frame, area, state);
     }
 
     fn make_request_tab_line(&mut self, state: &mut SingleRequestAppState) -> Vec<Span<'static>> {
@@ -108,7 +113,7 @@ impl SingleRequestApp {
         return para.block(block);
     }
 
-    fn render_url_input_block(&mut self, _state: &mut SingleRequestAppState) -> Paragraph<'static> {
+    fn render_url_input_block(&mut self, state: &mut SingleRequestAppState) -> Paragraph<'static> {
         let mut u_input = TextInput::default()
             .set_placeholder("https://httpbin.org/get")
             .set_active(matches!(
@@ -129,6 +134,8 @@ impl SingleRequestApp {
                 ActiveInput::RequestUrl => block.title_bottom(" editing ⮐ "),
                 _ => block,
             }
+        } else if state.is_making_request {
+            block.title(Line::from(" sending... ").right_aligned())
         } else {
             block.title(
                 Line::from(vec![" send ".into(), "⮐ ".fg(KEY_SHORTCUT_FG_HINT)]).right_aligned(),
@@ -178,47 +185,85 @@ impl SingleRequestApp {
     fn render_inner_response_output_tab_area(
         &mut self,
         state: &mut SingleRequestAppState,
-    ) -> impl Widget {
-        return match state.response_tab {
-            ResponseTab::Headers => self.render_response_header_tab(state),
-            // ResponseTab::Body => self.render_response_body_tab(state),
+        frame: &mut Frame,
+        area: Rect,
+    ) {
+        match state.response_tab {
+            ResponseTab::Headers => self.render_response_header_tab(state, frame, area),
+            ResponseTab::Body => self.render_response_body_tab(state, frame, area),
             // ResponseTab::Log => self.render_response_log_tab(state),
-            _ => {
-                ""
-                // todo!("Not implemented yet")
+            _ => (),
+        };
+    }
+
+    fn render_response_header_tab(
+        &mut self,
+        state: &mut SingleRequestAppState,
+        frame: &mut Frame,
+        area: Rect,
+    ) {
+        return match &state.response {
+            Some(response) => match response {
+                Ok(response) => {
+                    let headers = &response.headers;
+
+                    let table = Table::new(
+                        headers.iter().map(|(name, value)| {
+                            Row::new(vec![
+                                name.to_string().into(),
+                                value
+                                    .to_str()
+                                    .map(|s| s.to_string().into())
+                                    .unwrap_or_else(|_| "REDACTED".fg(Color::Red)),
+                            ])
+                        }),
+                        vec![Constraint::Percentage(30), Constraint::Percentage(70)],
+                    );
+
+                    frame.render_stateful_widget(
+                        table,
+                        area,
+                        &mut state.widget_states.response_header_table_state,
+                    );
+                }
+                Err(_) => {
+                    frame.render_widget(
+                        Paragraph::new("Error processing request").fg(Color::Red),
+                        area,
+                    );
+                }
+            },
+            None => {
+                frame.render_widget(Paragraph::new("No response").fg(Color::Yellow), area);
             }
         };
     }
 
-    fn render_response_header_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
-        return match &state.response {
-            Some(response) => match response {
-                Ok(response) => {
-                    let headers = response.headers();
-                    "H"
-                }
-                Err(e) => "Error processing request",
-            },
-            None => "No response",
-        };
+    #[allow(unused)]
+    fn render_response_body_tab(
+        &mut self,
+        state: &mut SingleRequestAppState,
+        frame: &mut Frame,
+        area: Rect,
+    ) {
+        if let Some(response) = &state.response
+            && let Ok(response) = response
+            && let Some(body) = &response.string_body
+        {
+            frame.render_widget(Paragraph::new(body.clone()), area);
+        }
     }
 
-    fn render_response_body_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
-        return "Body";
-    }
-
-    fn render_response_log_tab(&mut self, state: &mut SingleRequestAppState) -> &'static str {
+    #[allow(unused)]
+    fn render_response_log_tab(&mut self, _state: &mut SingleRequestAppState) -> &'static str {
         return "Log";
     }
-}
 
-impl StatefulWidget for &mut SingleRequestApp {
-    type State = SingleRequestAppState;
     fn render(
-        self,
+        &mut self,
+        frame: &mut Frame,
         area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
+        state: &mut SingleRequestAppState,
     ) {
         let [title_area, url_area, view_area] = Layout::vertical([
             Constraint::Length(3),
@@ -238,16 +283,16 @@ impl StatefulWidget for &mut SingleRequestApp {
         }
         .areas(view_area);
 
-        self.render_methods_block(state).render(methods_area, buf);
-        self.render_url_input_block(state).render(url_area, buf);
-        self.render_title_block(state).render(title_area, buf);
-        self.render_request_input_area(state)
-            .render(request_input_area, buf);
+        frame.render_widget(self.render_methods_block(state), methods_area);
+        frame.render_widget(self.render_url_input_block(state), url_area);
+
+        frame.render_widget(self.render_title_block(state), title_area);
+        frame.render_widget(self.render_request_input_area(state), request_input_area);
 
         let response_output_block = self.render_response_output_area(state);
         let response_output_inner = response_output_block.inner(response_output_area);
-        response_output_block.render(response_output_area, buf);
-        self.render_inner_response_output_tab_area(state)
-            .render(response_output_inner, buf);
+        frame.render_widget(response_output_block, response_output_area);
+
+        self.render_inner_response_output_tab_area(state, frame, response_output_inner);
     }
 }

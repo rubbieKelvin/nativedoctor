@@ -42,6 +42,7 @@ impl Executor {
                 anyhow::bail!("Invalid method. {} is not supported.", model.method)
             }
         };
+        
         return Ok(request);
     }
 }

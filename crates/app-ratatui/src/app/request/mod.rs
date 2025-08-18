@@ -14,7 +14,7 @@ use ratatui::{
 use crate::{
     app::request::{
         enums::{ActiveInput, ApplicationEvent, Command, InputState, RequestTab, ResponseTab},
-        state::SingleRequestAppState,
+        state::{Response, SingleRequestAppState},
     },
     widgets::input::TextInputState,
 };
@@ -177,6 +177,8 @@ impl SingleRequestApp {
         return command;
     }
 
+    // fn handle_mouse(&mut self, event: MouseEvent, _state: &mut SingleRequestAppState) ->  {}
+
     fn handle_events(
         &mut self,
         event: ApplicationEvent,
@@ -188,13 +190,20 @@ impl SingleRequestApp {
                 event::Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                     self.handle_key_event(key_event, state)
                 }
+                // event::Event::Mouse(mouse_event) => {
+                // }
                 _ => None,
             },
             ApplicationEvent::HttpRequestCallCompleted(result) => {
                 // TODO: might move this to another place for modularity
+                let response = match result {
+                    Ok(result) => Ok(Response::from_reqwest_response(result)),
+                    Err(e) => Err(e),
+                };
+
                 state.is_making_request = false;
                 state.output_pane_visible = true;
-                state.response = Some(result);
+                state.response = Some(response);
                 None
             }
         };

@@ -38,7 +38,8 @@ impl SingleRequestApp {
     }
 
     fn command_send_request(&mut self, state: &mut SingleRequestAppState) {
-        if state.is_making_request {
+        let url = state.requestmodel.url.trim();
+        if state.is_making_request || url.len() == 0 {
             return;
         }
 
