@@ -31,6 +31,7 @@ pub struct SingleRequestApp {
     pub title_input_state: TextInputState,
     pub executor: Executor,
     pub event_transmitter: Option<Sender<ApplicationEvent>>,
+    // pub body_input:
 }
 
 impl SingleRequestApp {

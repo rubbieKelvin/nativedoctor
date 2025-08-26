@@ -12,3 +12,4 @@ serde = { version = "1.0.219", features = ["derive"] }
 nd-core = { path = "../nd-core" }
 strum = { version = "0.27.2", features = ["derive"] }
 reqwest = "0.12.23"
+tui-textarea = "0.7.0"
