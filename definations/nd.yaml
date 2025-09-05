@@ -1,0 +1,199 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Native doctor request file
+description: Defines a single request for native doctor
+type: object
+$ref: "#/definitions/Request"
+
+definitions:
+  Request:
+    type: object
+    description: Represents a single API request definition. Field names are snake_case as per Rust struct's serde attribute.
+    properties:
+      method:
+        type: string
+        description: The HTTP method for the request (e.g., GET, POST, PUT, DELETE).
+      url:
+        type: string
+        description: The URL for the API request. It can contain placeholders for environment variables (e.g., {{base_url}}/users).
+      doc:
+        type: string
+        description: Optional documentation or a human-readable description for this request.
+      config:
+        $ref: "#/definitions/RequestConfig"
+        description: Optional configuration options for the request execution like dependencies, delay, timeout, and retries.
+      headers:
+        type: object
+        description: Optional HTTP headers for the request. Each key-value pair represents a header name and its value.
+        additionalProperties:
+          type: string
+      query:
+        type: [object, "null"]
+        description: Optional URL query parameters for the request. Each key-value pair represents a parameter name and its value.
+        additionalProperties:
+          type: string
+      body:
+        $ref: "#/definitions/RequestBody"
+        description: Optional body of the request, structured according to its type (JSON, XML, GraphQL, etc.).
+    required:
+      - method
+      - url
+
+  RequestConfig:
+    type: [object, "null"]
+    description: Configuration settings for a request's execution. Field names are snake_case.
+    properties:
+      require:
+        type: array
+        description: A list of request names (defined in the 'requests' section) that this request depends on. These will be executed before this request.
+        items:
+          type: string
+        default: []
+      delay:
+        type: integer
+        description: An optional delay to wait before executing the request in milliseconds.
+      timeout:
+        type: integer
+        description: An optional timeout for the request in milliseconds. If the request exceeds this duration, it's considered failed.
+      retries:
+        type: integer
+        description: Number of times to retry the request on failure.
+        minimum: 0
+        default: 0
+      class:
+        type: string
+        description: Where to group this request (folder like)
+      tags:
+        type: array
+        items:
+          type: string
+
+  RequestBody:
+    type: [object, "null"]
+    description: Represents the body of an HTTP request, discriminated by the 'type' field. Field names for variants are snake_case.
+    oneOf:
+      - type: object
+        title: JsonBody
+        properties:
+          type:
+            type: string
+            const: "json"
+            description: Indicates a JSON request body.
+          content:
+            $ref: "#/definitions/SerdeYamlValue" # Allows any valid JSON structure (object or array)
+            description: The JSON content of the body.
+        required:
+          - type
+          - content
+      - type: object
+        title: GraphqlBody
+        properties:
+          type:
+            type: string
+            const: "graphql"
+            description: Indicates a GraphQL request body.
+          query:
+            type: string
+            description: The GraphQL query string.
+          variables:
+            $ref: "#/definitions/SerdeYamlValue" # GraphQL variables as a JSON-like structure
+            description: Optional variables for the GraphQL query.
+        required:
+          - type
+          - query
+      - type: object
+        title: XmlBody
+        properties:
+          type:
+            type: string
+            const: "xml"
+            description: Indicates an XML request body.
+          content:
+            type: string
+            description: The XML content as a string.
+        required:
+          - type
+          - content
+      - type: object
+        title: TextBody
+        properties:
+          type:
+            type: string
+            const: "text"
+            description: Indicates a plain text request body.
+          content:
+            type: string
+            description: The text content.
+        required:
+          - type
+          - content
+      - type: object
+        title: FormUrlencodedBody
+        properties:
+          type:
+            type: string
+            const: "form-urlencoded"
+            description: Indicates a form URL-encoded request body (application/x-www-form-urlencoded).
+          content:
+            type: string
+            description: The form URL-encoded string (e.g., key1=value1&key2=value2).
+        required:
+          - type
+          - content
+      - type: object
+        title: MultipartBody
+        properties:
+          type:
+            type: string
+            const: "multipart"
+            description: Indicates a multipart/form-data request body.
+          parts:
+            type: array
+            description: A list of parts for the multipart body, each being a field or a file.
+            items:
+              $ref: "#/definitions/MultipartPart"
+        required:
+          - type
+          - parts
+      - type: "null"
+
+  MultipartPart:
+    type: object
+    description: Represents a single part within a multipart request body, discriminated by the 'kind' field. Field names for variants are snake_case.
+    oneOf:
+      - type: object
+        title: MultipartField
+        properties:
+          kind:
+            type: string
+            const: "field"
+            description: Indicates this part is a simple text field.
+          name:
+            type: string
+            description: The name of the form field.
+          value:
+            type: string
+            description: The value of the form field.
+        required:
+          - kind
+          - name
+          - value
+      - type: object
+        title: MultipartFile
+        properties:
+          kind:
+            type: string
+            const: "file"
+            description: Indicates this part is a file to be uploaded.
+          name:
+            type: string
+            description: The name of the form field associated with the file.
+          path:
+            type: string
+            description: The local file system path to the file to be uploaded.
+          mime_type: # snake_case in Rust struct
+            type: string
+            description: Optional MIME type of the file (e.g., "image/jpeg", "application/pdf"). If not provided, it might be inferred.
+        required:
+          - kind
+          - name
+          - path
