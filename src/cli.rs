@@ -1,18 +1,26 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(version, about, long_about=None)]
+#[command(name = "Native doctor")]
+#[command(
+    about = "API testing tool designed for easy YAML definition and seamless integration into CI/CD pipelines."
+)]
+#[command(version, long_about=None)]
 pub struct Cli {
     #[command(subcommand)]
-    pub subcommand: Option<SubCommand>
+    pub subcommand: Option<SubCommand>,
 }
 
 #[derive(Subcommand)]
 pub enum SubCommand {
     /// Create new native doctor project
-    New {
-        /// Create a single request file
-        #[arg(short, long)]
-        request: bool
-    }
+    New (NewArgs),
+}
+
+#[derive(Args)]
+pub struct NewArgs {
+    /// Create a single request file
+    #[arg(short, long)]
+    pub request: bool,
+    pub name: Option<String>,
 }
