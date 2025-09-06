@@ -8,7 +8,7 @@ HTTPBin is a simple HTTP Request & Response Service that provides various endpoi
 
 ## Project Structure
 
-```
+```text
 httpbin/
 ├── main.ndp.yaml              # Main project configuration
 ├── README.md                  # This file
@@ -89,50 +89,64 @@ nativedoctor run httpbin/main.ndp.yaml --sequence all-tests
 ## Test Categories
 
 ### 1. Basic HTTP Methods
+
 Tests fundamental HTTP verbs (GET, POST, PUT, PATCH, DELETE) with various payloads and headers.
 
 ### 2. Status Code Testing
+
 Validates handling of different HTTP status codes including success, client errors, and server errors.
 
 ### 3. Authentication
+
 Tests various authentication mechanisms:
+
 - HTTP Basic Authentication
 - Bearer Token Authentication  
 - HTTP Digest Authentication
 
 ### 4. Headers & Cookies
+
 Validates header handling and cookie management:
+
 - Custom header inspection
 - User-Agent parsing
 - Cookie setting and retrieval
 
 ### 5. Redirects & Delays
+
 Tests client behavior with:
+
 - HTTP redirects (multiple hops)
 - Delayed responses
 - Cache control headers
 
 ### 6. Data Formats
+
 Tests different response formats:
+
 - JSON parsing
 - XML handling
 - HTML content
 - Base64 decoding
 
 ### 7. Form Data
+
 Tests form submission methods:
+
 - URL-encoded form data
 - Multipart form data
 
 ### 8. Utilities
+
 Tests utility endpoints:
+
 - IP address detection
 - UUID generation
 - Compression support (GZIP, Deflate)
 
 ## About HTTPBin
 
-HTTPBin (https://httpbin.org/) is a simple HTTP Request & Response Service that provides endpoints for testing HTTP libraries. It's particularly useful for:
+[HTTPBin](https://httpbin.org/) is a simple HTTP Request & Response Service that provides endpoints for testing HTTP libraries. It's particularly useful for:
 
 - Testing HTTP clients
 - Debugging API requests
