@@ -1,17 +1,15 @@
-[workspace]
-resolver = '2'
-members = [
-    "crates/app-ratatui",
-    "crates/nd-core",
-]
-default-members = ["crates/app-ratatui"]
+[package]
+name = "nativedoctor"
+version = "0.1.0"
+edition = "2024"
 
-[profile.wasm-dev]
-inherits = "dev"
-opt-level = 1
+[dependencies]
+anyhow = "1.0.99"
+clap = { version = "4.5.47", features = ["derive"] }
+reqwest = { version = "0.12.23", features = ["blocking", "multipart"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
+serde_yaml = "0.9.34"
 
-[profile.server-dev]
-inherits = "dev"
-
-[profile.android-dev]
-inherits = "dev"
+[dev-dependencies]
+tempfile = "3.10"

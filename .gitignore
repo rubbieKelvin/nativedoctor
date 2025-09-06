@@ -1,9 +1,23 @@
-target/
-example/
-*.nd
+# Logs
+logs
+*.log
+
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-node_modules
-src-tauri
-recents.json
-*.gitignore.*
-.old/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Rust
+target
+
+# Native doctor files
+*.nd.yaml
+*.ndp.yaml
