@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::{collections::HashMap, fs::File, path::{Path, PathBuf}};
 
 // Re-exporting for convenience (might want to support json later too)
 pub use serde_yaml::Value as SerdeYamlValue;
@@ -51,7 +51,7 @@ impl RequestSchema {
     }
 
     /// Saves the current `RequestSchema` instance to the specified file path in YAML format.
-    pub fn save_to_path(self, path: PathBuf) -> Result<(), anyhow::Error> {
+    pub fn save_to_path(self, path: &Path) -> Result<(), anyhow::Error> {
         // Ensure the directory exists if the path includes subdirectories.
         // This prevents errors if you're saving to a new directory.
         if let Some(parent) = path.parent() {
@@ -67,8 +67,8 @@ impl RequestSchema {
     }
 
     /// Reads and deserializes a `RequestSchema` from the specified file path.
-    pub fn read_from_path(path: PathBuf) -> Result<Self, anyhow::Error> {
-        let file = File::open(&path)?;
+    pub fn read_from_path(path: &Path) -> Result<Self, anyhow::Error> {
+        let file = File::open(path)?;
         let schema: RequestSchema = serde_yaml::from_reader(file)?;
         Ok(schema)
     }

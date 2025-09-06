@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -15,6 +17,8 @@ pub struct Cli {
 pub enum SubCommand {
     /// Create new native doctor project
     New (NewArgs),
+    /// Run a request or a call
+    Run(RunArgs)
 }
 
 #[derive(Args)]
@@ -23,4 +27,10 @@ pub struct NewArgs {
     #[arg(short, long)]
     pub request: bool,
     pub name: Option<String>,
+}
+
+
+#[derive(Args)]
+pub struct RunArgs {
+    pub path: PathBuf
 }
