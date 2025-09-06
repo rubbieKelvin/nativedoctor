@@ -32,9 +32,9 @@ pub struct NewArgs {
 
 #[derive(Args)]
 pub struct RunArgs {
-    /// The path of the request file or the call file to run
+    /// The path of the request file or the sequence name to run
     pub path: PathBuf,
     // Do not call request dependencies
-    // #[arg(long = "no-deps")]
-    // pub no_deps: bool
+    #[arg(long = "no-deps")]
+    pub no_deps: bool
 }
