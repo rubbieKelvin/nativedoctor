@@ -1,0 +1,6 @@
+name: IP Address Test
+method: GET
+url: https://httpbin.org/ip
+doc: Test IP address detection - returns the origin IP address
+headers:
+  User-Agent: "Native-Doctor/1.0"

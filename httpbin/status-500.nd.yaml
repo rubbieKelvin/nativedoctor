@@ -1,0 +1,6 @@
+name: Status 500 Internal Server Error Test
+method: GET
+url: https://httpbin.org/status/500
+doc: Test HTTP 500 Internal Server Error response
+headers:
+  User-Agent: "Native-Doctor/1.0"

@@ -1,0 +1,6 @@
+name: Status 404 Not Found Test
+method: GET
+url: https://httpbin.org/status/404
+doc: Test HTTP 404 Not Found response
+headers:
+  User-Agent: "Native-Doctor/1.0"

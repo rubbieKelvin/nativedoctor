@@ -1,0 +1,7 @@
+name: Bearer Token Authentication Test
+method: GET
+url: https://httpbin.org/bearer
+doc: Test Bearer token authentication
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik5hdGl2ZSBEb2N0b3IiLCJpYXQiOjE1MTYyMzkwMjJ9.fake-jwt-token-for-testing"

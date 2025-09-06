@@ -1,0 +1,6 @@
+name: Base64 Decode Test
+method: GET
+url: https://httpbin.org/base64/SFRUUEJJTiBpcyBhd2Vzb21l
+doc: Test base64 decoding - decodes 'HTTPBIN is awesome' from base64
+headers:
+  User-Agent: "Native-Doctor/1.0"

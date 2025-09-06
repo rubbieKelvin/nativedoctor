@@ -293,7 +293,7 @@ pub struct TextBodySchema {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct FormUrlencodedBodySchema {
-    pub content: Vec<(String, String)>,
+    pub content: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

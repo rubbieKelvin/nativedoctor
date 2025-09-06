@@ -1,0 +1,6 @@
+name: Random Status Code Test
+method: GET
+url: https://httpbin.org/status/200,300,400,500
+doc: Test random status code selection from specified codes
+headers:
+  User-Agent: "Native-Doctor/1.0"

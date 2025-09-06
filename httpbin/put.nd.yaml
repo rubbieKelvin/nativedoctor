@@ -1,0 +1,20 @@
+name: PUT Request Test
+method: PUT
+url: https://httpbin.org/put
+doc: Test PUT request with JSON body for updating resources
+headers:
+  Content-Type: "application/json"
+  User-Agent: "Native-Doctor/1.0"
+body:
+  type: json
+  content: |
+    {
+      "id": 123,
+      "name": "Updated Resource",
+      "description": "This resource has been updated via PUT request",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "metadata": {
+        "updated_by": "native-doctor",
+        "version": 2
+      }
+    }

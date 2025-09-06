@@ -1,0 +1,6 @@
+name: Status 200 OK Test
+method: GET
+url: https://httpbin.org/status/200
+doc: Test successful HTTP 200 OK response
+headers:
+  User-Agent: "Native-Doctor/1.0"

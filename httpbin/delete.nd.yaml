@@ -1,0 +1,10 @@
+name: DELETE Request Test
+method: DELETE
+url: https://httpbin.org/delete
+doc: Test DELETE request for resource removal
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Authorization: "Bearer fake-delete-token"
+query:
+  resource_id: "123"
+  confirm: "true"

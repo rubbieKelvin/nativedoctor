@@ -1,0 +1,6 @@
+name: UUID Generation Test
+method: GET
+url: https://httpbin.org/uuid
+doc: Test UUID generation - returns a randomly generated UUID
+headers:
+  User-Agent: "Native-Doctor/1.0"

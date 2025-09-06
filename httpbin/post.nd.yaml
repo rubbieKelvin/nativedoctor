@@ -1,0 +1,21 @@
+name: POST Request Test
+method: POST
+url: https://httpbin.org/post
+doc: Test POST request with JSON body
+headers:
+  Content-Type: "application/json"
+  User-Agent: "Native-Doctor/1.0"
+body:
+  type: json
+  content: |
+    {
+      "name": "Native Doctor",
+      "version": "1.0.0",
+      "test_type": "POST request",
+      "data": {
+        "string_field": "hello world",
+        "number_field": 42,
+        "boolean_field": true,
+        "array_field": ["item1", "item2", "item3"]
+      }
+    }

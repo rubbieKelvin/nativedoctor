@@ -1,0 +1,10 @@
+name: Headers Inspection Test
+method: GET
+url: https://httpbin.org/headers
+doc: Test request headers inspection - returns all headers sent by client
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept: "application/json"
+  X-Custom-Header: "custom-value"
+  X-Test-Suite: "httpbin-native-doctor"
+  X-Request-ID: "req-12345"

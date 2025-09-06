@@ -1,0 +1,7 @@
+name: XML Response Test
+method: GET
+url: https://httpbin.org/xml
+doc: Test XML response parsing - returns sample XML data
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept: "application/xml"

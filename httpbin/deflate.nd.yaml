@@ -1,0 +1,7 @@
+name: Deflate Compression Test
+method: GET
+url: https://httpbin.org/deflate
+doc: Test deflate compression support - returns deflate-encoded response
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept-Encoding: "gzip, deflate"

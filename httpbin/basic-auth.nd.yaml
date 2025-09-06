@@ -1,0 +1,7 @@
+name: Basic Authentication Test
+method: GET
+url: https://httpbin.org/basic-auth/user/passwd
+doc: Test HTTP Basic Authentication with username 'user' and password 'passwd'
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Authorization: "Basic dXNlcjpwYXNzd2Q="

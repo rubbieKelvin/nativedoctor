@@ -1,0 +1,22 @@
+name: PATCH Request Test
+method: PATCH
+url: https://httpbin.org/patch
+doc: Test PATCH request for partial resource updates
+headers:
+  Content-Type: "application/json"
+  User-Agent: "Native-Doctor/1.0"
+body:
+  type: json
+  content: |
+    {
+      "op": "replace",
+      "path": "/name",
+      "value": "Patched Resource Name",
+      "changes": [
+        {
+          "field": "status",
+          "old_value": "active",
+          "new_value": "updated"
+        }
+      ]
+    }

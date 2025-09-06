@@ -21,3 +21,5 @@ target
 # Native doctor files
 *.nd.yaml
 *.ndp.yaml
+!httpbin/*.nd.yaml
+!httpbin/*.ndp.yaml

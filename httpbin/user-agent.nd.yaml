@@ -1,0 +1,6 @@
+name: User Agent Test
+method: GET
+url: https://httpbin.org/user-agent
+doc: Test User-Agent header parsing and return
+headers:
+  User-Agent: "Native-Doctor/1.0 (Rust; API Testing Tool)"

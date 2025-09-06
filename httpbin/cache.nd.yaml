@@ -1,0 +1,8 @@
+name: Cache Control Test
+method: GET
+url: https://httpbin.org/cache
+doc: Test cache control headers and conditional requests
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  If-Modified-Since: "Wed, 21 Oct 2015 07:28:00 GMT"
+  If-None-Match: '"test-etag-value"'

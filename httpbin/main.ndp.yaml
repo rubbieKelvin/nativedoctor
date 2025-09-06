@@ -1,0 +1,62 @@
+name: httpbin-test-suite
+version: "1.0.0"
+description: Comprehensive test suite for httpbin.org API endpoints
+default_sequence: basic-methods
+sequence:
+  basic-methods:
+    - ./get.nd.yaml
+    - ./post.nd.yaml
+    - ./put.nd.yaml
+    - ./patch.nd.yaml
+    - ./delete.nd.yaml
+  
+  status-codes:
+    - ./status-200.nd.yaml
+    - ./status-404.nd.yaml
+    - ./status-500.nd.yaml
+    - ./status-random.nd.yaml
+  
+  authentication:
+    - ./basic-auth.nd.yaml
+    - ./bearer-token.nd.yaml
+    - ./digest-auth.nd.yaml
+  
+  headers-cookies:
+    - ./headers.nd.yaml
+    - ./user-agent.nd.yaml
+    - ./cookies-set.nd.yaml
+    - ./cookies-get.nd.yaml
+  
+  redirects-delays:
+    - ./redirect.nd.yaml
+    - ./delay.nd.yaml
+    - ./cache.nd.yaml
+  
+  data-formats:
+    - ./json.nd.yaml
+    - ./xml.nd.yaml
+    - ./html.nd.yaml
+    - ./base64.nd.yaml
+  
+  misc:
+    - ./ip.nd.yaml
+    - ./uuid.nd.yaml
+    - ./gzip.nd.yaml
+    - ./deflate.nd.yaml
+  
+  all-tests:
+    - ./get.nd.yaml
+    - ./post.nd.yaml
+    - ./put.nd.yaml
+    - ./patch.nd.yaml
+    - ./delete.nd.yaml
+    - ./status-200.nd.yaml
+    - ./status-404.nd.yaml
+    - ./basic-auth.nd.yaml
+    - ./headers.nd.yaml
+    - ./cookies-set.nd.yaml
+    - ./redirect.nd.yaml
+    - ./delay.nd.yaml
+    - ./json.nd.yaml
+    - ./ip.nd.yaml
+    - ./uuid.nd.yaml

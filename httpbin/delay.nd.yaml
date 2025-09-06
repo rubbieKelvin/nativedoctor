@@ -1,0 +1,8 @@
+name: Delay Test
+method: GET
+url: https://httpbin.org/delay/2
+doc: Test delayed response - server waits 2 seconds before responding
+headers:
+  User-Agent: "Native-Doctor/1.0"
+config:
+  timeout: 5000

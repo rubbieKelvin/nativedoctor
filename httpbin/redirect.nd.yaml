@@ -1,0 +1,8 @@
+name: Redirect Test
+method: GET
+url: https://httpbin.org/redirect/3
+doc: Test HTTP redirect functionality - redirects 3 times before final response
+headers:
+  User-Agent: "Native-Doctor/1.0"
+config:
+  timeout: 10000

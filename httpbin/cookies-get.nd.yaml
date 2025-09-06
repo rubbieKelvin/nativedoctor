@@ -1,0 +1,7 @@
+name: Get Cookies Test
+method: GET
+url: https://httpbin.org/cookies
+doc: Test cookie retrieval and inspection
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Cookie: "session_id=abc123def456; user_pref=dark_mode; language=en"

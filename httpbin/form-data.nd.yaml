@@ -1,0 +1,13 @@
+name: Form Data POST Test
+method: POST
+url: https://httpbin.org/post
+doc: Test form-urlencoded data submission
+headers:
+  User-Agent: "Native-Doctor/1.0"
+body:
+  type: form-urlencoded
+  content:
+    username: "testuser"
+    password: "testpass123"
+    email: "test@example.com"
+    remember_me: "true"

@@ -1,0 +1,6 @@
+name: Digest Authentication Test
+method: GET
+url: https://httpbin.org/digest-auth/auth/user/passwd
+doc: Test HTTP Digest Authentication with username 'user' and password 'passwd'
+headers:
+  User-Agent: "Native-Doctor/1.0"

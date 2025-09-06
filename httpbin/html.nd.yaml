@@ -1,0 +1,7 @@
+name: HTML Response Test
+method: GET
+url: https://httpbin.org/html
+doc: Test HTML response parsing - returns sample HTML document
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept: "text/html"

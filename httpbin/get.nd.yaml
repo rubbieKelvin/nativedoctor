@@ -1,0 +1,11 @@
+name: GET Request Test
+method: GET
+url: https://httpbin.org/get
+doc: Test basic GET request functionality with query parameters
+query:
+  param1: value1
+  param2: value2
+  test: "httpbin-get-test"
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept: "application/json"

@@ -1,0 +1,10 @@
+name: Set Cookies Test
+method: GET
+url: https://httpbin.org/cookies/set
+doc: Test cookie setting functionality
+query:
+  session_id: "abc123def456"
+  user_pref: "dark_mode"
+  language: "en"
+headers:
+  User-Agent: "Native-Doctor/1.0"

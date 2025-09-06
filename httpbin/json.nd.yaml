@@ -1,0 +1,7 @@
+name: JSON Response Test
+method: GET
+url: https://httpbin.org/json
+doc: Test JSON response parsing - returns sample JSON data
+headers:
+  User-Agent: "Native-Doctor/1.0"
+  Accept: "application/json"
