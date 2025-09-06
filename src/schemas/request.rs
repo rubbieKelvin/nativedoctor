@@ -1,10 +1,11 @@
-use anyhow::Context;
+use anyhow::{Context, bail};
 use reqwest::blocking::{Client, RequestBuilder, multipart};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::{Method as ReqwestMethod, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use serde_yaml::Value as YamlValue;
+use std::fs::canonicalize;
 use std::{
     collections::HashMap,
     fs::File,
@@ -63,6 +64,10 @@ pub struct RequestSchema {
     pub query: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<RequestBodySchema>,
+    /// The path this schema was loaded from.
+    /// Should be populated on load
+    #[serde(skip)]
+    pub path: Option<PathBuf>,
 }
 
 impl RequestSchema {
@@ -95,8 +100,37 @@ impl RequestSchema {
     /// Reads and deserializes a `RequestSchema` from the specified file path.
     pub fn read_from_path(path: &Path) -> Result<Self, anyhow::Error> {
         let file = File::open(path)?;
-        let schema: RequestSchema = serde_yaml::from_reader(file)?;
+        let mut schema: RequestSchema = serde_yaml::from_reader(file)?;
+        schema.path = Some(path.to_path_buf());
         Ok(schema)
+    }
+
+    /// Returns all the requestschemas required by this request schema
+    pub fn dependencies(&self) -> Result<Vec<Result<Self, anyhow::Error>>, anyhow::Error> {
+        let parent = match &self.path {
+            Some(path) => path.parent().context("Unable to get path parent")?,
+            None => bail!("Path needs to be set when loading dependencies"),
+        };
+
+        return match &self.config {
+            Some(config) => Ok(config
+                .require
+                .iter()
+                .map(|p| {
+                    let relative_path = Path::new(p);
+
+                    if !relative_path.is_relative() {
+                        bail!("Request dependency paths should be relative")
+                    }
+
+                    let file_path = canonicalize(parent.join(relative_path))
+                        .context("Could not canonicalize dependency path")?;
+
+                    RequestSchema::read_from_path(&file_path)
+                })
+                .collect::<Vec<Result<RequestSchema, anyhow::Error>>>()),
+            None => Ok(vec![]),
+        };
     }
 
     /// Builds and returns a reqwest::blocking::RequestBuilder
@@ -191,6 +225,12 @@ impl RequestSchema {
     }
 }
 
+impl PartialEq for RequestSchema {
+    fn eq(&self, other: &Self) -> bool {
+        return self.path != other.path;
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "snake_case", default)]
 pub struct RequestConfigSchema {
@@ -203,7 +243,7 @@ pub struct RequestConfigSchema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub output: Option<String>
+    pub output: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
