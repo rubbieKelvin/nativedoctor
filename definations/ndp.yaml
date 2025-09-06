@@ -1,0 +1,34 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Native doctor project file
+description: Defines a the schema for native doctor project
+type: object
+$ref: "#/definitions/Main"
+
+definitions:
+  Main:
+    type: object
+    properties:
+      name:
+        type: string
+        description: A unique name for this request, useful for referencing in dependencies and reports.
+      version:
+        type: string
+        description: The version of the project (optional).
+      description:
+        type: string
+        description: A brief description of the project (optional).
+      default_sequence:
+        type: string
+        description: The default sequence to run. if not specified, the first sequence is run.
+      sequence:
+        type: object
+        description: >-
+          Defines sequences of requests (flows or scenarios), keyed by name. Each key's value is a list of request file paths.
+        additionalProperties:
+          type: array
+          description: A sequence of request file paths to be executed in order.
+          items:
+            type: string
+            description: A single request file path.
+    required:
+      - name

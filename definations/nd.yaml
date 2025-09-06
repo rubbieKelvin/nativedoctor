@@ -74,10 +74,14 @@ definitions:
       Configuration settings for a request's execution. Field names are
       snake_case.
     properties:
+      output:
+        type: string
+        description: >-
+          If specified, the response body will be saved to this path. the path has to be a valid filename
       require:
         type: array
         description: >-
-          A list of request names (defined in the 'requests' section) that this
+          A list of request paths that this
           request depends on. These will be executed before this request.
         items:
           type: string

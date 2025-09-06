@@ -202,6 +202,8 @@ pub struct RequestConfigSchema {
     pub retries: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

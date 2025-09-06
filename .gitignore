@@ -20,3 +20,4 @@ target
 
 # Native doctor files
 *.nd.yaml
+*.ndp.yaml

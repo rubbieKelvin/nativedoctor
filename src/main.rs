@@ -5,7 +5,7 @@ use clap::Parser;
 
 use crate::{
     cli::{Cli, SubCommand},
-    commands::{new::create_request_file, run::run_native_doctor_path},
+    commands::{new::{create_project_folder, create_request_file}, run::run_native_doctor_path},
     utils::get_current_directory,
 };
 
@@ -25,13 +25,14 @@ fn main() -> Result<(), anyhow::Error> {
     match &commandline.subcommand {
         // Handle new
         Some(SubCommand::New(arg)) => {
+            let name = arg.name.clone().unwrap_or(String::from("request"));
+
             if arg.request {
                 // create single request file in the current directory
-                let name = arg.name.clone().unwrap_or(String::from("hello"));
-                create_request_file(name, &current_directory)?;
+                create_request_file(&name, &current_directory)?;
             } else {
                 // create project folder in the current directory
-                todo!("Should implement this soon")
+                create_project_folder(&name, &current_directory)?;
             }
         }
         // Handle run command
