@@ -74,7 +74,8 @@ fn _run_request_schema(
 ) -> Result<(), anyhow::Error> {
     println!("Running request: {}", schema.name);
     let request = schema.build_blocking_reqwest(client)?;
-    let _response = request.send().context("Error sending request");
+    let response = request.send().context("Error sending request")?;
+    println!("Response: {:?}", response.status());
     return Ok(());
 }
 
