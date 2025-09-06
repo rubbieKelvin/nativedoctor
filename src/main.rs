@@ -54,7 +54,7 @@ fn main() -> Result<(), anyhow::Error> {
                 bail!("Path is not a file")
             }
 
-            run_native_doctor_path(path);
+            run_native_doctor_path(path)?;
         }
         _ => {
             // Maybe show the --help here somewhere

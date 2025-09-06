@@ -99,7 +99,7 @@ impl RequestSchema {
         Ok(schema)
     }
 
-    /// Builds and returns a `reqwest::blocking::RequestBuilder` from the `RequestSchema`.
+    /// Builds and returns a reqwest::blocking::RequestBuilder
     pub fn build_blocking_reqwest(&self, client: &Client) -> Result<RequestBuilder, anyhow::Error> {
         // Create the base request builder with the method and URL
         let url = Url::parse(&self.url).context("Error parsing url {}")?;

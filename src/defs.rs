@@ -7,6 +7,7 @@ pub enum FileType {
 }
 
 impl FileType {
+    #[allow(unused)]
     pub fn extension(&self) -> &'static str {
         return match self {
             FileType::RequestYamlFile => EXTENSION_REQUEST_FILE_YAML,

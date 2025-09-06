@@ -32,5 +32,12 @@ pub struct NewArgs {
 
 #[derive(Args)]
 pub struct RunArgs {
-    pub path: PathBuf
+    /// The path of the request file or the call file to run
+    pub path: PathBuf,
+    /// The file where the response body should be saved
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+    /// Do not call request dependencies
+    #[arg(long = "no-deps")]
+    pub no_deps: bool
 }
