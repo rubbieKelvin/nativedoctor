@@ -1,22 +1,23 @@
-use std::fs::canonicalize;
-
-use anyhow::{Context, Ok, bail};
+use anyhow::Ok;
 use clap::Parser;
 
 use crate::{
     cli::{Cli, SubCommand},
-    commands::{new::{create_project_folder, create_request_file}, run::run_native_doctor_path},
+    commands::{
+        new::{create_project_folder, create_request_file},
+        run::run_native_doctor_path,
+    },
     utils::get_current_directory,
 };
 
 mod cli;
 mod commands;
 mod constants;
+mod defs;
 mod schemas;
 #[cfg(test)]
 mod tests;
 mod utils;
-mod defs;
 
 fn main() -> Result<(), anyhow::Error> {
     let current_directory = get_current_directory()?;
@@ -37,25 +38,7 @@ fn main() -> Result<(), anyhow::Error> {
         }
         // Handle run command
         Some(SubCommand::Run(arg)) => {
-            let path = if arg.path.is_absolute() {
-                // if it's absolute, we can use it as is
-                &arg.path
-            } else {
-                let rough_path = &current_directory.join(&arg.path);
-                &canonicalize(rough_path).context("Failed to canonicalize path")?
-            };
-
-            // path has to exist
-            if !path.try_exists()? {
-                bail!("No such file: {:?}", path)
-            }
-
-            // path has to be a file
-            if !path.is_file() {
-                bail!("Path is not a file")
-            }
-
-            run_native_doctor_path(path, arg.no_deps)?;
+            run_native_doctor_path(arg.input.clone(), arg.no_deps, &current_directory)?;
         }
         _ => {
             // Maybe show the --help here somewhere

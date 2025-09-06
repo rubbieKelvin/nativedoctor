@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -16,9 +14,9 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum SubCommand {
     /// Create new native doctor project
-    New (NewArgs),
+    New(NewArgs),
     /// Run a request or a call
-    Run(RunArgs)
+    Run(RunArgs),
 }
 
 #[derive(Args)]
@@ -29,12 +27,11 @@ pub struct NewArgs {
     pub name: Option<String>,
 }
 
-
 #[derive(Args)]
 pub struct RunArgs {
     /// The path of the request file or the sequence name to run
-    pub path: PathBuf,
+    pub input: Option<String>,
     // Do not call request dependencies
     #[arg(long = "no-deps")]
-    pub no_deps: bool
+    pub no_deps: bool,
 }
