@@ -34,7 +34,7 @@ pub struct NewArgs {
 pub struct RunArgs {
     /// The path of the request file or the call file to run
     pub path: PathBuf,
-    /// Do not call request dependencies
-    #[arg(long = "no-deps")]
-    pub no_deps: bool
+    // Do not call request dependencies
+    // #[arg(long = "no-deps")]
+    // pub no_deps: bool
 }

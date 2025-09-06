@@ -1,6 +1,10 @@
 use std::{collections::HashMap, fs::create_dir_all, path::Path};
 
-use crate::{constants::{EXTENSION_PROJECT_FILE_YAML, EXTENSION_REQUEST_FILE_YAML}, schemas::{project::ProjectSchema, request::RequestSchema}, utils::slugify};
+use crate::{
+    constants::{EXTENSION_PROJECT_FILE_YAML, EXTENSION_REQUEST_FILE_YAML},
+    schemas::{project::ProjectSchema, request::RequestSchema},
+    utils::slugify,
+};
 
 /// Given the name of the request a single request file in the specified directory
 pub fn create_request_file<S: AsRef<str>>(name: S, path: &Path) -> Result<(), anyhow::Error> {
@@ -10,7 +14,6 @@ pub fn create_request_file<S: AsRef<str>>(name: S, path: &Path) -> Result<(), an
     content_schema.save_to_path(&filepath)?;
     return Ok(());
 }
-
 
 /// Create a project folder
 pub fn create_project_folder<S: AsRef<str>>(name: S, path: &Path) -> Result<(), anyhow::Error> {
@@ -25,7 +28,10 @@ pub fn create_project_folder<S: AsRef<str>>(name: S, path: &Path) -> Result<(), 
     let project = ProjectSchema {
         name: name.as_ref().to_string(),
         description: Some(format!("API calls for {}", name.as_ref())),
-        sequence: Some(HashMap::from_iter(vec![(String::from("main"), vec![String::from("./ping.ng")])])),
+        sequence: Some(HashMap::from_iter(vec![(
+            String::from("main"),
+            vec![format!("./ping.{}", EXTENSION_REQUEST_FILE_YAML)],
+        )])),
         ..Default::default()
     };
 

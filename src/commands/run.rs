@@ -13,6 +13,10 @@ pub fn run_native_doctor_path(path: &Path) -> Result<(), anyhow::Error> {
             run_single_request_file(&client, path)?;
             Ok(())
         }
+        Some(defs::FileType::ProjectYamlFile) => {
+            run_call_sequence(&client, path)?;
+            Ok(())
+        }
         _ => anyhow::bail!("File type not supported"),
     };
 }
@@ -26,4 +30,8 @@ fn run_single_request_file(
     let request = schema.build_blocking_reqwest(client)?;
 
     return request.send().context("Error sending request");
+}
+
+fn run_call_sequence(client: &blocking::Client, path: &Path) -> Result<(), anyhow::Error> {
+    return Ok(());
 }
