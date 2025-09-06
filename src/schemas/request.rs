@@ -1,11 +1,21 @@
+use anyhow::Context;
+use reqwest::blocking::{Client, RequestBuilder, multipart};
+use reqwest::header::{ACCEPT, CONTENT_TYPE};
+use reqwest::{Method as ReqwestMethod, Url};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, path::{Path, PathBuf}};
+use serde_json::Value as JsonValue;
+use serde_yaml::Value as YamlValue;
+use std::{
+    collections::HashMap,
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 // Re-exporting for convenience (might want to support json later too)
 pub use serde_yaml::Value as SerdeYamlValue;
 
 /// An enum representing common HTTP methods.
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, Copy)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Method {
     #[default]
@@ -18,6 +28,22 @@ pub enum Method {
     Options,
     Connect,
     Trace,
+}
+
+impl Into<ReqwestMethod> for Method {
+    fn into(self) -> ReqwestMethod {
+        return match &self {
+            Method::Get => ReqwestMethod::GET,
+            Method::Post => ReqwestMethod::POST,
+            Method::Put => ReqwestMethod::PUT,
+            Method::Delete => ReqwestMethod::DELETE,
+            Method::Patch => ReqwestMethod::PATCH,
+            Method::Head => ReqwestMethod::HEAD,
+            Method::Options => ReqwestMethod::OPTIONS,
+            Method::Connect => ReqwestMethod::CONNECT,
+            Method::Trace => ReqwestMethod::TRACE,
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -72,6 +98,97 @@ impl RequestSchema {
         let schema: RequestSchema = serde_yaml::from_reader(file)?;
         Ok(schema)
     }
+
+    /// Builds and returns a `reqwest::blocking::RequestBuilder` from the `RequestSchema`.
+    pub fn build_blocking_reqwest(&self, client: &Client) -> Result<RequestBuilder, anyhow::Error> {
+        // Create the base request builder with the method and URL
+        let url = Url::parse(&self.url).context("Error parsing url {}")?;
+        let mut builder = client.request(self.method.into(), url);
+
+        // Add headers if they are present in the schema.
+        if let Some(headers) = &self.headers {
+            for (key, value) in headers {
+                builder = builder.header(key, value);
+            }
+        }
+
+        // Add query parameters if they are present.
+        if let Some(query) = &self.query {
+            builder = builder.query(query);
+        }
+
+        // Handle the request body based on its type.
+        if let Some(body) = &self.body {
+            builder = match body {
+                RequestBodySchema::Json(JsonBodySchema { content }) => builder
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(content.clone()),
+                RequestBodySchema::Graphql(GraphqlBodySchema { query, variables }) => {
+                    // GraphQL requests typically use a JSON body with 'query' and 'variables'.
+                    let mut graphql_body = HashMap::new();
+                    graphql_body.insert("query", JsonValue::from(query.clone()));
+
+                    if let Some(YamlValue::Mapping(variables)) = variables {
+                        // let json_vars: JsonValue = serde_json::from_value(
+                        //     serde_yaml::to_value(vars).expect("Failed to convert YAML to JSON"),
+                        // )
+                        // .expect("Failed to deserialize YAML as a valid JSON object");
+                        let variable_string =
+                            serde_yaml::to_string(&YamlValue::Mapping(variables.clone()))
+                                .context("Could not translate gql variable from yaml")?;
+                        let json_vars = serde_json::from_str::<JsonValue>(&variable_string)
+                            .context("Could not translate gql variable into json")?;
+
+                        graphql_body.insert("variables", json_vars);
+                    }
+
+                    builder
+                        .header(CONTENT_TYPE, "application/json")
+                        .header(ACCEPT, "application/json")
+                        .body(serde_json::to_string(&graphql_body)?)
+                }
+                RequestBodySchema::Xml(XmlBodySchema { content }) => builder
+                    .header(CONTENT_TYPE, "application/xml")
+                    .body(content.clone()),
+                RequestBodySchema::Text(TextBodySchema { content }) => builder
+                    .header(CONTENT_TYPE, "text/plain")
+                    .body(content.clone()),
+                RequestBodySchema::FormUrlencoded(FormUrlencodedBodySchema { content }) => {
+                    builder.form(content)
+                }
+                RequestBodySchema::Multipart(MultipartBodySchema { parts }) => {
+                    let mut form = multipart::Form::new();
+                    for part in parts {
+                        form = match part {
+                            MultipartPartSchema::Field(MultipartFieldSchema { name, value }) => {
+                                form.text(name.clone(), value.clone())
+                            }
+                            MultipartPartSchema::File(MultipartFileSchema {
+                                name,
+                                path,
+                                mime_type,
+                            }) => {
+                                // Create the multipart file part. reqwest handles the file reading.
+                                let file_part = multipart::Part::file(PathBuf::from(path.clone()))
+                                    .expect("Failed to create multipart file part.");
+
+                                // Set the MIME type if provided.
+                                let file_part = if let Some(mime) = mime_type {
+                                    file_part.mime_str(&mime).expect("Invalid MIME type string")
+                                } else {
+                                    file_part
+                                };
+                                form.part(name.clone(), file_part)
+                            }
+                        };
+                    }
+                    builder.multipart(form)
+                }
+            };
+        }
+
+        return Ok(builder);
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -108,7 +225,7 @@ pub enum RequestBodySchema {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct JsonBodySchema {
-    pub content: SerdeYamlValue, // Allows any valid yaml
+    pub content: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -118,7 +118,7 @@ definitions:
             const: json
             description: Indicates a JSON request body.
           content:
-            $ref: "#/definitions/Value"
+            type: string
             description: The JSON content of the body.
         required:
           - type
