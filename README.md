@@ -32,6 +32,7 @@ Native Doctor allows you to define API tests and workflows in structured, human-
 ### Planned Features
 - 📋 Response validation and assertions
 - 📋 Template variables and dynamic content
+- 📋 Rhai scripting for post-request testing & validation
 - 📋 Plugin system for extensibility
 - 📋 Interactive CLI mode
 - 📋 Performance testing capabilities
