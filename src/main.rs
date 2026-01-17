@@ -1,50 +1,41 @@
-use anyhow::Ok;
-use clap::Parser;
+use gpui::*;
+use gpui_component::{button::*, *};
 
-use crate::{
-    cli::{Cli, SubCommand},
-    commands::{
-        new::{create_project_folder, create_request_file},
-        run::run_native_doctor_path,
-    },
-    utils::get_current_directory,
-};
+pub struct HelloWorld;
+impl Render for HelloWorld {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .v_flex()
+            .gap_2()
+            .size_full()
+            .items_center()
+            .justify_center()
+            .child("Hello, World!")
+            .child(
+                Button::new("ok")
+                    .primary()
+                    .label("Let's Go!")
+                    .on_click(|_, _, _| println!("Clicked!")),
+            )
+    }
+}
 
-mod cli;
-mod commands;
-mod constants;
-mod defs;
-mod schemas;
-#[cfg(test)]
-mod tests;
-mod utils;
+fn main() {
+    let app = Application::new();
 
-fn main() -> Result<(), anyhow::Error> {
-    let current_directory = get_current_directory()?;
-    let commandline = Cli::parse();
+    app.run(move |cx| {
+        // This must be called before using any GPUI Component features.
+        gpui_component::init(cx);
 
-    match &commandline.subcommand {
-        // Handle new
-        Some(SubCommand::New(arg)) => {
-            let name = arg.name.clone().unwrap_or(String::from("request"));
+        cx.spawn(async move |cx| {
+            cx.open_window(WindowOptions::default(), |window, cx| {
+                let view = cx.new(|_| HelloWorld);
+                // This first level on the window, should be a Root.
+                cx.new(|cx| Root::new(view, window, cx))
+            })?;
 
-            if arg.request {
-                // create single request file in the current directory
-                create_request_file(&name, &current_directory)?;
-            } else {
-                // create project folder in the current directory
-                create_project_folder(&name, &current_directory)?;
-            }
-        }
-        // Handle run command
-        Some(SubCommand::Run(arg)) => {
-            run_native_doctor_path(arg.input.clone(), arg.no_deps, &current_directory)?;
-        }
-        _ => {
-            // Maybe show the --help here somewhere
-            eprintln!("Invalid command");
-        }
-    };
-
-    return Ok(());
+            Ok::<_, anyhow::Error>(())
+        })
+        .detach();
+    });
 }
