@@ -1,0 +1,1 @@
+export declare function setFixedSize(element: HTMLElement, type: 'popup' | 'positioner'): void;
