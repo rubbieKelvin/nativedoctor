@@ -1,1 +1,0 @@
-export * as DrawerPreview from "./index.parts.js";

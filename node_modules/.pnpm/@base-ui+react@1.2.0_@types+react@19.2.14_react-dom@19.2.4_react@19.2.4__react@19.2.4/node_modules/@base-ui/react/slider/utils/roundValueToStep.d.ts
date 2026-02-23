@@ -1,1 +1,0 @@
-export declare function roundValueToStep(value: number, step: number, min: number): number;
