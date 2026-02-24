@@ -10,25 +10,25 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => {
     const variants = {
-      primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-sm",
-      secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
-      outline: "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900",
-      ghost: "bg-transparent hover:bg-slate-100 text-slate-600 dark:text-slate-400 dark:hover:bg-slate-900",
-      danger: "bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm",
-      success: "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm",
+      primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-sm shadow-blue-500/10",
+      secondary: "bg-slate-50 text-slate-600 hover:bg-slate-100 active:bg-slate-200",
+      outline: "border border-slate-100 bg-white hover:bg-slate-50 text-slate-600 shadow-sm shadow-slate-200/5",
+      ghost: "bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700",
+      danger: "bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm shadow-red-500/10",
+      success: "bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-sm shadow-emerald-500/10",
     }
 
     const sizes = {
-      sm: "h-8 px-3 text-xs",
-      md: "h-9 px-4 text-sm font-medium",
-      lg: "h-10 px-6 text-base",
-      icon: "h-9 w-9",
+      sm: "h-7 px-2.5 text-[10px] font-bold uppercase tracking-tight",
+      md: "h-9 px-3.5 text-xs font-semibold",
+      lg: "h-11 px-5 text-sm font-semibold",
+      icon: "h-8 w-8",
     }
 
     return (
       <BaseButton
         className={cn(
-          "inline-flex items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-[0.98]",
+          "inline-flex items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-blue-500/10 active:scale-[0.98]",
           variants[variant],
           sizes[size],
           className

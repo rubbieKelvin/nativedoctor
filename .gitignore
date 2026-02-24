@@ -24,4 +24,4 @@ target
 !httpbin/*.nd.yaml
 !httpbin/*.ndp.yaml
 
-#node_modules
+node_modules
