@@ -1,7 +1,15 @@
 # Logs
 logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
+node_modules
+dist
+dist-ssr
 *.local
 
 # Editor directories and files
@@ -14,14 +22,3 @@ logs
 *.njsproj
 *.sln
 *.sw?
-
-# Rust
-target
-
-# Native doctor files
-*.nd.yaml
-*.ndp.yaml
-!httpbin/*.nd.yaml
-!httpbin/*.ndp.yaml
-
-node_modules
