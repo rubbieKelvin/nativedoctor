@@ -12,6 +12,7 @@ async function greet() {
 </script>
 
 <template>
+  <div class="app-root">
   <main class="container">
     <h1>Welcome to Tauri + Vue</h1>
 
@@ -34,6 +35,7 @@ async function greet() {
     </form>
     <p>{{ greetMsg }}</p>
   </main>
+  </div>
 </template>
 
 <style scoped>
@@ -63,6 +65,16 @@ async function greet() {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Full-viewport root for smooth window resize (Tauri/WebView) */
+.app-root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  contain: layout;
+}
+
 .container {
   margin: 0;
   padding-top: 10vh;
@@ -70,6 +82,8 @@ async function greet() {
   flex-direction: column;
   justify-content: center;
   text-align: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .logo {
