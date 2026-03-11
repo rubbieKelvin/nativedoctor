@@ -21,13 +21,24 @@ So collections and resources are **file-based and version-control friendly**: yo
 |-------------|------------|
 | Desktop app | **Tauri 2** (Rust backend, WebView frontend) |
 | Frontend    | **Vue 3**, **TypeScript**, **Vite** |
+| UI components | **shadcn-vue** ([shadcn-vue.com](https://www.shadcn-vue.com)), **Tailwind CSS v4** |
 | Backend     | **Rust**: `reqwest` (HTTP), `serde` / `serde_json` |
 
 Relevant paths:
 
 - Frontend: `src/` (e.g. `App.vue`, `main.ts`)
+- UI components: `src/components/ui/` (shadcn-vue; use `@/components/ui/<name>`)
+- Utils: `src/lib/utils.ts` (includes `cn()` for class names)
+- Styles: `src/index.css` (Tailwind + theme CSS variables)
 - Backend: `src-tauri/src/lib.rs` (Tauri commands and HTTP logic)
-- Config: `src-tauri/tauri.conf.json`, `package.json`
+- Config: `src-tauri/tauri.conf.json`, `package.json`, `components.json` (shadcn-vue)
+
+### UI components (shadcn-vue)
+
+- **Add a component**: `pnpm dlx shadcn-vue@latest add <component>` (e.g. `add button`, `add card`, `add input`). Components are installed under `src/components/ui/`.
+- **Import**: use the `@` alias, e.g. `import { Button } from "@/components/ui/button"`.
+- **Class names**: use the `cn()` helper from `@/lib/utils` to merge Tailwind classes (e.g. with conditional or variant styles).
+- **Theming**: edit CSS variables in `src/index.css` (`:root` and `.dark`); base color and style are in `components.json`.
 
 ---
 
@@ -91,6 +102,7 @@ When adding features, prefer **small, incremental steps** that align with the co
 - **Sequences** are first-class: design so that a sequence can reference call-type resources (e.g. by path or id), define order/parallelism, and read/write environment variables.
 - Pre/post scripts are **Rhai**; keep the scripting surface small and focused on the call (request/response) and env.
 - Prefer extending the existing Tauri commands and Vue UI rather than replacing them; keep current HTTP request/response shapes where they still fit.
+- **UI**: Use **shadcn-vue** components for new UI (buttons, inputs, dialogs, etc.). Add via `pnpm dlx shadcn-vue@latest add <component>`. Use the `@` path alias and `cn()` from `@/lib/utils` for class merging.
 
 ---
 
