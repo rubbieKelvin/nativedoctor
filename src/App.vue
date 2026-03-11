@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button";
+import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
 </script>
 
 <template>
-  <div class="p-4">
-    <p class="mb-2">Hello from app</p>
-    <Button>Click me</Button>
-  </div>
+    <div class="h-full w-full overflow-auto">
+        <HttpResourcePad />
+    </div>
 </template>

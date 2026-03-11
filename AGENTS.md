@@ -33,6 +33,10 @@ Relevant paths:
 - Backend: `src-tauri/src/lib.rs` (Tauri commands and HTTP logic)
 - Config: `src-tauri/tauri.conf.json`, `package.json`, `components.json` (shadcn-vue)
 
+### Component structure
+
+- **Resource pads** (request/response UIs per resource type) live in `src/components/resourcepads/<type>/` (e.g. `http/`). Each pad is a **composite**: one main component (e.g. `HttpResourcePad.vue`) composes **smaller components in the same folder** (e.g. UrlMethodBar, RequestTabs, ParamsPanel, HeadersPanel, BodyPanel, AuthPanel, ResponsePane). Base UI building blocks come from **shadcn-vue** in `@/components/ui/`; add any missing components via the registry: `pnpm dlx shadcn-vue@latest add <component>`.
+
 ### UI components (shadcn-vue)
 
 - **Add a component**: `pnpm dlx shadcn-vue@latest add <component>` (e.g. `add button`, `add card`, `add input`). Components are installed under `src/components/ui/`.
@@ -103,6 +107,7 @@ When adding features, prefer **small, incremental steps** that align with the co
 - Pre/post scripts are **Rhai**; keep the scripting surface small and focused on the call (request/response) and env.
 - Prefer extending the existing Tauri commands and Vue UI rather than replacing them; keep current HTTP request/response shapes where they still fit.
 - **UI**: Use **shadcn-vue** components for new UI (buttons, inputs, dialogs, etc.). Add via `pnpm dlx shadcn-vue@latest add <component>`. Use the `@` path alias and `cn()` from `@/lib/utils` for class merging.
+- **Resource pads**: Build pads from subcomponents in the same folder; use **shadcn-vue** components as the base UI (from `@/components/ui/`). Add registry components when needed; do not introduce one-off primitives that duplicate shadcn patterns.
 
 ---
 
