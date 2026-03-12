@@ -12,11 +12,13 @@ pub struct RecentProject {
 pub async fn get_recent_projects() -> Result<Vec<RecentProject>, String> {
     let db_path = get_db_path()?;
     tauri::async_runtime::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-        init_db(&conn)?;
+        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+        init_db(&mut conn)?;
+
         let mut stmt = conn.prepare(
             "SELECT path, name, opened_at FROM recent_projects ORDER BY opened_at DESC LIMIT 20",
         )
+
         .map_err(|e| e.to_string())?;
         let rows = stmt
             .query_map([], |row| {
@@ -45,8 +47,8 @@ pub async fn add_recent_project(path: String, name: Option<String>) -> Result<()
         .map_err(|e| e.to_string())?
         .as_secs() as i64;
     tauri::async_runtime::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-        init_db(&conn)?;
+        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+        init_db(&mut conn)?;
         conn.execute(
             "INSERT OR REPLACE INTO recent_projects (path, name, opened_at) VALUES (?1, ?2, ?3)",
             rusqlite::params![path, name, ts],
