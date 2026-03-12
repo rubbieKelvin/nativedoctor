@@ -141,6 +141,15 @@ When adding features, prefer **small, incremental steps** that align with the co
 - Prefer extending the existing Tauri commands and Vue UI rather than replacing them; keep current HTTP request/response shapes where they still fit.
 - **UI**: Use **shadcn-vue** components for new UI (buttons, inputs, dialogs, etc.). Add via `pnpm dlx shadcn-vue@latest add <component>`. Use the `@` path alias and `cn()` from `@/lib/utils` for class merging.
 - **Resource pads**: Build pads from subcomponents in the same folder; use **shadcn-vue** components as the base UI (from `@/components/ui/`). Add registry components when needed; do not introduce one-off primitives that duplicate shadcn patterns.
+- **Rust**: Prefer explicit return types on functions where possible, and use an explicit **`return`** statement in the body rather than expression-based return. For example, prefer:
+  ```rust
+  pub fn project_has_nativedoctor(path: String) -> bool {
+      return std::path::Path::new(&path)
+          .join("nativedoctor.json")
+          .exists();
+  }
+  ```
+  instead of omitting `return` and relying on the final expression as the return value.
 
 ---
 

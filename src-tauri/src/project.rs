@@ -61,14 +61,14 @@ pub async fn add_recent_project(path: String, name: Option<String>) -> Result<()
 #[tauri::command]
 pub fn get_initial_project_path(state: tauri::State<AppState>) -> Option<String> {
     let mut guard = state.initial_project_path.lock().unwrap();
-    guard.take().and_then(|p| p.to_str().map(String::from))
+    return guard.take().and_then(|p| p.to_str().map(String::from));
 }
 
 #[tauri::command]
 pub fn project_has_nativedoctor(path: String) -> bool {
-    std::path::Path::new(&path)
+    return std::path::Path::new(&path)
         .join("nativedoctor.json")
-        .exists()
+        .exists();
 }
 
 #[tauri::command]

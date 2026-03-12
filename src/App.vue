@@ -1,35 +1,40 @@
 <script setup lang="ts">
-import { ref, provide, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import DefaultWorkspace from "@/components/workspace/DefaultWorkspace/DefaultWorkspace.vue";
 import RecentProjects from "@/components/workspace/RecentProjects/RecentProjects.vue";
 import CreateProject from "@/components/workspace/CreateProject/CreateProject.vue";
+import type { Pages } from "@/shared/types";
 
-const currentProjectPath = ref<string | null>(null);
-const showCreateProject = ref(false);
+const pageStack = ref<Array<Pages>>([
+    {
+        name: "RecentProjects",
+        meta: {},
+    },
+]);
 
-function setCurrentProject(path: string | null) {
-    currentProjectPath.value = path;
-}
-
-function setShowCreateProject(show: boolean) {
-    showCreateProject.value = show;
-}
-
-provide("setCurrentProject", setCurrentProject);
-provide("setShowCreateProject", setShowCreateProject);
+const page = computed({
+    get: () => pageStack.value.slice(-1)[0],
+    set: (page: Pages) => {
+        pageStack.value.push(page);
+    },
+});
 
 onMounted(async () => {
     try {
+        // get the path that was set during binary run
         const path = await invoke<string | null>("get_initial_project_path");
 
         if (path && path.trim()) {
+            // check if the selected folder has a nativedoctor.json project file
             const hasConfig = await invoke<boolean>(
                 "project_has_nativedoctor",
                 {
                     path: path.trim(),
                 },
             );
+
+            // if it doesnt, create it
             if (!hasConfig) {
                 await invoke("write_nativedoctor", {
                     path: path.trim(),
@@ -40,24 +45,33 @@ onMounted(async () => {
                     },
                 });
             }
-            currentProjectPath.value = path.trim();
+
+            // go to page
+            page.value = {
+                name: "DefaultWorkspace",
+                meta: {
+                    projectPath: path.trim(),
+                },
+            };
+
+            // uppdate recent project
             await invoke("add_recent_project", {
                 path: path.trim(),
                 name: null,
             });
         }
     } catch (_) {
-        // No initial path or error; show Recent Projects
+        // No initial path or error; stay in Recent Projects
     }
 });
 </script>
 
 <template>
     <div class="h-full w-full overflow-auto">
-        <CreateProject v-if="showCreateProject" />
+        <CreateProject v-if="page.name === 'CreateProject'" />
         <DefaultWorkspace
-            v-else-if="currentProjectPath"
-            :project-path="currentProjectPath"
+            v-else-if="page.name === 'DefaultWorkspace'"
+            :project-path="page.meta.projectPath"
         />
         <RecentProjects v-else />
     </div>

@@ -5,7 +5,7 @@ import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue"
 defineOptions({ name: "DefaultWorkspace" });
 
 defineProps<{
-  projectPath?: string;
+    projectPath: string;
 }>();
 </script>
 
