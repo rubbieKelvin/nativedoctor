@@ -127,3 +127,72 @@ pub fn create_project(
     write_nativedoctor(folder_path.clone(), payload)?;
     return Ok(folder_path);
 }
+
+fn sanitize_resource_name(name: &str) -> String {
+    let s = name.trim();
+    if s.is_empty() {
+        return "request".to_string();
+    }
+    return s
+        .chars()
+        .map(|c| match c {
+            ' ' => '-',
+            c if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' => c,
+            _ => '-',
+        })
+        .collect::<String>()
+        .trim_matches('-')
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+}
+
+#[tauri::command]
+pub fn create_http_resource(project_path: String, name: String) -> Result<String, String> {
+    let root = std::path::Path::new(&project_path);
+    let config_path = root.join("nativedoctor.json");
+    if !config_path.exists() {
+        return Err("Project has no nativedoctor.json".to_string());
+    }
+
+    let mut config: NativedoctorJson =
+        serde_json::from_str(&std::fs::read_to_string(&config_path).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+
+    let base = sanitize_resource_name(&name);
+    if base.is_empty() {
+        return Err("Invalid resource name".to_string());
+    }
+
+    let mut files = config.files.unwrap_or_default();
+    let rel_path = "requests";
+    let dir = root.join(rel_path);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let mut candidate = format!("{}/{}.request.json", rel_path, base);
+    let mut n = 1u32;
+    while root.join(&candidate).exists() {
+        n += 1;
+        candidate = format!("{}/{}-{}.request.json", rel_path, base, n);
+    }
+
+    let request_content = serde_json::json!({
+        "type": "http",
+        "name": if name.trim().is_empty() { "New request" } else { name.trim() },
+        "method": "GET",
+        "url": ""
+    });
+    let full_path = root.join(&candidate);
+    std::fs::write(
+        full_path,
+        serde_json::to_string_pretty(&request_content).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+
+    files.push(candidate.clone());
+    config.files = Some(files);
+    write_nativedoctor(project_path, config)?;
+
+    return Ok(candidate);
+}
