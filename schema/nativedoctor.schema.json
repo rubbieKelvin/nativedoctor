@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nativedoctor.dev/schema/nativedoctor.json",
+  "title": "Native Doctor project",
+  "description": "Project configuration at the root of a Native Doctor project folder. Identifies the folder as a project and holds description, metadata, environment sources, and the list of files used in the project.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project display name."
+    },
+    "description": {
+      "type": "string",
+      "description": "Short project description."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Extra key/value or structured metadata for the product or tooling."
+    },
+    "envSources": {
+      "type": "array",
+      "description": "Environment variable sources (e.g. .env files). Paths are relative to the project root.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of this environment"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the env file, e.g. '.env' or 'env/production.env'."
+          }
+        },
+        "required": ["path", "name"]
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Paths to request/sequence (or other) files used in this project. Paths are relative to the this root of this file's folder",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
