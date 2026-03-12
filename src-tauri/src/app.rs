@@ -5,15 +5,15 @@ pub struct AppState {
 }
 
 pub fn get_app_data_dir() -> Result<PathBuf, String> {
-    dirs::data_local_dir()
+    return dirs::data_local_dir()
         .map(|p| p.join("nativedoctor"))
-        .ok_or_else(|| "Could not resolve app data directory".to_string())
+        .ok_or_else(|| "Could not resolve app data directory".to_string());
 }
 
 pub fn get_db_path() -> Result<PathBuf, String> {
     let dir = get_app_data_dir()?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir.join("nativedoctor.db"))
+    return Ok(dir.join("nativedoctor.db"));
 }
 
 pub fn init_db(conn: &rusqlite::Connection) -> Result<(), String> {
@@ -26,5 +26,5 @@ pub fn init_db(conn: &rusqlite::Connection) -> Result<(), String> {
         [],
     )
     .map_err(|e| e.to_string())?;
-    Ok(())
+    return Ok(());
 }

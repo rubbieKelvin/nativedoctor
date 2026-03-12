@@ -61,8 +61,6 @@ async fn send_http_request(payload: SendHttpRequestPayload) -> Result<HttpRespon
     })
 }
 
-// --- Project opening ---
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let initial_path = std::env::args()
