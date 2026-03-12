@@ -1,10 +1,11 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Mutex;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+mod app;
+mod project;
+mod schema;
 
 #[derive(serde::Deserialize)]
 struct SendHttpRequestPayload {
@@ -47,12 +48,7 @@ async fn send_http_request(payload: SendHttpRequestPayload) -> Result<HttpRespon
     let headers: Vec<[String; 2]> = res
         .headers()
         .iter()
-        .map(|(n, v)| {
-            [
-                n.as_str().to_string(),
-                v.to_str().unwrap_or("").to_string(),
-            ]
-        })
+        .map(|(n, v)| [n.as_str().to_string(), v.to_str().unwrap_or("").to_string()])
         .collect();
     let body = res.text().await.map_err(|e| e.to_string())?;
     let duration_ms = start.elapsed().as_millis() as u64;
@@ -65,11 +61,40 @@ async fn send_http_request(payload: SendHttpRequestPayload) -> Result<HttpRespon
     })
 }
 
+// --- Project opening ---
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let initial_path = std::env::args()
+        .nth(1)
+        .filter(|s| !s.is_empty())
+        .and_then(|s| {
+            let p = PathBuf::from(&s);
+            if p.exists() && p.is_dir() {
+                std::fs::canonicalize(&p).ok().or(Some(p))
+            } else {
+                None
+            }
+        });
+
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, send_http_request])
+        .manage(app::AppState {
+            initial_project_path: Mutex::new(initial_path),
+        })
+        .invoke_handler(tauri::generate_handler![
+            send_http_request,
+            project::get_initial_project_path,
+            project::get_recent_projects,
+            project::add_recent_project,
+            project::project_has_nativedoctor,
+            project::read_nativedoctor,
+            project::write_nativedoctor,
+            project::create_project,
+            project::get_project_root_from_config_path,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

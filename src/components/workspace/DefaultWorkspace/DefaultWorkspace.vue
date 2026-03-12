@@ -3,6 +3,10 @@ import SideBar from "./SideBar.vue";
 import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
 
 defineOptions({ name: "DefaultWorkspace" });
+
+defineProps<{
+  projectPath?: string;
+}>();
 </script>
 
 <template>
