@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { useCurrentProjectActions } from "@/store/project";
 import DefaultWorkspace from "@/components/workspace/DefaultWorkspace/DefaultWorkspace.vue";
 import RecentProjects from "@/components/workspace/RecentProjects/RecentProjects.vue";
 import CreateProject from "@/components/workspace/CreateProject/CreateProject.vue";
@@ -19,6 +20,20 @@ const page = computed({
         pageStack.value.push(page);
     },
 });
+
+const currentProject = useCurrentProjectActions();
+
+watch(
+    page,
+    (p) => {
+        if (p.name === "DefaultWorkspace" && p.meta.projectPath) {
+            currentProject.setProject(p.meta.projectPath);
+        } else {
+            currentProject.setProject(null);
+        }
+    },
+    { immediate: true },
+);
 
 onMounted(async () => {
     try {
@@ -96,10 +111,7 @@ function handleOpenRecents() {
             @open-project="handleOpenProject"
             @open-recents="handleOpenRecents"
         />
-        <DefaultWorkspace
-            v-else-if="page.name === 'DefaultWorkspace'"
-            :project-path="page.meta.projectPath"
-        />
+        <DefaultWorkspace v-else-if="page.name === 'DefaultWorkspace'" />
         <RecentProjects
             v-else
             @open-project="handleOpenProject"

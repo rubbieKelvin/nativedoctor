@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import Input from "@/components/ui/input/Input.vue";
 import { Button } from "@/components/ui/button";
@@ -13,55 +13,31 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
 
-const props = defineProps<{
-    projectPath: string;
-}>();
-
-interface NativedoctorJson {
-    name: string;
-    files?: string[];
-}
-
-const files = ref<string[]>([]);
 const searchQuery = ref("");
 const dialogOpen = ref(false);
 const newResourceName = ref("");
 const creating = ref(false);
-const loadError = ref<string | null>(null);
+
+const currentProject = useCurrentProject();
+const { loadProject } = useCurrentProjectActions();
 
 const filteredFiles = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
-    if (!q) return files.value;
-    return files.value.filter((f) => f.toLowerCase().includes(q));
+    const list = currentProject.files.value ?? [];
+    if (!q) return list;
+    return list.filter((f) => f.toLowerCase().includes(q));
 });
 
-async function loadProject() {
-    if (!props.projectPath) return;
-    loadError.value = null;
-    try {
-        const config = await invoke<NativedoctorJson>("read_nativedoctor", {
-            path: props.projectPath,
-        });
-        files.value = config.files ?? [];
-    } catch (e) {
-        loadError.value = e instanceof Error ? e.message : String(e);
-        files.value = [];
-    }
-}
-
-watch(
-    () => props.projectPath,
-    () => loadProject(),
-    { immediate: true },
-);
-
 async function handleCreate() {
+    const path = currentProject.projectPath;
+    if (!path) return;
     const name = newResourceName.value.trim() || "New request";
     creating.value = true;
     try {
         await invoke("create_http_resource", {
-            projectPath: props.projectPath,
+            projectPath: path.value,
             name,
         });
         await loadProject();
@@ -107,16 +83,10 @@ async function handleCreate() {
                         />
                     </div>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            @click="dialogOpen = false"
-                        >
+                        <Button variant="outline" @click="dialogOpen = false">
                             Cancel
                         </Button>
-                        <Button
-                            :disabled="creating"
-                            @click="handleCreate"
-                        >
+                        <Button :disabled="creating" @click="handleCreate">
                             {{ creating ? "Creating…" : "Create" }}
                         </Button>
                     </DialogFooter>
@@ -124,8 +94,11 @@ async function handleCreate() {
             </Dialog>
         </div>
         <ScrollArea class="flex-1 px-2">
-            <div v-if="loadError" class="py-2 text-sm text-destructive">
-                {{ loadError }}
+            <div
+                v-if="currentProject.loadError"
+                class="py-2 text-sm text-destructive"
+            >
+                {{ currentProject.loadError }}
             </div>
             <div
                 v-else-if="filteredFiles.length === 0"
