@@ -94,10 +94,11 @@ pub fn write_nativedoctor(path: String, payload: NativedoctorJson) -> Result<(),
 #[tauri::command]
 pub fn get_project_root_from_config_path(config_path: String) -> Result<String, String> {
     let p = std::path::Path::new(&config_path);
-    p.parent()
+    return p
+        .parent()
         .and_then(|parent| parent.to_str())
         .map(String::from)
-        .ok_or_else(|| "Invalid config path".to_string())
+        .ok_or_else(|| "Invalid config path".to_string());
 }
 
 #[tauri::command]
@@ -108,10 +109,13 @@ pub fn create_project(
 ) -> Result<String, String> {
     let path = std::path::Path::new(&folder_path);
     let config_path = path.join("nativedoctor.json");
+
     if config_path.exists() {
         return Err("nativedoctor.json already exists in this folder".to_string());
     }
+
     std::fs::create_dir_all(path).map_err(|e| e.to_string())?;
+
     let payload = NativedoctorJson {
         name: name,
         description: Some(description),
@@ -119,6 +123,7 @@ pub fn create_project(
         env_sources: None,
         files: Some(vec![]),
     };
+
     write_nativedoctor(folder_path.clone(), payload)?;
-    Ok(folder_path)
+    return Ok(folder_path);
 }

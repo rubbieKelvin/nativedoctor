@@ -4,11 +4,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 
-const setCurrentProject =
-    inject<(path: string | null) => void>("setCurrentProject");
-const setShowCreateProject = inject<(show: boolean) => void>(
-    "setShowCreateProject",
-);
+// const setCurrentProject =
+//     inject<(path: string | null) => void>("setCurrentProject");
+// const setShowCreateProject = inject<(show: boolean) => void>(
+//     "setShowCreateProject",
+// );
+
+const emit = defineEmits<{
+    openProject: [path: string];
+    openCreateProject: [];
+}>();
 
 interface RecentProject {
     path: string;
@@ -25,7 +30,7 @@ onMounted(async () => {
         recentProjects.value = list ?? [];
     } catch (e) {
         recentProjects.value = [];
-        console.log(e);
+        console.error(e);
     } finally {
         loading.value = false;
     }
@@ -48,19 +53,19 @@ async function handleOpenProject() {
         });
         if (!hasConfig) return;
         await invoke("add_recent_project", { path: root, name: null });
-        setCurrentProject?.(root);
-    } catch (_) {
-        // ignore
+        emit("openProject", root);
+    } catch (e) {
+        console.error(e);
     }
 }
 
 function handleOpenRecent(path: string, name: string | null) {
-    setCurrentProject?.(path);
+    emit("openProject", path);
     invoke("add_recent_project", { path, name });
 }
 
 function handleCreateProject() {
-    setShowCreateProject?.(true);
+    emit("openCreateProject");
 }
 </script>
 

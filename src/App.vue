@@ -64,6 +64,22 @@ onMounted(async () => {
         // No initial path or error; stay in Recent Projects
     }
 });
+
+function handleOpenProject(projectPath: string) {
+    pageStack.value.push({
+        name: "DefaultWorkspace",
+        meta: {
+            projectPath,
+        },
+    });
+}
+
+function handleOpenCreateProject() {
+    pageStack.value.push({
+        name: "CreateProject",
+        meta: {},
+    });
+}
 </script>
 
 <template>
@@ -73,6 +89,10 @@ onMounted(async () => {
             v-else-if="page.name === 'DefaultWorkspace'"
             :project-path="page.meta.projectPath"
         />
-        <RecentProjects v-else />
+        <RecentProjects
+            v-else
+            @open-project="handleOpenProject"
+            @open-create-project="handleOpenCreateProject"
+        />
     </div>
 </template>
