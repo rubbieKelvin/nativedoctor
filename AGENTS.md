@@ -33,7 +33,7 @@ Relevant paths:
 - Backend: `src-tauri/src/lib.rs` (Tauri commands and HTTP logic)
 - Config: `src-tauri/tauri.conf.json`, `package.json`, `components.json` (shadcn-vue)
 - Schemas: `schema/request.schema.json` (`.request.json` call-type resources), `schema/sequence.schema.json` (`.sequence.json` sequences)
-- Project config: `nativedoctor.json` at the root of a project folder (see “Opening a project”). Schema TBD.
+- Project config: `nativedoctor.json` at the root of a project folder (see “Opening a project”). Schema: `schema/nativedoctor.schema.json`.
 - Local app DB: SQLite file (e.g. `nativedoctor.db`) in the Tauri app data directory; used for recent projects, settings, and other app-specific data (see “Local app data” below).
 
 ### Local app data (rusqlite)
@@ -74,7 +74,7 @@ A project can be opened in two ways:
 - **Environment sources** (e.g. references to `.env` files or other env config)
 - **All files used in the project** (e.g. which request/sequence files belong to the project)
 
-The structure of `nativedoctor.json` will be defined by a **dedicated JSON schema** (to be added in a later task). For now, the intent and contents above are documented; the schema is not part of this change.
+The structure of `nativedoctor.json` is defined by the JSON schema at `schema/nativedoctor.schema.json` (update that file as the product evolves).
 
 ---
 

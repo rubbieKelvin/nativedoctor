@@ -4,6 +4,7 @@ This folder contains JSON Schema definitions for file-based resources and sequen
 
 ## Schemas
 
+- **nativedoctor.schema.json** — Describes `nativedoctor.json` at the root of a project folder: project name, description, metadata, environment sources, and the list of files used in the project.
 - **request.schema.json** — Describes `.request.json` files: a single call-type resource (HTTP, GraphQL, gRPC, WebSocket). Use for one request per file in a collection.
 - **sequence.schema.json** — Describes `.sequence.json` files: an ordered flow of resource calls with optional env persistence and step options.
 
