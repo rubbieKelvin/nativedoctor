@@ -78,7 +78,7 @@ pub fn project_has_nativedoctor(path: String) -> bool {
 pub fn read_nativedoctor(path: String) -> Result<NativedoctorJson, String> {
     let file_path = std::path::Path::new(&path).join("nativedoctor.json");
     let contents = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&contents).map_err(|e| e.to_string())
+    return serde_json::from_str(&contents).map_err(|e| e.to_string());
 }
 
 #[tauri::command]
