@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::db::init_db;
+
 mod app;
+mod db;
 mod project;
 mod schema;
 
@@ -61,6 +64,12 @@ async fn send_http_request(payload: SendHttpRequestPayload) -> Result<HttpRespon
     })
 }
 
+fn setup_db() -> Result<(), String> {
+    let db_path = db::get_db_path()?;
+    let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+    return init_db(&mut conn);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let initial_path = std::env::args()
@@ -94,7 +103,7 @@ pub fn run() {
             project::get_project_root_from_config_path,
         ])
         .setup(|_app| {
-            // setup db here and other shit
+            setup_db()?;
             return Ok(());
         })
         .run(tauri::generate_context!())

@@ -1,4 +1,5 @@
-use crate::app::{get_db_path, init_db, AppState};
+use crate::app::AppState;
+use crate::db::get_db_path;
 use crate::schema::NativedoctorJson;
 
 #[derive(serde::Serialize)]
@@ -13,8 +14,7 @@ pub async fn get_recent_projects() -> Result<Vec<RecentProject>, String> {
     let db_path = get_db_path()?;
 
     tauri::async_runtime::spawn_blocking(move || {
-        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-        init_db(&mut conn)?;
+        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
 
         let mut stmt = conn.prepare(
             "SELECT path, name, opened_at FROM recent_projects ORDER BY opened_at DESC LIMIT 20",
@@ -48,8 +48,8 @@ pub async fn add_recent_project(path: String, name: Option<String>) -> Result<()
         .map_err(|e| e.to_string())?
         .as_secs() as i64;
     tauri::async_runtime::spawn_blocking(move || {
-        let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-        init_db(&mut conn)?;
+        let conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
+
         conn.execute(
             "INSERT OR REPLACE INTO recent_projects (path, name, opened_at) VALUES (?1, ?2, ?3)",
             rusqlite::params![path, name, ts],
