@@ -1,0 +1,19 @@
+{
+  "$schema": "../../schema/sequence.schema.json",
+  "name": "Login and fetch",
+  "description": "Authenticate then fetch the current user using the token.",
+  "steps": [
+    {
+      "resource": "auth/login.request.json",
+      "mode": "sequential"
+    },
+    {
+      "resource": "users/me.request.json",
+      "mode": "sequential",
+      "setEnv": {
+        "auth_token": "{{response.body.token}}"
+      }
+    }
+  ],
+  "onFailure": "abort"
+}

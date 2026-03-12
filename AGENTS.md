@@ -32,6 +32,7 @@ Relevant paths:
 - Styles: `src/index.css` (Tailwind + theme CSS variables)
 - Backend: `src-tauri/src/lib.rs` (Tauri commands and HTTP logic)
 - Config: `src-tauri/tauri.conf.json`, `package.json`, `components.json` (shadcn-vue)
+- Schemas: `schema/request.schema.json` (`.request.json` call-type resources), `schema/sequence.schema.json` (`.sequence.json` sequences)
 
 ### Component structure
 

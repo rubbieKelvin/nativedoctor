@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nativedoctor.dev/schema/request.json",
+  "title": "Request resource",
+  "description": "A call-type resource (HTTP, GraphQL, gRPC, WebSocket). One .request.json file per request in a collection.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["http", "graphql", "grpc", "websocket"],
+      "description": "Resource type. Only 'http' is implemented today."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name for the resource."
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of the request."
+    },
+    "method": {
+      "type": "string",
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+      "description": "HTTP method. Required when type is 'http'."
+    },
+    "url": {
+      "type": "string",
+      "description": "Request URL. May contain variable placeholders e.g. {{base_url}}/api/users. Required when type is 'http'."
+    },
+    "params": {
+      "type": "array",
+      "description": "Query parameters.",
+      "items": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    },
+    "headers": {
+      "type": "array",
+      "description": "Request headers. Values may contain {{var}} placeholders.",
+      "items": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    },
+    "body": {
+      "type": "string",
+      "description": "Request body (e.g. JSON). May contain {{var}} placeholders."
+    },
+    "preScript": {
+      "type": "string",
+      "description": "Rhai script run before the request. Not yet implemented."
+    },
+    "postScript": {
+      "type": "string",
+      "description": "Rhai script run after the request. Not yet implemented."
+    }
+  },
+  "required": ["type"],
+  "if": {
+    "properties": { "type": { "const": "http" } },
+    "required": ["type"]
+  },
+  "then": {
+    "required": ["method", "url"]
+  }
+}
