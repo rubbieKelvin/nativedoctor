@@ -96,7 +96,12 @@ async function onSend() {
 
 <template>
     <ResizablePanelGroup direction="vertical">
-        <ResizablePanel :default-size="50" :min-size="40" :max-size="60">
+        <ResizablePanel
+            :default-size="50"
+            :min-size="40"
+            :max-size="60"
+            class="flex flex-col gap-2 p-2"
+        >
             <UrlMethodBar
                 v-model:url="url"
                 v-model:method="method"
@@ -114,7 +119,12 @@ async function onSend() {
             />
         </ResizablePanel>
         <ResizableHandle />
-        <ResizablePanel :default-size="50" :min-size="40" :max-size="60">
+        <ResizablePanel
+            :default-size="50"
+            :min-size="40"
+            :max-size="60"
+            class="p-2"
+        >
             <ResponsePane
                 :status="status"
                 :headers="responseHeaders"

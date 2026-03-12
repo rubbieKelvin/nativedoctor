@@ -7,6 +7,7 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import WmDragHandle from "@/components/WmDragHandle.vue";
 
 defineProps<{
     projectPath: string;
@@ -14,15 +15,18 @@ defineProps<{
 </script>
 
 <template>
-    <ResizablePanelGroup direction="horizontal" class="w-full h-full">
-        <ResizablePanel :default-size="25" :min-size="20" :max-size="30">
-            <SideBar />
-        </ResizablePanel>
+    <div class="w-full h-full">
+        <WmDragHandle />
+        <ResizablePanelGroup direction="horizontal" class="w-full h-full">
+            <ResizablePanel :default-size="25" :min-size="20" :max-size="30">
+                <SideBar />
+            </ResizablePanel>
 
-        <ResizableHandle />
+            <ResizableHandle />
 
-        <ResizablePanel :default-size="75">
-            <HttpResourcePad />
-        </ResizablePanel>
-    </ResizablePanelGroup>
+            <ResizablePanel :default-size="75">
+                <HttpResourcePad />
+            </ResizablePanel>
+        </ResizablePanelGroup>
+    </div>
 </template>

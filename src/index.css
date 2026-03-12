@@ -112,7 +112,7 @@
 
 @layer base {
     * {
-        @apply select-auto;
+        @apply select-none;
         @apply border-border outline-ring/50;
     }
     body {

@@ -93,6 +93,10 @@ pub fn run() {
             project::create_project,
             project::get_project_root_from_config_path,
         ])
+        .setup(|_app| {
+            // setup db here and other shit
+            return Ok(());
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
