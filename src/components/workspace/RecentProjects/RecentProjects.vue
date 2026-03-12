@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { ref, inject, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
-
-// const setCurrentProject =
-//     inject<(path: string | null) => void>("setCurrentProject");
-// const setShowCreateProject = inject<(show: boolean) => void>(
-//     "setShowCreateProject",
-// );
 
 const emit = defineEmits<{
     openProject: [path: string];
