@@ -14,17 +14,14 @@ defineProps<{
 </script>
 
 <template>
-    <ResizablePanelGroup
-        direction="horizontal"
-        class="max-w-md rounded-lg border md:min-w-112.5"
-    >
-        <ResizablePanel :default-size="50">
+    <ResizablePanelGroup direction="horizontal" class="w-full h-full">
+        <ResizablePanel :default-size="25" :min-size="20" :max-size="30">
             <SideBar />
         </ResizablePanel>
 
         <ResizableHandle />
 
-        <ResizablePanel :default-size="50">
+        <ResizablePanel :default-size="75">
             <HttpResourcePad />
         </ResizablePanel>
     </ResizablePanelGroup>
