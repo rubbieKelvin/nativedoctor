@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
+import HttpResourcePad from "@/components/resourcepads/http/Index.vue";
 </script>
 
 <template>
