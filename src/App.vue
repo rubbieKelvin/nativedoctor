@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import HttpResourcePad from "@/components/resourcepads/http/Index.vue";
+import DefaultWorkspace from "@/components/workspace/DefaultWorkspace/Index.vue";
 </script>
 
 <template>
-    <div class="h-full w-full overflow-auto">
-        <HttpResourcePad />
-    </div>
+    <DefaultWorkspace />
 </template>

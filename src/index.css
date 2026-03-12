@@ -118,4 +118,10 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    html,
+    body,
+    #app {
+        @apply h-full w-full;
+    }
 }

@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import SideBar from "./SideBar.vue";
+import HttpResourcePad from "@/components/resourcepads/http/Index.vue";
+
+defineOptions({ name: "DefaultWorkspace" });
+</script>
+
+<template>
+    <div class="h-full w-full flex flex-row">
+        <SideBar />
+        <HttpResourcePad />
+    </div>
+</template>
