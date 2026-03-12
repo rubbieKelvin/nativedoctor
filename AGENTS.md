@@ -22,7 +22,7 @@ So collections and resources are **file-based and version-control friendly**: yo
 | Desktop app | **Tauri 2** (Rust backend, WebView frontend) |
 | Frontend    | **Vue 3**, **TypeScript**, **Vite** |
 | UI components | **shadcn-vue** ([shadcn-vue.com](https://www.shadcn-vue.com)), **Tailwind CSS v4** |
-| Backend     | **Rust**: `reqwest` (HTTP), `serde` / `serde_json` |
+| Backend     | **Rust**: `reqwest` (HTTP), `serde` / `serde_json`, **rusqlite** (local app data) |
 
 Relevant paths:
 
@@ -33,6 +33,17 @@ Relevant paths:
 - Backend: `src-tauri/src/lib.rs` (Tauri commands and HTTP logic)
 - Config: `src-tauri/tauri.conf.json`, `package.json`, `components.json` (shadcn-vue)
 - Schemas: `schema/request.schema.json` (`.request.json` call-type resources), `schema/sequence.schema.json` (`.sequence.json` sequences)
+- Project config: `nativedoctor.json` at the root of a project folder (see “Opening a project”). Schema TBD.
+- Local app DB: SQLite file (e.g. `nativedoctor.db`) in the Tauri app data directory; used for recent projects, settings, and other app-specific data (see “Local app data” below).
+
+### Local app data (rusqlite)
+
+App-specific data (e.g. **recent projects**, settings, request history) is stored in a **local SQLite database** using **[rusqlite](https://docs.rs/rusqlite)**.
+
+- **Crate**: `rusqlite` with the `bundled` feature (SQLite compiled in; no system install required).
+- **DB file**: Stored in the Tauri app data directory (e.g. `nativedoctor.db`). Resolve the path via Tauri’s path APIs.
+- **Blocking**: rusqlite is synchronous. Run DB access inside `tauri::async_runtime::spawn_blocking` (or a dedicated thread) so the UI thread is not blocked. Tauri commands can remain async and delegate the actual `Connection` work to the blocking task.
+- **Tables**: Create tables on first run (e.g. `CREATE TABLE IF NOT EXISTS recent_projects (...)`). Add Tauri commands such as `get_recent_projects` and `add_recent_project` for the frontend to call.
 
 ### Component structure
 
@@ -44,6 +55,26 @@ Relevant paths:
 - **Import**: use the `@` alias, e.g. `import { Button } from "@/components/ui/button"`.
 - **Class names**: use the `cn()` helper from `@/lib/utils` to merge Tailwind classes (e.g. with conditional or variant styles).
 - **Theming**: edit CSS variables in `src/index.css` (`:root` and `.dark`); base color and style are in `components.json`.
+
+---
+
+## Opening a project
+
+A project can be opened in two ways:
+
+1. **Command line**: Pass the project folder when running the app, e.g. `nativedoctor ./api/`. The app opens with that folder as the current project.
+2. **In-app**: When the app is started without a folder argument, the user sees the **Recent Projects** screen (`src/components/workspace/RecentProjects/Index.vue`). It lists projects opened previously and provides a button (or similar) to **open a nativedoctor project** (e.g. pick a nativedoctor.json file via a dialog). Choosing a the file opens that project.
+
+**What is a Native Doctor project?** Any **folder** that contains a file named **`nativedoctor.json`** is treated as a Native Doctor project. Folders without this file are not considered projects (or can be handled as “simple request folder” / legacy behavior as you define it).
+
+**The `nativedoctor.json` file** lives at the **root of the project folder** and holds:
+
+- Project **description** and **metadata**
+- **Extra details** (as needed for the product)
+- **Environment sources** (e.g. references to `.env` files or other env config)
+- **All files used in the project** (e.g. which request/sequence files belong to the project)
+
+The structure of `nativedoctor.json` will be defined by a **dedicated JSON schema** (to be added in a later task). For now, the intent and contents above are documented; the schema is not part of this change.
 
 ---
 
@@ -116,6 +147,7 @@ When adding features, prefer **small, incremental steps** that align with the co
 
 | Concept      | Short description |
 |-------------|--------------------|
+| **Project** | Folder containing `nativedoctor.json`; opened via CLI or Recent Projects. Config holds description, metadata, env sources, and file list. |
 | **Collection** | Folder of **resources**. Resources have types: **HTTP**, **GraphQL**, **gRPC**, **WebSocket**, **Folder** (grouping). Call-type resources can use variables and pre/post Rhai scripts; execution logs are tracked. |
 | **Environment** | Set of variables used when executing resources (and optionally updated by sequences). Sources: **UI** and **file** (e.g. `.env`) for now; more sources may be added later. |
 | **Sequence** | Ordered/parallel/async run of **resource calls** with env-derived runtime variables and optional persistence back to the environment; **core feature** of the app. |
