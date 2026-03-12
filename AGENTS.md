@@ -62,8 +62,9 @@ App-specific data (e.g. **recent projects**, settings, request history) is store
 
 A project can be opened in two ways:
 
-1. **Command line**: Pass the project folder when running the app, e.g. `nativedoctor ./api/`. The app opens with that folder as the current project.
-2. **In-app**: When the app is started without a folder argument, the user sees the **Recent Projects** screen (`src/components/workspace/RecentProjects/Index.vue`). It lists projects opened previously and provides a button (or similar) to **open a nativedoctor project** (e.g. pick a nativedoctor.json file via a dialog). Choosing a the file opens that project.
+1. **Command line**: Pass a folder when running the app, e.g. `nativedoctor .`. The app checks for a nativedoctor.json file in that folder and opens with that as the current project. if no nativedoctor.json, create it.
+2. **In-app**: When the app is started without a folder argument, the user sees the **Recent Projects** screen (`src/components/workspace/RecentProjects/RecentProjects.vue`). It lists projects opened previously and provides a button (or similar) to **open a nativedoctor project** (e.g. pick a nativedoctor.json file via a dialog). Choosing a the file opens that project.
+3. **Created Inapp**: We can have a button in the app and even in the recent projects page that opens new page `src/components/workspace/CreateProject/CreateProject.vue`, where you input the project name, description and a folder path. you can click a button next to the folder field that opens a folder dialog an asks you where you want to save the project. after the folder has been selected, show the folder path in the folder input field. then the create button in the page should now create the project and open it.
 
 **What is a Native Doctor project?** Any **folder** that contains a file named **`nativedoctor.json`** is treated as a Native Doctor project. Folders without this file are not considered projects (or can be handled as “simple request folder” / legacy behavior as you define it).
 

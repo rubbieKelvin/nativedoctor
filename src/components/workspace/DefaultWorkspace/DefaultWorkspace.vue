@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import SideBar from "./SideBar.vue";
-import HttpResourcePad from "@/components/resourcepads/http/Index.vue";
+import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
 
 defineOptions({ name: "DefaultWorkspace" });
 </script>

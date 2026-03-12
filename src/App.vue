@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DefaultWorkspace from "@/components/workspace/DefaultWorkspace/Index.vue";
+import DefaultWorkspace from "@/components/workspace/DefaultWorkspace/DefaultWorkspace.vue";
 import { ref } from "vue";
 
 // the directory we want to pull our files from
