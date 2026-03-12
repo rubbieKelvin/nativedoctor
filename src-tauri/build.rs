@@ -10,9 +10,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-fn main() {
-    tauri_build::build();
-
+fn embed_sql_migrations() {
     // Paths: crate root (src-tauri) and the migrations folder next to Cargo.toml.
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let migrations_dir = Path::new(&manifest_dir).join("migrations");
@@ -52,4 +50,9 @@ fn main() {
         writeln!(out, "    (\"{}\", \"{}\"),", name, content_escaped).unwrap();
     }
     writeln!(out, "];").unwrap();
+}
+
+fn main() {
+    tauri_build::build();
+    embed_sql_migrations();
 }

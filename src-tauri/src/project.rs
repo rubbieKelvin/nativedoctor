@@ -11,6 +11,7 @@ pub struct RecentProject {
 #[tauri::command]
 pub async fn get_recent_projects() -> Result<Vec<RecentProject>, String> {
     let db_path = get_db_path()?;
+
     tauri::async_runtime::spawn_blocking(move || {
         let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
         init_db(&mut conn)?;
