@@ -2,12 +2,15 @@
 import type { KeyValue } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import UrlMethodBar from "./UrlMethodBar.vue";
-// import RequestTabs from "./RequestTabs.vue";
-// import ResponsePane from "./ResponsePane.vue";
+import RequestTabs from "./RequestTabs.vue";
+import ResponsePane from "./ResponsePane.vue";
 import { ref, computed } from "vue";
 import { HttpMethodType } from "@/shared/constants";
-
-defineOptions({ name: "HttpResourcePad" });
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 const url = ref("");
 const method = ref<HttpMethodType>("GET");
@@ -92,14 +95,14 @@ async function onSend() {
 </script>
 
 <template>
-    <div class="flex flex-col gap-4 p-4">
-        <UrlMethodBar
-            v-model:url="url"
-            v-model:method="method"
-            :loading="loading"
-            @send="onSend"
-        />
-        <!-- <div>
+    <ResizablePanelGroup direction="vertical">
+        <ResizablePanel :default-size="25">
+            <UrlMethodBar
+                v-model:url="url"
+                v-model:method="method"
+                :loading="loading"
+                @send="onSend"
+            />
             <RequestTabs
                 :params="params"
                 :headers="headers"
@@ -109,6 +112,9 @@ async function onSend() {
                 @update:headers="headers = $event"
                 @update:body="body = $event"
             />
+        </ResizablePanel>
+        <ResizableHandle />
+        <ResizablePanel :default-size="75">
             <ResponsePane
                 :status="status"
                 :headers="responseHeaders"
@@ -116,6 +122,6 @@ async function onSend() {
                 :duration-ms="durationMs"
                 :error="error"
             />
-        </div> -->
-    </div>
+        </ResizablePanel>
+    </ResizablePanelGroup>
 </template>

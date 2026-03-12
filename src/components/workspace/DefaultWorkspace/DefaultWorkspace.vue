@@ -2,7 +2,11 @@
 import SideBar from "./SideBar.vue";
 import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
 
-defineOptions({ name: "DefaultWorkspace" });
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 defineProps<{
     projectPath: string;
@@ -10,8 +14,18 @@ defineProps<{
 </script>
 
 <template>
-    <div class="h-full w-full flex flex-row">
-        <SideBar />
-        <HttpResourcePad />
-    </div>
+    <ResizablePanelGroup
+        direction="horizontal"
+        class="max-w-md rounded-lg border md:min-w-112.5"
+    >
+        <ResizablePanel :default-size="50">
+            <SideBar />
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        <ResizablePanel :default-size="50">
+            <HttpResourcePad />
+        </ResizablePanel>
+    </ResizablePanelGroup>
 </template>
