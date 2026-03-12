@@ -2,14 +2,15 @@
 import type { KeyValue } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import UrlMethodBar from "./UrlMethodBar.vue";
-import RequestTabs from "./RequestTabs.vue";
-import ResponsePane from "./ResponsePane.vue";
+// import RequestTabs from "./RequestTabs.vue";
+// import ResponsePane from "./ResponsePane.vue";
 import { ref, computed } from "vue";
+import { HttpMethodType } from "@/shared/constants";
 
 defineOptions({ name: "HttpResourcePad" });
 
 const url = ref("");
-const method = ref("GET");
+const method = ref<HttpMethodType>("GET");
 const params = ref<KeyValue[]>([{ key: "", value: "" }]);
 const headers = ref<KeyValue[]>([{ key: "", value: "" }]);
 const body = ref("");
@@ -93,27 +94,28 @@ async function onSend() {
 <template>
     <div class="flex flex-col gap-4 p-4">
         <UrlMethodBar
-            v-model="url"
-            :method="method"
+            v-model:url="url"
+            v-model:method="method"
             :loading="loading"
-            @update:method="method = $event"
             @send="onSend"
         />
-        <RequestTabs
-            :params="params"
-            :headers="headers"
-            :body="body"
-            :body-disabled="bodyDisabled"
-            @update:params="params = $event"
-            @update:headers="headers = $event"
-            @update:body="body = $event"
-        />
-        <ResponsePane
-            :status="status"
-            :headers="responseHeaders"
-            :body="responseBody"
-            :duration-ms="durationMs"
-            :error="error"
-        />
+        <!-- <div>
+            <RequestTabs
+                :params="params"
+                :headers="headers"
+                :body="body"
+                :body-disabled="bodyDisabled"
+                @update:params="params = $event"
+                @update:headers="headers = $event"
+                @update:body="body = $event"
+            />
+            <ResponsePane
+                :status="status"
+                :headers="responseHeaders"
+                :body="responseBody"
+                :duration-ms="durationMs"
+                :error="error"
+            />
+        </div> -->
     </div>
 </template>
