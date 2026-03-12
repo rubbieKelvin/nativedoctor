@@ -80,11 +80,22 @@ function handleOpenCreateProject() {
         meta: {},
     });
 }
+
+function handleOpenRecents() {
+    pageStack.value.push({
+        name: "RecentProjects",
+        meta: {},
+    });
+}
 </script>
 
 <template>
     <div class="h-full w-full overflow-auto">
-        <CreateProject v-if="page.name === 'CreateProject'" />
+        <CreateProject
+            v-if="page.name === 'CreateProject'"
+            @open-project="handleOpenProject"
+            @open-recents="handleOpenRecents"
+        />
         <DefaultWorkspace
             v-else-if="page.name === 'DefaultWorkspace'"
             :project-path="page.meta.projectPath"
