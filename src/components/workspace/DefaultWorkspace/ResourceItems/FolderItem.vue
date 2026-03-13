@@ -3,7 +3,6 @@ import { ref, computed } from "vue";
 import type { FolderResource, Resource } from "@/shared/types/resources";
 import { Folder, ChevronRight, ChevronDown } from "lucide-vue-next";
 import { FolderContextMenu } from "./menus";
-import { useCurrentProjectActions } from "@/store/project";
 import ResourceItem from "./ResourceItem.vue";
 
 defineOptions({ name: "FolderItem" });
@@ -13,18 +12,17 @@ const props = withDefaults(
         resource: FolderResource;
         depth?: number;
     }>(),
-    { depth: 0 }
+    { depth: 0 },
 );
 
 defineEmits<{
     (e: "select", id: string): void;
 }>();
 
-const store = useCurrentProjectActions();
 const isExpanded = ref(false);
 
 const children = computed<Resource[]>(() => {
-    return store.resources.filter((r) => r.folderId === props.resource.id);
+    return props.resource.children;
 });
 
 function toggleExpand() {

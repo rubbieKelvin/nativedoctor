@@ -21,7 +21,7 @@ import WmDragHandle from "@/components/WmDragHandle.vue";
             <ResizableHandle />
 
             <ResizablePanel :default-size="75">
-                <HttpResourcePad />
+                <!-- <HttpResourcePad /> -->
             </ResizablePanel>
         </ResizablePanelGroup>
     </div>

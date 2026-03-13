@@ -1,3 +1,4 @@
+import type { Ref } from "vue";
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { defineStore, storeToRefs } from "pinia";
@@ -8,6 +9,50 @@ import type {
   Resource,
 } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
+
+/**
+ * Finds a folder by id in the resource tree (root + all folder children).
+ * Uses iterative DFS to avoid recursion depth and to stop as soon as found.
+ */
+function findFolderInTree(
+  rootResources: Resource[],
+  folderId: string,
+): FolderResource | undefined {
+  const stack = [...rootResources];
+  while (stack.length > 0) {
+    const r = stack.pop()!;
+    if (r.type === "folder" && r.id === folderId) return r as FolderResource;
+    if (r.type === "folder") {
+      stack.push(...(r as FolderResource).children);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Adds a resource to the project: either as a child of the given folder,
+ * or at root level. Updates resource.folderId and triggers reactivity.
+ * The folder is resolved recursively (nested folders are supported).
+ */
+function addResourceToProject(
+  resourcesRef: Ref<Array<Resource>>,
+  resource: Resource,
+  folderId?: string,
+): void {
+  const folder =
+    folderId != null
+      ? findFolderInTree(resourcesRef.value, folderId)
+      : undefined;
+
+  resource.folderId = folder?.id ?? null;
+
+  if (folder) {
+    folder.children.push(resource);
+    resourcesRef.value = [...resourcesRef.value];
+  } else {
+    resourcesRef.value = [...resourcesRef.value, resource];
+  }
+}
 
 /** Configuration schema for a nativedoctor project (nativedoctor.json). */
 export interface NativedoctorJson {
@@ -156,20 +201,8 @@ const projectStore = defineStore("project", () => {
    * @returns The unique ID of the newly created resource.
    */
   function createHttpResource(folderId?: string) {
-    // find the folder
-    const folder = resources.value.find(
-      (i) => i.type === "folder" && i.id === folderId,
-    ) as FolderResource | undefined;
-
-    const resource = _createHttpResource({ folderId: folder?.id });
-
-    if (folder) {
-      folder.children.push(resource);
-      resources.value = [...resources.value];
-    } else {
-      resources.value = [...resources.value, resource];
-    }
-
+    const resource = _createHttpResource({});
+    addResourceToProject(resources, resource, folderId);
     return resource.id;
   }
 
@@ -180,8 +213,7 @@ const projectStore = defineStore("project", () => {
    */
   function createFolderResource(folderId?: string) {
     const resource = _createFolderResource();
-    if (folderId) resource.folderId = folderId;
-    resources.value = [...resources.value, resource];
+    addResourceToProject(resources, resource, folderId);
     return resource.id;
   }
 
@@ -192,8 +224,7 @@ const projectStore = defineStore("project", () => {
    */
   function createSequenceResource(folderId?: string) {
     const resource = _createSequenceResource();
-    if (folderId) resource.folderId = folderId;
-    resources.value = [...resources.value, resource];
+    addResourceToProject(resources, resource, folderId);
     return resource.id;
   }
 
