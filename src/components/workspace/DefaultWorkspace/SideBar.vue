@@ -1,54 +1,40 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import Input from "@/components/ui/input/Input.vue";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
 import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
 
 const searchQuery = ref("");
-const dialogOpen = ref(false);
-const newResourceName = ref("");
-const creating = ref(false);
 
 const currentProject = useCurrentProject();
-const { discoverResources } = useCurrentProjectActions();
+const { createHttpResource, createFolderResource, createSequenceResource } =
+    useCurrentProjectActions();
 
-const filteredFiles = computed(() => {
-    // const q = searchQuery.value.toLowerCase().trim();
-    // const list = currentProject.resourceFiles.value ?? [];
-    // if (!q) return list;
-    // return list.filter((f) => f.toLowerCase().includes(q));
-    return [];
+const filteredResources = computed(() => {
+    const q = searchQuery.value.toLowerCase().trim();
+    const list = currentProject.resources.value ?? [];
+    if (!q) return list;
+    return list.filter((r) => r.name.toLowerCase().includes(q));
 });
 
-async function handleCreate() {
-    // const path = currentProject.path;
-    // if (!path?.value) return;
-    // const name = newResourceName.value.trim() || "New request";
-    // creating.value = true;
-    // try {
-    //     await invoke("create_http_resource", {
-    //         projectPath: path.value,
-    //         name,
-    //     });
-    //     await discoverResources();
-    //     newResourceName.value = "";
-    //     dialogOpen.value = false;
-    // } catch (e) {
-    //     console.error(e);
-    // } finally {
-    //     creating.value = false;
-    // }
+function handleCreateFolder() {
+    createFolderResource();
+}
+
+function handleCreateHttp() {
+    createHttpResource();
+}
+
+function handleCreateSequence() {
+    createSequenceResource();
 }
 </script>
 
@@ -60,7 +46,27 @@ async function handleCreate() {
                 placeholder="Search resources"
                 class=""
             />
-            <Button>+</Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                    <Button size="icon" variant="outline">
+                        <Plus class="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem @click="handleCreateFolder">
+                        <Folder class="mr-2 size-4" />
+                        Folder
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click="handleCreateHttp">
+                        <Globe class="mr-2 size-4" />
+                        HTTP
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click="handleCreateSequence">
+                        <ListOrdered class="mr-2 size-4" />
+                        Sequence
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         <ScrollArea class="flex-1 px-2">
             <div
@@ -70,18 +76,18 @@ async function handleCreate() {
                 {{ currentProject.loadError }}
             </div>
             <div
-                v-else-if="filteredFiles.length === 0"
+                v-else-if="filteredResources.length === 0"
                 class="py-4 text-center text-sm text-muted-foreground"
             >
                 {{ searchQuery.trim() ? "No matches" : "No resources yet" }}
             </div>
             <ul v-else class="space-y-0.5 pb-2">
                 <li
-                    v-for="file in filteredFiles"
-                    :key="file"
+                    v-for="resource in filteredResources"
+                    :key="resource.id"
                     class="rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
-                    {{ file }}
+                    {{ resource.name }}
                 </li>
             </ul>
         </ScrollArea>

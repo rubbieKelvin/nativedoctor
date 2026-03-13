@@ -1,7 +1,12 @@
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { defineStore, storeToRefs } from "pinia";
-import type { HttpResource, Resource } from "@/shared/types/resources";
+import type {
+  HttpResource,
+  FolderResource,
+  SequenceResource,
+  Resource,
+} from "@/shared/types/resources";
 import { nanoid } from "nanoid";
 
 /** Configuration schema for a nativedoctor project (nativedoctor.json). */
@@ -23,7 +28,7 @@ function _createHttpResource(
   return {
     id: nanoid(),
     type: "http",
-    url: resource.url ?? "",
+    url: resource.url ?? "Untitled",
     name: resource.name ?? "",
     method: resource.method ?? "GET",
     params: resource.params ?? [],
@@ -32,6 +37,38 @@ function _createHttpResource(
     auth: resource.auth ?? { type: "none" },
     is_edited: true,
     folderId: resource.folderId ?? null,
+  };
+}
+
+/**
+ * Creates a new Folder resource with default values.
+ * @param name - Optional display name for the folder.
+ * @returns A fully initialized FolderResource with a unique ID.
+ */
+function _createFolderResource(name?: string): FolderResource {
+  return {
+    id: nanoid(),
+    type: "folder",
+    name: name ?? "New folder",
+    is_edited: true,
+    folderId: null,
+    children: [],
+  };
+}
+
+/**
+ * Creates a new Sequence resource with default values.
+ * @param name - Optional display name for the sequence.
+ * @returns A fully initialized SequenceResource with a unique ID.
+ */
+function _createSequenceResource(name?: string): SequenceResource {
+  return {
+    id: nanoid(),
+    type: "sequence",
+    name: name ?? "New sequence",
+    is_edited: true,
+    folderId: null,
+    flow: [],
   };
 }
 
@@ -124,6 +161,30 @@ const projectStore = defineStore("project", () => {
     return resource.id;
   }
 
+  /**
+   * Creates a new Folder resource and adds it to the project.
+   * @param folderId - Optional parent folder ID for nesting.
+   * @returns The unique ID of the newly created folder.
+   */
+  function createFolderResource(folderId?: string) {
+    const resource = _createFolderResource();
+    if (folderId) resource.folderId = folderId;
+    resources.value.push(resource);
+    return resource.id;
+  }
+
+  /**
+   * Creates a new Sequence resource and adds it to the project.
+   * @param folderId - Optional parent folder ID for organizing the resource.
+   * @returns The unique ID of the newly created sequence.
+   */
+  function createSequenceResource(folderId?: string) {
+    const resource = _createSequenceResource();
+    if (folderId) resource.folderId = folderId;
+    resources.value.push(resource);
+    return resource.id;
+  }
+
   return {
     name,
     path,
@@ -132,6 +193,8 @@ const projectStore = defineStore("project", () => {
     resources,
     openResources,
     createHttpResource,
+    createFolderResource,
+    createSequenceResource,
     setProject,
     discoverResources,
     loadError,
