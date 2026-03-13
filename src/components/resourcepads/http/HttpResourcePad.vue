@@ -5,7 +5,7 @@ import UrlMethodBar from "./UrlMethodBar.vue";
 import RequestTabs from "./RequestTabs.vue";
 import ResponsePane from "./ResponsePane.vue";
 import { ref, computed } from "vue";
-import { HttpMethodType } from "@/shared/constants";
+import type { HttpMethodType } from "@/shared/constants/http";
 import {
     ResizableHandle,
     ResizablePanel,

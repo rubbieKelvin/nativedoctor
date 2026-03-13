@@ -8,7 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { HTTP_METHODS, type HttpMethodType } from "@/shared/constants";
+import { HTTP_METHODS, type HttpMethodType } from "@/shared/constants/http";
 
 const url = defineModel<string>("url");
 const method = defineModel<HttpMethodType>("method", {

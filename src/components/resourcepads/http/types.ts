@@ -1,11 +1,8 @@
-export interface KeyValue {
-  key: string
-  value: string
-}
+export type { KeyValuePair as KeyValue } from "@/shared/types/resources";
 
 export interface HttpResponse {
-  status: number
-  headers: [string, string][]
-  body: string
-  duration_ms: number
+  status: number;
+  headers: [string, string][];
+  body: string;
+  durationMs: number;
 }
