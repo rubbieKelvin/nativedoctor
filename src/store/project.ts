@@ -156,8 +156,20 @@ const projectStore = defineStore("project", () => {
    * @returns The unique ID of the newly created resource.
    */
   function createHttpResource(folderId?: string) {
-    const resource = _createHttpResource({ folderId });
-    resources.value = [...resources.value, resource];
+    // find the folder
+    const folder = resources.value.find(
+      (i) => i.type === "folder" && i.id === folderId,
+    ) as FolderResource | undefined;
+
+    const resource = _createHttpResource({ folderId: folder?.id });
+
+    if (folder) {
+      folder.children.push(resource);
+      resources.value = [...resources.value];
+    } else {
+      resources.value = [...resources.value, resource];
+    }
+
     return resource.id;
   }
 
@@ -245,7 +257,7 @@ const projectStore = defineStore("project", () => {
    */
   function renameResource(id: string, newName: string) {
     resources.value = resources.value.map((r) =>
-      r.id === id ? { ...r, name: newName, is_edited: true } : r
+      r.id === id ? { ...r, name: newName, is_edited: true } : r,
     );
   }
 

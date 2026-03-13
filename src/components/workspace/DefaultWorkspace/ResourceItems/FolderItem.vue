@@ -3,6 +3,8 @@ import type { FolderResource } from "@/shared/types/resources";
 import { Folder, ChevronRight } from "lucide-vue-next";
 import { FolderContextMenu } from "./menus";
 
+defineOptions({ name: "FolderItem" });
+
 defineProps<{
     resource: FolderResource;
 }>();
@@ -20,7 +22,9 @@ defineEmits<{
         >
             <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
             <Folder class="size-4 shrink-0 text-amber-500" />
-            <span class="truncate">{{ resource.name || "Untitled folder" }}</span>
+            <span class="truncate">{{
+                resource.name.trim() || "Untitled folder"
+            }}</span>
         </button>
     </FolderContextMenu>
 </template>
