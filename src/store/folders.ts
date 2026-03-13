@@ -3,12 +3,15 @@ import { ref } from "vue";
 
 const folderStore = defineStore("folders", () => {
   const openFolders = ref<Set<string>>(new Set());
+
   function toggle(id: string) {
-    if (openFolders.value.has(id)) {
-      openFolders.value.delete(id);
+    const next = new Set(openFolders.value);
+    if (next.has(id)) {
+      next.delete(id);
     } else {
-      openFolders.value.add(id);
+      next.add(id);
     }
+    openFolders.value = next;
   }
 
   function isOpen(id: string): boolean {
@@ -16,9 +19,11 @@ const folderStore = defineStore("folders", () => {
   }
 
   return {
+    openFolders,
     isOpen,
     toggle,
   };
 });
 
+export const useFolders = () => folderStore();
 export const useFolderState = () => storeToRefs(folderStore());

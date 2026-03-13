@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import type { FolderResource, Resource } from "@/shared/types/resources";
 import { Folder, ChevronRight, ChevronDown } from "lucide-vue-next";
 import { FolderContextMenu } from "./menus";
 import ResourceItem from "./ResourceItem.vue";
+import { useFolders } from "@/store/folders";
+import { sortedResources } from "@/shared/resources";
 
 defineOptions({ name: "FolderItem" });
 
@@ -19,14 +21,14 @@ defineEmits<{
     (e: "select", id: string): void;
 }>();
 
-const isExpanded = ref(false);
-
-const children = computed<Resource[]>(() => {
-    return props.resource.children;
-});
+const folders = useFolders();
+const isExpanded = computed(() => folders.isOpen(props.resource.id));
+const children = computed<Resource[]>(() =>
+    sortedResources(props.resource.children),
+);
 
 function toggleExpand() {
-    isExpanded.value = !isExpanded.value;
+    folders.toggle(props.resource.id);
 }
 </script>
 

@@ -12,6 +12,7 @@ import {
 import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
 import { useCurrentProjectActions } from "@/store/project";
 import { ResourceItem } from "./ResourceItems";
+import { sortedResources } from "@/shared/resources";
 
 const searchQuery = ref("");
 
@@ -24,7 +25,8 @@ const rootResources = computed(() => {
 const filteredResources = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
     if (!q) return rootResources.value;
-    return store.resources.filter((r) => r.name.toLowerCase().includes(q));
+    const res = store.resources.filter((r) => r.name.toLowerCase().includes(q));
+    return sortedResources(res);
 });
 
 const isSearching = computed(() => searchQuery.value.trim().length > 0);
@@ -76,11 +78,9 @@ function handleSelectResource(id: string) {
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
+
         <ScrollArea class="flex-1 px-2">
-            <div
-                v-if="store.loadError"
-                class="py-2 text-sm text-destructive"
-            >
+            <div v-if="store.loadError" class="py-2 text-sm text-destructive">
                 {{ store.loadError }}
             </div>
             <div
