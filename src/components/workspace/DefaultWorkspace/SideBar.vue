@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
 import { useCurrentProjectActions } from "@/store/project";
+import { FolderItem, HttpItem, SequenceItem } from "./ResourceItems";
 
 const searchQuery = ref("");
 
@@ -33,6 +34,10 @@ function handleCreateHttp() {
 
 function handleCreateSequence() {
     store.createSequenceResource();
+}
+
+function handleSelectResource(id: string) {
+    store.openResources.add(id);
 }
 </script>
 
@@ -80,12 +85,22 @@ function handleCreateSequence() {
                 {{ searchQuery.trim() ? "No matches" : "No resources yet" }}
             </div>
             <ul v-else class="space-y-0.5 pb-2">
-                <li
-                    v-for="resource in filteredResources"
-                    :key="resource.id"
-                    class="rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                    {{ resource.name }}
+                <li v-for="resource in filteredResources" :key="resource.id">
+                    <FolderItem
+                        v-if="resource.type === 'folder'"
+                        :resource="resource"
+                        @select="handleSelectResource"
+                    />
+                    <HttpItem
+                        v-else-if="resource.type === 'http'"
+                        :resource="resource"
+                        @select="handleSelectResource"
+                    />
+                    <SequenceItem
+                        v-else-if="resource.type === 'sequence'"
+                        :resource="resource"
+                        @select="handleSelectResource"
+                    />
                 </li>
             </ul>
         </ScrollArea>
