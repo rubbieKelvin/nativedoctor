@@ -37,9 +37,6 @@ function _createHttpResource(
 
 /**
  * Loads project configuration from the filesystem via Tauri backend.
- * @param path - Absolute path to the project directory.
- * @returns The parsed project configuration, or null if path is empty.
- * @throws Error if the backend fails to read the configuration.
  */
 async function loadProject(path: string): Promise<NativedoctorJson | null> {
   if (!path) return null;

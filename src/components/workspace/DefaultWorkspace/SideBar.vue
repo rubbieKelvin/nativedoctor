@@ -24,74 +24,43 @@ const currentProject = useCurrentProject();
 const { discoverResources } = useCurrentProjectActions();
 
 const filteredFiles = computed(() => {
-    const q = searchQuery.value.toLowerCase().trim();
-    const list = currentProject.resourceFiles.value ?? [];
-    if (!q) return list;
-    return list.filter((f) => f.toLowerCase().includes(q));
+    // const q = searchQuery.value.toLowerCase().trim();
+    // const list = currentProject.resourceFiles.value ?? [];
+    // if (!q) return list;
+    // return list.filter((f) => f.toLowerCase().includes(q));
+    return [];
 });
 
 async function handleCreate() {
-    const path = currentProject.path;
-    if (!path?.value) return;
-    const name = newResourceName.value.trim() || "New request";
-    creating.value = true;
-    try {
-        await invoke("create_http_resource", {
-            projectPath: path.value,
-            name,
-        });
-        await discoverResources();
-        newResourceName.value = "";
-        dialogOpen.value = false;
-    } catch (e) {
-        console.error(e);
-    } finally {
-        creating.value = false;
-    }
+    // const path = currentProject.path;
+    // if (!path?.value) return;
+    // const name = newResourceName.value.trim() || "New request";
+    // creating.value = true;
+    // try {
+    //     await invoke("create_http_resource", {
+    //         projectPath: path.value,
+    //         name,
+    //     });
+    //     await discoverResources();
+    //     newResourceName.value = "";
+    //     dialogOpen.value = false;
+    // } catch (e) {
+    //     console.error(e);
+    // } finally {
+    //     creating.value = false;
+    // }
 }
 </script>
 
 <template>
     <div class="flex h-full flex-col border-r border-sidebar-border bg-sidebar">
-        <div class="flex shrink-0 flex-col gap-2 p-2">
+        <div class="flex shrink-0 gap-2 p-2">
             <Input
                 v-model="searchQuery"
                 placeholder="Search resources"
-                class="h-8"
+                class=""
             />
-            <Dialog v-model:open="dialogOpen">
-                <DialogTrigger as-child>
-                    <Button variant="outline" size="sm" class="w-full">
-                        Add resource
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add HTTP request</DialogTitle>
-                        <DialogDescription>
-                            Create a new HTTP request resource in this project.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div class="grid gap-2 py-2">
-                        <label class="text-sm font-medium" for="resource-name">
-                            Name
-                        </label>
-                        <Input
-                            id="resource-name"
-                            v-model="newResourceName"
-                            placeholder="e.g. Get users"
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" @click="dialogOpen = false">
-                            Cancel
-                        </Button>
-                        <Button :disabled="creating" @click="handleCreate">
-                            {{ creating ? "Creating…" : "Create" }}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <Button>+</Button>
         </div>
         <ScrollArea class="flex-1 px-2">
             <div
