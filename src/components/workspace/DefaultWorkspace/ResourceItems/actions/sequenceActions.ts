@@ -1,7 +1,7 @@
-import { useCurrentProjectActions } from "@/store/project";
+import { useResources } from "@/store/resources";
 
 export function useSequenceActions(resourceId: string) {
-  const store = useCurrentProjectActions();
+  const store = useResources();
 
   function renameSequence() {
     store.startRenaming(resourceId);

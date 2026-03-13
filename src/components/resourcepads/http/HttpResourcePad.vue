@@ -12,11 +12,14 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { useResources } from "@/store/resources";
 
 const props = withDefaults(
     defineProps<{ resource?: HttpResource | null }>(),
     { resource: undefined },
 );
+
+const resourcesStore = useResources();
 
 const url = ref("");
 const method = ref<HttpMethodType>("GET");
@@ -46,12 +49,13 @@ watch(
 watch([url, method, params, headers, body], () => {
     const r = props.resource;
     if (!r) return;
-    r.url = url.value;
-    r.method = method.value;
-    r.params = params.value.filter((p) => p.key.trim() || p.value.trim()).length ? params.value : [];
-    r.headers = headers.value.filter((h) => h.key.trim() || h.value.trim()).length ? headers.value : [];
-    r.body = body.value.trim() ? { type: "text", content: body.value } : { type: "none" };
-    r.is_edited = true;
+    resourcesStore.updateHttpResource(r.id, {
+        url: url.value,
+        method: method.value,
+        params: params.value.filter((p) => p.key.trim() || p.value.trim()).length ? params.value : [],
+        headers: headers.value.filter((h) => h.key.trim() || h.value.trim()).length ? headers.value : [],
+        body: body.value.trim() ? { type: "text", content: body.value } : { type: "none" },
+    });
 }, { deep: true });
 
 const status = ref<number | undefined>(undefined);

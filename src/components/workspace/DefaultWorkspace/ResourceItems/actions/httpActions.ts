@@ -1,8 +1,7 @@
-import { useCurrentProjectActions } from "@/store/project";
-import type { HttpResource } from "@/shared/types/resources";
+import { useResources } from "@/store/resources";
 
 export function useHttpActions(resourceId: string) {
-  const store = useCurrentProjectActions();
+  const store = useResources();
 
   function renameHttp() {
     store.startRenaming(resourceId);
@@ -17,11 +16,8 @@ export function useHttpActions(resourceId: string) {
   }
 
   function copyAsCurl() {
-    const resource = store.resources.find(
-      (r) => r.id === resourceId && r.type === "http"
-    ) as HttpResource | undefined;
-
-    if (!resource) return;
+    const resource = store.getResourceById(resourceId);
+    if (!resource || resource.type !== "http") return;
 
     let curl = `curl -X ${resource.method}`;
 

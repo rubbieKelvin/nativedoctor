@@ -9,3 +9,4 @@ export type Pages =
   | { name: "CreateProject"; meta: {} };
 
 export * from "./resources";
+export * from "./project";

@@ -1,7 +1,7 @@
-import { useCurrentProjectActions } from "@/store/project";
+import { useResources } from "@/store/resources";
 
 export function useFolderActions(folderId: string) {
-  const store = useCurrentProjectActions();
+  const store = useResources();
 
   function addHttpToFolder() {
     store.createHttpResource(folderId);

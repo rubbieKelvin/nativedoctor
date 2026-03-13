@@ -20,10 +20,10 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import WmDragHandle from "@/components/WmDragHandle.vue";
-import { useCurrentProjectActions } from "@/store/project";
+import { useResources } from "@/store/resources";
 import { useWorkspaceTabs } from "@/store/workspaceTabs";
 
-const project = useCurrentProjectActions();
+const resourcesStore = useResources();
 const workspaceTabs = useWorkspaceTabs();
 
 const scrollAreaRef = ref<InstanceType<typeof ScrollArea> | null>(null);
@@ -71,7 +71,15 @@ const tabsModel = computed({
 });
 
 function resourceForId(id: string) {
-    return project.getResourceById(id);
+    return resourcesStore.getResourceById(id);
+}
+
+function httpResourceForId(id: string) {
+    return resourcesStore.getHttpResource(id);
+}
+
+function sequenceResourceForId(id: string) {
+    return resourcesStore.getSequenceResource(id);
 }
 </script>
 
@@ -176,22 +184,12 @@ function resourceForId(id: string) {
                                 </Button>
                             </div>
                             <HttpResourcePad
-                                v-else-if="resourceForId(id)?.type === 'http'"
-                                :resource="
-                                    resourceForId(
-                                        id,
-                                    ) as import('@/shared/types/resources').HttpResource
-                                "
+                                v-else-if="httpResourceForId(id)"
+                                :resource="httpResourceForId(id)!"
                             />
                             <SequencePad
-                                v-else-if="
-                                    resourceForId(id)?.type === 'sequence'
-                                "
-                                :resource="
-                                    resourceForId(
-                                        id,
-                                    )! as import('@/shared/types/resources').SequenceResource
-                                "
+                                v-else-if="sequenceResourceForId(id)"
+                                :resource="sequenceResourceForId(id)!"
                             />
                         </TabsContent>
                     </div>

@@ -15,44 +15,59 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
-import { useCurrentProjectActions } from "@/store/project";
+import { Plus, Folder, Globe, ListOrdered, Save } from "lucide-vue-next";
+import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
+import { useResources, useResourcesState } from "@/store/resources";
 import { useWorkspaceTabs } from "@/store/workspaceTabs";
 import { ResourceItem } from "./ResourceItems";
 import { sortedResources } from "@/shared/resources";
 
 const searchQuery = ref("");
 
-const store = useCurrentProjectActions();
+const projectStore = useCurrentProjectActions();
+const { path: projectPath } = useCurrentProject();
+const resourcesStore = useResources();
+const { flattenedResources } = useResourcesState();
 const workspaceTabs = useWorkspaceTabs();
 
+const hasEditedResources = computed(
+    () => (flattenedResources.value ?? []).some((r) => r.is_edited),
+);
+
+async function handleSave() {
+    const path = projectPath.value;
+    if (!path) return;
+    await resourcesStore.saveResources(path);
+}
+
 const rootResources = computed(() => {
-    return store.resources.filter((r) => r.folderId === null);
+    return resourcesStore.resources.filter((r) => r.folderId === null);
 });
 
 const filteredResources = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
     if (!q) return rootResources.value;
-    const res = store.resources.filter((r) => r.name.toLowerCase().includes(q));
+    const all = flattenedResources.value ?? [];
+    const res = all.filter((r) => r.name.toLowerCase().includes(q));
     return sortedResources(res);
 });
 
 const isSearching = computed(() => searchQuery.value.trim().length > 0);
 
 function handleCreateFolder() {
-    store.createFolderResource();
+    resourcesStore.createFolderResource();
 }
 
 function handleCreateHttp() {
-    store.createHttpResource();
+    resourcesStore.createHttpResource();
 }
 
 function handleCreateSequence() {
-    store.createSequenceResource();
+    resourcesStore.createSequenceResource();
 }
 
 function handleSelectResource(id: string) {
-    const resource = store.getResourceById(id);
+    const resource = resourcesStore.getResourceById(id);
     if (resource?.type === "folder") return;
     workspaceTabs.openTab(id);
 }
@@ -68,6 +83,15 @@ function handleSelectResource(id: string) {
                         placeholder="Search resources"
                         class=""
                     />
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        title="Save"
+                        :disabled="!projectPath || !hasEditedResources"
+                        @click="handleSave"
+                    >
+                        <Save class="size-4" />
+                    </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger as-child>
                             <Button size="icon" variant="outline">
@@ -92,8 +116,8 @@ function handleSelectResource(id: string) {
                 </div>
 
                 <ScrollArea class="flex-1 px-2">
-                    <div v-if="store.loadError" class="py-2 text-sm text-destructive">
-                        {{ store.loadError }}
+                    <div v-if="projectStore.loadError" class="py-2 text-sm text-destructive">
+                        {{ projectStore.loadError }}
                     </div>
                     <div
                         v-else-if="filteredResources.length === 0"

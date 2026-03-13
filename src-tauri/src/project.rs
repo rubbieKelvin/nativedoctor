@@ -192,6 +192,71 @@ struct HttpRequestFile {
     url: String,
 }
 
+/// Key-value pair for params/headers. Used for JSON in/out of read/write_resource_file.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyValuePairDto {
+    pub key: String,
+    pub value: String,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+/// HTTP resource as stored in .request.yaml. Deserialize from YAML, serialize to JSON for frontend.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestResourceFile {
+    #[serde(rename = "type")]
+    pub resource_type: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub method: Option<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub params: Option<Vec<KeyValuePairDto>>,
+    #[serde(default)]
+    pub headers: Option<Vec<KeyValuePairDto>>,
+    #[serde(default)]
+    pub body: Option<serde_json::Value>,
+    #[serde(default)]
+    pub auth: Option<serde_json::Value>,
+}
+
+/// Sequence node as stored in .sequence.yaml.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SequenceNodeDto {
+    pub id: String,
+    pub resource_id: String,
+    pub resource_type: String,
+}
+
+/// Sequence resource as stored in .sequence.yaml.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SequenceResourceFile {
+    #[serde(rename = "type")]
+    pub resource_type: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub flow: Option<Vec<SequenceNodeDto>>,
+}
+
+/// Content of a resource file (HTTP or Sequence). Returned as JSON from read_resource_file.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ResourceFileContent {
+    #[serde(rename = "http")]
+    Http(RequestResourceFile),
+    #[serde(rename = "sequence")]
+    Sequence(SequenceResourceFile),
+}
+
 /// Creates a new HTTP request resource file in the project root directory.
 /// The file is saved as YAML with the .request.yaml extension.
 #[tauri::command]
@@ -230,4 +295,81 @@ pub fn create_http_resource(project_path: String, name: String) -> Result<String
     std::fs::write(full_path, yaml_content).map_err(|e| e.to_string())?;
 
     return Ok(candidate);
+}
+
+#[derive(serde::Serialize)]
+struct SequenceFile {
+    #[serde(rename = "type")]
+    resource_type: String,
+    name: String,
+    flow: Vec<serde_json::Value>,
+}
+
+/// Creates a new sequence resource file in the project root directory.
+#[tauri::command]
+pub fn create_sequence_resource(project_path: String, name: String) -> Result<String, String> {
+    let root = std::path::Path::new(&project_path);
+    let config_path = root.join("nativedoctor.json");
+    if !config_path.exists() {
+        return Err("Project has no nativedoctor.json".to_string());
+    }
+
+    let base = sanitize_resource_name(&name);
+    if base.is_empty() {
+        return Err("Invalid resource name".to_string());
+    }
+
+    let mut candidate = format!("{}.sequence.yaml", base);
+    let mut n = 1u32;
+    while root.join(&candidate).exists() {
+        n += 1;
+        candidate = format!("{}-{}.sequence.yaml", base, n);
+    }
+
+    let sequence_content = SequenceFile {
+        resource_type: "sequence".to_string(),
+        name: if name.trim().is_empty() {
+            "New sequence".to_string()
+        } else {
+            name.trim().to_string()
+        },
+        flow: vec![],
+    };
+
+    let full_path = root.join(&candidate);
+    let yaml_content = serde_yaml::to_string(&sequence_content).map_err(|e| e.to_string())?;
+    std::fs::write(full_path, yaml_content).map_err(|e| e.to_string())?;
+
+    return Ok(candidate);
+}
+
+/// Reads a resource file from the project directory, parses YAML, and returns JSON for the frontend.
+#[tauri::command]
+pub fn read_resource_file(
+    project_path: String,
+    file_name: String,
+) -> Result<ResourceFileContent, String> {
+    let root = std::path::Path::new(&project_path);
+    let file_path = root.join(&file_name);
+
+    if !file_path.is_file() {
+        return Err(format!("File not found: {}", file_name));
+    }
+
+    let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+    serde_yaml::from_str(&content).map_err(|e| e.to_string())
+}
+
+/// Writes a resource file to the project directory. Accepts JSON from the frontend and serializes to YAML.
+#[tauri::command]
+pub fn write_resource_file(
+    project_path: String,
+    file_name: String,
+    payload: ResourceFileContent,
+) -> Result<(), String> {
+    let root = std::path::Path::new(&project_path);
+    let file_path = root.join(&file_name);
+
+    let yaml_content = serde_yaml::to_string(&payload).map_err(|e| e.to_string())?;
+    std::fs::write(file_path, yaml_content).map_err(|e| e.to_string())
 }

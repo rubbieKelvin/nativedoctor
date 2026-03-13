@@ -102,7 +102,10 @@ pub fn run() {
             project::create_project,
             project::get_project_root_from_config_path,
             project::create_http_resource,
+            project::create_sequence_resource,
             project::discover_resources,
+            project::read_resource_file,
+            project::write_resource_file,
         ])
         .setup(|_app| {
             setup_db()?;

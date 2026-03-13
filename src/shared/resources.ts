@@ -1,4 +1,4 @@
-import { Resource } from "./types";
+import { HttpResource, Resource, ResourceFileContentDto } from "./types";
 
 type SortingOptions = {
   sorting: "NAME" | "DATE_CREATED" | "DATE_UPDATED";
@@ -64,4 +64,77 @@ export function sortedResources(
         return 0;
     }
   });
+}
+
+/**
+ * Maps backend JSON (from read_resource_file) to frontend Resource.
+ * Adds id, is_edited, folderId, created_at.
+ */
+export function mapBackendToResource(
+  payload: ResourceFileContentDto,
+  id: string,
+  created_at: number,
+): Resource | null {
+  if (payload.type === "http") {
+    return {
+      id,
+      type: "http",
+      name: payload.name ?? "Untitled",
+      method: (payload.method as HttpResource["method"]) ?? "GET",
+      url: payload.url ?? "",
+      params: payload.params ?? [],
+      headers: payload.headers ?? [],
+      body: payload.body ?? { type: "none" },
+      auth: payload.auth ?? { type: "none" },
+      is_edited: false,
+      folderId: null,
+      created_at,
+    };
+  }
+  if (payload.type === "sequence") {
+    const flow = (payload.flow ?? []).map((n) => ({
+      id: n.id ?? crypto.randomUUID(),
+      resourceId: n.resourceId ?? "",
+      resourceType: n.resourceType as "http" | "sequence",
+    }));
+    return {
+      id,
+      type: "sequence",
+      name: payload.name ?? "Untitled sequence",
+      is_edited: false,
+      folderId: null,
+      flow,
+      created_at,
+    };
+  }
+  return null;
+}
+
+/**
+ * Maps frontend Resource to backend payload for write_resource_file.
+ * Strips id, is_edited, folderId, created_at, updated_at.
+ */
+export function mapResourceToBackendPayload(
+  r: Resource,
+): ResourceFileContentDto | null {
+  if (r.type === "http") {
+    return {
+      type: "http",
+      name: r.name,
+      method: r.method,
+      url: r.url,
+      params: r.params,
+      headers: r.headers,
+      body: r.body,
+      auth: r.auth,
+    };
+  }
+  if (r.type === "sequence") {
+    return {
+      type: "sequence",
+      name: r.name,
+      flow: r.flow,
+    };
+  }
+  return null;
 }

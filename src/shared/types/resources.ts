@@ -126,3 +126,29 @@ export interface SequenceResource extends BaseResource<"sequence"> {
 }
 
 export type Resource = FolderResource | HttpResource | SequenceResource;
+
+// File based on rust types
+
+/** Backend JSON shape for HTTP resource (from read_resource_file or to write_resource_file). */
+export interface RequestResourceFileDto {
+  type: "http";
+  name?: string;
+  method?: string;
+  url?: string;
+  params?: KeyValuePair[];
+  headers?: KeyValuePair[];
+  body?: HttpBody;
+  auth?: HttpAuth;
+}
+
+/** Backend JSON shape for sequence resource. */
+export interface SequenceResourceFileDto {
+  type: "sequence";
+  name?: string;
+  flow?: Array<{ id: string; resourceId: string; resourceType: string }>;
+}
+
+/** Backend response from read_resource_file (tagged union). */
+export type ResourceFileContentDto =
+  | RequestResourceFileDto
+  | SequenceResourceFileDto;

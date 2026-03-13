@@ -6,7 +6,7 @@ import { FolderContextMenu } from "./menus";
 import ResourceItem from "./ResourceItem.vue";
 import { useFolders } from "@/store/folders";
 import { sortedResources } from "@/shared/resources";
-import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
+import { useResourcesState, useResources } from "@/store/resources";
 
 defineOptions({ name: "FolderItem" });
 
@@ -22,8 +22,8 @@ defineEmits<{
     (e: "select", id: string): void;
 }>();
 
-const { renamingResourceId } = useCurrentProject();
-const store = useCurrentProjectActions();
+const { renamingResourceId } = useResourcesState();
+const store = useResources();
 
 const isRenaming = computed(() => renamingResourceId.value === props.resource.id);
 const tempName = ref(props.resource.name);
