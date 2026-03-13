@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { KeyValue } from "./types";
+import type { HttpResource } from "@/shared/types/resources";
 import { invoke } from "@tauri-apps/api/core";
 import UrlMethodBar from "./UrlMethodBar.vue";
 import RequestTabs from "./RequestTabs.vue";
 import ResponsePane from "./ResponsePane.vue";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import type { HttpMethodType } from "@/shared/constants/http";
 import {
     ResizableHandle,
@@ -12,11 +13,46 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
+const props = withDefaults(
+    defineProps<{ resource?: HttpResource | null }>(),
+    { resource: undefined },
+);
+
 const url = ref("");
 const method = ref<HttpMethodType>("GET");
 const params = ref<KeyValue[]>([{ key: "", value: "" }]);
 const headers = ref<KeyValue[]>([{ key: "", value: "" }]);
 const body = ref("");
+
+function bodyFromResource(r: HttpResource): string {
+    const b = r.body;
+    if (b.type === "text" || b.type === "json" || b.type === "graphql") return b.content;
+    return "";
+}
+
+watch(
+    () => props.resource,
+    (r) => {
+        if (!r) return;
+        url.value = r.url ?? "";
+        method.value = (r.method as HttpMethodType) ?? "GET";
+        params.value = r.params?.length ? [...r.params] : [{ key: "", value: "" }];
+        headers.value = r.headers?.length ? [...r.headers] : [{ key: "", value: "" }];
+        body.value = bodyFromResource(r);
+    },
+    { immediate: true },
+);
+
+watch([url, method, params, headers, body], () => {
+    const r = props.resource;
+    if (!r) return;
+    r.url = url.value;
+    r.method = method.value;
+    r.params = params.value.filter((p) => p.key.trim() || p.value.trim()).length ? params.value : [];
+    r.headers = headers.value.filter((h) => h.key.trim() || h.value.trim()).length ? headers.value : [];
+    r.body = body.value.trim() ? { type: "text", content: body.value } : { type: "none" };
+    r.is_edited = true;
+}, { deep: true });
 
 const status = ref<number | undefined>(undefined);
 const responseHeaders = ref<[string, string][]>([]);

@@ -14,6 +14,8 @@ interface BaseResource<T extends ResourceType> {
   name: string;
   is_edited: boolean;
   folderId: string | null;
+  created_at: number;
+  updated_at?: number;
 }
 
 export interface FolderResource extends BaseResource<"folder"> {

@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
 import { useCurrentProjectActions } from "@/store/project";
+import { useWorkspaceTabs } from "@/store/workspaceTabs";
 import { ResourceItem } from "./ResourceItems";
 import { sortedResources } from "@/shared/resources";
 
 const searchQuery = ref("");
 
 const store = useCurrentProjectActions();
+const workspaceTabs = useWorkspaceTabs();
 
 const rootResources = computed(() => {
     return store.resources.filter((r) => r.folderId === null);
@@ -44,7 +46,9 @@ function handleCreateSequence() {
 }
 
 function handleSelectResource(id: string) {
-    store.openResources.add(id);
+    const resource = store.getResourceById(id);
+    if (resource?.type === "folder") return;
+    workspaceTabs.openTab(id);
 }
 </script>
 

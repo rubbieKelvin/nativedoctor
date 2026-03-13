@@ -9,6 +9,7 @@ import type {
   Resource,
 } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
+import { useWorkspaceTabs } from "./workspaceTabs";
 
 /**
  * Finds a reource by id in the resource tree (root + all folder children).
@@ -82,6 +83,7 @@ function _createHttpResource(
     auth: resource.auth ?? { type: "none" },
     is_edited: true,
     folderId: resource.folderId ?? null,
+    created_at: Date.now(),
   };
 }
 
@@ -98,6 +100,7 @@ function _createFolderResource(name?: string): FolderResource {
     is_edited: true,
     folderId: null,
     children: [],
+    created_at: Date.now(),
   };
 }
 
@@ -114,6 +117,7 @@ function _createSequenceResource(name?: string): SequenceResource {
     is_edited: true,
     folderId: null,
     flow: [],
+    created_at: Date.now(),
   };
 }
 
@@ -144,13 +148,19 @@ const projectStore = defineStore("project", () => {
   const config = ref<NativedoctorJson | null>(null);
   const loadError = ref<string | null>(null);
   const resources = ref<Array<Resource>>([]);
-  const openResources = ref<Set<string>>(new Set());
 
   /** Resource file names discovered from the project directory. */
   const resourceFiles = ref<string[]>([]);
 
   /** Project name derived from the loaded configuration. */
   const name = computed(() => config.value?.name);
+
+  /**
+   * Resolves a resource by id from the full tree (root + all folder children).
+   */
+  function getResourceById(id: string): Resource | undefined {
+    return findResourceInTree(resources.value, id);
+  }
 
   /**
    * Discovers resource files in the current project directory.
@@ -229,12 +239,25 @@ const projectStore = defineStore("project", () => {
   }
 
   /**
-   * Deletes a resource by ID.
-   * @param id - The ID of the resource to delete.
+   * Deletes a resource by ID from the tree (root or any folder's children).
    */
   function deleteResource(id: string) {
-    resources.value = resources.value.filter((r) => r.id !== id);
-    openResources.value.delete(id);
+    function removeFromTree(nodes: Resource[]): boolean {
+      for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+          nodes.splice(i, 1);
+          return true;
+        }
+        if (nodes[i].type === "folder") {
+          if (removeFromTree((nodes[i] as FolderResource).children)) return true;
+        }
+      }
+      return false;
+    }
+    const removed = removeFromTree(resources.value);
+    if (!removed) return;
+    resources.value = [...resources.value];
+    useWorkspaceTabs().closeTab(id);
   }
 
   /**
@@ -316,7 +339,7 @@ const projectStore = defineStore("project", () => {
     config,
     resourceFiles,
     resources,
-    openResources,
+    getResourceById,
     renamingResourceId,
     createHttpResource,
     createFolderResource,
