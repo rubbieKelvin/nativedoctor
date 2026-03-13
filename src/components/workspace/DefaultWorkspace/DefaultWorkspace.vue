@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
+import { useResizeObserver } from "@vueuse/core";
 import SideBar from "./SideBar.vue";
 import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue";
 import SequencePad from "@/components/resourcepads/sequence/SequencePad.vue";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Globe, ListOrdered, X } from "lucide-vue-next";
+import {
+    Globe,
+    ListOrdered,
+    X,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-vue-next";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -17,6 +24,32 @@ import { useWorkspaceTabs } from "@/store/workspaceTabs";
 
 const project = useCurrentProjectActions();
 const workspaceTabs = useWorkspaceTabs();
+
+const tabListScrollRef = ref<HTMLElement | null>(null);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+
+const THRESHOLD = 2;
+
+function updateTabListScrollVisibility() {
+    const el = tabListScrollRef.value;
+    if (!el) return;
+    const { scrollLeft, clientWidth, scrollWidth } = el;
+    canScrollLeft.value = scrollLeft > THRESHOLD;
+    canScrollRight.value = scrollLeft + clientWidth < scrollWidth - THRESHOLD;
+}
+
+useResizeObserver(tabListScrollRef, () => {
+    updateTabListScrollVisibility();
+});
+
+watch(
+    () => workspaceTabs.openTabIds.length,
+    () => {
+        nextTick(updateTabListScrollVisibility);
+    },
+    { immediate: true },
+);
 
 const tabsModel = computed({
     get: () => workspaceTabs.activeTabId ?? undefined,
@@ -45,35 +78,67 @@ function resourceForId(id: string) {
                 >
                     Select a resource to open
                 </div>
-                <Tabs
-                    v-else
-                    v-model="tabsModel"
-                    class="flex h-full flex-col"
-                >
-                    <TabsList class="w-full justify-start rounded-none border-b bg-transparent p-0">
-                        <TabsTrigger
-                            v-for="id in workspaceTabs.openTabIds"
-                            :key="id"
-                            :value="id"
-                            class="relative rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none"
+                <Tabs v-else v-model="tabsModel" class="flex h-full flex-col">
+                    <div
+                        class="relative overflow-hidden border-b bg-transparent"
+                    >
+                        <div
+                            ref="tabListScrollRef"
+                            class="overflow-x-auto overflow-y-hidden"
+                            @scroll="updateTabListScrollVisibility"
                         >
-                            <component
-                                :is="resourceForId(id)?.type === 'sequence' ? ListOrdered : Globe"
-                                class="mr-1.5 size-4 shrink-0"
-                            />
-                            <span class="truncate max-w-[120px]">
-                                {{ resourceForId(id)?.name || 'Untitled' }}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="ml-1 size-6 rounded hover:bg-muted"
-                                @click.stop="workspaceTabs.closeTab(id)"
+                            <TabsList
+                                class="inline-flex min-w-0 shrink-0 flex-nowrap justify-start rounded-none border-0 bg-transparent p-0"
                             >
-                                <X class="size-3.5" />
-                            </Button>
-                        </TabsTrigger>
-                    </TabsList>
+                                <TabsTrigger
+                                    v-for="id in workspaceTabs.openTabIds"
+                                    :key="id"
+                                    :value="id"
+                                    class="relative shrink-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none"
+                                >
+                                    <component
+                                        :is="
+                                            resourceForId(id)?.type ===
+                                            'sequence'
+                                                ? ListOrdered
+                                                : Globe
+                                        "
+                                        class="mr-1.5 size-4 shrink-0"
+                                    />
+                                    <span class="truncate max-w-30">
+                                        {{
+                                            resourceForId(id)?.name ||
+                                            "Untitled"
+                                        }}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        class="ml-1 size-6 rounded hover:bg-muted"
+                                        @click.stop="workspaceTabs.closeTab(id)"
+                                    >
+                                        <X class="size-3.5" />
+                                    </Button>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+                        <div
+                            v-show="canScrollLeft"
+                            class="pointer-events-none absolute left-0 top-0 bottom-0 flex w-6 items-center bg-gradient-to-r from-background to-transparent"
+                        >
+                            <ChevronLeft
+                                class="size-4 shrink-0 text-muted-foreground"
+                            />
+                        </div>
+                        <div
+                            v-show="canScrollRight"
+                            class="pointer-events-none absolute right-0 top-0 bottom-0 flex w-6 items-center justify-end bg-gradient-to-l from-background to-transparent"
+                        >
+                            <ChevronRight
+                                class="size-4 shrink-0 text-muted-foreground"
+                            />
+                        </div>
+                    </div>
                     <div class="min-h-0 flex-1 overflow-auto">
                         <TabsContent
                             v-for="id in workspaceTabs.openTabIds"
@@ -81,19 +146,36 @@ function resourceForId(id: string) {
                             :value="id"
                             class="mt-0 h-full data-[state=inactive]:hidden"
                         >
-                            <div v-if="!resourceForId(id)" class="flex h-full flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
+                            <div
+                                v-if="!resourceForId(id)"
+                                class="flex h-full flex-col items-center justify-center gap-2 p-8 text-muted-foreground"
+                            >
                                 <p>Resource not found</p>
-                                <Button variant="outline" size="sm" @click="workspaceTabs.closeTab(id)">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    @click="workspaceTabs.closeTab(id)"
+                                >
                                     Close tab
                                 </Button>
                             </div>
                             <HttpResourcePad
                                 v-else-if="resourceForId(id)?.type === 'http'"
-                                :resource="resourceForId(id) as import('@/shared/types/resources').HttpResource"
+                                :resource="
+                                    resourceForId(
+                                        id,
+                                    ) as import('@/shared/types/resources').HttpResource
+                                "
                             />
                             <SequencePad
-                                v-else-if="resourceForId(id)?.type === 'sequence'"
-                                :resource="resourceForId(id)! as import('@/shared/types/resources').SequenceResource"
+                                v-else-if="
+                                    resourceForId(id)?.type === 'sequence'
+                                "
+                                :resource="
+                                    resourceForId(
+                                        id,
+                                    )! as import('@/shared/types/resources').SequenceResource
+                                "
                             />
                         </TabsContent>
                     </div>

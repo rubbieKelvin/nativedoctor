@@ -4,6 +4,12 @@ import Input from "@/components/ui/input/Input.vue";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
     DropdownMenu,
     DropdownMenuTrigger,
     DropdownMenuContent,
@@ -53,55 +59,73 @@ function handleSelectResource(id: string) {
 </script>
 
 <template>
-    <div class="flex h-full flex-col border-sidebar-border bg-sidebar">
-        <div class="flex shrink-0 gap-2 p-2">
-            <Input
-                v-model="searchQuery"
-                placeholder="Search resources"
-                class=""
-            />
-            <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                    <Button size="icon" variant="outline">
-                        <Plus class="size-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem @click="handleCreateFolder">
-                        <Folder class="mr-2 size-4" />
-                        Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem @click="handleCreateHttp">
-                        <Globe class="mr-2 size-4" />
-                        HTTP
-                    </DropdownMenuItem>
-                    <DropdownMenuItem @click="handleCreateSequence">
-                        <ListOrdered class="mr-2 size-4" />
-                        Sequence
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-
-        <ScrollArea class="flex-1 px-2">
-            <div v-if="store.loadError" class="py-2 text-sm text-destructive">
-                {{ store.loadError }}
-            </div>
-            <div
-                v-else-if="filteredResources.length === 0"
-                class="py-4 text-center text-sm text-muted-foreground"
-            >
-                {{ searchQuery.trim() ? "No matches" : "No resources yet" }}
-            </div>
-            <ul v-else class="space-y-0.5 pb-2">
-                <li v-for="resource in filteredResources" :key="resource.id">
-                    <ResourceItem
-                        :resource="resource"
-                        :depth="isSearching ? 0 : undefined"
-                        @select="handleSelectResource"
+    <ContextMenu>
+        <ContextMenuTrigger as-child>
+            <div class="flex h-full flex-col border-sidebar-border bg-sidebar">
+                <div class="flex shrink-0 gap-2 p-2">
+                    <Input
+                        v-model="searchQuery"
+                        placeholder="Search resources"
+                        class=""
                     />
-                </li>
-            </ul>
-        </ScrollArea>
-    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <Button size="icon" variant="outline">
+                                <Plus class="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem @click="handleCreateFolder">
+                                <Folder class="mr-2 size-4" />
+                                Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem @click="handleCreateHttp">
+                                <Globe class="mr-2 size-4" />
+                                HTTP
+                            </DropdownMenuItem>
+                            <DropdownMenuItem @click="handleCreateSequence">
+                                <ListOrdered class="mr-2 size-4" />
+                                Sequence
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                <ScrollArea class="flex-1 px-2">
+                    <div v-if="store.loadError" class="py-2 text-sm text-destructive">
+                        {{ store.loadError }}
+                    </div>
+                    <div
+                        v-else-if="filteredResources.length === 0"
+                        class="py-4 text-center text-sm text-muted-foreground"
+                    >
+                        {{ searchQuery.trim() ? "No matches" : "No resources yet" }}
+                    </div>
+                    <ul v-else class="space-y-0.5 pb-2">
+                        <li v-for="resource in filteredResources" :key="resource.id">
+                            <ResourceItem
+                                :resource="resource"
+                                :depth="isSearching ? 0 : undefined"
+                                @select="handleSelectResource"
+                            />
+                        </li>
+                    </ul>
+                </ScrollArea>
+            </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent class="w-48">
+            <ContextMenuItem @click="handleCreateFolder">
+                <Folder class="mr-2 size-4" />
+                Folder
+            </ContextMenuItem>
+            <ContextMenuItem @click="handleCreateHttp">
+                <Globe class="mr-2 size-4" />
+                HTTP
+            </ContextMenuItem>
+            <ContextMenuItem @click="handleCreateSequence">
+                <ListOrdered class="mr-2 size-4" />
+                Sequence
+            </ContextMenuItem>
+        </ContextMenuContent>
+    </ContextMenu>
 </template>
