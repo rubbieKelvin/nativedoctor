@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch, nextTick } from "vue";
 import type { FolderResource, Resource } from "@/shared/types/resources";
 import { Folder, ChevronRight, ChevronDown } from "lucide-vue-next";
 import { FolderContextMenu } from "./menus";
 import ResourceItem from "./ResourceItem.vue";
 import { useFolders } from "@/store/folders";
 import { sortedResources } from "@/shared/resources";
+import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
 
 defineOptions({ name: "FolderItem" });
 
@@ -20,6 +21,35 @@ const props = withDefaults(
 defineEmits<{
     (e: "select", id: string): void;
 }>();
+
+const { renamingResourceId } = useCurrentProject();
+const store = useCurrentProjectActions();
+
+const isRenaming = computed(() => renamingResourceId.value === props.resource.id);
+const tempName = ref(props.resource.name);
+const inputRef = ref<HTMLInputElement | null>(null);
+
+watch(isRenaming, (val) => {
+    if (val) {
+        tempName.value = props.resource.name;
+        nextTick(() => {
+            inputRef.value?.focus();
+            inputRef.value?.select();
+        });
+    }
+});
+
+function handleRename() {
+    if (!isRenaming.value) return;
+    if (tempName.value.trim() && tempName.value !== props.resource.name) {
+        store.renameResource(props.resource.id, tempName.value.trim());
+    }
+    store.stopRenaming();
+}
+
+function cancelRename() {
+    store.stopRenaming();
+}
 
 const folders = useFolders();
 const isExpanded = computed(() => folders.isOpen(props.resource.id));
@@ -38,6 +68,7 @@ function toggleExpand() {
             <button
                 class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 :style="{ paddingLeft: `${depth * 12 + 8}px` }"
+                :disabled="isRenaming"
                 @click="toggleExpand"
             >
                 <component
@@ -45,11 +76,21 @@ function toggleExpand() {
                     class="size-4 shrink-0 text-muted-foreground transition-transform"
                 />
                 <Folder class="size-4 shrink-0 text-amber-500" />
-                <span class="truncate">{{
+                <span v-if="!isRenaming" class="truncate">{{
                     resource.name.trim() || "Untitled folder"
                 }}</span>
+                <input
+                    v-else
+                    ref="inputRef"
+                    v-model="tempName"
+                    class="h-5 w-full min-w-0 flex-1 rounded-sm border-none bg-sidebar-accent-foreground/10 px-1 text-sm outline-none ring-1 ring-ring"
+                    @blur="handleRename"
+                    @keydown.enter="handleRename"
+                    @keydown.esc="cancelRename"
+                    @click.stop
+                />
                 <span
-                    v-if="children.length > 0"
+                    v-if="!isRenaming && children.length > 0"
                     class="ml-auto text-xs text-muted-foreground"
                 >
                     {{ children.length }}

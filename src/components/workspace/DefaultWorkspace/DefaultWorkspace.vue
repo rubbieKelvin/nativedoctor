@@ -6,6 +6,7 @@ import HttpResourcePad from "@/components/resourcepads/http/HttpResourcePad.vue"
 import SequencePad from "@/components/resourcepads/sequence/SequencePad.vue";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Globe,
     ListOrdered,
@@ -25,6 +26,7 @@ import { useWorkspaceTabs } from "@/store/workspaceTabs";
 const project = useCurrentProjectActions();
 const workspaceTabs = useWorkspaceTabs();
 
+const scrollAreaRef = ref<InstanceType<typeof ScrollArea> | null>(null);
 const tabListScrollRef = ref<HTMLElement | null>(null);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
@@ -39,6 +41,18 @@ function updateTabListScrollVisibility() {
     canScrollRight.value = scrollLeft + clientWidth < scrollWidth - THRESHOLD;
 }
 
+function syncViewportRef() {
+    tabListScrollRef.value = scrollAreaRef.value?.getViewportElement() ?? null;
+    updateTabListScrollVisibility();
+}
+
+function onTabListScroll(e: Event) {
+    if (!tabListScrollRef.value && e.target instanceof HTMLElement) {
+        tabListScrollRef.value = e.target;
+    }
+    updateTabListScrollVisibility();
+}
+
 useResizeObserver(tabListScrollRef, () => {
     updateTabListScrollVisibility();
 });
@@ -46,7 +60,7 @@ useResizeObserver(tabListScrollRef, () => {
 watch(
     () => workspaceTabs.openTabIds.length,
     () => {
-        nextTick(updateTabListScrollVisibility);
+        nextTick(syncViewportRef);
     },
     { immediate: true },
 );
@@ -82,10 +96,12 @@ function resourceForId(id: string) {
                     <div
                         class="relative overflow-hidden border-b bg-transparent"
                     >
-                        <div
-                            ref="tabListScrollRef"
-                            class="overflow-x-auto overflow-y-hidden"
-                            @scroll="updateTabListScrollVisibility"
+                        <ScrollArea
+                            ref="scrollAreaRef"
+                            orientation="horizontal"
+                            :scroll-hide-delay="100"
+                            type="scroll"
+                            @scroll="onTabListScroll"
                         >
                             <TabsList
                                 class="inline-flex min-w-0 shrink-0 flex-nowrap justify-start rounded-none border-0 bg-transparent p-0"
@@ -121,7 +137,7 @@ function resourceForId(id: string) {
                                     </Button>
                                 </TabsTrigger>
                             </TabsList>
-                        </div>
+                        </ScrollArea>
                         <div
                             v-show="canScrollLeft"
                             class="pointer-events-none absolute left-0 top-0 bottom-0 flex w-6 items-center bg-gradient-to-r from-background to-transparent"

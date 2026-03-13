@@ -310,9 +310,12 @@ const projectStore = defineStore("project", () => {
    * @param newName - The new name for the resource.
    */
   function renameResource(id: string, newName: string) {
-    resources.value = resources.value.map((r) =>
-      r.id === id ? { ...r, name: newName, is_edited: true } : r,
-    );
+    const resource = findResourceInTree(resources.value, id);
+    if (resource) {
+      resource.name = newName;
+      resource.is_edited = true;
+      resources.value = [...resources.value];
+    }
   }
 
   /** ID of the resource currently being renamed, or null if none. */
