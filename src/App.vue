@@ -105,17 +105,15 @@ function handleOpenRecents() {
 </script>
 
 <template>
-    <div class="h-full w-full overflow-auto">
-        <CreateProject
-            v-if="page.name === 'CreateProject'"
-            @open-project="handleOpenProject"
-            @open-recents="handleOpenRecents"
-        />
-        <DefaultWorkspace v-else-if="page.name === 'DefaultWorkspace'" />
-        <RecentProjects
-            v-else
-            @open-project="handleOpenProject"
-            @open-create-project="handleOpenCreateProject"
-        />
-    </div>
+    <CreateProject
+        v-if="page.name === 'CreateProject'"
+        @open-project="handleOpenProject"
+        @open-recents="handleOpenRecents"
+    />
+    <DefaultWorkspace v-else-if="page.name === 'DefaultWorkspace'" />
+    <RecentProjects
+        v-else
+        @open-project="handleOpenProject"
+        @open-create-project="handleOpenCreateProject"
+    />
 </template>

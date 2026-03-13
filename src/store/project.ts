@@ -185,6 +185,88 @@ const projectStore = defineStore("project", () => {
     return resource.id;
   }
 
+  /**
+   * Deletes a resource by ID.
+   * @param id - The ID of the resource to delete.
+   */
+  function deleteResource(id: string) {
+    resources.value = resources.value.filter((r) => r.id !== id);
+    openResources.value.delete(id);
+  }
+
+  /**
+   * Duplicates a resource by ID.
+   * @param id - The ID of the resource to duplicate.
+   * @returns The ID of the new resource, or undefined if not found.
+   */
+  function duplicateResource(id: string): string | undefined {
+    const resource = resources.value.find((r) => r.id === id);
+    if (!resource) return undefined;
+
+    let newResource: Resource;
+
+    switch (resource.type) {
+      case "http":
+        newResource = {
+          ...resource,
+          id: nanoid(),
+          name: `${resource.name} (copy)`,
+          is_edited: true,
+        };
+        break;
+      case "folder":
+        newResource = {
+          ...resource,
+          id: nanoid(),
+          name: `${resource.name} (copy)`,
+          is_edited: true,
+          children: [],
+        };
+        break;
+      case "sequence":
+        newResource = {
+          ...resource,
+          id: nanoid(),
+          name: `${resource.name} (copy)`,
+          is_edited: true,
+          flow: [...resource.flow],
+        };
+        break;
+    }
+
+    resources.value = [...resources.value, newResource];
+    return newResource.id;
+  }
+
+  /**
+   * Renames a resource.
+   * @param id - The ID of the resource to rename.
+   * @param newName - The new name for the resource.
+   */
+  function renameResource(id: string, newName: string) {
+    resources.value = resources.value.map((r) =>
+      r.id === id ? { ...r, name: newName, is_edited: true } : r
+    );
+  }
+
+  /** ID of the resource currently being renamed, or null if none. */
+  const renamingResourceId = ref<string | null>(null);
+
+  /**
+   * Starts renaming mode for a resource.
+   * @param id - The ID of the resource to rename.
+   */
+  function startRenaming(id: string) {
+    renamingResourceId.value = id;
+  }
+
+  /**
+   * Stops renaming mode.
+   */
+  function stopRenaming() {
+    renamingResourceId.value = null;
+  }
+
   return {
     name,
     path,
@@ -192,9 +274,15 @@ const projectStore = defineStore("project", () => {
     resourceFiles,
     resources,
     openResources,
+    renamingResourceId,
     createHttpResource,
     createFolderResource,
     createSequenceResource,
+    deleteResource,
+    duplicateResource,
+    renameResource,
+    startRenaming,
+    stopRenaming,
     setProject,
     discoverResources,
     loadError,

@@ -3,6 +3,7 @@ import { computed } from "vue";
 import type { HttpResource } from "@/shared/types/resources";
 import { Globe } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
+import { HttpContextMenu } from "./menus";
 
 const props = defineProps<{
     resource: HttpResource;
@@ -31,17 +32,19 @@ const methodColor = computed(() => {
 </script>
 
 <template>
-    <button
-        class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        @click="$emit('select', resource.id)"
-    >
-        <Globe class="size-4 shrink-0 text-muted-foreground" />
-        <Badge
-            variant="outline"
-            :class="['px-1.5 py-0 text-[10px] font-semibold', methodColor]"
+    <HttpContextMenu :resource-id="resource.id">
+        <button
+            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            @click="$emit('select', resource.id)"
         >
-            {{ resource.method }}
-        </Badge>
-        <span class="truncate">{{ resource.name || "Untitled request" }}</span>
-    </button>
+            <Globe class="size-4 shrink-0 text-muted-foreground" />
+            <Badge
+                variant="outline"
+                :class="['px-1.5 py-0 text-[10px] font-semibold', methodColor]"
+            >
+                {{ resource.method }}
+            </Badge>
+            <span class="truncate">{{ resource.name || "Untitled request" }}</span>
+        </button>
+    </HttpContextMenu>
 </template>
