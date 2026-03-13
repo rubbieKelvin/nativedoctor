@@ -11,18 +11,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
 import { useCurrentProjectActions } from "@/store/project";
-import { FolderItem, HttpItem, SequenceItem } from "./ResourceItems";
+import { ResourceItem } from "./ResourceItems";
 
 const searchQuery = ref("");
 
 const store = useCurrentProjectActions();
 
+const rootResources = computed(() => {
+    return store.resources.filter((r) => r.folderId === null);
+});
+
 const filteredResources = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
-    const list = store.resources;
-    if (!q) return list;
-    return list.filter((r) => r.name.toLowerCase().includes(q));
+    if (!q) return rootResources.value;
+    return store.resources.filter((r) => r.name.toLowerCase().includes(q));
 });
+
+const isSearching = computed(() => searchQuery.value.trim().length > 0);
 
 function handleCreateFolder() {
     store.createFolderResource();
@@ -86,19 +91,9 @@ function handleSelectResource(id: string) {
             </div>
             <ul v-else class="space-y-0.5 pb-2">
                 <li v-for="resource in filteredResources" :key="resource.id">
-                    <FolderItem
-                        v-if="resource.type === 'folder'"
+                    <ResourceItem
                         :resource="resource"
-                        @select="handleSelectResource"
-                    />
-                    <HttpItem
-                        v-else-if="resource.type === 'http'"
-                        :resource="resource"
-                        @select="handleSelectResource"
-                    />
-                    <SequenceItem
-                        v-else-if="resource.type === 'sequence'"
-                        :resource="resource"
+                        :depth="isSearching ? 0 : undefined"
                         @select="handleSelectResource"
                     />
                 </li>
