@@ -11,17 +11,17 @@ import type {
 import { nanoid } from "nanoid";
 
 /**
- * Finds a folder by id in the resource tree (root + all folder children).
+ * Finds a reource by id in the resource tree (root + all folder children).
  * Uses iterative DFS to avoid recursion depth and to stop as soon as found.
  */
-function findFolderInTree(
+function findResourceInTree<T extends Resource>(
   rootResources: Resource[],
-  folderId: string,
-): FolderResource | undefined {
+  resourceId: string,
+): T | undefined {
   const stack = [...rootResources];
   while (stack.length > 0) {
     const r = stack.pop()!;
-    if (r.type === "folder" && r.id === folderId) return r as FolderResource;
+    if (r.id === resourceId) return r as T;
     if (r.type === "folder") {
       stack.push(...(r as FolderResource).children);
     }
@@ -41,7 +41,7 @@ function addResourceToProject(
 ): void {
   const folder =
     folderId != null
-      ? findFolderInTree(resourcesRef.value, folderId)
+      ? findResourceInTree<FolderResource>(resourcesRef.value, folderId)
       : undefined;
 
   resource.folderId = folder?.id ?? null;
