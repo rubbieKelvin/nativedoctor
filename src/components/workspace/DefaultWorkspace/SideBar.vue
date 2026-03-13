@@ -10,36 +10,34 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Plus, Folder, Globe, ListOrdered } from "lucide-vue-next";
-import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
+import { useCurrentProjectActions } from "@/store/project";
 
 const searchQuery = ref("");
 
-const currentProject = useCurrentProject();
-const { createHttpResource, createFolderResource, createSequenceResource } =
-    useCurrentProjectActions();
+const store = useCurrentProjectActions();
 
 const filteredResources = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
-    const list = currentProject.resources.value ?? [];
+    const list = store.resources;
     if (!q) return list;
     return list.filter((r) => r.name.toLowerCase().includes(q));
 });
 
 function handleCreateFolder() {
-    createFolderResource();
+    store.createFolderResource();
 }
 
 function handleCreateHttp() {
-    createHttpResource();
+    store.createHttpResource();
 }
 
 function handleCreateSequence() {
-    createSequenceResource();
+    store.createSequenceResource();
 }
 </script>
 
 <template>
-    <div class="flex h-full flex-col border-r border-sidebar-border bg-sidebar">
+    <div class="flex h-full flex-col border-sidebar-border bg-sidebar">
         <div class="flex shrink-0 gap-2 p-2">
             <Input
                 v-model="searchQuery"
@@ -70,10 +68,10 @@ function handleCreateSequence() {
         </div>
         <ScrollArea class="flex-1 px-2">
             <div
-                v-if="currentProject.loadError"
+                v-if="store.loadError"
                 class="py-2 text-sm text-destructive"
             >
-                {{ currentProject.loadError }}
+                {{ store.loadError }}
             </div>
             <div
                 v-else-if="filteredResources.length === 0"

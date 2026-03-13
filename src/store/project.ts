@@ -157,7 +157,7 @@ const projectStore = defineStore("project", () => {
    */
   function createHttpResource(folderId?: string) {
     const resource = _createHttpResource({ folderId });
-    resources.value.push(resource);
+    resources.value = [...resources.value, resource];
     return resource.id;
   }
 
@@ -169,7 +169,7 @@ const projectStore = defineStore("project", () => {
   function createFolderResource(folderId?: string) {
     const resource = _createFolderResource();
     if (folderId) resource.folderId = folderId;
-    resources.value.push(resource);
+    resources.value = [...resources.value, resource];
     return resource.id;
   }
 
@@ -181,7 +181,7 @@ const projectStore = defineStore("project", () => {
   function createSequenceResource(folderId?: string) {
     const resource = _createSequenceResource();
     if (folderId) resource.folderId = folderId;
-    resources.value.push(resource);
+    resources.value = [...resources.value, resource];
     return resource.id;
   }
 
