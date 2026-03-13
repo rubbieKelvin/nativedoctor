@@ -12,7 +12,7 @@ interface BaseResource<T extends ResourceType> {
   type: T;
   id: string;
   name: string;
-  updated: boolean;
+  is_edited: boolean;
   folderId: string | null;
 }
 

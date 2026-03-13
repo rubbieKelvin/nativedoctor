@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-// import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { defineStore, storeToRefs } from "pinia";
 import type { HttpResource, Resource } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
@@ -27,39 +27,47 @@ function _createHttpResource(
   };
 }
 
+async function loadProject(path: string): Promise<NativedoctorJson | null> {
+  if (!path) return null;
+
+  const data = await invoke<NativedoctorJson>("read_nativedoctor", {
+    path,
+  });
+
+  return data;
+  try {
+  } catch (e) {
+    // loadError.value = e instanceof Error ? e.message : String(e);
+    config.value = null;
+  }
+}
+
 const projectStore = defineStore("project", () => {
   const path = ref<string | null>(null);
   const config = ref<NativedoctorJson | null>(null);
-  // const loadError = ref<string | null>(null);
+  const loadError = ref<string | null>(null);
   const resources = ref<Array<Resource>>([]);
   const openResources = ref<Set<string>>(new Set());
 
   const name = computed(() => config.value?.name);
   const files = computed(() => config.value?.files ?? []);
 
-  // function setProject(path: string | null): void {
-  //   projectPath.value = path;
-  //   config.value = null;
-  //   loadError.value = null;
-  //   if (path !== null) {
-  //     loadProject();
-  //   }
-  // }
+  async function setProject(fspath: string | null): Promise<void> {
+    path.value = fspath;
+    config.value = null;
+    loadError.value = null;
 
-  // async function loadProject(): Promise<void> {
-  //   const path = projectPath.value;
-  //   if (!path) return;
-  //   loadError.value = null;
-  //   try {
-  //     const data = await invoke<NativedoctorJson>("read_nativedoctor", {
-  //       path,
-  //     });
-  //     config.value = data;
-  //   } catch (e) {
-  //     loadError.value = e instanceof Error ? e.message : String(e);
-  //     config.value = null;
-  //   }
-  // }
+    if (fspath !== null) {
+      try {
+        const _config = await loadProject(fspath);
+        if (_config) {
+          config.value = _config;
+        }
+      } catch (e) {
+        loadError.value = e instanceof Error ? e.message : String(e);
+      }
+    }
+  }
 
   function createHttpResource(folderId?: string) {
     const resource = _createHttpResource({ folderId });
@@ -75,8 +83,8 @@ const projectStore = defineStore("project", () => {
     resources,
     openResources,
     createHttpResource,
-    // loadError,
-    // setProject,
+    setProject,
+    loadError,
     // loadProject,
   };
 });
