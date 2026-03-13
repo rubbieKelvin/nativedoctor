@@ -21,18 +21,18 @@ const newResourceName = ref("");
 const creating = ref(false);
 
 const currentProject = useCurrentProject();
-const { loadProject } = useCurrentProjectActions();
+const { discoverResources } = useCurrentProjectActions();
 
 const filteredFiles = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
-    const list = currentProject.files.value ?? [];
+    const list = currentProject.resourceFiles.value ?? [];
     if (!q) return list;
     return list.filter((f) => f.toLowerCase().includes(q));
 });
 
 async function handleCreate() {
-    const path = currentProject.projectPath;
-    if (!path) return;
+    const path = currentProject.path;
+    if (!path?.value) return;
     const name = newResourceName.value.trim() || "New request";
     creating.value = true;
     try {
@@ -40,7 +40,7 @@ async function handleCreate() {
             projectPath: path.value,
             name,
         });
-        await loadProject();
+        await discoverResources();
         newResourceName.value = "";
         dialogOpen.value = false;
     } catch (e) {

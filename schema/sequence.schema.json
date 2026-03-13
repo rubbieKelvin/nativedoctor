@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nativedoctor.dev/schema/sequence.json",
   "title": "Sequence",
-  "description": "An ordered flow of resource calls. References call-type resources by path or id; supports sequential/parallel/async and optional env persistence.",
+  "description": "An ordered flow of resource calls. References call-type resources by path or id; supports sequential/parallel/async and optional env persistence. Files use YAML format (.sequence.yaml).",
   "type": "object",
   "properties": {
     "name": {
@@ -21,7 +21,7 @@
         "properties": {
           "resource": {
             "type": "string",
-            "description": "Path to a .request.json (or other call-type resource) relative to the collection, or a logical id. E.g. 'auth/login.request.json' or 'login'."
+            "description": "Path to a .request.yaml (or other call-type resource) relative to the collection, or a logical id. E.g. 'auth/login.request.yaml' or 'login'."
           },
           "mode": {
             "type": "string",

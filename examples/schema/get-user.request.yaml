@@ -1,0 +1,10 @@
+type: http
+name: Get user
+method: GET
+url: "{{base_url}}/users/{{user_id}}"
+params:
+  - key: fields
+    value: id,name,email
+headers:
+  - key: Accept
+    value: application/json

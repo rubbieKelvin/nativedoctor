@@ -7,7 +7,9 @@ import { nanoid } from "nanoid";
 /** Configuration schema for a nativedoctor project (nativedoctor.json). */
 export interface NativedoctorJson {
   name: string;
-  files?: string[];
+  description?: string;
+  metadata?: Record<string, unknown>;
+  envSources?: Array<{ name: string; path: string }>;
 }
 
 /**
@@ -49,6 +51,15 @@ async function loadProject(path: string): Promise<NativedoctorJson | null> {
   return data;
 }
 
+/**
+ * Discovers resource files in the project root directory.
+ * @param projectPath - Absolute path to the project directory.
+ * @returns Array of resource file names (*.request.yaml, *.sequence.yaml).
+ */
+async function discoverResourceFiles(projectPath: string): Promise<string[]> {
+  return invoke<string[]>("discover_resources", { projectPath });
+}
+
 const projectStore = defineStore("project", () => {
   const path = ref<string | null>(null);
   const config = ref<NativedoctorJson | null>(null);
@@ -56,20 +67,41 @@ const projectStore = defineStore("project", () => {
   const resources = ref<Array<Resource>>([]);
   const openResources = ref<Set<string>>(new Set());
 
+  /** Resource file names discovered from the project directory. */
+  const resourceFiles = ref<string[]>([]);
+
   /** Project name derived from the loaded configuration. */
   const name = computed(() => config.value?.name);
 
-  /** List of resource file paths from the project configuration. */
-  const files = computed(() => config.value?.files ?? []);
+  /**
+   * Discovers resource files in the current project directory.
+   * Updates resourceFiles ref with the discovered file names.
+   */
+  async function discoverResources(): Promise<void> {
+    if (!path.value) {
+      resourceFiles.value = [];
+      return;
+    }
+
+    try {
+      resourceFiles.value = await discoverResourceFiles(path.value);
+    } catch (e) {
+      console.error("Failed to discover resources:", e);
+      resourceFiles.value = [];
+    }
+  }
 
   /**
    * Sets the active project and loads its configuration.
    * Resets all project state before loading the new project.
+   * Automatically discovers resource files after loading.
+   * @param fspath - Absolute filesystem path to the project, or null to clear.
    */
   async function setProject(fspath: string | null): Promise<void> {
     path.value = fspath;
     config.value = null;
     loadError.value = null;
+    resourceFiles.value = [];
 
     if (fspath !== null) {
       try {
@@ -77,6 +109,7 @@ const projectStore = defineStore("project", () => {
         if (_config) {
           config.value = _config;
         }
+        await discoverResources();
       } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
       }
@@ -98,11 +131,12 @@ const projectStore = defineStore("project", () => {
     name,
     path,
     config,
-    files,
+    resourceFiles,
     resources,
     openResources,
     createHttpResource,
     setProject,
+    discoverResources,
     loadError,
   };
 });

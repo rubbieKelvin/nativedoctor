@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nativedoctor.dev/schema/request.json",
   "title": "Request resource",
-  "description": "A call-type resource (HTTP, GraphQL, gRPC, WebSocket). One .request.json file per request in a collection.",
+  "description": "A call-type resource (HTTP, GraphQL, gRPC, WebSocket). One .request.yaml file per request in a collection. Files use YAML format.",
   "type": "object",
   "properties": {
     "type": {

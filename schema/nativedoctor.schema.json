@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nativedoctor.dev/schema/nativedoctor.json",
   "title": "Native Doctor project",
-  "description": "Project configuration at the root of a Native Doctor project folder. Identifies the folder as a project and holds description, metadata, environment sources, and the list of files used in the project.",
+  "description": "Project configuration at the root of a Native Doctor project folder. Identifies the folder as a project and holds description, metadata, and environment sources. Resource files (*.request.yaml, *.sequence.yaml) are discovered automatically from the project root directory.",
   "type": "object",
   "properties": {
     "name": {
@@ -34,13 +34,6 @@
           }
         },
         "required": ["path", "name"]
-      }
-    },
-    "files": {
-      "type": "array",
-      "description": "Paths to request/sequence (or other) files used in this project. Paths are relative to the this root of this file's folder",
-      "items": {
-        "type": "string"
       }
     }
   }

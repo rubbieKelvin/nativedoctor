@@ -1,0 +1,10 @@
+name: Login and fetch
+description: Authenticate then fetch the current user using the token.
+steps:
+  - resource: auth/login.request.yaml
+    mode: sequential
+  - resource: users/me.request.yaml
+    mode: sequential
+    setEnv:
+      auth_token: "{{response.body.token}}"
+onFailure: abort
