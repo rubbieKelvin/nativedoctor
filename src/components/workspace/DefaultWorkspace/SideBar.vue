@@ -30,8 +30,8 @@ const resourcesStore = useResources();
 const { flattenedResources } = useResourcesState();
 const workspaceTabs = useWorkspaceTabs();
 
-const hasEditedResources = computed(
-    () => (flattenedResources.value ?? []).some((r) => r.is_edited),
+const hasEditedResources = computed(() =>
+    (flattenedResources.value ?? []).some((r) => r.is_edited),
 );
 
 async function handleSave() {
@@ -41,7 +41,7 @@ async function handleSave() {
 }
 
 const rootResources = computed(() => {
-    return resourcesStore.resources.filter((r) => r.folderId === null);
+    return resourcesStore.resources.filter((r) => r.folder_id === null);
 });
 
 const filteredResources = computed(() => {
@@ -116,17 +116,27 @@ function handleSelectResource(id: string) {
                 </div>
 
                 <ScrollArea class="flex-1 px-2">
-                    <div v-if="projectStore.loadError" class="py-2 text-sm text-destructive">
+                    <div
+                        v-if="projectStore.loadError"
+                        class="py-2 text-sm text-destructive"
+                    >
                         {{ projectStore.loadError }}
                     </div>
                     <div
                         v-else-if="filteredResources.length === 0"
                         class="py-4 text-center text-sm text-muted-foreground"
                     >
-                        {{ searchQuery.trim() ? "No matches" : "No resources yet" }}
+                        {{
+                            searchQuery.trim()
+                                ? "No matches"
+                                : "No resources yet"
+                        }}
                     </div>
                     <ul v-else class="space-y-0.5 pb-2">
-                        <li v-for="resource in filteredResources" :key="resource.id">
+                        <li
+                            v-for="resource in filteredResources"
+                            :key="resource.id"
+                        >
                             <ResourceItem
                                 :resource="resource"
                                 :depth="isSearching ? 0 : undefined"

@@ -2,12 +2,17 @@ import { describe, it, expect } from "vitest";
 import { sortedResources } from "./resources";
 import type { Resource } from "./types";
 
-const mockHttp = (id: string, name: string, created_at: number, updated_at?: number): Resource => ({
+const mockHttp = (
+  id: string,
+  name: string,
+  created_at: number,
+  updated_at?: number,
+): Resource => ({
   id,
   name,
   type: "http",
   is_edited: false,
-  folderId: null,
+  folder_id: null,
   created_at,
   updated_at,
   method: "GET",
@@ -18,23 +23,33 @@ const mockHttp = (id: string, name: string, created_at: number, updated_at?: num
   auth: { type: "none" },
 });
 
-const mockFolder = (id: string, name: string, created_at: number, updated_at?: number): Resource => ({
+const mockFolder = (
+  id: string,
+  name: string,
+  created_at: number,
+  updated_at?: number,
+): Resource => ({
   id,
   name,
   type: "folder",
   is_edited: false,
-  folderId: null,
+  folder_id: null,
   created_at,
   updated_at,
   children: [],
 });
 
-const mockSequence = (id: string, name: string, created_at: number, updated_at?: number): Resource => ({
+const mockSequence = (
+  id: string,
+  name: string,
+  created_at: number,
+  updated_at?: number,
+): Resource => ({
   id,
   name,
   type: "sequence",
   is_edited: false,
-  folderId: null,
+  folder_id: null,
   created_at,
   updated_at,
   flow: [],
@@ -48,7 +63,10 @@ describe("sortedResources", () => {
       mockHttp("3", "Request B", 300),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "NAME", grouping: "NONE" });
+    const sorted = sortedResources(resources, {
+      sorting: "NAME",
+      grouping: "NONE",
+    });
     expect(sorted[0].type).toBe("folder");
     expect(sorted[0].name).toBe("Folder Z");
   });
@@ -60,7 +78,10 @@ describe("sortedResources", () => {
       mockFolder("3", "Fold A", 100),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "NAME", grouping: "TYPE" });
+    const sorted = sortedResources(resources, {
+      sorting: "NAME",
+      grouping: "TYPE",
+    });
     expect(sorted[0].type).toBe("folder");
     expect(sorted[1].type).toBe("http");
     expect(sorted[2].type).toBe("sequence");
@@ -73,7 +94,10 @@ describe("sortedResources", () => {
       mockHttp("3", "Request 1", 100),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "NAME", grouping: "NONE" });
+    const sorted = sortedResources(resources, {
+      sorting: "NAME",
+      grouping: "NONE",
+    });
     expect(sorted[0].name).toBe("Request 1");
     expect(sorted[1].name).toBe("Request 2");
     expect(sorted[2].name).toBe("Request 10");
@@ -86,7 +110,10 @@ describe("sortedResources", () => {
       mockHttp("3", "Mid", 200),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "DATE_CREATED", grouping: "NONE" });
+    const sorted = sortedResources(resources, {
+      sorting: "DATE_CREATED",
+      grouping: "NONE",
+    });
     expect(sorted[0].name).toBe("New");
     expect(sorted[1].name).toBe("Mid");
     expect(sorted[2].name).toBe("Old");
@@ -99,7 +126,10 @@ describe("sortedResources", () => {
       mockHttp("3", "Updated Recently", 200, 500),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "DATE_UPDATED", grouping: "NONE" });
+    const sorted = sortedResources(resources, {
+      sorting: "DATE_UPDATED",
+      grouping: "NONE",
+    });
     expect(sorted[0].name).toBe("Updated Recently");
     expect(sorted[1].name).toBe("Just Created");
     expect(sorted[2].name).toBe("Updated Long Ago");
@@ -113,7 +143,10 @@ describe("sortedResources", () => {
       mockFolder("4", "A Folder", 100),
     ];
 
-    const sorted = sortedResources(resources, { sorting: "NAME", grouping: "TYPE" });
+    const sorted = sortedResources(resources, {
+      sorting: "NAME",
+      grouping: "TYPE",
+    });
     expect(sorted[0].name).toBe("A Folder");
     expect(sorted[1].name).toBe("B Folder");
     expect(sorted[2].name).toBe("A Request");

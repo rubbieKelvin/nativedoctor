@@ -16,14 +16,20 @@ pub struct KeyValuePair {
 pub struct HttpResourceFile {
     #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
-    #[serde(rename = "type")]
+    #[serde(default)]
+    pub folder_id: Option<String>,
+    #[serde(default)]
+    pub created_at: i64,
+    #[serde(default)]
+    pub updated_at: Option<i64>,
+    #[serde(rename = "type", default = "default_http_type")]
     pub resource_type: String,
     #[serde(default)]
-    pub name: Option<String>,
+    pub name: String,
     #[serde(default)]
-    pub method: Option<String>,
+    pub method: String,
     #[serde(default)]
-    pub url: Option<String>,
+    pub url: String,
     #[serde(default)]
     pub params: Option<Vec<KeyValuePair>>,
     #[serde(default)]
@@ -32,4 +38,8 @@ pub struct HttpResourceFile {
     pub body: Option<serde_json::Value>,
     #[serde(default)]
     pub auth: Option<serde_json::Value>,
+}
+
+fn default_http_type() -> String {
+    "http".into()
 }

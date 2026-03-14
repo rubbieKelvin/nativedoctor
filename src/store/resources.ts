@@ -17,9 +17,7 @@ import {
 } from "@/shared/resources";
 import {
   NATIVE_DOCTOR_REQUEST_FILE_EXT,
-  NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
   NATIVE_DOCTOR_SEQUENCE_FILE_EXT,
-  NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
 } from "@/shared/constants";
 import { matches } from "@/shared/utils";
 
@@ -78,7 +76,7 @@ function addResourceToProject(
       ? findResourceInTree<FolderResource>(resourcesRef.value, folderId)
       : undefined;
 
-  resource.folderId = folder?.id ?? null;
+  resource.folder_id = folder?.id ?? null;
 
   if (folder) {
     folder.children.push(resource);
@@ -105,7 +103,7 @@ function _createHttpResource(
     body: resource.body ?? { type: "none" },
     auth: resource.auth ?? { type: "none" },
     is_edited: true,
-    folderId: resource.folderId ?? null,
+    folder_id: resource.folder_id ?? null,
     created_at: Date.now(),
   };
 }
@@ -119,7 +117,7 @@ function _createFolderResource(name?: string): FolderResource {
     type: "folder",
     name: name ?? "New folder",
     is_edited: true,
-    folderId: null,
+    folder_id: null,
     children: [],
     created_at: Date.now(),
   };
@@ -134,7 +132,7 @@ function _createSequenceResource(name?: string): SequenceResource {
     type: "sequence",
     name: name ?? "New sequence",
     is_edited: true,
-    folderId: null,
+    folder_id: null,
     flow: [],
     created_at: Date.now(),
   };
@@ -352,7 +350,7 @@ const resourcesStore = defineStore("resources", () => {
     addResourceToProject(
       resources,
       newResource,
-      resource.folderId ?? undefined,
+      resource.folder_id ?? undefined,
     );
     return newResource.id;
   }

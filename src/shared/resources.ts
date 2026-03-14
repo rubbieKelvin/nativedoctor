@@ -84,44 +84,25 @@ export function sortedResources(
  * Adds id, is_edited, folderId, created_at.
  */
 export function mapBackendToResource(
-  payload: ResourceFileContentDto,
-  id: string,
-  created_at: number,
+  content: ResourceFileContentDto,
 ): Resource | null {
-  if (payload.type === "http") {
-    return {
-      id,
-      type: "http",
-      name: payload.name ?? "Untitled",
-      method: (payload.method as HttpResource["method"]) ?? "GET",
-      url: payload.url ?? "",
-      params: payload.params ?? [],
-      headers: payload.headers ?? [],
-      body: payload.body ?? { type: "none" },
-      auth: payload.auth ?? { type: "none" },
-      is_edited: false,
-      folder_id: null,
-      created_at,
-    };
-  }
-  if (payload.type === "sequence") {
-    const flow = (payload.flow ?? []).map((n) => ({
-      id: n.id ?? crypto.randomUUID(),
-      resource_id: n.resource_id ?? "",
-      resource_type: n.resource_type as "http" | "sequence",
-    }));
-
-    return {
-      id,
-      type: "sequence",
-      name: payload.name ?? "Untitled sequence",
-      is_edited: false,
-      folder_id: null,
-      flow,
-      created_at,
-    };
-  }
-  return null;
+  return matches<string, Resource | null>(content.type, {
+    http: (): HttpResource => {
+      const http = content as HttpResourceFileDto;
+      return {
+        ...http,
+        is_edited: false,
+      };
+    },
+    sequence: (): SequenceResource => {
+      const sequence = content as SequenceResourceFileDto;
+      return {
+        ...sequence,
+        is_edited: false,
+      };
+    },
+    _: () => null,
+  });
 }
 
 /**
@@ -129,21 +110,21 @@ export function mapBackendToResource(
  * Strips id, is_edited, folderId, created_at, updated_at.
  */
 export function mapResourceToBackendPayload(
-  r: Resource,
+  resource: Resource,
 ): ResourceFileContentDto | null {
-  return matches<string, ResourceFileContentDto | null>(r.type, {
+  return matches<string, ResourceFileContentDto | null>(resource.type, {
     http: (): HttpResourceFileDto => {
-      const http = r as HttpResource;
+      const http = resource as HttpResource;
       return {
         $schema: NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
-        ...omit(http, ["is_edited", "folder_id"]),
+        ...omit(http, ["is_edited"]),
       };
     },
     sequence: (): SequenceResourceFileDto => {
-      const sequence = r as SequenceResource;
+      const sequence = resource as SequenceResource;
       return {
         $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
-        ...omit(sequence, ["is_edited", "folder_id"]),
+        ...omit(sequence, ["is_edited"]),
       };
     },
     _: () => {
