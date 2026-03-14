@@ -208,10 +208,10 @@ const resourcesStore = defineStore("resources", () => {
     projectPath: string,
     fileName: string,
   ): Promise<{ resource: Resource; id: string } | null> {
-    const payload = await invoke<ResourceFileContentDto>(
-      "read_resource_file",
-      { projectPath, fileName },
-    );
+    const payload = await invoke<ResourceFileContentDto>("read_resource_file", {
+      projectPath,
+      fileName,
+    });
     const resource = mapBackendToResource(payload);
     if (!resource) return null;
     return { resource, id: payload.id };
@@ -349,6 +349,7 @@ const resourcesStore = defineStore("resources", () => {
           ...cloneDeep(resource),
           id: nanoid(),
           name: `${name} (copy)`,
+          _editor_meta: defaultEditorMeta(),
         };
         break;
       case "folder":
@@ -358,6 +359,7 @@ const resourcesStore = defineStore("resources", () => {
           ...cloneDeep(resource),
           id: nanoid(),
           name: `${name} (copy)`,
+          _editor_meta: defaultEditorMeta(),
         };
         break;
     }
