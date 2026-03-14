@@ -31,7 +31,7 @@ const { flattenedResources } = useResourcesState();
 const workspaceTabs = useWorkspaceTabs();
 
 const hasEditedResources = computed(() =>
-    (flattenedResources.value ?? []).some((r) => r.is_edited),
+    (flattenedResources.value ?? []).some((r) => r._editor_meta.changes_made),
 );
 
 async function handleSave() {

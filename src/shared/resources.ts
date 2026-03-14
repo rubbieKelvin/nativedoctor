@@ -4,10 +4,13 @@ import {
   NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
 } from "./constants";
 import {
+  FolderResource,
+  FolderResourceFileDto,
   HttpResource,
   HttpResourceFileDto,
   Resource,
   ResourceFileContentDto,
+  ResourceType,
   SequenceResource,
   SequenceResourceFileDto,
 } from "./types";
@@ -81,13 +84,41 @@ export function sortedResources(
 }
 
 /**
+ * Reconstructs the sidebar tree from a flat list of resources loaded from disk.
+ * Folder files do not store children; parent-child links are rebuilt from folder_id.
+ * Orphan resources (folder_id pointing to missing or non-folder) are placed at root so they are not lost.
+ */
+export function buildResourceTree(flatList: Resource[]): Resource[] {
+  const map = new Map<string, Resource>();
+
+  // index the flatlist
+  for (const r of flatList) {
+    map.set(r.id, r);
+  }
+
+  for (const resource of flatList) {
+    if (resource.folder_id == null) continue;
+
+    const parent = map.get(resource.folder_id);
+    if (parent?.type === "folder") {
+      (parent as FolderResource).children.push(resource);
+    }
+  }
+
+  return flatList.filter((r) => {
+    const parent = r.folder_id != null ? map.get(r.folder_id) : undefined;
+    return r.folder_id === null || !parent || parent.type !== "folder";
+  });
+}
+
+/**
  * Maps backend JSON (from read_resource_file) to frontend Resource.
- * Adds id, is_edited, folderId, created_at.
+ * Folder files do not store children; the tree is rebuilt from folder_id on load.
  */
 export function mapBackendToResource(
   content: ResourceFileContentDto,
 ): Resource | null {
-  return matches<string, Resource | null>(content.type, {
+  return matches<ResourceType, Resource | null>(content.type, {
     http: (): HttpResource => {
       const http = content as HttpResourceFileDto;
       return {
@@ -102,13 +133,21 @@ export function mapBackendToResource(
         _editor_meta: defaultEditorMeta({ changes_made: false }),
       };
     },
+    folder: (): FolderResource => {
+      const folder = content as FolderResourceFileDto;
+      return {
+        ...folder,
+        children: [], // We'll attempt to fill this folder witht the correct children later
+        _editor_meta: defaultEditorMeta({ changes_made: false }),
+      };
+    },
     _: () => null,
   });
 }
 
 /**
  * Maps frontend Resource to backend payload for write_resource_file.
- * Strips id, is_edited, folderId, created_at, updated_at.
+ * Folder: children are not persisted; tree is rebuilt from folder_id on load.
  */
 export function mapResourceToBackendPayload(
   resource: Resource,
@@ -126,6 +165,12 @@ export function mapResourceToBackendPayload(
       return {
         $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
         ...omit(sequence, ["_editor_meta"]),
+      };
+    },
+    folder: (): FolderResourceFileDto => {
+      const folder = resource as FolderResource;
+      return {
+        ...omit(folder, ["_editor_meta", "children"]),
       };
     },
     _: () => {

@@ -150,7 +150,7 @@ function sequenceResourceForId(id: string) {
                         </ScrollArea>
                         <div
                             v-show="canScrollLeft"
-                            class="pointer-events-none absolute left-0 top-0 bottom-0 flex w-6 items-center bg-gradient-to-r from-background to-transparent"
+                            class="pointer-events-none absolute left-0 top-0 bottom-0 flex w-6 items-center bg-linear-to-r from-background to-transparent"
                         >
                             <ChevronLeft
                                 class="size-4 shrink-0 text-muted-foreground"
@@ -158,7 +158,7 @@ function sequenceResourceForId(id: string) {
                         </div>
                         <div
                             v-show="canScrollRight"
-                            class="pointer-events-none absolute right-0 top-0 bottom-0 flex w-6 items-center justify-end bg-gradient-to-l from-background to-transparent"
+                            class="pointer-events-none absolute right-0 top-0 bottom-0 flex w-6 items-center justify-end bg-linear-to-l from-background to-transparent"
                         >
                             <ChevronRight
                                 class="size-4 shrink-0 text-muted-foreground"

@@ -13,12 +13,14 @@ import { nanoid } from "nanoid";
 import { useWorkspaceTabs } from "./workspaceTabs";
 import type { ResourceFileContentDto } from "@/shared/types";
 import {
+  buildResourceTree,
   mapBackendToResource,
   mapResourceToBackendPayload,
 } from "@/shared/resources";
 import {
   NATIVE_DOCTOR_REQUEST_FILE_EXT,
   NATIVE_DOCTOR_SEQUENCE_FILE_EXT,
+  NATIVE_DOCTOR_FOLDER_FILE_EXT,
 } from "@/shared/constants";
 import { matches } from "@/shared/utils";
 import { cloneDeep } from "lodash";
@@ -200,41 +202,52 @@ const resourcesStore = defineStore("resources", () => {
   }
 
   /**
+   * Reads a single resource file and returns the mapped resource and its id, or null on failure.
+   */
+  async function loadOneResourceFile(
+    projectPath: string,
+    fileName: string,
+  ): Promise<{ resource: Resource; id: string } | null> {
+    const payload = await invoke<ResourceFileContentDto>(
+      "read_resource_file",
+      { projectPath, fileName },
+    );
+    const resource = mapBackendToResource(payload);
+    if (!resource) return null;
+    return { resource, id: payload.id };
+  }
+
+  /**
    * Loads resources from project directory by reading each discovered file and parsing YAML.
-   * Replaces current tree and file name map. Folders are not loaded from disk (flat list only).
+   * Rebuilds the tree from folder_id so the sidebar hierarchy is restored.
    */
   async function loadResourcesFromProject(
     projectPath: string,
     fileNames: string[],
   ): Promise<void> {
     reset();
-    const tree: Resource[] = [];
+    const flatList: Resource[] = [];
     const newFileNames = new Map<string, string>();
 
     for (const fileName of fileNames) {
       try {
-        const payload = await invoke<ResourceFileContentDto>(
-          "read_resource_file",
-          { projectPath, fileName },
-        );
-
-        const resource = mapBackendToResource(payload);
-        if (resource) {
-          tree.push(resource);
-          newFileNames.set(payload.id, fileName);
+        const result = await loadOneResourceFile(projectPath, fileName);
+        if (result) {
+          flatList.push(result.resource);
+          newFileNames.set(result.id, fileName);
         }
       } catch (e) {
         console.error(`Failed to load resource file ${fileName}:`, e);
       }
     }
 
-    resources.value = tree;
+    resources.value = buildResourceTree(flatList);
     resourceFileNames.value = newFileNames;
   }
 
   /**
    * Saves all resources marked as edited to disk (explicit save).
-   * New resources (no file name) are created via backend create_http_resource / create_sequence_resource first.
+   * Folders are persisted so the hierarchy can be restored on load.
    */
   async function saveResources(projectPath: string): Promise<void> {
     const fileNames = resourceFileNames.value;
@@ -243,16 +256,14 @@ const resourcesStore = defineStore("resources", () => {
     );
 
     for (const resource of edited) {
-      if (resource.type === "folder") continue;
-
       let fileName = fileNames.get(resource.id);
 
       if (!fileName) {
-        // create a new filename for this
         const _name = nanoid();
         fileName = matches(resource.type, {
           http: () => `${_name}${NATIVE_DOCTOR_REQUEST_FILE_EXT}`,
           sequence: () => `${_name}${NATIVE_DOCTOR_SEQUENCE_FILE_EXT}`,
+          folder: () => `${_name}${NATIVE_DOCTOR_FOLDER_FILE_EXT}`,
           _: (n) => {
             throw new Error(`Unknown type: ${n}`);
           },
@@ -302,6 +313,7 @@ const resourcesStore = defineStore("resources", () => {
   }
 
   function deleteResource(id: string) {
+    // TODO: delete the file from fs
     function removeFromTree(nodes: Resource[]): boolean {
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].id === id) {

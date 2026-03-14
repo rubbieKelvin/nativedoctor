@@ -135,13 +135,16 @@ export type Resource = FolderResource | HttpResource | SequenceResource;
 
 // File based on rust types
 
-/** Backend JSON shape for HTTP resource (from read_resource_file or to write_resource_file). */
+// Backend JSON shape for resources
 export type HttpResourceFileDto = Omit<HttpResource, "_editor_meta">;
-
-/** Backend JSON shape for sequence resource. */
 export type SequenceResourceFileDto = Omit<SequenceResource, "_editor_meta">;
+export type FolderResourceFileDto = Omit<
+  FolderResource,
+  "_editor_meta" | "children"
+>;
 
 /** Backend response from read_resource_file (tagged union). */
 export type ResourceFileContentDto =
   | HttpResourceFileDto
+  | FolderResourceFileDto
   | SequenceResourceFileDto;
