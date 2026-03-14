@@ -106,8 +106,8 @@ function _createHttpResource(
   return {
     id: nanoid(),
     type: "http",
-    url: resource.url ?? "Untitled",
-    name: resource.name ?? "",
+    url: resource.url ?? "",
+    name: resource.name ?? "Untitled",
     method: resource.method ?? "GET",
     params: resource.params ?? [],
     headers: resource.headers ?? [],
