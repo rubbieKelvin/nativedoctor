@@ -15,15 +15,15 @@
       "enum": ["http"],
       "description": "Resource type. Must be 'http' for request files."
     },
-    "folderId": {
+    "folder_id": {
       "type": ["string", "null"],
       "description": "Optional parent folder id."
     },
-    "createdAt": {
+    "created_at": {
       "type": "integer",
       "description": "Creation timestamp (ms)."
     },
-    "updatedAt": {
+    "updated_at": {
       "type": ["integer", "null"],
       "description": "Last update timestamp (ms)."
     },
