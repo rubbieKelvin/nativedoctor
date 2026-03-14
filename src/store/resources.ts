@@ -15,6 +15,13 @@ import {
   mapBackendToResource,
   mapResourceToBackendPayload,
 } from "@/shared/resources";
+import {
+  NATIVE_DOCTOR_REQUEST_FILE_EXT,
+  NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
+  NATIVE_DOCTOR_SEQUENCE_FILE_EXT,
+  NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
+} from "@/shared/constants";
+import { matches } from "@/shared/utils";
 
 /**
  * Finds a resource by id in the resource tree (root + all folder children).
@@ -88,6 +95,7 @@ function _createHttpResource(
   resource: Partial<Omit<HttpResource, "id" | "type" | "updated">>,
 ): HttpResource {
   return {
+    $schema: NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
     id: nanoid(),
     type: "http",
     url: resource.url ?? "Untitled",
@@ -123,6 +131,7 @@ function _createFolderResource(name?: string): FolderResource {
  */
 function _createSequenceResource(name?: string): SequenceResource {
   return {
+    $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
     id: nanoid(),
     type: "sequence",
     name: name ?? "New sequence",
@@ -231,47 +240,35 @@ const resourcesStore = defineStore("resources", () => {
       let fileName = fileNames.get(resource.id);
 
       if (!fileName) {
-        try {
-          if (resource.type === "http") {
-            fileName = await invoke<string>("create_http_resource", {
-              projectPath,
-              name: resource.name,
-            });
-          } else if (resource.type === "sequence") {
-            fileName = await invoke<string>("create_sequence_resource", {
-              projectPath,
-              name: resource.name,
-            });
-          }
-          if (fileName) {
-            resourceFileNames.value = new Map(resourceFileNames.value).set(
-              resource.id,
-              fileName,
-            );
-          }
-        } catch (e) {
-          console.error(
-            `Failed to create resource file for ${resource.name}:`,
-            e,
-          );
-          continue;
-        }
+        // create a new filename for this
+        const _name = nanoid();
+        fileName = matches(resource.type, {
+          http: () => `${_name}${NATIVE_DOCTOR_REQUEST_FILE_EXT}`,
+          sequence: () => `${_name}${NATIVE_DOCTOR_SEQUENCE_FILE_EXT}`,
+          _: (n) => {
+            throw new Error(`Unknown type: ${n}`);
+          },
+        });
+
+        // add this to our filenames map
+        resourceFileNames.value = new Map(resourceFileNames.value).set(
+          resource.id,
+          fileName,
+        );
       }
 
-      if (fileName) {
-        try {
-          const payload = mapResourceToBackendPayload(resource);
-          if (!payload) continue;
-          await invoke("write_resource_file", {
-            projectPath,
-            fileName,
-            payload,
-          });
-          resource.is_edited = false;
-          resource.updated_at = Date.now();
-        } catch (e) {
-          console.error(`Failed to write resource file ${fileName}:`, e);
-        }
+      try {
+        const payload = mapResourceToBackendPayload(resource);
+        if (!payload) continue;
+        await invoke("write_resource_file", {
+          projectPath,
+          fileName,
+          payload,
+        });
+        resource.is_edited = false;
+        resource.updated_at = Date.now();
+      } catch (e) {
+        console.error(`Failed to write resource file ${fileName}:`, e);
       }
     }
 

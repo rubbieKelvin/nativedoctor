@@ -107,6 +107,7 @@ export interface AuthApiKey {
 export type HttpAuth = AuthNone | AuthBasic | AuthBearer | AuthApiKey;
 
 export interface HttpResource extends BaseResource<"http"> {
+  $schema: string;
   method: HttpMethodType;
   url: string;
   params: KeyValuePair[];
@@ -122,6 +123,7 @@ export interface SequenceNode {
 }
 
 export interface SequenceResource extends BaseResource<"sequence"> {
+  $schema: string;
   flow: SequenceNode[];
 }
 

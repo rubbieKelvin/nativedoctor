@@ -1,5 +1,8 @@
 use crate::app::AppState;
-use crate::constants::{NATIVE_DOCTOR_PROJECT_FILE, NATIVE_DOCTOR_RESOURCE_FILE_EXTS};
+use crate::constants::{
+    NATIVE_DOCTOR_PROJECT_FILE, NATIVE_DOCTOR_PROJECT_FILE_PUBLIC_SCHEMA_URL,
+    NATIVE_DOCTOR_RESOURCE_FILE_EXTS,
+};
 use crate::db::get_db_path;
 use crate::schema::project::NativedoctorJson;
 use crate::schema::ResourceFileContent;
@@ -167,6 +170,7 @@ pub fn create_project(
         description: Some(description),
         metadata: None,
         env_sources: None,
+        schema: Some(NATIVE_DOCTOR_PROJECT_FILE_PUBLIC_SCHEMA_URL.to_string()),
     };
 
     write_nativedoctor(folder_path.clone(), payload)?;
