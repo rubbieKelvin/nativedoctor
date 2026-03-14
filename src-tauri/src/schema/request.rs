@@ -1,0 +1,33 @@
+/// Key-value pair for params/headers. Used for JSON in/out of read/write_resource_file.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyValuePair {
+    pub key: String,
+    pub value: String,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+/// HTTP resource as stored in .request.yaml. Deserialize from YAML, serialize to JSON for frontend.
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestResourceFile {
+    #[serde(rename = "type")]
+    pub resource_type: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub method: Option<String>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub params: Option<Vec<KeyValuePair>>,
+    #[serde(default)]
+    pub headers: Option<Vec<KeyValuePair>>,
+    #[serde(default)]
+    pub body: Option<serde_json::Value>,
+    #[serde(default)]
+    pub auth: Option<serde_json::Value>,
+}

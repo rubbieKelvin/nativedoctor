@@ -1,6 +1,8 @@
 use crate::app::AppState;
+use crate::constants::{NATIVE_DOCTOR_PROJECT_FILE, NATIVE_DOCTOR_RESOURCE_FILE_EXTS};
 use crate::db::get_db_path;
-use crate::schema::NativedoctorJson;
+use crate::schema::project::NativedoctorJson;
+use crate::schema::ResourceFileContent;
 
 #[derive(serde::Serialize)]
 pub struct RecentProject {
@@ -63,6 +65,9 @@ pub async fn add_recent_project(path: String, name: Option<String>) -> Result<()
 
 #[tauri::command]
 pub fn get_initial_project_path(state: tauri::State<AppState>) -> Option<String> {
+    // This is the project path that was passed at args
+    // eg: nativedoctor .
+    // we'd grab it from mutex
     let mut guard = state.initial_project_path.lock().unwrap();
     return guard.take().and_then(|p| p.to_str().map(String::from));
 }
@@ -70,13 +75,13 @@ pub fn get_initial_project_path(state: tauri::State<AppState>) -> Option<String>
 #[tauri::command]
 pub fn project_has_nativedoctor(path: String) -> bool {
     return std::path::Path::new(&path)
-        .join("nativedoctor.json")
+        .join(NATIVE_DOCTOR_PROJECT_FILE)
         .exists();
 }
 
 #[tauri::command]
 pub fn read_nativedoctor(path: String) -> Result<NativedoctorJson, String> {
-    let file_path = std::path::Path::new(&path).join("nativedoctor.json");
+    let file_path = std::path::Path::new(&path).join(NATIVE_DOCTOR_PROJECT_FILE);
     let contents = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
     return serde_json::from_str(&contents).map_err(|e| e.to_string());
 }
@@ -85,7 +90,7 @@ pub fn read_nativedoctor(path: String) -> Result<NativedoctorJson, String> {
 pub fn write_nativedoctor(path: String, payload: NativedoctorJson) -> Result<(), String> {
     let dir = std::path::Path::new(&path);
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    let file_path = dir.join("nativedoctor.json");
+    let file_path = dir.join(NATIVE_DOCTOR_PROJECT_FILE);
     let contents = serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())?;
     std::fs::write(file_path, contents).map_err(|e| e.to_string())
 }
@@ -107,8 +112,8 @@ pub fn get_project_root_from_config_path(config_path: String) -> Result<String, 
 pub fn discover_resources(project_path: String) -> Result<Vec<String>, String> {
     let root = std::path::Path::new(&project_path);
 
-    if !root.join("nativedoctor.json").exists() {
-        return Err("Project has no nativedoctor.json".to_string());
+    if !root.join(NATIVE_DOCTOR_PROJECT_FILE).exists() {
+        return Err(format!("Project has no {}", NATIVE_DOCTOR_PROJECT_FILE));
     }
 
     let entries = std::fs::read_dir(root).map_err(|e| e.to_string())?;
@@ -128,7 +133,12 @@ pub fn discover_resources(project_path: String) -> Result<Vec<String>, String> {
             None => continue,
         };
 
-        if file_name.ends_with(".request.yaml") || file_name.ends_with(".sequence.yaml") {
+        if NATIVE_DOCTOR_RESOURCE_FILE_EXTS
+            .iter()
+            .filter(|ext| file_name.ends_with(*ext))
+            .count()
+            == 1
+        {
             resources.push(file_name);
         }
     }
@@ -144,7 +154,7 @@ pub fn create_project(
     description: String,
 ) -> Result<String, String> {
     let path = std::path::Path::new(&folder_path);
-    let config_path = path.join("nativedoctor.json");
+    let config_path = path.join(NATIVE_DOCTOR_PROJECT_FILE);
 
     if config_path.exists() {
         return Err("nativedoctor.json already exists in this folder".to_string());
@@ -163,186 +173,6 @@ pub fn create_project(
     return Ok(folder_path);
 }
 
-fn sanitize_resource_name(name: &str) -> String {
-    let s = name.trim();
-    if s.is_empty() {
-        return "request".to_string();
-    }
-    return s
-        .chars()
-        .map(|c| match c {
-            ' ' => '-',
-            c if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' => c,
-            _ => '-',
-        })
-        .collect::<String>()
-        .trim_matches('-')
-        .split('-')
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-        .join("-");
-}
-
-#[derive(serde::Serialize)]
-struct HttpRequestFile {
-    #[serde(rename = "type")]
-    resource_type: String,
-    name: String,
-    method: String,
-    url: String,
-}
-
-/// Key-value pair for params/headers. Used for JSON in/out of read/write_resource_file.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyValuePairDto {
-    pub key: String,
-    pub value: String,
-    #[serde(default)]
-    pub enabled: Option<bool>,
-    #[serde(default)]
-    pub description: Option<String>,
-}
-
-/// HTTP resource as stored in .request.yaml. Deserialize from YAML, serialize to JSON for frontend.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct RequestResourceFile {
-    #[serde(rename = "type")]
-    pub resource_type: String,
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub method: Option<String>,
-    #[serde(default)]
-    pub url: Option<String>,
-    #[serde(default)]
-    pub params: Option<Vec<KeyValuePairDto>>,
-    #[serde(default)]
-    pub headers: Option<Vec<KeyValuePairDto>>,
-    #[serde(default)]
-    pub body: Option<serde_json::Value>,
-    #[serde(default)]
-    pub auth: Option<serde_json::Value>,
-}
-
-/// Sequence node as stored in .sequence.yaml.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct SequenceNodeDto {
-    pub id: String,
-    pub resource_id: String,
-    pub resource_type: String,
-}
-
-/// Sequence resource as stored in .sequence.yaml.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct SequenceResourceFile {
-    #[serde(rename = "type")]
-    pub resource_type: String,
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub flow: Option<Vec<SequenceNodeDto>>,
-}
-
-/// Content of a resource file (HTTP or Sequence). Returned as JSON from read_resource_file.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(tag = "type")]
-pub enum ResourceFileContent {
-    #[serde(rename = "http")]
-    Http(RequestResourceFile),
-    #[serde(rename = "sequence")]
-    Sequence(SequenceResourceFile),
-}
-
-/// Creates a new HTTP request resource file in the project root directory.
-/// The file is saved as YAML with the .request.yaml extension.
-#[tauri::command]
-pub fn create_http_resource(project_path: String, name: String) -> Result<String, String> {
-    let root = std::path::Path::new(&project_path);
-    let config_path = root.join("nativedoctor.json");
-    if !config_path.exists() {
-        return Err("Project has no nativedoctor.json".to_string());
-    }
-
-    let base = sanitize_resource_name(&name);
-    if base.is_empty() {
-        return Err("Invalid resource name".to_string());
-    }
-
-    let mut candidate = format!("{}.request.yaml", base);
-    let mut n = 1u32;
-    while root.join(&candidate).exists() {
-        n += 1;
-        candidate = format!("{}-{}.request.yaml", base, n);
-    }
-
-    let request_content = HttpRequestFile {
-        resource_type: "http".to_string(),
-        name: if name.trim().is_empty() {
-            "New request".to_string()
-        } else {
-            name.trim().to_string()
-        },
-        method: "GET".to_string(),
-        url: String::new(),
-    };
-
-    let full_path = root.join(&candidate);
-    let yaml_content = serde_yaml::to_string(&request_content).map_err(|e| e.to_string())?;
-    std::fs::write(full_path, yaml_content).map_err(|e| e.to_string())?;
-
-    return Ok(candidate);
-}
-
-#[derive(serde::Serialize)]
-struct SequenceFile {
-    #[serde(rename = "type")]
-    resource_type: String,
-    name: String,
-    flow: Vec<serde_json::Value>,
-}
-
-/// Creates a new sequence resource file in the project root directory.
-#[tauri::command]
-pub fn create_sequence_resource(project_path: String, name: String) -> Result<String, String> {
-    let root = std::path::Path::new(&project_path);
-    let config_path = root.join("nativedoctor.json");
-    if !config_path.exists() {
-        return Err("Project has no nativedoctor.json".to_string());
-    }
-
-    let base = sanitize_resource_name(&name);
-    if base.is_empty() {
-        return Err("Invalid resource name".to_string());
-    }
-
-    let mut candidate = format!("{}.sequence.yaml", base);
-    let mut n = 1u32;
-    while root.join(&candidate).exists() {
-        n += 1;
-        candidate = format!("{}-{}.sequence.yaml", base, n);
-    }
-
-    let sequence_content = SequenceFile {
-        resource_type: "sequence".to_string(),
-        name: if name.trim().is_empty() {
-            "New sequence".to_string()
-        } else {
-            name.trim().to_string()
-        },
-        flow: vec![],
-    };
-
-    let full_path = root.join(&candidate);
-    let yaml_content = serde_yaml::to_string(&sequence_content).map_err(|e| e.to_string())?;
-    std::fs::write(full_path, yaml_content).map_err(|e| e.to_string())?;
-
-    return Ok(candidate);
-}
-
 /// Reads a resource file from the project directory, parses YAML, and returns JSON for the frontend.
 #[tauri::command]
 pub fn read_resource_file(
@@ -357,7 +187,7 @@ pub fn read_resource_file(
     }
 
     let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
-    serde_yaml::from_str(&content).map_err(|e| e.to_string())
+    return serde_yaml::from_str(&content).map_err(|e| e.to_string());
 }
 
 /// Writes a resource file to the project directory. Accepts JSON from the frontend and serializes to YAML.
@@ -371,5 +201,5 @@ pub fn write_resource_file(
     let file_path = root.join(&file_name);
 
     let yaml_content = serde_yaml::to_string(&payload).map_err(|e| e.to_string())?;
-    std::fs::write(file_path, yaml_content).map_err(|e| e.to_string())
+    return std::fs::write(file_path, yaml_content).map_err(|e| e.to_string());
 }

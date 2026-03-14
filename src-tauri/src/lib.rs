@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use crate::db::init_db;
 
 mod app;
+mod constants;
 mod db;
 mod project;
 mod schema;
@@ -101,8 +102,6 @@ pub fn run() {
             project::write_nativedoctor,
             project::create_project,
             project::get_project_root_from_config_path,
-            project::create_http_resource,
-            project::create_sequence_resource,
             project::discover_resources,
             project::read_resource_file,
             project::write_resource_file,

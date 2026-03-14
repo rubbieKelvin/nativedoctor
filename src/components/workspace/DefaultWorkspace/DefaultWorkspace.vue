@@ -22,7 +22,9 @@ import {
 import WmDragHandle from "@/components/WmDragHandle.vue";
 import { useResources } from "@/store/resources";
 import { useWorkspaceTabs } from "@/store/workspaceTabs";
+import { useCurrentProject } from "@/store/project";
 
+const { name: projectName } = useCurrentProject();
 const resourcesStore = useResources();
 const workspaceTabs = useWorkspaceTabs();
 
@@ -85,7 +87,7 @@ function sequenceResourceForId(id: string) {
 
 <template>
     <div class="w-full h-full">
-        <WmDragHandle />
+        <WmDragHandle :title="projectName" />
         <ResizablePanelGroup direction="horizontal" class="w-full h-full">
             <ResizablePanel :default-size="25" :min-size="20" :max-size="30">
                 <SideBar />
