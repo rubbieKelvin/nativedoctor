@@ -13,7 +13,7 @@ pub struct KeyValuePair {
 /// HTTP resource as stored in .request.yaml. Deserialize from YAML, serialize to JSON for frontend.
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestResourceFile {
+pub struct HttpResourceFile {
     #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
     #[serde(rename = "type")]

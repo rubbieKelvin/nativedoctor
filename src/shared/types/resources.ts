@@ -13,7 +13,7 @@ interface BaseResource<T extends ResourceType> {
   id: string;
   name: string;
   is_edited: boolean;
-  folderId: string | null;
+  folder_id: string | null;
   created_at: number;
   updated_at?: number;
 }
@@ -62,7 +62,7 @@ export interface HttpBodyFormUrlencoded {
 
 export interface HttpBodyBinary {
   type: "binary";
-  filePath?: string;
+  file_path?: string;
 }
 
 export type HttpBody =
@@ -101,13 +101,13 @@ export interface AuthApiKey {
   type: "api-key";
   key: string;
   value: string;
-  addTo: "header" | "query";
+  add_to: "header" | "query";
 }
 
 export type HttpAuth = AuthNone | AuthBasic | AuthBearer | AuthApiKey;
 
 export interface HttpResource extends BaseResource<"http"> {
-  $schema: string;
+  $schema?: string;
   method: HttpMethodType;
   url: string;
   params: KeyValuePair[];
@@ -118,12 +118,12 @@ export interface HttpResource extends BaseResource<"http"> {
 
 export interface SequenceNode {
   id: string;
-  resourceId: string;
-  resourceType: Exclude<ResourceType, "folder">;
+  resource_id: string;
+  resource_type: Exclude<ResourceType, "folder">;
 }
 
 export interface SequenceResource extends BaseResource<"sequence"> {
-  $schema: string;
+  $schema?: string;
   flow: SequenceNode[];
 }
 
@@ -132,25 +132,15 @@ export type Resource = FolderResource | HttpResource | SequenceResource;
 // File based on rust types
 
 /** Backend JSON shape for HTTP resource (from read_resource_file or to write_resource_file). */
-export interface RequestResourceFileDto {
-  type: "http";
-  name?: string;
-  method?: string;
-  url?: string;
-  params?: KeyValuePair[];
-  headers?: KeyValuePair[];
-  body?: HttpBody;
-  auth?: HttpAuth;
-}
+export type HttpResourceFileDto = Omit<HttpResource, "is_edited" | "folder_id">;
 
 /** Backend JSON shape for sequence resource. */
-export interface SequenceResourceFileDto {
-  type: "sequence";
-  name?: string;
-  flow?: Array<{ id: string; resourceId: string; resourceType: string }>;
-}
+export type SequenceResourceFileDto = Omit<
+  SequenceResource,
+  "is_edited" | "folder_id"
+>;
 
 /** Backend response from read_resource_file (tagged union). */
 export type ResourceFileContentDto =
-  | RequestResourceFileDto
+  | HttpResourceFileDto
   | SequenceResourceFileDto;

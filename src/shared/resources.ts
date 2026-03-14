@@ -1,4 +1,17 @@
-import { HttpResource, Resource, ResourceFileContentDto } from "./types";
+import { omit } from "lodash";
+import {
+  NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
+  NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
+} from "./constants";
+import {
+  HttpResource,
+  HttpResourceFileDto,
+  Resource,
+  ResourceFileContentDto,
+  SequenceResource,
+  SequenceResourceFileDto,
+} from "./types";
+import { matches } from "./utils";
 
 type SortingOptions = {
   sorting: "NAME" | "DATE_CREATED" | "DATE_UPDATED";
@@ -87,22 +100,23 @@ export function mapBackendToResource(
       body: payload.body ?? { type: "none" },
       auth: payload.auth ?? { type: "none" },
       is_edited: false,
-      folderId: null,
+      folder_id: null,
       created_at,
     };
   }
   if (payload.type === "sequence") {
     const flow = (payload.flow ?? []).map((n) => ({
       id: n.id ?? crypto.randomUUID(),
-      resourceId: n.resourceId ?? "",
-      resourceType: n.resourceType as "http" | "sequence",
+      resource_id: n.resource_id ?? "",
+      resource_type: n.resource_type as "http" | "sequence",
     }));
+
     return {
       id,
       type: "sequence",
       name: payload.name ?? "Untitled sequence",
       is_edited: false,
-      folderId: null,
+      folder_id: null,
       flow,
       created_at,
     };
@@ -117,24 +131,24 @@ export function mapBackendToResource(
 export function mapResourceToBackendPayload(
   r: Resource,
 ): ResourceFileContentDto | null {
-  if (r.type === "http") {
-    return {
-      type: "http",
-      name: r.name,
-      method: r.method,
-      url: r.url,
-      params: r.params,
-      headers: r.headers,
-      body: r.body,
-      auth: r.auth,
-    };
-  }
-  if (r.type === "sequence") {
-    return {
-      type: "sequence",
-      name: r.name,
-      flow: r.flow,
-    };
-  }
-  return null;
+  return matches<string, ResourceFileContentDto | null>(r.type, {
+    http: (): HttpResourceFileDto => {
+      const http = r as HttpResource;
+      return {
+        $schema: NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
+        ...omit(http, ["is_edited", "folder_id"]),
+      };
+    },
+    sequence: (): SequenceResourceFileDto => {
+      const sequence = r as SequenceResource;
+      return {
+        $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
+        ...omit(sequence, ["is_edited", "folder_id"]),
+      };
+    },
+    _: () => {
+      console.error(new Error("Cannot map this resource to backend"));
+      return null;
+    },
+  });
 }

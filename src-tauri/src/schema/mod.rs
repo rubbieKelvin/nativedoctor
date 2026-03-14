@@ -1,5 +1,5 @@
+pub mod http;
 pub mod project;
-pub mod request;
 pub mod sequence;
 
 /// Content of a resource file (HTTP or Sequence). Returned as JSON from read_resource_file.
@@ -7,7 +7,7 @@ pub mod sequence;
 #[serde(tag = "type")]
 pub enum ResourceFileContent {
     #[serde(rename = "http")]
-    Http(request::RequestResourceFile),
+    Http(http::HttpResourceFile),
     #[serde(rename = "sequence")]
     Sequence(sequence::SequenceResourceFile),
 }

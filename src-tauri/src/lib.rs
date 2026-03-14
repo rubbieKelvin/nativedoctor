@@ -9,6 +9,7 @@ mod app;
 mod constants;
 mod db;
 mod project;
+mod resource;
 mod schema;
 
 #[derive(serde::Deserialize)]
@@ -103,8 +104,8 @@ pub fn run() {
             project::create_project,
             project::get_project_root_from_config_path,
             project::discover_resources,
-            project::read_resource_file,
-            project::write_resource_file,
+            resource::read_resource_file,
+            resource::write_resource_file,
         ])
         .setup(|_app| {
             setup_db()?;

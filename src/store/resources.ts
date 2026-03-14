@@ -95,7 +95,6 @@ function _createHttpResource(
   resource: Partial<Omit<HttpResource, "id" | "type" | "updated">>,
 ): HttpResource {
   return {
-    $schema: NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
     id: nanoid(),
     type: "http",
     url: resource.url ?? "Untitled",
@@ -131,7 +130,6 @@ function _createFolderResource(name?: string): FolderResource {
  */
 function _createSequenceResource(name?: string): SequenceResource {
   return {
-    $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
     id: nanoid(),
     type: "sequence",
     name: name ?? "New sequence",
