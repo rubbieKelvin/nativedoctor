@@ -7,6 +7,7 @@ import type {
   FolderResource,
   SequenceResource,
   Resource,
+  EditorMetadata,
 } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
 import { useWorkspaceTabs } from "./workspaceTabs";
@@ -20,6 +21,16 @@ import {
   NATIVE_DOCTOR_SEQUENCE_FILE_EXT,
 } from "@/shared/constants";
 import { matches } from "@/shared/utils";
+import { cloneDeep } from "lodash";
+
+export function defaultEditorMeta(
+  defaults?: Partial<EditorMetadata>,
+): EditorMetadata {
+  return {
+    changes_made: true,
+    ...defaults,
+  };
+}
 
 /**
  * Finds a resource by id in the resource tree (root + all folder children).
@@ -102,9 +113,9 @@ function _createHttpResource(
     headers: resource.headers ?? [],
     body: resource.body ?? { type: "none" },
     auth: resource.auth ?? { type: "none" },
-    is_edited: true,
     folder_id: resource.folder_id ?? null,
     created_at: Date.now(),
+    _editor_meta: defaultEditorMeta(),
   };
 }
 
@@ -116,10 +127,10 @@ function _createFolderResource(name?: string): FolderResource {
     id: nanoid(),
     type: "folder",
     name: name ?? "New folder",
-    is_edited: true,
     folder_id: null,
     children: [],
     created_at: Date.now(),
+    _editor_meta: defaultEditorMeta(),
   };
 }
 
@@ -131,10 +142,10 @@ function _createSequenceResource(name?: string): SequenceResource {
     id: nanoid(),
     type: "sequence",
     name: name ?? "New sequence",
-    is_edited: true,
     folder_id: null,
     flow: [],
     created_at: Date.now(),
+    _editor_meta: defaultEditorMeta(),
   };
 }
 
@@ -199,7 +210,6 @@ const resourcesStore = defineStore("resources", () => {
     reset();
     const tree: Resource[] = [];
     const newFileNames = new Map<string, string>();
-    const now = Date.now();
 
     for (const fileName of fileNames) {
       try {
@@ -207,11 +217,11 @@ const resourcesStore = defineStore("resources", () => {
           "read_resource_file",
           { projectPath, fileName },
         );
-        const id = nanoid();
-        const resource = mapBackendToResource(payload, id, now);
+
+        const resource = mapBackendToResource(payload);
         if (resource) {
           tree.push(resource);
-          newFileNames.set(id, fileName);
+          newFileNames.set(payload.id, fileName);
         }
       } catch (e) {
         console.error(`Failed to load resource file ${fileName}:`, e);
@@ -227,8 +237,10 @@ const resourcesStore = defineStore("resources", () => {
    * New resources (no file name) are created via backend create_http_resource / create_sequence_resource first.
    */
   async function saveResources(projectPath: string): Promise<void> {
-    const edited = flattenedResources.value.filter((r) => r.is_edited);
     const fileNames = resourceFileNames.value;
+    const edited = flattenedResources.value.filter(
+      (r) => r._editor_meta.changes_made,
+    );
 
     for (const resource of edited) {
       if (resource.type === "folder") continue;
@@ -261,7 +273,7 @@ const resourcesStore = defineStore("resources", () => {
           fileName,
           payload,
         });
-        resource.is_edited = false;
+        resource._editor_meta.changes_made = false;
         resource.updated_at = Date.now();
       } catch (e) {
         console.error(`Failed to write resource file ${fileName}:`, e);
@@ -317,32 +329,23 @@ const resourcesStore = defineStore("resources", () => {
     if (!resource) return undefined;
 
     let newResource: Resource;
+    let name = resource.name ?? "untitled";
 
     switch (resource.type) {
       case "http":
         newResource = {
-          ...resource,
+          ...cloneDeep(resource),
           id: nanoid(),
-          name: `${resource.name} (copy)`,
-          is_edited: true,
+          name: `${name} (copy)`,
         };
         break;
       case "folder":
-        newResource = {
-          ...resource,
-          id: nanoid(),
-          name: `${resource.name} (copy)`,
-          is_edited: true,
-          children: [],
-        };
-        break;
+        throw new Error("Cannot duplicate folder");
       case "sequence":
         newResource = {
-          ...resource,
+          ...cloneDeep(resource),
           id: nanoid(),
-          name: `${resource.name} (copy)`,
-          is_edited: true,
-          flow: [...resource.flow],
+          name: `${name} (copy)`,
         };
         break;
     }
@@ -352,6 +355,7 @@ const resourcesStore = defineStore("resources", () => {
       newResource,
       resource.folder_id ?? undefined,
     );
+
     return newResource.id;
   }
 
@@ -359,7 +363,7 @@ const resourcesStore = defineStore("resources", () => {
     const resource = findResourceInTree(resources.value, id);
     if (resource) {
       resource.name = newName;
-      resource.is_edited = true;
+      resource._editor_meta.changes_made = true;
       resources.value = [...resources.value];
     }
   }

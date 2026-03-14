@@ -17,15 +17,6 @@ async function loadProject(path: string): Promise<NativedoctorJson | null> {
   return data;
 }
 
-/**
- * Discovers resource files in the project root directory.
- * @param projectPath - Absolute path to the project directory.
- * @returns Array of resource file names (*.request.yaml, *.sequence.yaml).
- */
-async function discoverResourceFiles(projectPath: string): Promise<string[]> {
-  return invoke<string[]>("discover_resources", { projectPath });
-}
-
 const projectStore = defineStore("project", () => {
   const path = ref<string | null>(null);
   const config = ref<NativedoctorJson | null>(null);
@@ -48,7 +39,9 @@ const projectStore = defineStore("project", () => {
     }
 
     try {
-      resourceFiles.value = await discoverResourceFiles(path.value);
+      resourceFiles.value = await invoke<string[]>("discover_resources", {
+        projectPath: path.value,
+      });
     } catch (e) {
       console.error("Failed to discover resources:", e);
       resourceFiles.value = [];

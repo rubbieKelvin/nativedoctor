@@ -12,6 +12,7 @@ import {
   SequenceResourceFileDto,
 } from "./types";
 import { matches } from "./utils";
+import { defaultEditorMeta } from "@/store/resources";
 
 type SortingOptions = {
   sorting: "NAME" | "DATE_CREATED" | "DATE_UPDATED";
@@ -91,14 +92,14 @@ export function mapBackendToResource(
       const http = content as HttpResourceFileDto;
       return {
         ...http,
-        is_edited: false,
+        _editor_meta: defaultEditorMeta({ changes_made: false }),
       };
     },
     sequence: (): SequenceResource => {
       const sequence = content as SequenceResourceFileDto;
       return {
         ...sequence,
-        is_edited: false,
+        _editor_meta: defaultEditorMeta({ changes_made: false }),
       };
     },
     _: () => null,
@@ -117,14 +118,14 @@ export function mapResourceToBackendPayload(
       const http = resource as HttpResource;
       return {
         $schema: NATIVE_DOCTOR_REQUEST_FILE_PUBLIC_SCHEMA_URL,
-        ...omit(http, ["is_edited"]),
+        ...omit(http, ["_editor_meta"]),
       };
     },
     sequence: (): SequenceResourceFileDto => {
       const sequence = resource as SequenceResource;
       return {
         $schema: NATIVE_DOCTOR_SEQUENCE_FILE_PUBLIC_SCHEMA_URL,
-        ...omit(sequence, ["is_edited"]),
+        ...omit(sequence, ["_editor_meta"]),
       };
     },
     _: () => {

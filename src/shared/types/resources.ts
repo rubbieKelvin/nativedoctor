@@ -1,5 +1,9 @@
 import type { HttpMethodType } from "@/shared/constants/http";
 
+export type EditorMetadata = {
+  changes_made: boolean;
+};
+
 export const RESOURCE_TYPES = {
   FOLDER: "folder",
   HTTP: "http",
@@ -12,10 +16,10 @@ interface BaseResource<T extends ResourceType> {
   type: T;
   id: string;
   name: string;
-  is_edited: boolean;
   folder_id: string | null;
   created_at: number;
   updated_at?: number;
+  _editor_meta: EditorMetadata;
 }
 
 export interface FolderResource extends BaseResource<"folder"> {
@@ -132,10 +136,10 @@ export type Resource = FolderResource | HttpResource | SequenceResource;
 // File based on rust types
 
 /** Backend JSON shape for HTTP resource (from read_resource_file or to write_resource_file). */
-export type HttpResourceFileDto = Omit<HttpResource, "is_edited">;
+export type HttpResourceFileDto = Omit<HttpResource, "_editor_meta">;
 
 /** Backend JSON shape for sequence resource. */
-export type SequenceResourceFileDto = Omit<SequenceResource, "is_edited">;
+export type SequenceResourceFileDto = Omit<SequenceResource, "_editor_meta">;
 
 /** Backend response from read_resource_file (tagged union). */
 export type ResourceFileContentDto =
