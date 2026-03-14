@@ -16,7 +16,8 @@ export function useFolderActions(folderId: string) {
   }
 
   function renameFolder() {
-    store.startRenaming(folderId);
+    // Defer so the context menu closes and restores focus first; then the input can receive focus without an immediate blur.
+    setTimeout(() => store.startRenaming(folderId), 0);
   }
 
   function deleteFolder() {

@@ -11,7 +11,7 @@ const props = withDefaults(
         resource: HttpResource;
         depth?: number;
     }>(),
-    { depth: 0 }
+    { depth: 0 },
 );
 
 defineEmits<{
@@ -21,22 +21,35 @@ defineEmits<{
 const { renamingResourceId } = useResourcesState();
 const store = useResources();
 
-const isRenaming = computed(() => renamingResourceId.value === props.resource.id);
+/** Ignore blur for this long after entering rename (context menu close steals focus). */
+const BLUR_GRACE_MS = 200;
+
+const isRenaming = computed(
+    () => renamingResourceId.value === props.resource.id,
+);
 const tempName = ref(props.resource.name);
 const inputRef = ref<HTMLInputElement | null>(null);
+const renameStartedAt = ref(0);
 
 watch(isRenaming, (val) => {
     if (val) {
+        renameStartedAt.value = Date.now();
         tempName.value = props.resource.name;
         nextTick(() => {
-            inputRef.value?.focus();
-            inputRef.value?.select();
+            setTimeout(() => {
+                inputRef.value?.focus();
+                inputRef.value?.select();
+            }, 0);
         });
     }
 });
 
 function handleRename() {
     if (!isRenaming.value) return;
+    if (Date.now() - renameStartedAt.value < BLUR_GRACE_MS) {
+        inputRef.value?.focus();
+        return;
+    }
     if (tempName.value.trim() && tempName.value !== props.resource.name) {
         store.renameResource(props.resource.id, tempName.value.trim());
     }
@@ -88,6 +101,10 @@ const methodColor = computed(() => {
                 ref="inputRef"
                 v-model="tempName"
                 class="h-5 w-full min-w-0 flex-1 rounded-sm border-none bg-sidebar-accent-foreground/10 px-1 text-sm outline-none ring-1 ring-ring"
+                autocorrect="off"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
                 @blur="handleRename"
                 @keydown.enter="handleRename"
                 @keydown.esc="cancelRename"

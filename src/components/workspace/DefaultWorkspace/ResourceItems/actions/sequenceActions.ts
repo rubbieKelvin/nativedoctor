@@ -4,7 +4,8 @@ export function useSequenceActions(resourceId: string) {
   const store = useResources();
 
   function renameSequence() {
-    store.startRenaming(resourceId);
+    // Defer so the context menu closes and restores focus first; then the input can receive focus without an immediate blur.
+    setTimeout(() => store.startRenaming(resourceId), 0);
   }
 
   function deleteSequence() {
