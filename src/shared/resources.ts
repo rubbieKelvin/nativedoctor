@@ -105,6 +105,7 @@ export function buildResourceTree(flatList: Resource[]): Resource[] {
     }
   }
 
+  // return all the top level items.
   return flatList.filter((r) => {
     const parent = r.folder_id != null ? map.get(r.folder_id) : undefined;
     return r.folder_id === null || !parent || parent.type !== "folder";

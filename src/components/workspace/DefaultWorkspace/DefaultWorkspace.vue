@@ -21,12 +21,13 @@ import {
 } from "@/components/ui/resizable";
 import WmDragHandle from "@/components/WmDragHandle.vue";
 import { useResources } from "@/store/resources";
-import { useWorkspaceTabs } from "@/store/workspaceTabs";
+import { useWorkspaceTabs, useWorkspaceTabsActions } from "@/store/tabs";
 import { useCurrentProject } from "@/store/project";
 
 const { name: projectName } = useCurrentProject();
 const resourcesStore = useResources();
-const workspaceTabs = useWorkspaceTabs();
+const { openTabIds, activeTabId } = useWorkspaceTabs();
+const { setActiveTab, closeTab } = useWorkspaceTabsActions();
 
 const scrollAreaRef = ref<InstanceType<typeof ScrollArea> | null>(null);
 const tabListScrollRef = ref<HTMLElement | null>(null);
@@ -60,7 +61,7 @@ useResizeObserver(tabListScrollRef, () => {
 });
 
 watch(
-    () => workspaceTabs.openTabIds.length,
+    () => openTabIds.value.length,
     () => {
         nextTick(syncViewportRef);
     },
@@ -68,8 +69,8 @@ watch(
 );
 
 const tabsModel = computed({
-    get: () => workspaceTabs.activeTabId ?? undefined,
-    set: (v: string | undefined) => workspaceTabs.setActiveTab(v ?? null),
+    get: () => activeTabId.value ?? undefined,
+    set: (v: string | undefined) => setActiveTab(v ?? null),
 });
 
 function resourceForId(id: string) {
@@ -97,7 +98,7 @@ function sequenceResourceForId(id: string) {
 
             <ResizablePanel :default-size="75" class="flex flex-col">
                 <div
-                    v-if="workspaceTabs.openTabIds.length === 0"
+                    v-if="openTabIds.length === 0"
                     class="flex flex-1 items-center justify-center text-muted-foreground"
                 >
                     Select a resource to open
@@ -117,7 +118,7 @@ function sequenceResourceForId(id: string) {
                                 class="inline-flex min-w-0 shrink-0 flex-nowrap justify-start rounded-none border-0 bg-transparent p-0"
                             >
                                 <TabsTrigger
-                                    v-for="id in workspaceTabs.openTabIds"
+                                    v-for="id in openTabIds"
                                     :key="id"
                                     :value="id"
                                     class="relative shrink-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none"
@@ -141,7 +142,7 @@ function sequenceResourceForId(id: string) {
                                         variant="ghost"
                                         size="icon"
                                         class="ml-1 size-6 rounded hover:bg-muted"
-                                        @click.stop="workspaceTabs.closeTab(id)"
+                                        @click.stop="closeTab(id)"
                                     >
                                         <X class="size-3.5" />
                                     </Button>
@@ -165,9 +166,10 @@ function sequenceResourceForId(id: string) {
                             />
                         </div>
                     </div>
+
                     <div class="min-h-0 flex-1 overflow-auto">
                         <TabsContent
-                            v-for="id in workspaceTabs.openTabIds"
+                            v-for="id in openTabIds"
                             :key="id"
                             :value="id"
                             class="mt-0 h-full data-[state=inactive]:hidden"
@@ -180,7 +182,7 @@ function sequenceResourceForId(id: string) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    @click="workspaceTabs.closeTab(id)"
+                                    @click="closeTab(id)"
                                 >
                                     Close tab
                                 </Button>

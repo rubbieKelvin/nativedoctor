@@ -18,7 +18,7 @@ import {
 import { Plus, Folder, Globe, ListOrdered, Save } from "lucide-vue-next";
 import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
 import { useResources, useResourcesState } from "@/store/resources";
-import { useWorkspaceTabs } from "@/store/workspaceTabs";
+import { useWorkspaceTabsActions } from "@/store/tabs";
 import { ResourceItem } from "./ResourceItems";
 import { sortedResources } from "@/shared/resources";
 
@@ -28,7 +28,7 @@ const projectStore = useCurrentProjectActions();
 const { path: projectPath } = useCurrentProject();
 const resourcesStore = useResources();
 const { flattenedResources } = useResourcesState();
-const workspaceTabs = useWorkspaceTabs();
+const { openTab } = useWorkspaceTabsActions();
 
 const hasEditedResources = computed(() =>
     (flattenedResources.value ?? []).some((r) => r._editor_meta.changes_made),
@@ -69,7 +69,7 @@ function handleCreateSequence() {
 function handleSelectResource(id: string) {
     const resource = resourcesStore.getResourceById(id);
     if (resource?.type === "folder") return;
-    workspaceTabs.openTab(id);
+    openTab(id);
 }
 </script>
 

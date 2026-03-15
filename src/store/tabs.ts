@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, storeToRefs } from "pinia";
 import { ref } from "vue";
 
 const workspaceTabsStore = defineStore("workspaceTabs", () => {
@@ -49,4 +49,5 @@ const workspaceTabsStore = defineStore("workspaceTabs", () => {
   };
 });
 
-export const useWorkspaceTabs = () => workspaceTabsStore();
+export const useWorkspaceTabs = () => storeToRefs(workspaceTabsStore());
+export const useWorkspaceTabsActions = () => workspaceTabsStore();

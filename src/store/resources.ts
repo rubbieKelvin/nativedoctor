@@ -10,7 +10,7 @@ import type {
   EditorMetadata,
 } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
-import { useWorkspaceTabs } from "./workspaceTabs";
+import { useWorkspaceTabsActions } from "./tabs";
 import type { ResourceFileContentDto } from "@/shared/types";
 import {
   buildResourceTree,
@@ -314,7 +314,7 @@ const resourcesStore = defineStore("resources", () => {
 
   function deleteResource(id: string) {
     // TODO: delete the file from fs
-    function removeFromTree(nodes: Resource[]): boolean {
+    const removeFromTree = (nodes: Resource[]): boolean => {
       for (let i = 0; i < nodes.length; i++) {
         if (nodes[i].id === id) {
           nodes.splice(i, 1);
@@ -326,14 +326,16 @@ const resourcesStore = defineStore("resources", () => {
         }
       }
       return false;
-    }
+    };
+
     const removed = removeFromTree(resources.value);
     if (!removed) return;
     const next = new Map(resourceFileNames.value);
     next.delete(id);
+
     resourceFileNames.value = next;
     resources.value = [...resources.value];
-    useWorkspaceTabs().closeTab(id);
+    useWorkspaceTabsActions().closeTab(id);
   }
 
   function duplicateResource(id: string): string | undefined {
@@ -383,7 +385,8 @@ const resourcesStore = defineStore("resources", () => {
   }
 
   /**
-   * Updates an HTTP resource by id. Only in-place fields are updated; tree shape unchanged.
+   * Updates an HTTP resource by id.
+   * Only in-place fields are updated; tree shape unchanged.
    */
   function updateHttpResource(
     id: string,
@@ -391,10 +394,15 @@ const resourcesStore = defineStore("resources", () => {
   ) {
     const resource = resourceMap.value.get(id) as HttpResource | undefined;
     if (!resource || resource.type !== "http") return;
+
+    // resource update
     Object.assign(resource, patch, {
-      is_edited: true,
       updated_at: Date.now(),
     });
+
+    // meta update
+    Object.assign(resource._editor_meta, { changes_made: true });
+
     resources.value = [...resources.value];
   }
 
@@ -407,10 +415,15 @@ const resourcesStore = defineStore("resources", () => {
   ) {
     const resource = resourceMap.value.get(id) as SequenceResource | undefined;
     if (!resource || resource.type !== "sequence") return;
+
+    // resource update
     Object.assign(resource, patch, {
-      is_edited: true,
       updated_at: Date.now(),
     });
+
+    // meta update
+    Object.assign(resource._editor_meta, { changes_made: true });
+
     resources.value = [...resources.value];
   }
 

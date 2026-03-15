@@ -14,10 +14,9 @@ import {
 } from "@/components/ui/resizable";
 import { useResources } from "@/store/resources";
 
-const props = withDefaults(
-    defineProps<{ resource?: HttpResource | null }>(),
-    { resource: undefined },
-);
+const props = withDefaults(defineProps<{ resource?: HttpResource | null }>(), {
+    resource: undefined,
+});
 
 const resourcesStore = useResources();
 
@@ -29,7 +28,8 @@ const body = ref("");
 
 function bodyFromResource(r: HttpResource): string {
     const b = r.body;
-    if (b.type === "text" || b.type === "json" || b.type === "graphql") return b.content;
+    if (b.type === "text" || b.type === "json" || b.type === "graphql")
+        return b.content;
     return "";
 }
 
@@ -39,24 +39,42 @@ watch(
         if (!r) return;
         url.value = r.url ?? "";
         method.value = (r.method as HttpMethodType) ?? "GET";
-        params.value = r.params?.length ? [...r.params] : [{ key: "", value: "" }];
-        headers.value = r.headers?.length ? [...r.headers] : [{ key: "", value: "" }];
+        params.value = r.params?.length
+            ? [...r.params]
+            : [{ key: "", value: "" }];
+        headers.value = r.headers?.length
+            ? [...r.headers]
+            : [{ key: "", value: "" }];
         body.value = bodyFromResource(r);
     },
     { immediate: true },
 );
 
-watch([url, method, params, headers, body], () => {
-    const r = props.resource;
-    if (!r) return;
-    resourcesStore.updateHttpResource(r.id, {
-        url: url.value,
-        method: method.value,
-        params: params.value.filter((p) => p.key.trim() || p.value.trim()).length ? params.value : [],
-        headers: headers.value.filter((h) => h.key.trim() || h.value.trim()).length ? headers.value : [],
-        body: body.value.trim() ? { type: "text", content: body.value } : { type: "none" },
-    });
-}, { deep: true });
+watch(
+    [url, method, params, headers, body],
+    () => {
+        const r = props.resource;
+        if (!r) return;
+
+        console.log("Updating http resource");
+        resourcesStore.updateHttpResource(r.id, {
+            url: url.value,
+            method: method.value,
+            params: params.value.filter((p) => p.key.trim() || p.value.trim())
+                .length
+                ? params.value
+                : [],
+            headers: headers.value.filter((h) => h.key.trim() || h.value.trim())
+                .length
+                ? headers.value
+                : [],
+            body: body.value.trim()
+                ? { type: "text", content: body.value }
+                : { type: "none" },
+        });
+    },
+    { deep: true },
+);
 
 const status = ref<number | undefined>(undefined);
 const responseHeaders = ref<[string, string][]>([]);
