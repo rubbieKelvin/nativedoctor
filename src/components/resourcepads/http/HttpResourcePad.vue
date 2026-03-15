@@ -137,7 +137,7 @@ async function onSend() {
             headers: [string, string][];
             body: string;
             duration_ms: number;
-        }>("send_http_request", payload);
+        }>("send_http_request", { payload });
 
         status.value = result.status;
         responseHeaders.value = result.headers;

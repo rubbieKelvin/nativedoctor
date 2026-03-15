@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ResponseBody from "./ResponseBody.vue";
+import ResponseCookies from "./ResponseCookies.vue";
+import ResponseHeaders from "./ResponseHeaders.vue";
 
 defineProps<{
     status?: number;
@@ -44,38 +47,33 @@ function statusVariant(
             </span>
         </div>
         <div
-            v-if="(headers?.length || body != null || error) && !error"
-            class="flex flex-1 flex-col gap-2 p-3"
+            v-if="(headers?.length || body != null) && !error"
+            class="flex flex-1 flex-col p-3"
         >
-            <div v-if="headers?.length" class="space-y-1">
-                <p class="text-muted-foreground text-xs font-medium uppercase">
-                    Response headers
-                </p>
-                <ul class="space-y-0.5 font-mono text-xs">
-                    <li
-                        v-for="([name, val], i) in headers"
-                        :key="i"
-                        class="flex gap-2 break-all"
-                    >
-                        <span class="shrink-0 text-muted-foreground"
-                            >{{ name }}:</span
-                        >
-                        <span>{{ val }}</span>
-                    </li>
-                </ul>
-            </div>
-            <div v-if="body != null" class="flex-1 space-y-1">
-                <p class="text-muted-foreground text-xs font-medium uppercase">
-                    Body
-                </p>
-                <ScrollArea
-                    class="h-50 w-full rounded border border-border font-mono text-xs"
+            <Tabs default-value="headers" class="w-full">
+                <TabsList
+                    class="w-full rounded-none flex items-start justify-baseline"
                 >
-                    <pre class="whitespace-pre-wrap wrap-break-words p-2">{{
-                        body
-                    }}</pre>
-                </ScrollArea>
-            </div>
+                    <TabsTrigger class="request-tab-trigger" value="headers">
+                        Headers
+                    </TabsTrigger>
+                    <TabsTrigger class="request-tab-trigger" value="body">
+                        Body
+                    </TabsTrigger>
+                    <TabsTrigger class="request-tab-trigger" value="cookies">
+                        Cookies
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="headers" class="mt-2">
+                    <ResponseHeaders :headers="headers ?? []" />
+                </TabsContent>
+                <TabsContent value="body" class="mt-2">
+                    <ResponseBody :body="body" />
+                </TabsContent>
+                <TabsContent value="cookies" class="mt-2">
+                    <ResponseCookies :headers="headers ?? []" />
+                </TabsContent>
+            </Tabs>
         </div>
         <div v-else-if="error" class="p-3">
             <p class="text-destructive text-sm">

@@ -23,26 +23,18 @@ const emit = defineEmits<{
 <template>
     <Tabs default-value="params" class="w-full">
         <TabsList class="w-full rounded-none flex items-start justify-baseline">
-            <TabsTrigger
-                class="rounded-none font-medium text-xs uppercase flex-none"
-                value="params"
-                >Params</TabsTrigger
-            >
-            <TabsTrigger
-                class="rounded-none font-medium text-xs uppercase flex-none"
-                value="headers"
-                >Headers</TabsTrigger
-            >
-            <TabsTrigger
-                class="rounded-none font-medium text-xs uppercase flex-none"
-                value="body"
-                >Body</TabsTrigger
-            >
-            <TabsTrigger
-                class="rounded-none font-medium text-xs uppercase flex-none"
-                value="auth"
-                >Auth</TabsTrigger
-            >
+            <TabsTrigger class="request-tab-trigger" value="params">
+                Params
+            </TabsTrigger>
+            <TabsTrigger class="request-tab-trigger" value="headers">
+                Headers
+            </TabsTrigger>
+            <TabsTrigger class="request-tab-trigger" value="body">
+                Body
+            </TabsTrigger>
+            <TabsTrigger class="request-tab-trigger" value="auth">
+                Auth
+            </TabsTrigger>
         </TabsList>
 
         <TabsContent value="params" class="mt-2">
