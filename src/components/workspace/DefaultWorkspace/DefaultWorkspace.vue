@@ -103,7 +103,11 @@ function sequenceResourceForId(id: string) {
                 >
                     Select a resource to open
                 </div>
-                <Tabs v-else v-model="tabsModel" class="flex h-full flex-col">
+                <Tabs
+                    v-else
+                    v-model="tabsModel"
+                    class="flex h-full flex-col gap-0"
+                >
                     <div
                         class="relative overflow-hidden border-b bg-transparent"
                     >
@@ -187,6 +191,7 @@ function sequenceResourceForId(id: string) {
                                     Close tab
                                 </Button>
                             </div>
+
                             <HttpResourcePad
                                 v-else-if="httpResourceForId(id)"
                                 :resource="httpResourceForId(id)!"

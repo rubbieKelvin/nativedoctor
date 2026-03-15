@@ -56,7 +56,6 @@ watch(
         const r = props.resource;
         if (!r) return;
 
-        console.log("Updating http resource");
         resourcesStore.updateHttpResource(r.id, {
             url: url.value,
             method: method.value,
@@ -158,7 +157,7 @@ async function onSend() {
             :default-size="50"
             :min-size="40"
             :max-size="60"
-            class="flex flex-col gap-2 p-2"
+            class="flex flex-col"
         >
             <UrlMethodBar
                 v-model:url="url"
