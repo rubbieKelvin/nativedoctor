@@ -29,7 +29,7 @@ function onSend() {
 </script>
 
 <template>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center border-b border-border">
         <Select
             :model-value="method"
             @update:model-value="
@@ -38,7 +38,7 @@ function onSend() {
                 }
             "
         >
-            <SelectTrigger class="w-30">
+            <SelectTrigger class="w-28 rounded-none border-0">
                 <SelectValue placeholder="Method" />
             </SelectTrigger>
             <SelectContent>
@@ -51,9 +51,13 @@ function onSend() {
             v-model="url"
             type="url"
             placeholder="https://api.example.com/..."
-            class="min-w-50 flex-1"
+            class="min-w-50 flex-1 rounded-none border-0"
         />
-        <Button :disabled="loading || !url?.trim()" @click="onSend">
+        <Button
+            class="border-0 rounded-none"
+            :disabled="loading || !url?.trim()"
+            @click="onSend"
+        >
             {{ loading ? "Sending…" : "Send" }}
         </Button>
     </div>
