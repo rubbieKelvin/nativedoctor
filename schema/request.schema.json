@@ -15,6 +15,10 @@
       "enum": ["http"],
       "description": "Resource type. Must be 'http' for request files."
     },
+    "id": {
+      "type": "string",
+      "description": "Unique resource id."
+    },
     "folder_id": {
       "type": ["string", "null"],
       "description": "Optional parent folder id."
@@ -55,10 +59,35 @@
     },
     "auth": {
       "description": "Auth config (e.g. { \"type\": \"none\" }, { \"type\": \"bearer\", \"token\": \"...\" })."
+    },
+    "pre_request_script": {
+      "type": "string",
+      "description": "Script run before the request (e.g. Rhai)."
+    },
+    "post_request_script": {
+      "type": "string",
+      "description": "Script run after the request (e.g. Rhai)."
+    },
+    "settings": {
+      "$ref": "#/$defs/HttpRequestSettings",
+      "description": "Request settings (redirects, timeout)."
     }
   },
   "required": ["type"],
   "$defs": {
+    "HttpRequestSettings": {
+      "type": "object",
+      "properties": {
+        "max_number_of_redirects": {
+          "type": ["integer", null],
+          "description": "Max redirects to follow (default 0)."
+        },
+        "timeout": {
+          "type": ["integer", "null"],
+          "description": "Request timeout in milliseconds."
+        }
+      }
+    },
     "KeyValuePair": {
       "type": "object",
       "required": ["key", "value"],

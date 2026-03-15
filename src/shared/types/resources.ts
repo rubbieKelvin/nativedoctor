@@ -29,7 +29,7 @@ export interface FolderResource extends BaseResource<"folder"> {
 export interface KeyValuePair {
   key: string;
   value: string;
-  enabled?: boolean;
+  enabled: boolean;
   description?: string;
 }
 
@@ -110,6 +110,11 @@ export interface AuthApiKey {
 
 export type HttpAuth = AuthNone | AuthBasic | AuthBearer | AuthApiKey;
 
+export interface HttpRequestSettings {
+  max_number_of_redirects?: number | null;
+  timeout?: number | null;
+}
+
 export interface HttpResource extends BaseResource<"http"> {
   $schema?: string;
   method: HttpMethodType;
@@ -118,6 +123,9 @@ export interface HttpResource extends BaseResource<"http"> {
   headers: KeyValuePair[];
   body: HttpBody;
   auth: HttpAuth;
+  pre_request_script?: string;
+  post_request_script?: string;
+  settings?: HttpRequestSettings;
 }
 
 export interface SequenceNode {

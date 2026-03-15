@@ -46,7 +46,7 @@ pub struct HttpResourceFile {
 #[derive(Default, serde::Deserialize, serde::Serialize, Debug)]
 pub struct HttpRequestSettings {
     #[serde(default)]
-    pub max_number_of_redirects: i64,
+    pub max_number_of_redirects: Option<i64>,
     #[serde(default)]
     pub timeout: Option<i64>,
 }

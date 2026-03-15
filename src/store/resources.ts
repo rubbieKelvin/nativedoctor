@@ -117,6 +117,9 @@ function _createHttpResource(
     auth: resource.auth ?? { type: "none" },
     folder_id: resource.folder_id ?? null,
     created_at: Date.now(),
+    pre_request_script: resource.pre_request_script ?? "",
+    post_request_script: resource.post_request_script ?? "",
+    settings: resource.settings ?? {},
     _editor_meta: defaultEditorMeta(),
   };
 }
