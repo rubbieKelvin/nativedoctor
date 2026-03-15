@@ -4,7 +4,7 @@ pub struct KeyValuePair {
     pub key: String,
     pub value: String,
     #[serde(default)]
-    pub enabled: Option<bool>,
+    pub enabled: bool,
     #[serde(default)]
     pub description: Option<String>,
 }
@@ -35,4 +35,18 @@ pub struct HttpResourceFile {
     pub body: Option<serde_json::Value>,
     #[serde(default)]
     pub auth: Option<serde_json::Value>,
+    #[serde(default)]
+    pub pre_request_script: String,
+    #[serde(default)]
+    pub post_request_script: String,
+    #[serde(default)]
+    pub settings: HttpRequestSettings,
+}
+
+#[derive(Default, serde::Deserialize, serde::Serialize, Debug)]
+pub struct HttpRequestSettings {
+    #[serde(default)]
+    pub max_number_of_redirects: i64,
+    #[serde(default)]
+    pub timeout: Option<i64>,
 }
