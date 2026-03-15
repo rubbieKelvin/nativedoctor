@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +27,30 @@ const emit = defineEmits<{
 function onSend() {
     emit("send");
 }
+
+function methodColor(m: string): string {
+    switch (m) {
+        case "GET":
+            return "text-green-600 dark:text-green-400";
+        case "POST":
+            return "text-blue-600 dark:text-blue-400";
+        case "PUT":
+            return "text-orange-600 dark:text-orange-400";
+        case "PATCH":
+            return "text-yellow-600 dark:text-yellow-400";
+        case "DELETE":
+            return "text-red-600 dark:text-red-400";
+        case "HEAD":
+        case "OPTIONS":
+            return "text-muted-foreground";
+        default:
+            return "text-muted-foreground";
+    }
+}
+
+const triggerMethodColor = computed(() =>
+    methodColor((method as any) ?? "GET"),
+);
 </script>
 
 <template>
@@ -38,12 +63,22 @@ function onSend() {
                 }
             "
         >
-            <SelectTrigger class="w-28 rounded-none border-0">
+            <SelectTrigger
+                :class="[
+                    'w-26 rounded-none border-0 text-xs font-medium',
+                    triggerMethodColor,
+                ]"
+            >
                 <SelectValue placeholder="Method" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem v-for="m in HTTP_METHODS" :key="m" :value="m">
-                    {{ m }}
+                <SelectItem
+                    v-for="m in HTTP_METHODS"
+                    :key="m"
+                    :value="m"
+                    :class="methodColor(m)"
+                >
+                    <span class="text-xs">{{ m }}</span>
                 </SelectItem>
             </SelectContent>
         </Select>
