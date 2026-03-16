@@ -23,47 +23,56 @@ function statusVariant(
 </script>
 
 <template>
-    <div class="rounded-md border border-border bg-muted/20">
-        <div
-            class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
+    <!-- <div
+        class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
+    >
+
+        <span v-if="error" class="text-destructive text-sm">
+            {{ error }}
+        </span>
+        <span
+            v-if="status == null && !error"
+            class="text-muted-foreground text-sm"
         >
-            <Badge v-if="status != null" :variant="statusVariant(status)">
-                {{ status }}
-            </Badge>
-            <span
-                v-if="durationMs != null"
-                class="text-muted-foreground text-sm"
+            No response yet
+        </span>
+    </div> -->
+
+    <div
+        v-if="(headers?.length || body != null) && !error"
+        class="flex flex-1 flex-col"
+    >
+        <Tabs default-value="headers" class="w-full">
+            <TabsList
+                class="w-full rounded-none flex justify-baseline items-center"
             >
-                {{ durationMs }} ms
-            </span>
-            <span v-if="error" class="text-destructive text-sm">
-                {{ error }}
-            </span>
-            <span
-                v-if="status == null && !error"
-                class="text-muted-foreground text-sm"
-            >
-                No response yet
-            </span>
-        </div>
-        <div
-            v-if="(headers?.length || body != null) && !error"
-            class="flex flex-1 flex-col p-3"
-        >
-            <Tabs default-value="headers" class="w-full">
-                <TabsList
-                    class="w-full rounded-none flex items-start justify-baseline"
-                >
-                    <TabsTrigger class="request-tab-trigger" value="headers">
-                        Headers
-                    </TabsTrigger>
-                    <TabsTrigger class="request-tab-trigger" value="body">
-                        Body
-                    </TabsTrigger>
-                    <TabsTrigger class="request-tab-trigger" value="cookies">
-                        Cookies
-                    </TabsTrigger>
-                </TabsList>
+                <TabsTrigger class="request-tab-trigger" value="headers">
+                    Headers
+                </TabsTrigger>
+                <TabsTrigger class="request-tab-trigger" value="body">
+                    Body
+                </TabsTrigger>
+                <TabsTrigger class="request-tab-trigger" value="cookies">
+                    Cookies
+                </TabsTrigger>
+                <div class="grow" />
+                <div class="flex gap-2">
+                    <Badge
+                        v-if="status != null"
+                        class="p-0.5"
+                        :variant="statusVariant(status)"
+                    >
+                        {{ status }}
+                    </Badge>
+                    <span
+                        v-if="durationMs != null"
+                        class="text-muted-foreground text-sm"
+                    >
+                        {{ durationMs }} ms
+                    </span>
+                </div>
+            </TabsList>
+            <div class="px-2">
                 <TabsContent value="headers" class="mt-2">
                     <ResponseHeaders :headers="headers ?? []" />
                 </TabsContent>
@@ -73,12 +82,12 @@ function statusVariant(
                 <TabsContent value="cookies" class="mt-2">
                     <ResponseCookies :headers="headers ?? []" />
                 </TabsContent>
-            </Tabs>
-        </div>
-        <div v-else-if="error" class="p-3">
-            <p class="text-destructive text-sm">
-                {{ error }}
-            </p>
-        </div>
+            </div>
+        </Tabs>
+    </div>
+    <div v-else-if="error" class="p-3">
+        <p class="text-destructive text-sm">
+            {{ error }}
+        </p>
     </div>
 </template>

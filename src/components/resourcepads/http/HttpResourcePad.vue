@@ -168,7 +168,7 @@ async function onSend() {
             :default-size="50"
             :min-size="40"
             :max-size="60"
-            class="p-2"
+            class=""
         >
             <ResponsePane
                 :status="status"

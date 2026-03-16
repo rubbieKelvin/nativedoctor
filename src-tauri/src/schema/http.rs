@@ -111,18 +111,39 @@ pub struct HttpResponse {
     pub cookies: Vec<Cookie>,
 }
 
+/// Strips \r and \n from header name/value so reqwest doesn't return builder error.
+fn sanitize_header(s: &str) -> String {
+    s.replace(['\r', '\n'], " ").trim().to_string()
+}
+
 impl HttpResourceFile {
     /// Executes the HTTP request and returns the response.
     pub async fn call(&self, client: &reqwest::Client) -> Result<HttpResponse, String> {
+        let url_str = self.url.trim();
+
+        if url_str.is_empty() {
+            return Err("URL is required".to_string());
+        }
+
+        // Default to https:// when no scheme is present (e.g. "google.com" -> "https://google.com").
+        let url_str = if url_str.contains("://") {
+            url_str.to_string()
+        } else {
+            format!("https://{}", url_str)
+        };
+
+        let url = reqwest::Url::parse(&url_str).map_err(|e| format!("Invalid URL: {}", e))?;
+
         // Parse the HTTP method (GET, POST, etc.) and start timing.
         let method = self
             .method
+            .trim()
             .parse::<reqwest::Method>()
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| format!("Invalid method: {}", e))?;
         let start = std::time::Instant::now();
 
         // Build the request: method + URL.
-        let mut req = client.request(method, self.url.as_str());
+        let mut req = client.request(method, url.clone());
 
         // Add query parameters from params (only enabled ones). reqwest merges these with any existing query in the URL.
         if let Some(ref params) = self.params {
@@ -136,10 +157,14 @@ impl HttpResourceFile {
             }
         }
 
-        // Add request headers (only enabled ones).
+        // Add request headers (only enabled ones). Sanitize name/value to avoid builder error from invalid characters.
         if let Some(ref headers) = self.headers {
             for h in headers.iter().filter(|h| h.enabled) {
-                req = req.header(h.key.as_str(), h.value.as_str());
+                let name = sanitize_header(h.key.as_str());
+                let value = sanitize_header(h.value.as_str());
+                if !name.is_empty() {
+                    req = req.header(name.as_str(), value);
+                }
             }
         }
 
