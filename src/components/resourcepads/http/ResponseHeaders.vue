@@ -6,13 +6,7 @@ defineProps<{
 
 <template>
     <div class="space-y-1">
-        <p class="text-muted-foreground text-xs font-medium uppercase">
-            Headers
-        </p>
-        <p
-            v-if="!headers?.length"
-            class="text-muted-foreground text-sm"
-        >
+        <p v-if="!headers?.length" class="text-muted-foreground text-sm">
             No headers
         </p>
         <ul v-else class="space-y-0.5 font-mono text-xs">

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ResponseBody from "./ResponseBody.vue";
 import ResponseCookies from "./ResponseCookies.vue";
@@ -12,32 +11,9 @@ defineProps<{
     durationMs?: number;
     error?: string;
 }>();
-
-function statusVariant(
-    status: number,
-): "default" | "secondary" | "destructive" | "outline" {
-    if (status >= 200 && status < 300) return "default";
-    if (status >= 400) return "destructive";
-    return "secondary";
-}
 </script>
 
 <template>
-    <!-- <div
-        class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
-    >
-
-        <span v-if="error" class="text-destructive text-sm">
-            {{ error }}
-        </span>
-        <span
-            v-if="status == null && !error"
-            class="text-muted-foreground text-sm"
-        >
-            No response yet
-        </span>
-    </div> -->
-
     <div
         v-if="(headers?.length || body != null) && !error"
         class="flex flex-1 flex-col"
@@ -56,17 +32,14 @@ function statusVariant(
                     Cookies
                 </TabsTrigger>
                 <div class="grow" />
-                <div class="flex gap-2">
-                    <Badge
-                        v-if="status != null"
-                        class="p-0.5"
-                        :variant="statusVariant(status)"
-                    >
+                <div class="flex gap-2 pr-2 items-center">
+                    <span class="text-xs" v-if="status != null">
                         {{ status }}
-                    </Badge>
+                    </span>
+                    <span>・</span>
                     <span
                         v-if="durationMs != null"
-                        class="text-muted-foreground text-sm"
+                        class="text-muted-foreground text-xs"
                     >
                         {{ durationMs }} ms
                     </span>

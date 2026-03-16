@@ -130,7 +130,7 @@ function sequenceResourceForId(id: string) {
                                     v-for="id in openTabIds"
                                     :key="id"
                                     :value="id"
-                                    class="relative shrink-0 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none"
+                                    class="relative shrink-0 rounded-none border-t-0 border-x-0 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none"
                                 >
                                     <component
                                         :is="
