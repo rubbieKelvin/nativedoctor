@@ -86,34 +86,18 @@ const bodyDisabled = computed(
     () => method.value === "GET" || method.value === "HEAD",
 );
 
-function buildUrlWithParams(base: string, prms: KeyValue[]): string {
-    const filtered = prms.filter((p) => p.key.trim());
-    if (filtered.length === 0) return base;
-    const search = filtered
-        .map(
-            (p) =>
-                `${encodeURIComponent(p.key.trim())}=${encodeURIComponent(p.value)}`,
-        )
-        .join("&");
-    const separator = base.includes("?") ? "&" : "?";
-    return `${base}${separator}${search}`;
-}
-
-function headersToObject(h: KeyValue[]): Record<string, string> {
-    const out: Record<string, string> = {};
-    for (const { key, value } of h) {
-        const k = key.trim();
-        if (k) out[k] = value;
-    }
-    return out;
-}
-
 async function onSend() {
-    const fullUrl = buildUrlWithParams(url.value.trim(), params.value);
-    if (!fullUrl || fullUrl === "?" || fullUrl.endsWith("?")) {
+    const baseUrl = url.value.trim();
+    if (!baseUrl) {
         error.value = "Enter a URL";
         return;
     }
+    const resource = resourcesStore.getHttpResource(props.resource?.id ?? "");
+    if (!resource) {
+        error.value = "No resource";
+        return;
+    }
+
     loading.value = true;
     error.value = undefined;
     status.value = undefined;
@@ -122,16 +106,20 @@ async function onSend() {
     durationMs.value = undefined;
 
     try {
-        const headersObj = headersToObject(headers.value);
+        const { _editor_meta, ...rest } = resource;
+
         const payload = {
-            method: method.value,
-            url: fullUrl,
-            headers: Object.keys(headersObj).length ? headersObj : undefined,
-            body:
-                bodyDisabled.value || !body.value.trim()
-                    ? undefined
-                    : body.value.trim(),
+            ...rest,
+            // url: baseUrl,
+            // method: method.value,
+            // params: params.value,
+            // headers: headers.value,
+            // body:
+            //     bodyDisabled.value || !body.value.trim()
+            //         ? undefined
+            //         : body.value.trim(),
         };
+
         const result = await invoke<{
             status: number;
             headers: [string, string][];
