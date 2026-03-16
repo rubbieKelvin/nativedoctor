@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "nativedoctor",
-        "width": 1100,
-        "height": 750,
-        "minWidth": 1100,
-        "minHeight": 750,
+        "width": 1800,
+        "height": 1200,
+        "minWidth": 1800,
+        "minHeight": 1200,
         "decorations": true,
         "transparent": true,
         "hiddenTitle": true,

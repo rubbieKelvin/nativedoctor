@@ -11,6 +11,7 @@ import type {
 } from "@/shared/types/resources";
 import { nanoid } from "nanoid";
 import { useWorkspaceTabsActions } from "./tabs";
+import { useResponsesStore } from "./responses";
 import type { ResourceFileContentDto } from "@/shared/types";
 import {
   buildResourceTree,
@@ -209,6 +210,7 @@ const resourcesStore = defineStore("resources", () => {
     resourceFileNames.value = new Map();
     renamingResourceId.value = null;
     loadFailures.value = [];
+    useResponsesStore().clearAll();
   }
 
   /**

@@ -13,12 +13,14 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { useResources } from "@/store/resources";
+import { useResponsesStore } from "@/store/responses";
 
 const props = withDefaults(defineProps<{ resource?: HttpResource | null }>(), {
     resource: undefined,
 });
 
 const resourcesStore = useResources();
+const responsesStore = useResponsesStore();
 
 const url = ref("");
 const method = ref<HttpMethodType>("GET");
@@ -26,11 +28,33 @@ const params = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
 const headers = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
 const body = ref("");
 
+const status = ref<number | undefined>(undefined);
+const responseHeaders = ref<[string, string][]>([]);
+const responseBody = ref("");
+const durationMs = ref<number | undefined>(undefined);
+const error = ref<string | undefined>(undefined);
+const loading = ref(false);
+
 function bodyFromResource(r: HttpResource): string {
     const b = r.body;
     if (b.type === "text" || b.type === "json" || b.type === "graphql")
         return b.content;
     return "";
+}
+
+function applyStoredResponse(resourceId: string) {
+    const stored = responsesStore.getResponse(resourceId);
+    if (stored) {
+        status.value = stored.status;
+        responseHeaders.value = stored.headers;
+        responseBody.value = stored.body;
+        durationMs.value = stored.duration_ms;
+    } else {
+        status.value = undefined;
+        responseHeaders.value = [];
+        responseBody.value = "";
+        durationMs.value = undefined;
+    }
 }
 
 watch(
@@ -46,6 +70,8 @@ watch(
             ? [...r.headers]
             : [{ key: "", value: "", enabled: true }];
         body.value = bodyFromResource(r);
+        error.value = undefined;
+        applyStoredResponse(r.id);
     },
     { immediate: true },
 );
@@ -75,13 +101,6 @@ watch(
     { deep: true },
 );
 
-const status = ref<number | undefined>(undefined);
-const responseHeaders = ref<[string, string][]>([]);
-const responseBody = ref("");
-const durationMs = ref<number | undefined>(undefined);
-const error = ref<string | undefined>(undefined);
-const loading = ref(false);
-
 const bodyDisabled = computed(
     () => method.value === "GET" || method.value === "HEAD",
 );
@@ -98,26 +117,15 @@ async function onSend() {
         return;
     }
 
+    const resourceId = resource.id;
     loading.value = true;
     error.value = undefined;
-    status.value = undefined;
-    responseHeaders.value = [];
-    responseBody.value = "";
-    durationMs.value = undefined;
 
     try {
         const { _editor_meta, ...rest } = resource;
 
         const payload = {
             ...rest,
-            // url: baseUrl,
-            // method: method.value,
-            // params: params.value,
-            // headers: headers.value,
-            // body:
-            //     bodyDisabled.value || !body.value.trim()
-            //         ? undefined
-            //         : body.value.trim(),
         };
 
         const result = await invoke<{
@@ -125,12 +133,23 @@ async function onSend() {
             headers: [string, string][];
             body: string;
             duration_ms: number;
+            url?: string;
+            size?: number;
         }>("send_http_request", { payload });
 
-        status.value = result.status;
-        responseHeaders.value = result.headers;
-        responseBody.value = result.body;
-        durationMs.value = result.duration_ms;
+        const stored = {
+            status: result.status,
+            headers: result.headers,
+            body: result.body,
+            duration_ms: result.duration_ms,
+            ...(result.url != null && { url: result.url }),
+            ...(result.size != null && { size: result.size }),
+        };
+        responsesStore.setResponse(resourceId, stored);
+        status.value = stored.status;
+        responseHeaders.value = stored.headers;
+        responseBody.value = stored.body;
+        durationMs.value = stored.duration_ms;
     } catch (e) {
         error.value = e instanceof Error ? e.message : String(e);
     } finally {

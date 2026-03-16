@@ -33,10 +33,12 @@ defineProps<{
                 </TabsTrigger>
                 <div class="grow" />
                 <div class="flex gap-2 pr-2 items-center">
-                    <span class="text-xs" v-if="status != null">
-                        {{ status }}
-                    </span>
-                    <span>・</span>
+                    <template v-if="status != null">
+                        <span class="text-xs">
+                            {{ status }}
+                        </span>
+                        <span>・</span>
+                    </template>
                     <span
                         v-if="durationMs != null"
                         class="text-muted-foreground text-xs"
