@@ -2284,6 +2284,7 @@ dependencies = [
 name = "nativedoctor"
 version = "0.1.0"
 dependencies = [
+ "cookie",
  "dirs 5.0.1",
  "nanoid",
  "reqwest 0.12.28",

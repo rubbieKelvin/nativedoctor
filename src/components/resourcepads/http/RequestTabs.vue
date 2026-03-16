@@ -36,28 +36,29 @@ const emit = defineEmits<{
                 Auth
             </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="params" class="mt-2">
-            <ParamsPanel
-                :model-value="params"
-                @update:model-value="emit('update:params', $event)"
-            />
-        </TabsContent>
-        <TabsContent value="headers" class="mt-2">
-            <HeadersPanel
-                :model-value="headers"
-                @update:model-value="emit('update:headers', $event)"
-            />
-        </TabsContent>
-        <TabsContent value="body" class="mt-2">
-            <BodyPanel
-                :model-value="body"
-                :disabled="bodyDisabled"
-                @update:model-value="emit('update:body', $event)"
-            />
-        </TabsContent>
-        <TabsContent value="auth" class="mt-2">
-            <AuthPanel />
-        </TabsContent>
+        <div class="px-2">
+            <TabsContent value="params" class="mt-2">
+                <ParamsPanel
+                    :model-value="params"
+                    @update:model-value="emit('update:params', $event)"
+                />
+            </TabsContent>
+            <TabsContent value="headers" class="mt-2">
+                <HeadersPanel
+                    :model-value="headers"
+                    @update:model-value="emit('update:headers', $event)"
+                />
+            </TabsContent>
+            <TabsContent value="body" class="mt-2">
+                <BodyPanel
+                    :model-value="body"
+                    :disabled="bodyDisabled"
+                    @update:model-value="emit('update:body', $event)"
+                />
+            </TabsContent>
+            <TabsContent value="auth" class="mt-2">
+                <AuthPanel />
+            </TabsContent>
+        </div>
     </Tabs>
 </template>
