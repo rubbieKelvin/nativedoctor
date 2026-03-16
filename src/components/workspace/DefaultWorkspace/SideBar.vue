@@ -19,6 +19,7 @@ import { Plus, Folder, Globe, ListOrdered, Save } from "lucide-vue-next";
 import { useCurrentProject, useCurrentProjectActions } from "@/store/project";
 import { useResources, useResourcesState } from "@/store/resources";
 import { useWorkspaceTabsActions } from "@/store/tabs";
+import StatusBar from "./StatusBar.vue";
 import { ResourceItem } from "./ResourceItems";
 import { sortedResources } from "@/shared/resources";
 
@@ -27,7 +28,7 @@ const searchQuery = ref("");
 const projectStore = useCurrentProjectActions();
 const { path: projectPath } = useCurrentProject();
 const resourcesStore = useResources();
-const { flattenedResources } = useResourcesState();
+const { flattenedResources, loadFailures } = useResourcesState();
 const { openTab } = useWorkspaceTabsActions();
 
 const hasEditedResources = computed(() =>
@@ -76,8 +77,8 @@ function handleSelectResource(id: string) {
 <template>
     <ContextMenu>
         <ContextMenuTrigger as-child>
-            <div class="flex h-full flex-col border-sidebar-border bg-sidebar">
-                <div class="flex shrink-0 gap-2 p-2">
+            <div class="flex flex-col border-sidebar-border bg-sidebar grow">
+                <div class="flex gap-2 p-2">
                     <Input
                         v-model="searchQuery"
                         placeholder="Search resources"
@@ -115,7 +116,7 @@ function handleSelectResource(id: string) {
                     </DropdownMenu>
                 </div>
 
-                <ScrollArea class="flex-1 px-2">
+                <ScrollArea class="h-0 grow px-2">
                     <div
                         v-if="projectStore.loadError"
                         class="py-2 text-sm text-destructive"
@@ -145,6 +146,8 @@ function handleSelectResource(id: string) {
                         </li>
                     </ul>
                 </ScrollArea>
+
+                <StatusBar :load-failures="loadFailures ?? []" />
             </div>
         </ContextMenuTrigger>
         <ContextMenuContent class="w-48">

@@ -87,10 +87,15 @@ function sequenceResourceForId(id: string) {
 </script>
 
 <template>
-    <div class="w-full h-full">
+    <div class="w-full h-full flex flex-col">
         <WmDragHandle :title="projectName" />
         <ResizablePanelGroup direction="horizontal" class="w-full h-full">
-            <ResizablePanel :default-size="25" :min-size="20" :max-size="30">
+            <ResizablePanel
+                :default-size="25"
+                :min-size="20"
+                :max-size="30"
+                class="flex flex-col h-full"
+            >
                 <SideBar />
             </ResizablePanel>
 

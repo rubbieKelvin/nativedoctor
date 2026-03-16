@@ -196,12 +196,19 @@ const resourcesStore = defineStore("resources", () => {
   }
 
   /**
+   * Files that failed to load in the last loadResourcesFromProject run.
+   * Cleared on reset or on next load.
+   */
+  const loadFailures = ref<Array<{ fileName: string; error?: string }>>([]);
+
+  /**
    * Clears all resources (e.g. when project is closed).
    */
   function reset() {
     resources.value = [];
     resourceFileNames.value = new Map();
     renamingResourceId.value = null;
+    loadFailures.value = [];
   }
 
   /**
@@ -223,6 +230,7 @@ const resourcesStore = defineStore("resources", () => {
   /**
    * Loads resources from project directory by reading each discovered file and parsing YAML.
    * Rebuilds the tree from folder_id so the sidebar hierarchy is restored.
+   * Populates loadFailures with any files that could not be loaded.
    */
   async function loadResourcesFromProject(
     projectPath: string,
@@ -231,6 +239,7 @@ const resourcesStore = defineStore("resources", () => {
     reset();
     const flatList: Resource[] = [];
     const newFileNames = new Map<string, string>();
+    const failures: Array<{ fileName: string; error?: string }> = [];
 
     for (const fileName of fileNames) {
       try {
@@ -238,14 +247,21 @@ const resourcesStore = defineStore("resources", () => {
         if (result) {
           flatList.push(result.resource);
           newFileNames.set(result.id, fileName);
+        } else {
+          failures.push({ fileName });
         }
       } catch (e) {
         console.error(`Failed to load resource file ${fileName}:`, e);
+        failures.push({
+          fileName,
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
     resources.value = buildResourceTree(flatList);
     resourceFileNames.value = newFileNames;
+    loadFailures.value = failures;
   }
 
   /**
@@ -443,6 +459,7 @@ const resourcesStore = defineStore("resources", () => {
   return {
     resources,
     flattenedResources,
+    loadFailures,
     getResourceById,
     getHttpResource,
     getSequenceResource,
