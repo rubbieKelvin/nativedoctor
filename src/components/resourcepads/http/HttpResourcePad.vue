@@ -22,8 +22,8 @@ const resourcesStore = useResources();
 
 const url = ref("");
 const method = ref<HttpMethodType>("GET");
-const params = ref<KeyValue[]>([{ key: "", value: "" }]);
-const headers = ref<KeyValue[]>([{ key: "", value: "" }]);
+const params = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
+const headers = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
 const body = ref("");
 
 function bodyFromResource(r: HttpResource): string {
@@ -41,10 +41,10 @@ watch(
         method.value = (r.method as HttpMethodType) ?? "GET";
         params.value = r.params?.length
             ? [...r.params]
-            : [{ key: "", value: "" }];
+            : [{ key: "", value: "", enabled: true }];
         headers.value = r.headers?.length
             ? [...r.headers]
-            : [{ key: "", value: "" }];
+            : [{ key: "", value: "", enabled: true }];
         body.value = bodyFromResource(r);
     },
     { immediate: true },

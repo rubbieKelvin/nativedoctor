@@ -18,7 +18,6 @@ defineProps<{
     <div>
         <!-- Load failures -->
         <div
-            v-if="loadFailures?.length > 0"
             class="flex shrink-0 items-center gap-1.5 border-t border-sidebar-border py-0.5 px-2"
         >
             <DropdownMenu>
@@ -53,31 +52,32 @@ defineProps<{
                             All files loaded succesfully
                         </template>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div
-                        v-if="loadFailures.length"
-                        class="max-h-40 space-y-1 overflow-y-auto px-2 py-1"
-                    >
+                    <template v-if="loadFailures.length">
+                        <DropdownMenuSeparator />
                         <div
-                            v-for="(f, i) in loadFailures"
-                            :key="i"
-                            class="rounded-sm px-2 py-1.5 text-xs"
+                            class="max-h-40 space-y-1 overflow-y-auto px-2 py-1"
                         >
-                            <p
-                                class="truncate font-medium text-foreground"
-                                :title="f.fileName"
+                            <div
+                                v-for="(f, i) in loadFailures"
+                                :key="i"
+                                class="rounded-sm px-2 py-1.5 text-xs"
                             >
-                                {{ f.fileName }}
-                            </p>
-                            <p
-                                v-if="f.error"
-                                class="mt-0.5 truncate text-muted-foreground"
-                                :title="f.error"
-                            >
-                                {{ f.error }}
-                            </p>
+                                <p
+                                    class="truncate font-medium text-foreground"
+                                    :title="f.fileName"
+                                >
+                                    {{ f.fileName }}
+                                </p>
+                                <p
+                                    v-if="f.error"
+                                    class="mt-0.5 truncate text-muted-foreground"
+                                    :title="f.error"
+                                >
+                                    {{ f.error }}
+                                </p>
+                            </div>
                         </div>
-                    </div>
+                    </template>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
