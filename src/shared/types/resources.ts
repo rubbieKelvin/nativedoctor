@@ -113,6 +113,7 @@ export type HttpAuth = AuthNone | AuthBasic | AuthBearer | AuthApiKey;
 export interface HttpRequestSettings {
   max_number_of_redirects?: number | null;
   timeout?: number | null;
+  use_http2?: boolean | null;
 }
 
 export interface HttpResource extends BaseResource<"http"> {

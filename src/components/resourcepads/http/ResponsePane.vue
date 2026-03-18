@@ -10,6 +10,7 @@ const props = defineProps<{
     headers?: [string, string][];
     body?: string;
     durationMs?: number;
+    httpVersion?: string;
     error?: string;
 }>();
 
@@ -53,6 +54,12 @@ const contentType = computed(() => {
                     >
                         {{ durationMs }} ms
                     </span>
+                    <template v-if="httpVersion">
+                        <span>・</span>
+                        <span class="text-muted-foreground text-xs">
+                            {{ httpVersion }}
+                        </span>
+                    </template>
                 </div>
             </TabsList>
             <div class="px-2 grow flex flex-col">

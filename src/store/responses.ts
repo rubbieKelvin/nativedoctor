@@ -8,6 +8,7 @@ export interface StoredHttpResponse {
     duration_ms: number;
     url?: string;
     size?: number;
+    http_version?: string;
 }
 
 const responsesStore = defineStore("responses", () => {

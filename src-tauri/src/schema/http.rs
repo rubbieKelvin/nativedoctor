@@ -49,6 +49,9 @@ pub struct HttpRequestSettings {
     pub max_number_of_redirects: Option<i64>,
     #[serde(default)]
     pub timeout: Option<u64>,
+    /// Use HTTP/2 when possible (default true). Set false to force HTTP/1.1.
+    #[serde(default)]
+    pub use_http2: Option<bool>,
 }
 
 /// One cookie parsed from a Set-Cookie response header. Uses the `cookie` crate for parsing.
@@ -108,7 +111,10 @@ pub struct HttpResponse {
     pub body: String,
     pub duration_ms: u64,
     pub size: u64,
+    /// Response coolies
     pub cookies: Vec<Cookie>,
+    /// HTTP version used for the response (e.g. "HTTP/1.1", "HTTP/2").
+    pub http_version: String,
 }
 
 /// Strips \r and \n from header name/value so reqwest doesn't return builder error.
@@ -186,6 +192,15 @@ impl HttpResourceFile {
         // Read response metadata (must be done before consuming the body).
         let status = res.status().as_u16();
         let url = res.url().to_string();
+        let http_version = match format!("{:?}", res.version()).as_str() {
+            "Http09" => "HTTP/0.9",
+            "Http10" => "HTTP/1.0",
+            "Http11" => "HTTP/1.1",
+            "Http2" => "HTTP/2",
+            "Http3" => "HTTP/3",
+            other => other,
+        }
+        .to_string();
         let headers: Vec<[String; 2]> = res
             .headers()
             .iter()
@@ -214,6 +229,7 @@ impl HttpResourceFile {
             duration_ms,
             size,
             cookies,
+            http_version,
         })
     }
 }

@@ -32,7 +32,11 @@ pub fn run() {
             }
         });
 
-    let http_client = reqwest::Client::new();
+    let http_client_http1 = reqwest::Client::builder()
+        .http1_only()
+        .build()
+        .expect("HTTP/1.1 client");
+    let http_client_http2 = reqwest::Client::new();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -42,7 +46,8 @@ pub fn run() {
             initial_project_path: Mutex::new(initial_path),
         })
         .manage(client::HttpClientState {
-            client: http_client,
+            client_http1: http_client_http1,
+            client_http2: http_client_http2,
         })
         .invoke_handler(tauri::generate_handler![
             client::send_http_request,

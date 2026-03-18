@@ -85,6 +85,10 @@
         "timeout": {
           "type": ["integer", "null"],
           "description": "Request timeout in milliseconds."
+        },
+        "use_http2": {
+          "type": ["boolean", "null"],
+          "description": "Use HTTP/2 when possible (default true). Set false to force HTTP/1.1."
         }
       }
     },

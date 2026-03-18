@@ -32,6 +32,7 @@ const status = ref<number | undefined>(undefined);
 const responseHeaders = ref<[string, string][]>([]);
 const responseBody = ref("");
 const durationMs = ref<number | undefined>(undefined);
+const httpVersion = ref<string | undefined>(undefined);
 const error = ref<string | undefined>(undefined);
 const loading = ref(false);
 
@@ -49,11 +50,13 @@ function applyStoredResponse(resourceId: string) {
         responseHeaders.value = stored.headers;
         responseBody.value = stored.body;
         durationMs.value = stored.duration_ms;
+        httpVersion.value = stored.http_version;
     } else {
         status.value = undefined;
         responseHeaders.value = [];
         responseBody.value = "";
         durationMs.value = undefined;
+        httpVersion.value = undefined;
     }
 }
 
@@ -135,6 +138,7 @@ async function onSend() {
             duration_ms: number;
             url?: string;
             size?: number;
+            http_version: string;
         }>("send_http_request", { payload });
 
         const stored = {
@@ -144,12 +148,14 @@ async function onSend() {
             duration_ms: result.duration_ms,
             ...(result.url != null && { url: result.url }),
             ...(result.size != null && { size: result.size }),
+            ...(result.http_version != null && { http_version: result.http_version }),
         };
         responsesStore.setResponse(resourceId, stored);
         status.value = stored.status;
         responseHeaders.value = stored.headers;
         responseBody.value = stored.body;
         durationMs.value = stored.duration_ms;
+        httpVersion.value = stored.http_version;
     } catch (e) {
         error.value = e instanceof Error ? e.message : String(e);
     } finally {
@@ -194,6 +200,7 @@ async function onSend() {
                 :headers="responseHeaders"
                 :body="responseBody"
                 :duration-ms="durationMs"
+                :http-version="httpVersion"
                 :error="error"
             />
         </ResizablePanel>
