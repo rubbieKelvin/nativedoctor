@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { Loader2 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -93,6 +94,10 @@ const triggerMethodColor = computed(() =>
             :disabled="loading || !url?.trim()"
             @click="onSend"
         >
+            <Loader2
+                v-if="loading"
+                class="mr-1.5 size-4 animate-spin shrink-0"
+            />
             {{ loading ? "Sending…" : "Send" }}
         </Button>
     </div>
