@@ -19,7 +19,7 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import WmDragHandle from "@/components/WmDragHandle.vue";
+import { WmDragHandle } from "@/components/ui/wm/index";
 import { useResources } from "@/store/resources";
 import { useWorkspaceTabs, useWorkspaceTabsActions } from "@/store/tabs";
 import { useCurrentProject } from "@/store/project";
