@@ -23,6 +23,7 @@ const resourcesStore = useResources();
 const responsesStore = useResponsesStore();
 
 const url = ref("");
+const resposeTab = ref<"headers" | "body" | "cookies">("headers");
 const method = ref<HttpMethodType>("GET");
 const params = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
 const headers = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
@@ -150,7 +151,9 @@ async function onSend() {
             duration_ms: result.duration_ms,
             ...(result.url != null && { url: result.url }),
             ...(result.size != null && { size: result.size }),
-            ...(result.http_version != null && { http_version: result.http_version }),
+            ...(result.http_version != null && {
+                http_version: result.http_version,
+            }),
         };
         responsesStore.setResponse(resourceId, stored);
         status.value = stored.status;
@@ -199,6 +202,7 @@ async function onSend() {
             class=""
         >
             <ResponsePane
+                v-model:tab="resposeTab"
                 :key="responseVersion"
                 :status="status"
                 :headers="responseHeaders"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import type { KeyValuePair } from "./types";
 import KeyValueInput from "./KeyValueInput.vue";
 
@@ -26,7 +26,9 @@ watch(
         if (isSyncing.value) return;
         isSyncing.value = true;
         rows.value = normalizeRows(val);
-        isSyncing.value = false;
+        nextTick(() => {
+            isSyncing.value = false;
+        });
     },
     { immediate: true, deep: true },
 );
@@ -45,7 +47,9 @@ watch(
             (r) => String(r.key ?? "").trim() !== "",
         );
 
-        isSyncing.value = false;
+        nextTick(() => {
+            isSyncing.value = false;
+        });
     },
     { deep: true },
 );

@@ -5,6 +5,8 @@ import ResponseBody from "./ResponseBody.vue";
 import ResponseCookies from "./ResponseCookies.vue";
 import ResponseHeaders from "./ResponseHeaders.vue";
 
+const currentTab = defineModel<"headers" | "body" | "cookies">("tab");
+
 const props = defineProps<{
     status?: number;
     headers?: [string, string][];
@@ -27,7 +29,7 @@ const contentType = computed(() => {
         v-if="(headers?.length || body != null) && !error"
         class="flex flex-1 flex-col h-full"
     >
-        <Tabs default-value="headers" class="w-full h-full">
+        <Tabs v-model:model-value="currentTab" class="w-full h-full">
             <TabsList
                 class="w-full rounded-none flex justify-baseline items-center"
             >
