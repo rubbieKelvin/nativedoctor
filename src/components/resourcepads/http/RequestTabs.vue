@@ -12,6 +12,7 @@ defineProps<{
     headers: KeyValue[];
     body: HttpBody;
     bodyDisabled?: boolean;
+    computedHeaders?: Record<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -47,6 +48,7 @@ const emit = defineEmits<{
             <TabsContent value="headers" class="mt-2">
                 <HeadersPanel
                     :model-value="headers"
+                    :computed-headers="computedHeaders"
                     @update:model-value="emit('update:headers', $event)"
                 />
             </TabsContent>

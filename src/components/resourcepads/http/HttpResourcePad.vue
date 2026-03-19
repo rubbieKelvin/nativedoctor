@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/resizable";
 import { useResources } from "@/store/resources";
 import { useResponsesStore } from "@/store/responses";
+import { computedHeaders } from "@/shared/resources";
 import { serializeHttpBodyToRequestString } from "./body/body-helpers";
+import type { KeyValuePair } from "@/shared/types/resources";
 
 const props = withDefaults(defineProps<{ resource?: HttpResource | null }>(), {
     resource: undefined,
@@ -116,6 +118,33 @@ const bodyDisabled = computed(
     () => method.value === "GET" || method.value === "HEAD",
 );
 
+const computedHeadersMap = computed(() => {
+    const r = props.resource && resourcesStore.getHttpResource(props.resource.id);
+    return r ? computedHeaders(r) : {};
+});
+
+/**
+ * Returns headers for the request: resource headers plus computed defaults for any header name
+ * not already present (case-insensitive). Resource headers are appended after computed so they override.
+ */
+function normalizeHeaders(http: HttpResource): KeyValuePair[] {
+    const computed = computedHeaders(http);
+    const resourceHeaders = http.headers ?? [];
+    const seenLower = new Set(
+        resourceHeaders
+            .filter((h) => h.key.trim())
+            .map((h) => h.key.toLowerCase()),
+    );
+    const result: KeyValuePair[] = [];
+    for (const [key, value] of Object.entries(computed)) {
+        if (key && !seenLower.has(key.toLowerCase())) {
+            result.push({ key, value, enabled: true });
+        }
+    }
+    result.push(...resourceHeaders);
+    return result;
+}
+
 async function onSend() {
     const baseUrl = url.value.trim();
     if (!baseUrl) {
@@ -133,10 +162,16 @@ async function onSend() {
     error.value = undefined;
 
     try {
-        const { _editor_meta, body: bodyValue, ...rest } = resource;
+        const {
+            _editor_meta,
+            body: bodyValue,
+            headers: _h,
+            ...rest
+        } = resource;
         const bodyPayload = serializeHttpBodyToRequestString(bodyValue);
         const payload = {
             ...rest,
+            headers: normalizeHeaders(resource),
             body: bodyPayload ?? null,
         };
 
@@ -195,6 +230,7 @@ async function onSend() {
                 :headers="headers"
                 :body="body"
                 :body-disabled="bodyDisabled"
+                :computed-headers="computedHeadersMap"
                 @update:params="params = $event"
                 @update:headers="headers = $event"
                 @update:body="body = $event"
