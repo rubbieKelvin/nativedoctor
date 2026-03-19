@@ -9,7 +9,7 @@ const rows = ref<KeyValuePair[]>([]);
 const isSyncing = ref(false);
 
 function emptyRow(): KeyValuePair {
-    return { key: "", value: "", enabled: false, description: "" };
+    return { key: "", value: "", enabled: true, description: "" };
 }
 
 function normalizeRows(inRows: KeyValuePair[] | undefined): KeyValuePair[] {
