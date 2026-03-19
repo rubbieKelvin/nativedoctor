@@ -180,3 +180,30 @@ export function mapResourceToBackendPayload(
     },
   });
 }
+
+const CONTENT_TYPE_BY_BODY_TYPE: Partial<Record<HttpResource["body"]["type"], string>> = {
+  json: "application/json",
+  text: "text/plain",
+  xml: "application/xml",
+  other: "text/plain",
+  graphql: "application/json",
+  "x-www-form-urlencoded": "application/x-www-form-urlencoded",
+  "form-data": "multipart/form-data",
+  binary: "application/octet-stream",
+};
+
+/*
+returns a map of http default headers that are computed from the resource, not actually saved to the file,
+just there for when the request is to be sent, and can be overriden later in the request headers from the user
+*/
+export function computedHeaders(http: HttpResource): Record<string, string> {
+  const headers: Record<string, string> = {
+    "User-Agent": "nativedoctor/0.1.0",
+    Accept: "*/*",
+  };
+  const contentType = CONTENT_TYPE_BY_BODY_TYPE[http.body.type];
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
+  return headers;
+}
