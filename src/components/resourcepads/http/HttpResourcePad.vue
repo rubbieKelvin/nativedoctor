@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { KeyValue } from "./types";
-import type { HttpResource } from "@/shared/types/resources";
+import type { HttpBody, HttpResource } from "@/shared/types/resources";
 import { invoke } from "@tauri-apps/api/core";
 import UrlMethodBar from "./UrlMethodBar.vue";
 import RequestTabs from "./RequestTabs.vue";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/resizable";
 import { useResources } from "@/store/resources";
 import { useResponsesStore } from "@/store/responses";
+import { serializeHttpBodyToRequestString } from "./body/body-helpers";
 
 const props = withDefaults(defineProps<{ resource?: HttpResource | null }>(), {
     resource: undefined,
@@ -27,7 +28,7 @@ const resposeTab = ref<"headers" | "body" | "cookies">("headers");
 const method = ref<HttpMethodType>("GET");
 const params = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
 const headers = ref<KeyValue[]>([{ key: "", value: "", enabled: true }]);
-const body = ref("");
+const body = ref<HttpBody>({ type: "none" });
 
 const status = ref<number | undefined>(undefined);
 const responseHeaders = ref<[string, string][]>([]);
@@ -37,13 +38,6 @@ const httpVersion = ref<string | undefined>(undefined);
 const error = ref<string | undefined>(undefined);
 const loading = ref(false);
 const responseVersion = ref(0);
-
-function bodyFromResource(r: HttpResource): string {
-    const b = r.body;
-    if (b.type === "text" || b.type === "json" || b.type === "graphql")
-        return b.content;
-    return "";
-}
 
 function applyStoredResponse(resourceId: string) {
     const stored = responsesStore.getResponse(resourceId);
@@ -75,7 +69,20 @@ watch(
         headers.value = r.headers?.length
             ? [...r.headers]
             : [{ key: "", value: "", enabled: true }];
-        body.value = bodyFromResource(r);
+        const rawBody = r.body ?? { type: "none" };
+        if (
+            rawBody.type === "graphql" &&
+            "content" in rawBody &&
+            !("query" in rawBody)
+        ) {
+            body.value = {
+                type: "graphql",
+                query: (rawBody as { content?: string }).content ?? "",
+                variables: "",
+            };
+        } else {
+            body.value = rawBody;
+        }
         error.value = undefined;
         applyStoredResponse(r.id);
     },
@@ -99,9 +106,7 @@ watch(
                 .length
                 ? headers.value
                 : [],
-            body: body.value.trim()
-                ? { type: "text", content: body.value }
-                : { type: "none" },
+            body: body.value,
         });
     },
     { deep: true },
@@ -128,10 +133,11 @@ async function onSend() {
     error.value = undefined;
 
     try {
-        const { _editor_meta, ...rest } = resource;
-
+        const { _editor_meta, body: bodyValue, ...rest } = resource;
+        const bodyPayload = serializeHttpBodyToRequestString(bodyValue);
         const payload = {
             ...rest,
+            body: bodyPayload ?? null,
         };
 
         const result = await invoke<{

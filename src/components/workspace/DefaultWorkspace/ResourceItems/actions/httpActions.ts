@@ -1,4 +1,6 @@
+import type { HttpResource } from "@/shared/types/resources";
 import { useResources } from "@/store/resources";
+import { serializeHttpBodyToRequestString } from "@/components/resourcepads/http/body/body-helpers";
 
 export function useHttpActions(resourceId: string) {
   const store = useResources();
@@ -19,25 +21,23 @@ export function useHttpActions(resourceId: string) {
   function copyAsCurl() {
     const resource = store.getResourceById(resourceId);
     if (!resource || resource.type !== "http") return;
+    const http = resource as HttpResource;
 
-    let curl = `curl -X ${resource.method}`;
+    let curl = `curl -X ${http.method}`;
 
-    for (const header of resource.headers) {
+    for (const header of http.headers) {
       if (header.key && header.enabled !== false) {
         curl += ` -H '${header.key}: ${header.value}'`;
       }
     }
 
-    if (
-      resource.body.type === "json" ||
-      resource.body.type === "text" ||
-      resource.body.type === "graphql"
-    ) {
-      curl += ` -d '${resource.body.content}'`;
+    const bodyStr = serializeHttpBodyToRequestString(http.body);
+    if (bodyStr != null) {
+      curl += ` -d '${bodyStr.replace(/'/g, "'\\''")}'`;
     }
 
-    let url = resource.url;
-    const enabledParams = resource.params.filter(
+    let url = http.url;
+    const enabledParams = http.params.filter(
       (p) => p.key && p.enabled !== false
     );
     if (enabledParams.length > 0) {

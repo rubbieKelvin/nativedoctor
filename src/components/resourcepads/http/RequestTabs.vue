@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HttpBody } from "@/shared/types/resources";
 import type { KeyValue } from "./types";
 import BodyPanel from "./BodyPanel.vue";
 import HeadersPanel from "./HeadersPanel.vue";
@@ -9,14 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 defineProps<{
     params: KeyValue[];
     headers: KeyValue[];
-    body: string;
+    body: HttpBody;
     bodyDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: "update:params", value: KeyValue[]): void;
     (e: "update:headers", value: KeyValue[]): void;
-    (e: "update:body", value: string): void;
+    (e: "update:body", value: HttpBody): void;
 }>();
 </script>
 
@@ -53,7 +54,7 @@ const emit = defineEmits<{
                 <BodyPanel
                     :model-value="body"
                     :disabled="bodyDisabled"
-                    @update:model-value="emit('update:body', $event)"
+                    @update:model-value="emit('update:body', $event as HttpBody)"
                 />
             </TabsContent>
             <TabsContent value="auth" class="mt-2">

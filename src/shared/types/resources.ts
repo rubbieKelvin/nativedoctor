@@ -37,6 +37,8 @@ export const BODY_TYPES = {
   NONE: "none",
   JSON: "json",
   TEXT: "text",
+  XML: "xml",
+  OTHER: "other",
   FORM_DATA: "form-data",
   FORM_URLENCODED: "x-www-form-urlencoded",
   BINARY: "binary",
@@ -50,8 +52,14 @@ export interface HttpBodyNone {
 }
 
 export interface HttpBodyText {
-  type: "text" | "json" | "graphql";
+  type: "text" | "json" | "xml" | "other";
   content: string;
+}
+
+export interface HttpBodyGraphql {
+  type: "graphql";
+  query: string;
+  variables: string;
 }
 
 export interface HttpBodyFormData {
@@ -72,6 +80,7 @@ export interface HttpBodyBinary {
 export type HttpBody =
   | HttpBodyNone
   | HttpBodyText
+  | HttpBodyGraphql
   | HttpBodyFormData
   | HttpBodyFormUrlencoded
   | HttpBodyBinary;
