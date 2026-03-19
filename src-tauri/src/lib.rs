@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use crate::db::init_db;
+use tracing_subscriber::EnvFilter;
+use tracing::{error, info};
 
 mod app;
 mod client;
@@ -14,12 +16,33 @@ mod schema;
 
 fn setup_db() -> Result<(), String> {
     let db_path = db::get_db_path()?;
-    let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| e.to_string())?;
-    return init_db(&mut conn);
+    let db_path_display = db_path.to_string_lossy();
+    info!(db_path = %db_path_display, "Opening database");
+    let mut conn = rusqlite::Connection::open(&db_path).map_err(|e| {
+        let msg = e.to_string();
+        error!(db_path = %db_path_display, error = %msg, "Failed to open database");
+        msg
+    })?;
+    if let Err(e) = init_db(&mut conn) {
+        error!(
+            db_path = %db_path_display,
+            error = %e,
+            "Failed to initialize DB schema/migrations"
+        );
+        return Err(e);
+    }
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize structured logging early so we capture startup + migration issues.
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
+
     let initial_path = std::env::args()
         .nth(1)
         .filter(|s| !s.is_empty())

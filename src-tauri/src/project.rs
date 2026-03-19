@@ -5,6 +5,7 @@ use crate::constants::{
 };
 use crate::db::get_db_path;
 use crate::schema::project::NativedoctorJson;
+use tracing::{error, info};
 
 #[derive(serde::Serialize)]
 pub struct RecentProject {
@@ -71,6 +72,7 @@ pub fn get_initial_project_path(state: tauri::State<AppState>) -> Option<String>
     // eg: nativedoctor .
     // we'd grab it from mutex
     let mut guard = state.initial_project_path.lock().unwrap();
+    info!("get_initial_project_path: taking initial project path (if any)");
     return guard.take().and_then(|p| p.to_str().map(String::from));
 }
 
@@ -84,8 +86,20 @@ pub fn project_has_nativedoctor(path: String) -> bool {
 #[tauri::command]
 pub fn read_nativedoctor(path: String) -> Result<NativedoctorJson, String> {
     let file_path = std::path::Path::new(&path).join(NATIVE_DOCTOR_PROJECT_FILE);
-    let contents = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
-    return serde_json::from_str(&contents).map_err(|e| e.to_string());
+    let file_path_display = file_path.to_string_lossy().into_owned();
+    info!(file_path = %file_path_display, "Reading nativedoctor.json");
+
+    let contents = std::fs::read_to_string(&file_path).map_err(|e| {
+        let msg = e.to_string();
+        error!(file_path = %file_path_display, error = %msg, "Failed to read nativedoctor.json");
+        msg
+    })?;
+
+    serde_json::from_str(&contents).map_err(|e| {
+        let msg = e.to_string();
+        error!(file_path = %file_path_display, error = %msg, "Failed to parse nativedoctor.json");
+        msg
+    })
 }
 
 #[tauri::command]
@@ -93,8 +107,19 @@ pub fn write_nativedoctor(path: String, payload: NativedoctorJson) -> Result<(),
     let dir = std::path::Path::new(&path);
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let file_path = dir.join(NATIVE_DOCTOR_PROJECT_FILE);
-    let contents = serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())?;
-    std::fs::write(file_path, contents).map_err(|e| e.to_string())
+    let file_path_display = file_path.to_string_lossy().into_owned();
+    let contents = serde_json::to_string_pretty(&payload).map_err(|e| {
+        let msg = e.to_string();
+        error!(file_path = %file_path_display, error = %msg, "Failed to serialize nativedoctor.json");
+        msg
+    })?;
+
+    info!(file_path = %file_path_display, bytes = contents.len(), "Writing nativedoctor.json");
+    std::fs::write(file_path, contents).map_err(|e| {
+        let msg = e.to_string();
+        error!(file_path = %file_path_display, error = %msg, "Failed to write nativedoctor.json");
+        msg
+    })
 }
 
 /// Given the path to a nativedoctor.json file, returns the project root (parent directory).
@@ -113,12 +138,18 @@ pub fn get_project_root_from_config_path(config_path: String) -> Result<String, 
 #[tauri::command]
 pub fn discover_resources(project_path: String) -> Result<Vec<String>, String> {
     let root = std::path::Path::new(&project_path);
+    let root_display = root.to_string_lossy();
+    info!(project_root = %root_display, "Discovering resources");
 
     if !root.join(NATIVE_DOCTOR_PROJECT_FILE).exists() {
         return Err(format!("Project has no {}", NATIVE_DOCTOR_PROJECT_FILE));
     }
 
-    let entries = std::fs::read_dir(root).map_err(|e| e.to_string())?;
+    let entries = std::fs::read_dir(root).map_err(|e| {
+        let msg = e.to_string();
+        error!(project_root = %root_display, error = %msg, "Failed to read project directory");
+        msg
+    })?;
 
     let mut resources: Vec<String> = Vec::new();
 
@@ -146,6 +177,10 @@ pub fn discover_resources(project_path: String) -> Result<Vec<String>, String> {
     }
 
     resources.sort();
+    info!(
+        discovered_resources = resources.len(),
+        "Discovered resource files"
+    );
     return Ok(resources);
 }
 
@@ -157,12 +192,21 @@ pub fn create_project(
 ) -> Result<String, String> {
     let path = std::path::Path::new(&folder_path);
     let config_path = path.join(NATIVE_DOCTOR_PROJECT_FILE);
+    info!(
+        folder_path = %folder_path,
+        config_path = %config_path.to_string_lossy(),
+        "Creating new project"
+    );
 
     if config_path.exists() {
         return Err("nativedoctor.json already exists in this folder".to_string());
     }
 
-    std::fs::create_dir_all(path).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(path).map_err(|e| {
+        let msg = e.to_string();
+        error!(error = %msg, folder_path = %folder_path, "Failed to create project directory");
+        msg
+    })?;
 
     let payload = NativedoctorJson {
         name: name,

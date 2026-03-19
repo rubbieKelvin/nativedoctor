@@ -35,6 +35,7 @@ const durationMs = ref<number | undefined>(undefined);
 const httpVersion = ref<string | undefined>(undefined);
 const error = ref<string | undefined>(undefined);
 const loading = ref(false);
+const responseVersion = ref(0);
 
 function bodyFromResource(r: HttpResource): string {
     const b = r.body;
@@ -58,6 +59,7 @@ function applyStoredResponse(resourceId: string) {
         durationMs.value = undefined;
         httpVersion.value = undefined;
     }
+    responseVersion.value += 1;
 }
 
 watch(
@@ -156,6 +158,7 @@ async function onSend() {
         responseBody.value = stored.body;
         durationMs.value = stored.duration_ms;
         httpVersion.value = stored.http_version;
+        responseVersion.value += 1;
     } catch (e) {
         error.value = e instanceof Error ? e.message : String(e);
     } finally {
@@ -196,6 +199,7 @@ async function onSend() {
             class=""
         >
             <ResponsePane
+                :key="responseVersion"
                 :status="status"
                 :headers="responseHeaders"
                 :body="responseBody"

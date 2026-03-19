@@ -122,6 +122,8 @@ fn sanitize_header(s: &str) -> String {
     s.replace(['\r', '\n'], " ").trim().to_string()
 }
 
+use tracing::{error, info};
+
 impl HttpResourceFile {
     /// Executes the HTTP request and returns the response.
     pub async fn call(&self, client: &reqwest::Client) -> Result<HttpResponse, String> {
@@ -138,15 +140,65 @@ impl HttpResourceFile {
             format!("https://{}", url_str)
         };
 
-        let url = reqwest::Url::parse(&url_str).map_err(|e| format!("Invalid URL: {}", e))?;
+        let url = reqwest::Url::parse(&url_str).map_err(|e| {
+            let msg = format!("Invalid URL: {}", e);
+            error!(error = %msg, url = %url_str, "HttpResourceFile::call: URL parse failed");
+            msg
+        })?;
 
         // Parse the HTTP method (GET, POST, etc.) and start timing.
         let method = self
             .method
             .trim()
             .parse::<reqwest::Method>()
-            .map_err(|e| format!("Invalid method: {}", e))?;
+            .map_err(|e| {
+                let msg = format!("Invalid method: {}", e);
+                error!(error = %msg, method = %self.method, "HttpResourceFile::call: method parse failed");
+                msg
+            })?;
         let start = std::time::Instant::now();
+
+        let enabled_params_count = self
+            .params
+            .as_ref()
+            .map(|ps| ps.iter().filter(|p| p.enabled).count())
+            .unwrap_or(0);
+
+        let mut enabled_param_keys: Vec<String> = Vec::new();
+        if let Some(ref params) = self.params {
+            for p in params.iter().filter(|p| p.enabled) {
+                enabled_param_keys.push(p.key.clone());
+                if enabled_param_keys.len() >= 10 {
+                    break;
+                }
+            }
+        }
+
+        let enabled_headers_count = self
+            .headers
+            .as_ref()
+            .map(|hs| hs.iter().filter(|h| h.enabled).count())
+            .unwrap_or(0);
+
+        let mut enabled_header_keys: Vec<String> = Vec::new();
+        if let Some(ref headers) = self.headers {
+            for h in headers.iter().filter(|h| h.enabled) {
+                enabled_header_keys.push(h.key.clone());
+                if enabled_header_keys.len() >= 10 {
+                    break;
+                }
+            }
+        }
+
+        info!(
+            method = %method,
+            url = %url_str,
+            enabled_params = enabled_params_count,
+            enabled_param_keys = ?enabled_param_keys,
+            enabled_headers = enabled_headers_count,
+            enabled_header_keys = ?enabled_header_keys,
+            "HttpResourceFile::call: preparing request"
+        );
 
         // Build the request: method + URL.
         let mut req = client.request(method, url.clone());
@@ -182,12 +234,22 @@ impl HttpResourceFile {
                 serde_json::to_string(body).unwrap_or_default()
             };
             if !body_str.is_empty() {
+                let body_kind = if body.is_string() { "string" } else { "json" };
+                info!(
+                    body_kind = body_kind,
+                    body_len = body_str.len(),
+                    "HttpResourceFile::call: using request body"
+                );
                 req = req.body(body_str);
             }
         }
 
         // Send the request and fail fast on connection/send errors.
-        let res = req.send().await.map_err(|e| e.to_string())?;
+        let res = req.send().await.map_err(|e| {
+            let msg = e.to_string();
+            error!(error = %msg, "HttpResourceFile::call: send failed");
+            msg
+        })?;
 
         // Read response metadata (must be done before consuming the body).
         let status = res.status().as_u16();
@@ -217,9 +279,22 @@ impl HttpResourceFile {
             .collect();
 
         // Consume the response body (this can only be done once).
-        let body = res.text().await.map_err(|e| e.to_string())?;
+        let body = res.text().await.map_err(|e| {
+            let msg = e.to_string();
+            error!(error = %msg, "HttpResourceFile::call: reading response body failed");
+            msg
+        })?;
         let size = body.len() as u64;
         let duration_ms = start.elapsed().as_millis() as u64;
+
+        info!(
+            status = status,
+            duration_ms = duration_ms,
+            response_headers = headers.len(),
+            response_body_size = size,
+            http_version = %http_version,
+            "HttpResourceFile::call: response received"
+        );
 
         Ok(HttpResponse {
             url,
