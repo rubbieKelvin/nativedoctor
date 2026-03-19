@@ -13,6 +13,7 @@ mod db;
 mod project;
 mod resource;
 mod schema;
+mod scripting;
 
 fn setup_db() -> Result<(), String> {
     let db_path = db::get_db_path()?;
@@ -83,6 +84,7 @@ pub fn run() {
             project::create_project,
             project::get_project_root_from_config_path,
             project::discover_resources,
+            project::load_env_file,
             resource::read_resource_file,
             resource::write_resource_file,
         ])

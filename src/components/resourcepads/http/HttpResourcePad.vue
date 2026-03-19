@@ -119,7 +119,8 @@ const bodyDisabled = computed(
 );
 
 const computedHeadersMap = computed(() => {
-    const r = props.resource && resourcesStore.getHttpResource(props.resource.id);
+    const r =
+        props.resource && resourcesStore.getHttpResource(props.resource.id);
     return r ? computedHeaders(r) : {};
 });
 
@@ -168,6 +169,7 @@ async function onSend() {
             headers: _h,
             ...rest
         } = resource;
+
         const bodyPayload = serializeHttpBodyToRequestString(bodyValue);
         const payload = {
             ...rest,

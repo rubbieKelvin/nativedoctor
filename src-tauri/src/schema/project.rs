@@ -16,4 +16,6 @@ pub struct NativedoctorJson {
     pub metadata: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env_sources: Option<Vec<EnvSource>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_env: Option<String>,
 }

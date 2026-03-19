@@ -49,6 +49,21 @@ const projectStore = defineStore("project", () => {
   }
 
   /**
+   * Updates project config with a partial payload, writes to disk, and updates local config ref.
+   */
+  async function updateProjectConfig(
+    payload: Partial<NativedoctorJson>,
+  ): Promise<void> {
+    if (!path.value || !config.value) return;
+    const merged: NativedoctorJson = { ...config.value, ...payload };
+    await invoke("write_nativedoctor", {
+      path: path.value,
+      payload: merged,
+    });
+    config.value = merged;
+  }
+
+  /**
    * Sets the active project and loads its configuration.
    * Resets all project state and resources before loading the new project.
    * Automatically discovers resource files after loading.
@@ -85,6 +100,7 @@ const projectStore = defineStore("project", () => {
     config,
     resourceFiles,
     setProject,
+    updateProjectConfig,
     discoverResources,
     loadError,
   };

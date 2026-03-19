@@ -213,9 +213,74 @@ pub fn create_project(
         description: Some(description),
         metadata: None,
         env_sources: None,
+        selected_env: None,
         schema: Some(NATIVE_DOCTOR_PROJECT_FILE_PUBLIC_SCHEMA_URL.to_string()),
     };
 
     write_nativedoctor(folder_path.clone(), payload)?;
     return Ok(folder_path);
+}
+
+/// Parses a .env-style file (KEY=VALUE per line, # comments, optional quotes) and returns a map.
+fn parse_env_file(contents: &str) -> std::collections::HashMap<String, String> {
+    let mut map = std::collections::HashMap::new();
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if let Some(eq) = line.find('=') {
+            let key = line[..eq].trim();
+            let mut value = line[eq + 1..].trim();
+            if key.is_empty() {
+                continue;
+            }
+            if (value.starts_with('"') && value.ends_with('"') && value.len() >= 2)
+                || (value.starts_with('\'') && value.ends_with('\'') && value.len() >= 2)
+            {
+                value = &value[1..value.len() - 1];
+            }
+            map.insert(key.to_string(), value.to_string());
+        }
+    }
+    map
+}
+
+/// Loads an env file (relative to project root) and returns key-value pairs as a JSON object.
+#[tauri::command]
+pub fn load_env_file(
+    project_path: String,
+    relative_path: String,
+) -> Result<std::collections::HashMap<String, String>, String> {
+    let root = std::path::Path::new(&project_path);
+    let root_display = root.to_string_lossy();
+    let canonical_root = root.canonicalize().map_err(|e| {
+        let msg = e.to_string();
+        error!(project_root = %root_display, error = %msg, "Failed to resolve project root");
+        msg
+    })?;
+
+    let full_path = root.join(&relative_path);
+    let canonical = full_path.canonicalize().map_err(|e| {
+        let msg = e.to_string();
+        error!(
+            project_root = %root_display,
+            relative_path = %relative_path,
+            error = %msg,
+            "Failed to resolve env file path"
+        );
+        msg
+    })?;
+
+    if !canonical.starts_with(&canonical_root) {
+        return Err("Env file path must be inside the project directory".to_string());
+    }
+
+    let contents = std::fs::read_to_string(&canonical).map_err(|e| {
+        let msg = e.to_string();
+        error!(path = %canonical.to_string_lossy(), error = %msg, "Failed to read env file");
+        msg
+    })?;
+
+    Ok(parse_env_file(&contents))
 }

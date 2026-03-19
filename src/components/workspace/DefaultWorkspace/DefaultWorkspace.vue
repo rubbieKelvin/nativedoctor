@@ -23,8 +23,10 @@ import { WmDragHandle } from "@/components/ui/wm/index";
 import { useResources } from "@/store/resources";
 import { useWorkspaceTabs, useWorkspaceTabsActions } from "@/store/tabs";
 import { useCurrentProject } from "@/store/project";
+import EnvironmentDialog from "./EnvironmentDialog.vue";
 
-const { name: projectName } = useCurrentProject();
+const { name: projectName, path: projectPath } = useCurrentProject();
+const envDialogOpen = ref(false);
 const resourcesStore = useResources();
 const { openTabIds, activeTabId } = useWorkspaceTabs();
 const { setActiveTab, closeTab } = useWorkspaceTabsActions();
@@ -88,7 +90,21 @@ function sequenceResourceForId(id: string) {
 
 <template>
     <div class="w-full h-full flex flex-col">
-        <WmDragHandle :title="projectName" />
+        <WmDragHandle :title="projectName">
+            <span class="mx-1.5 text-muted-foreground">&gt;</span>
+            <Button
+                variant="secondary"
+                size="sm"
+                class="rounded-md shrink-0"
+                :disabled="!projectPath"
+                @click="envDialogOpen = true"
+            >
+                Environment
+            </Button>
+        </WmDragHandle>
+        <EnvironmentDialog
+            v-model:open="envDialogOpen"
+        />
         <ResizablePanelGroup direction="horizontal" class="w-full h-full">
             <ResizablePanel
                 :default-size="25"

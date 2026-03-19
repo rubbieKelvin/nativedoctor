@@ -35,6 +35,10 @@
         },
         "required": ["path", "name"]
       }
+    },
+    "selectedEnv": {
+      "type": "string",
+      "description": "Name of the currently selected environment (must match an envSources[].name)."
     }
   }
 }

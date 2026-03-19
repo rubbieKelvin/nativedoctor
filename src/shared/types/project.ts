@@ -4,4 +4,5 @@ export interface NativedoctorJson {
   description?: string;
   metadata?: Record<string, unknown>;
   envSources?: Array<{ name: string; path: string }>;
+  selectedEnv?: string | null;
 }
