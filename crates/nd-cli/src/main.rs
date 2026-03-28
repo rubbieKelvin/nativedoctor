@@ -1,3 +1,5 @@
+//! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, and shared flags.
+
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -12,33 +14,37 @@ use nd_core::{
 #[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
 #[command(args_conflicts_with_subcommands = false)]
 struct Cli {
+    /// Log extra detail (full request before send, response headers on stdout).
     #[arg(short, long, global = true)]
     verbose: bool,
 
+    /// Do not run `post_script` from the request file.
     #[arg(long, global = true)]
     no_post_script: bool,
 
+    /// Expand and print the request only; no network I/O.
     #[arg(long, global = true)]
     dry_run: bool,
 
+    /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).
     #[arg(long, global = true)]
     allow_error_status: bool,
 
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// Request file; same as `run <FILE>` when used without a subcommand.
+    /// If no subcommand is given, this file is executed (same as `run <FILE>`).
     #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
     file: Option<PathBuf>,
 }
 
 #[derive(Subcommand)]
 enum Command {
-    /// Execute a single request definition file.
+    /// Run one request definition.
     Run {
         path: PathBuf,
     },
-    /// List request files (*.json, *.yaml, *.yml) under a directory.
+    /// Print all `*.json` / `*.yaml` / `*.yml` paths under a directory (recursive, sorted).
     List {
         dir: PathBuf,
     },
@@ -89,6 +95,7 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
     Ok(())
 }
 
+/// Run or dry-run a single request file; prints human-readable output to stdout/stderr.
 async fn run_one(
     path: &std::path::Path,
     cli: &Cli,
@@ -101,6 +108,7 @@ async fn run_one(
         return Ok(());
     }
     if cli.verbose {
+        // Second load: keeps `nd-core` free of `eprintln!` while still showing the resolved request.
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
         eprint!("--- request ---\n{summary}\n--- response ---\n");
@@ -125,6 +133,7 @@ fn redact_headers(headers: &[(String, String)]) -> Vec<(String, String)> {
         .collect()
 }
 
+/// Status line always; verbose adds headers; body is pretty-printed JSON when valid UTF-8 JSON.
 fn print_result(result: &ExecutionResult, verbose: bool) -> std::result::Result<(), String> {
     println!(
         "{} {} -> {} ({:?})",

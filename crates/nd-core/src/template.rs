@@ -1,3 +1,5 @@
+//! `${VAR}` substitution using [`crate::RuntimeEnv`] for lookups.
+
 use std::sync::OnceLock;
 
 use regex::Regex;
@@ -6,11 +8,13 @@ use serde_json::Value;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
+/// Variable pattern: `${IDENT}` where `IDENT` matches `[A-Za-z_][A-Za-z0-9_]*`.
 fn var_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").expect("valid regex"))
 }
 
+/// Replace every `${VAR}` in `input` with values from `env`. Fails if any variable is unset.
 pub fn expand_string(env: &RuntimeEnv, input: &str) -> Result<String> {
     let mut out = String::with_capacity(input.len());
     let mut last = 0usize;
@@ -28,6 +32,7 @@ pub fn expand_string(env: &RuntimeEnv, input: &str) -> Result<String> {
     Ok(out)
 }
 
+/// Recursively expand `${VAR}` in JSON strings and in object keys (same rules as [`expand_string`]).
 pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
     match value {
         Value::String(s) => Ok(Value::String(expand_string(env, s)?)),

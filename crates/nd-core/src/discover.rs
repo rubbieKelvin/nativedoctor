@@ -1,3 +1,5 @@
+//! Recursive discovery of request definition files on disk.
+
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -10,6 +12,7 @@ fn is_request_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+/// Depth-first walk: collects request-like files, ignores missing root directories.
 fn walk_dir(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
     let read = match std::fs::read_dir(dir) {
         Ok(r) => r,
@@ -28,7 +31,9 @@ fn walk_dir(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Recursively lists `*.json`, `*.yaml`, `*.yml` under `dir`, sorted and deduplicated.
+/// List all `*.json`, `*.yaml`, and `*.yml` files under `dir` (recursive).
+///
+/// Paths are deduplicated (canonical duplicates collapse to one) and sorted for stable output.
 pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
     walk_dir(dir, &mut paths).map_err(crate::error::Error::Io)?;

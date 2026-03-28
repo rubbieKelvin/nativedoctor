@@ -1,3 +1,5 @@
+//! HTTP execution: expand templates, build a [`reqwest::Client`], send, then optional Rhai post-script.
+
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -11,11 +13,15 @@ use crate::model::{HttpRequestSpec, RequestBody, RequestFile};
 use crate::rhai_host::run_post_script;
 use crate::template::{expand_json_value, expand_string};
 
+/// Options for [`execute_request_file`] (mirrors CLI flags where applicable).
 #[derive(Debug, Clone)]
 pub struct RunOptions {
     pub verbose: bool,
+    /// Skip `post_script` even if the request file defines one.
     pub no_post_script: bool,
+    /// If true, returns immediately without I/O using a synthetic [`ExecutionResult`] (status 0).
     pub dry_run: bool,
+    /// If false, status codes ≥ 400 become [`Error::InvalidRequest`] after the post-script runs.
     pub allow_error_status: bool,
 }
 
@@ -30,23 +36,29 @@ impl Default for RunOptions {
     }
 }
 
+/// Outcome of a real HTTP call (or a synthetic row for dry-run — see field docs).
 #[derive(Debug, Clone)]
 pub struct ExecutionResult {
     pub method: Method,
+    /// Response status, or `0` for dry-run.
     pub status: u16,
+    /// Final URL after redirects, or the expanded request URL for dry-run.
     pub final_url: String,
+    /// Response headers from the wire, or request headers for dry-run.
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
+    /// Time to receive the full response; zero for dry-run.
     pub duration: Duration,
 }
 
+/// Fully expanded, ready-to-send request (templates applied).
 pub struct PreparedRequest {
     pub method: Method,
     pub url: String,
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
     pub body: Option<Vec<u8>>,
-    /// Used only when the request has a body and no `Content-Type` header.
+    /// If the body is set and `Content-Type` is absent, this value is sent as the header.
     pub content_type_if_missing: Option<String>,
     pub timeout_secs: u64,
     pub follow_redirects: bool,
@@ -161,7 +173,10 @@ async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest
     req.send().await.map_err(Error::Http)
 }
 
-/// Loads a request file, expands templates, optionally performs HTTP, runs post_script.
+/// End-to-end: load file → seed [`RuntimeEnv`] → expand → send (unless dry-run) → post-script → status check.
+///
+/// Post-scripts run even for 4xx/5xx responses so they can inspect errors; CLI still exits with an
+/// error unless [`RunOptions::allow_error_status`] is set.
 pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<ExecutionResult> {
     let (doc, base_dir) = load_request_file(path)?;
     let env = RuntimeEnv::from_process_env();
@@ -217,6 +232,7 @@ pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<Execu
     })
 }
 
+/// Build a synthetic “result” for dry-run: no network, status 0, body = request body bytes.
 fn dry_run_result(prep: &PreparedRequest) -> ExecutionResult {
     let full_url = merge_url_query(&prep.url, &prep.query).unwrap_or_else(|_| prep.url.clone());
     ExecutionResult {
@@ -229,7 +245,7 @@ fn dry_run_result(prep: &PreparedRequest) -> ExecutionResult {
     }
 }
 
-/// Expand a request file without sending (for dry-run / inspection).
+/// Load and expand one request file without sending (same expansion as a real run).
 pub fn prepare_request_file(path: &Path) -> Result<(PreparedRequest, std::path::PathBuf)> {
     let (doc, base_dir) = load_request_file(path)?;
     let env = RuntimeEnv::from_process_env();
@@ -237,7 +253,7 @@ pub fn prepare_request_file(path: &Path) -> Result<(PreparedRequest, std::path::
     Ok((prep, base_dir))
 }
 
-/// Human-readable summary for dry-run or verbose logging.
+/// Multiline string: request line, headers, blank line, optional body (UTF-8 or “binary” placeholder).
 pub fn format_prepared_request(prep: &PreparedRequest) -> Result<String> {
     let url = merge_url_query(&prep.url, &prep.query)?;
     let mut s = format!("{} {}\n", prep.method, url);

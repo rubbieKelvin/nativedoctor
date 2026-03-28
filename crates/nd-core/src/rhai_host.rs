@@ -1,3 +1,16 @@
+//! Rhai **post-response** scripts: no filesystem or network inside the engine.
+//!
+//! # Built-in functions
+//!
+//! | Function | Returns | Notes |
+//! |----------|---------|--------|
+//! | `response_status()` | `i64` | HTTP status code |
+//! | `response_header(name)` | value or `()` | Header name is case-sensitive as stored |
+//! | `response_body_string()` | `string` | UTF-8 lossy over raw bytes |
+//! | `response_body_json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
+//! | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
+//! | `set_runtime(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
+
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -8,6 +21,7 @@ use serde_json::Value;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
+/// Snapshot of the HTTP response passed into Rhai (immutable inside the script run).
 #[derive(Clone)]
 struct ResponseCtx {
     status: i64,
@@ -16,6 +30,7 @@ struct ResponseCtx {
     json_value: Option<Value>,
 }
 
+/// Convert `serde_json::Value` to Rhai `Dynamic` (maps, arrays, scalars).
 fn json_to_dynamic(v: &Value) -> Dynamic {
     match v {
         Value::Null => Dynamic::UNIT,
@@ -44,6 +59,10 @@ fn json_to_dynamic(v: &Value) -> Dynamic {
     }
 }
 
+/// Compile and run the Rhai script at `script_path` after a response is available.
+///
+/// `headers` should be the response header list (name/value). `body` is the raw response body;
+/// a best-effort UTF-8 string is also exposed separately from parsed JSON.
 pub fn run_post_script(
     script_path: &Path,
     env: &RuntimeEnv,
@@ -83,7 +102,6 @@ pub fn run_post_script(
     engine.register_fn("response_body_string", move || c.body_str.clone());
 
     let c = ctx.clone();
-    // Returns `()` if the body is not valid JSON; otherwise a Rhai map/array/value.
     engine.register_fn("response_body_json", move || match &c.json_value {
         Some(v) => json_to_dynamic(v),
         None => Dynamic::UNIT,

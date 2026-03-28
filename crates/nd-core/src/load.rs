@@ -3,6 +3,10 @@ use std::path::{Path, PathBuf};
 use crate::error::{Error, Result};
 use crate::model::RequestFile;
 
+/// Read and deserialize a request file. Extension must be `.json`, `.yaml`, or `.yml`.
+///
+/// Returns the parsed document and the **parent directory** of `path`, used to resolve
+/// [`RequestFile::post_script`] paths.
 pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
     let ext = path
         .extension()
@@ -28,7 +32,7 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
     Ok((file, base))
 }
 
-/// Resolves `post_script` relative to the request file directory.
+/// Join `base_dir` with the relative `post_script` path from the request file.
 pub fn resolve_post_script(base_dir: &Path, rel: &str) -> PathBuf {
     base_dir.join(rel)
 }

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
+/// Errors returned by [`crate::Result`].
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("IO error: {0}")]
@@ -24,6 +25,7 @@ pub enum Error {
     #[error("unsupported request file format (use .json, .yaml, or .yml): {0}")]
     UnsupportedFormat(PathBuf),
 
+    /// A `${VAR}` reference had no value in [`crate::RuntimeEnv`] or the process environment.
     #[error("missing environment variable '{0}' in template")]
     MissingTemplateVar(String),
 
@@ -40,4 +42,5 @@ pub enum Error {
     PostScriptNotFound(PathBuf),
 }
 
+/// Convenient alias used across this crate.
 pub type Result<T> = std::result::Result<T, Error>;
