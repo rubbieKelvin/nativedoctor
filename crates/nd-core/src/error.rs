@@ -40,6 +40,26 @@ pub enum Error {
 
     #[error("post_script not found: {0}")]
     PostScriptNotFound(PathBuf),
+
+    #[error("invalid sequence file {path}: {source}")]
+    ParseSequenceYaml {
+        path: PathBuf,
+        #[source]
+        source: serde_yaml::Error,
+    },
+
+    #[error("invalid sequence file {path}: {source}")]
+    ParseSequenceJson {
+        path: PathBuf,
+        #[source]
+        source: serde_json::Error,
+    },
+
+    #[error("invalid sequence: {0}")]
+    InvalidSequence(String),
+
+    #[error("sequence step request file not found: {0}")]
+    SequenceStepNotFound(PathBuf),
 }
 
 /// Convenient alias used across this crate.

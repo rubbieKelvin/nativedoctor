@@ -18,6 +18,7 @@ fn var_re() -> &'static Regex {
 pub fn expand_string(env: &RuntimeEnv, input: &str) -> Result<String> {
     let mut out = String::with_capacity(input.len());
     let mut last = 0usize;
+
     for cap in var_re().captures_iter(input) {
         let m = cap.get(0).expect("match");
         out.push_str(&input[last..m.start()]);

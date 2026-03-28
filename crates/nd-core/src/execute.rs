@@ -13,7 +13,18 @@ use crate::model::{HttpRequestSpec, RequestBody, RequestFile};
 use crate::rhai_host::run_post_script;
 use crate::template::{expand_json_value, expand_string};
 
-/// Options for [`execute_request_file`] (mirrors CLI flags where applicable).
+/// How HTTP status and Rhai interact after a response (single `run` vs [`crate::sequence`] step).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum OutcomePolicy {
+    /// Post-script runs before failing on HTTP ≥ 400 (unless [`RunOptions::allow_error_status`]).
+    #[default]
+    SingleRequest,
+    /// Sequence rules: without a post-script, HTTP ≥ 400 fails the step; with a post-script, Rhai
+    /// runs and only Rhai failure fails — HTTP status alone never fails the step.
+    SequenceStep,
+}
+
+/// Options for [`execute_request_file`] / [`execute_request_with_env`] (mirrors CLI flags).
 #[derive(Debug, Clone)]
 pub struct RunOptions {
     pub verbose: bool,
@@ -21,8 +32,10 @@ pub struct RunOptions {
     pub no_post_script: bool,
     /// If true, returns immediately without I/O using a synthetic [`ExecutionResult`] (status 0).
     pub dry_run: bool,
-    /// If false, status codes ≥ 400 become [`Error::InvalidRequest`] after the post-script runs.
+    /// If false, status codes ≥ 400 become [`Error::InvalidRequest`] after the post-script runs
+    /// ([`OutcomePolicy::SingleRequest`] only, or sequence steps **without** a post-script).
     pub allow_error_status: bool,
+    pub outcome_policy: OutcomePolicy,
 }
 
 impl Default for RunOptions {
@@ -32,6 +45,7 @@ impl Default for RunOptions {
             no_post_script: false,
             dry_run: false,
             allow_error_status: false,
+            outcome_policy: OutcomePolicy::default(),
         }
     }
 }
@@ -173,14 +187,52 @@ async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest
     req.send().await.map_err(Error::Http)
 }
 
-/// End-to-end: load file → seed [`RuntimeEnv`] → expand → send (unless dry-run) → post-script → status check.
-///
-/// Post-scripts run even for 4xx/5xx responses so they can inspect errors; CLI still exits with an
-/// error unless [`RunOptions::allow_error_status`] is set.
+fn run_request_post_script(
+    doc: &RequestFile,
+    base_dir: &Path,
+    env: &RuntimeEnv,
+    opts: &RunOptions,
+    status: u16,
+    resp_headers: &[(String, String)],
+    body: &[u8],
+) -> Result<()> {
+    if let Some(rel) = &doc.post_script {
+        if !opts.no_post_script {
+            let script_path = resolve_post_script(base_dir, rel);
+            if !script_path.is_file() {
+                return Err(Error::PostScriptNotFound(script_path));
+            }
+            run_post_script(
+                &script_path,
+                env,
+                status,
+                resp_headers,
+                body,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// Same as [`execute_request_with_env`] with a fresh [`RuntimeEnv::from_process_env`].
 pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<ExecutionResult> {
-    let (doc, base_dir) = load_request_file(path)?;
     let env = RuntimeEnv::from_process_env();
-    let prep = expand_http_request(&env, &doc.request)?;
+    execute_request_with_env(path, &opts, &env).await
+}
+
+/// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
+///
+/// [`OutcomePolicy::SingleRequest`]: post-script runs before failing on HTTP ≥ 400 (unless
+/// `allow_error_status`). [`OutcomePolicy::SequenceStep`]: without an active post-script, fail on
+/// HTTP ≥ 400 when `allow_error_status` is false; with post-script, run Rhai and never fail on HTTP
+/// status alone.
+pub async fn execute_request_with_env(
+    path: &Path,
+    opts: &RunOptions,
+    env: &RuntimeEnv,
+) -> Result<ExecutionResult> {
+    let (doc, base_dir) = load_request_file(path)?;
+    let prep = expand_http_request(env, &doc.request)?;
 
     if opts.dry_run {
         return Ok(dry_run_result(&prep));
@@ -200,26 +252,26 @@ pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<Execu
     }
     let body = response.bytes().await.map_err(Error::Http)?.to_vec();
 
-    if let Some(rel) = &doc.post_script {
-        if !opts.no_post_script {
-            let script_path = resolve_post_script(&base_dir, rel);
-            if !script_path.is_file() {
-                return Err(Error::PostScriptNotFound(script_path));
-            }
-            run_post_script(
-                &script_path,
-                &env,
-                status,
-                &resp_headers,
-                &body,
-            )?;
-        }
-    }
+    let has_active_script = doc.post_script.is_some() && !opts.no_post_script;
 
-    if !opts.allow_error_status && status >= 400 {
-        return Err(Error::InvalidRequest(format!(
-            "HTTP status {status} (use --allow-error-status to accept)"
-        )));
+    match opts.outcome_policy {
+        OutcomePolicy::SingleRequest => {
+            run_request_post_script(&doc, &base_dir, env, opts, status, &resp_headers, &body)?;
+            if !opts.allow_error_status && status >= 400 {
+                return Err(Error::InvalidRequest(format!(
+                    "HTTP status {status} (use --allow-error-status to accept)"
+                )));
+            }
+        }
+        OutcomePolicy::SequenceStep => {
+            if has_active_script {
+                run_request_post_script(&doc, &base_dir, env, opts, status, &resp_headers, &body)?;
+            } else if !opts.allow_error_status && status >= 400 {
+                return Err(Error::InvalidRequest(format!(
+                    "sequence step HTTP status {status} (no post_script to handle error)"
+                )));
+            }
+        }
     }
 
     Ok(ExecutionResult {
@@ -245,11 +297,16 @@ fn dry_run_result(prep: &PreparedRequest) -> ExecutionResult {
     }
 }
 
-/// Load and expand one request file without sending (same expansion as a real run).
+/// Load and expand one request file using a fresh environment.
 pub fn prepare_request_file(path: &Path) -> Result<(PreparedRequest, std::path::PathBuf)> {
-    let (doc, base_dir) = load_request_file(path)?;
     let env = RuntimeEnv::from_process_env();
-    let prep = expand_http_request(&env, &doc.request)?;
+    prepare_request_with_env(path, &env)
+}
+
+/// Load and expand one request file with an existing [`RuntimeEnv`] (e.g. shared sequence session).
+pub fn prepare_request_with_env(path: &Path, env: &RuntimeEnv) -> Result<(PreparedRequest, std::path::PathBuf)> {
+    let (doc, base_dir) = load_request_file(path)?;
+    let prep = expand_http_request(env, &doc.request)?;
     Ok((prep, base_dir))
 }
 
