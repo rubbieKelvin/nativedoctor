@@ -93,7 +93,7 @@ function sequenceResourceForId(id: string) {
         <WmDragHandle :title="projectName">
             <span class="mx-1.5 text-muted-foreground">&gt;</span>
             <Button
-                variant="secondary"
+                variant="ghost"
                 size="sm"
                 class="rounded-md shrink-0"
                 :disabled="!projectPath"
@@ -102,9 +102,7 @@ function sequenceResourceForId(id: string) {
                 Environment
             </Button>
         </WmDragHandle>
-        <EnvironmentDialog
-            v-model:open="envDialogOpen"
-        />
+        <EnvironmentDialog v-model:open="envDialogOpen" />
         <ResizablePanelGroup direction="horizontal" class="w-full h-full">
             <ResizablePanel
                 :default-size="25"
