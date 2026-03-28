@@ -1,6 +1,8 @@
 //! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, `sequence`, `new`, and shared flags.
 
-use std::path::{Path, PathBuf};
+mod new_cmd;
+
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
@@ -42,17 +44,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run one request definition.
-    Run {
-        path: PathBuf,
-    },
+    Run { path: PathBuf },
     /// Run an ordered list of request files with one shared runtime environment (see sequence JSON/YAML).
-    Sequence {
-        path: PathBuf,
-    },
+    Sequence { path: PathBuf },
     /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
-    List {
-        dir: PathBuf,
-    },
+    List { dir: PathBuf },
     /// Create a starter request or sequence file (e.g. `new --sequence seq-a.json`).
     New {
         /// Write a default sequence file (.json, .yaml, or .yml).
@@ -86,45 +82,10 @@ fn run_opts(cli: &Cli) -> RunOptions {
     }
 }
 
-const SEQUENCE_TEMPLATE_JSON: &str = r#"{
-  "version": 1,
-  "name": "My API flow",
-  "steps": [
-    { "file": "example-request.yaml" }
-  ]
-}
-"#;
-
-const SEQUENCE_TEMPLATE_YAML: &str = r#"version: 1
-name: My API flow
-steps:
-  - file: example-request.yaml
-"#;
-
-const REQUEST_TEMPLATE_JSON: &str = r#"{
-  "version": 1,
-  "name": "Example GET",
-  "request": {
-    "method": "GET",
-    "url": "${BASE_URL}/"
-  }
-}
-"#;
-
-const REQUEST_TEMPLATE_YAML: &str = r#"version: 1
-name: Example GET
-request:
-  method: GET
-  url: "${BASE_URL}/"
-"#;
-
 async fn run(cli: Cli) -> std::result::Result<(), String> {
     match &cli.command {
-        Some(Command::New {
-            sequence,
-            request,
-        }) => {
-            run_new(sequence.as_ref(), request.as_ref())?;
+        Some(Command::New { sequence, request }) => {
+            new_cmd::run_new(sequence.as_ref(), request.as_ref())?;
         }
         Some(Command::List { dir }) => {
             let paths = list_request_paths(dir).map_err(|e| e.to_string())?;
@@ -150,59 +111,6 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             run_one(path, &cli, run_opts(&cli)).await?;
         }
     }
-    Ok(())
-}
-
-fn run_new(
-    sequence: Option<&PathBuf>,
-    request: Option<&PathBuf>,
-) -> std::result::Result<(), String> {
-    match (sequence, request) {
-        (Some(path), None) => write_template(path, TemplateKind::Sequence),
-        (None, Some(path)) => write_template(path, TemplateKind::Request),
-        (None, None) => Err(
-            "specify one of: --sequence <PATH> or --request <PATH> (see nativedoctor new --help)"
-                .into(),
-        ),
-        (Some(_), Some(_)) => Err("pass only one of --sequence or --request".into()),
-    }
-}
-
-enum TemplateKind {
-    Sequence,
-    Request,
-}
-
-fn write_template(path: &Path, kind: TemplateKind) -> std::result::Result<(), String> {
-    if path.exists() {
-        return Err(format!("refusing to overwrite existing file: {}", path.display()));
-    }
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        }
-    }
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|s| s.to_lowercase())
-        .unwrap_or_default();
-    let content = match (&kind, ext.as_str()) {
-        (TemplateKind::Sequence, "json") => SEQUENCE_TEMPLATE_JSON,
-        (TemplateKind::Sequence, "yaml" | "yml") => SEQUENCE_TEMPLATE_YAML,
-        (TemplateKind::Request, "json") => REQUEST_TEMPLATE_JSON,
-        (TemplateKind::Request, "yaml" | "yml") => REQUEST_TEMPLATE_YAML,
-        (TemplateKind::Sequence, _) => {
-            return Err(
-                "--sequence path must end with .json, .yaml, or .yml".into(),
-            );
-        }
-        (TemplateKind::Request, _) => {
-            return Err("--request path must end with .json, .yaml, or .yml".into());
-        }
-    };
-    std::fs::write(path, content).map_err(|e| e.to_string())?;
-    println!("Created {}", path.display());
     Ok(())
 }
 
@@ -265,7 +173,8 @@ async fn run_sequence(
                 .as_deref()
                 .map(|s| format!(" [{}]", s))
                 .unwrap_or_default();
-            let (prep, _) = prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
+            let (prep, _) =
+                prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
             let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
             println!(
                 "--- dry-run step {} / {}{} ({}) ---\n{}",
@@ -279,7 +188,9 @@ async fn run_sequence(
         return Ok(());
     }
 
-    let out = execute_sequence(path, &opts).await.map_err(|e| e.to_string())?;
+    let out = execute_sequence(path, &opts)
+        .await
+        .map_err(|e| e.to_string())?;
     if let Some(n) = &out.sequence_name {
         println!("sequence: {n}\n");
     }

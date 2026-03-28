@@ -1,52 +1,12 @@
-   0.125882125s  INFO prepare_target{force=false package_id=nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core) target="discover"}: cargo::core::compiler::fingerprint: fingerprint error for nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core)/Check { test: true }/TargetInner { kind: "test", name: "discover", benched: false, ..: with_path("/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core/tests/discover.rs", Edition2021) }
-   0.125909625s  INFO prepare_target{force=false package_id=nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core) target="discover"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-core-20e6d853c8670e02/test-integration-test-discover`
-
-Caused by:
-    No such file or directory (os error 2)
-
-Stack backtrace:
-   0: std::backtrace::Backtrace::create
-   1: std::backtrace::Backtrace::capture
-   2: cargo_util::paths::read_bytes
-   3: cargo_util::paths::read
-   4: cargo::core::compiler::fingerprint::_compare_old_fingerprint
-   5: cargo::core::compiler::fingerprint::prepare_target
-   6: cargo::core::compiler::compile
-   7: <cargo::core::compiler::build_runner::BuildRunner>::compile
-   8: cargo::ops::cargo_compile::compile_ws
-   9: cargo::ops::cargo_compile::compile_with_exec
-  10: cargo::ops::cargo_compile::compile
-  11: cargo::commands::check::exec
-  12: <cargo::cli::Exec>::exec
-  13: cargo::main
-  14: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
-  15: std::rt::lang_start::<()>::{closure#0}
-  16: std::rt::lang_start_internal
-  17: _main
-   0.131063958s  INFO prepare_target{force=false package_id=nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core) target="rhai_post_script"}: cargo::core::compiler::fingerprint: fingerprint error for nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core)/Check { test: true }/TargetInner { kind: "test", name: "rhai_post_script", benched: false, ..: with_path("/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core/tests/rhai_post_script.rs", Edition2021) }
-   0.131075125s  INFO prepare_target{force=false package_id=nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core) target="rhai_post_script"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-core-e40108d5e35b353e/test-integration-test-rhai_post_script`
-
-Caused by:
-    No such file or directory (os error 2)
-
-Stack backtrace:
-   0: std::backtrace::Backtrace::create
-   1: std::backtrace::Backtrace::capture
-   2: cargo_util::paths::read_bytes
-   3: cargo_util::paths::read
-   4: cargo::core::compiler::fingerprint::_compare_old_fingerprint
-   5: cargo::core::compiler::fingerprint::prepare_target
-   6: cargo::core::compiler::compile
-   7: <cargo::core::compiler::build_runner::BuildRunner>::compile
-   8: cargo::ops::cargo_compile::compile_ws
-   9: cargo::ops::cargo_compile::compile_with_exec
-  10: cargo::ops::cargo_compile::compile
-  11: cargo::commands::check::exec
-  12: <cargo::cli::Exec>::exec
-  13: cargo::main
-  14: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
-  15: std::rt::lang_start::<()>::{closure#0}
-  16: std::rt::lang_start_internal
-  17: _main
-    Checking nd-core v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-core)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s
+   0.108308459s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint: stale: changed "/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs"
+   0.108325584s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:           (vs) "/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-cli-29a9a5e0ea420534/dep-bin-nativedoctor"
+   0.108330917s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1774741204, nanos: 587716730 } < FileTime { seconds: 1774741404, nanos: 609207812 }
+   0.108520459s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint: fingerprint dirty for nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli)/Check { test: false }/TargetInner { name: "nativedoctor", doc: true, ..: with_path("/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs", Edition2021) }
+   0.108532750s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-cli-29a9a5e0ea420534/dep-bin-nativedoctor", reference_mtime: FileTime { seconds: 1774741204, nanos: 587716730 }, stale: "/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs", stale_mtime: FileTime { seconds: 1774741404, nanos: 609207812 } }))
+   0.122371000s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint: stale: changed "/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs"
+   0.122381542s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:           (vs) "/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-cli-8e6ac3e88ef96510/dep-test-bin-nativedoctor"
+   0.122384959s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1774741204, nanos: 587537270 } < FileTime { seconds: 1774741404, nanos: 609207812 }
+   0.122470042s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint: fingerprint dirty for nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli)/Check { test: true }/TargetInner { name: "nativedoctor", doc: true, ..: with_path("/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs", Edition2021) }
+   0.122479084s  INFO prepare_target{force=false package_id=nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli) target="nativedoctor"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/Users/rubbiekelvin/Projects/nativedoctor/target/debug/.fingerprint/nd-cli-8e6ac3e88ef96510/dep-test-bin-nativedoctor", reference_mtime: FileTime { seconds: 1774741204, nanos: 587537270 }, stale: "/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli/src/main.rs", stale_mtime: FileTime { seconds: 1774741404, nanos: 609207812 } }))
+    Checking nd-cli v0.1.0 (/Users/rubbiekelvin/Projects/nativedoctor/crates/nd-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.36s

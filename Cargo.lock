@@ -759,6 +759,7 @@ dependencies = [
  "clap",
  "nd-core",
  "serde_json",
+ "serde_yaml",
  "tokio",
 ]
 
