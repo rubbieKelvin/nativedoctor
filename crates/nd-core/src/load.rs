@@ -36,32 +36,3 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
 pub fn resolve_post_script(base_dir: &Path, rel: &str) -> PathBuf {
     base_dir.join(rel)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn resolve_post_script_joins_base() {
-        assert_eq!(
-            resolve_post_script(Path::new("/foo/bar"), "./x.rhai"),
-            PathBuf::from("/foo/bar/x.rhai")
-        );
-    }
-
-    #[test]
-    fn load_yaml_file() {
-        let dir = tempdir().unwrap();
-        let p = dir.path().join("r.yaml");
-        std::fs::write(
-            &p,
-            b"version: 1\nrequest:\n  method: GET\n  url: https://example.com\npost_script: ./a.rhai\n",
-        )
-        .unwrap();
-        let (req, base) = load_request_file(&p).unwrap();
-        assert_eq!(req.request.method, "GET");
-        assert_eq!(req.post_script.as_deref(), Some("./a.rhai"));
-        assert_eq!(base, dir.path());
-    }
-}

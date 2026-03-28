@@ -16,6 +16,7 @@ async fn post_json_hits_mock_and_returns_body() {
     let url = format!("{}/api", mock.uri());
     let yaml = format!(
         r#"version: 1
+name: Create item
 request:
   method: POST
   url: "{}"
@@ -32,7 +33,25 @@ request:
     let res = execute_request_file(&tmp.path().join("req.yaml"), RunOptions::default())
         .await
         .unwrap();
+    assert_eq!(res.request_name.as_deref(), Some("Create item"));
     assert_eq!(res.status, 200);
     let body: serde_json::Value = serde_json::from_slice(&res.body).unwrap();
     assert_eq!(body["id"], "abc");
+}
+
+#[tokio::test]
+async fn dry_run_propagates_request_name() {
+    let tmp = tempdir().unwrap();
+    std::fs::write(
+        tmp.path().join("r.yaml"),
+        b"version: 1\nname: Probe\nrequest:\n  method: GET\n  url: https://example.com\n",
+    )
+    .unwrap();
+    let mut opts = RunOptions::default();
+    opts.dry_run = true;
+    let res = execute_request_file(&tmp.path().join("r.yaml"), opts)
+        .await
+        .unwrap();
+    assert_eq!(res.request_name.as_deref(), Some("Probe"));
+    assert_eq!(res.status, 0);
 }

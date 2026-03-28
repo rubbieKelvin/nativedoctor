@@ -10,8 +10,8 @@
 //! [`rhai_host::run_post_script`].
 //!
 //! # Sequences
-//! [`sequence::execute_sequence`] runs multiple request files in order with one shared
-//! [`RuntimeEnv`]. Step outcomes follow [`execute::OutcomePolicy::SequenceStep`].
+//! Schema: [`SequenceFile`] / [`SequenceStep`]. Runner: [`sequence::execute_sequence`]
+//! uses one shared [`RuntimeEnv`]. Step outcomes follow [`execute::OutcomePolicy::SequenceStep`].
 
 mod discover;
 mod env;
@@ -30,6 +30,7 @@ pub use execute::{
     execute_request_file, execute_request_with_env, format_prepared_request, prepare_request_file,
     prepare_request_with_env, ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions,
 };
-pub use sequence::{execute_sequence, load_sequence_file, SequenceFile, SequenceResult, StepSummary};
+pub use sequence::{execute_sequence, load_sequence_file, SequenceResult, StepSummary};
 pub use load::{load_request_file, resolve_post_script};
-pub use model::{HttpRequestSpec, RequestBody, RequestFile};
+pub use model::{HttpRequestSpec, RequestBody, RequestFile, SequenceFile, SequenceStep};
+pub use template::{expand_json_value, expand_string};

@@ -54,6 +54,8 @@ impl Default for RunOptions {
 #[derive(Debug, Clone)]
 pub struct ExecutionResult {
     pub method: Method,
+    /// From the request file’s optional `name` field.
+    pub request_name: Option<String>,
     /// Response status, or `0` for dry-run.
     pub status: u16,
     /// Final URL after redirects, or the expanded request URL for dry-run.
@@ -235,7 +237,7 @@ pub async fn execute_request_with_env(
     let prep = expand_http_request(env, &doc.request)?;
 
     if opts.dry_run {
-        return Ok(dry_run_result(&prep));
+        return Ok(dry_run_result(&prep, doc.name.clone()));
     }
 
     let client = build_client(&doc.request)?;
@@ -276,6 +278,7 @@ pub async fn execute_request_with_env(
 
     Ok(ExecutionResult {
         method: prep.method.clone(),
+        request_name: doc.name.clone(),
         status,
         final_url,
         headers: resp_headers,
@@ -285,10 +288,11 @@ pub async fn execute_request_with_env(
 }
 
 /// Build a synthetic “result” for dry-run: no network, status 0, body = request body bytes.
-fn dry_run_result(prep: &PreparedRequest) -> ExecutionResult {
+fn dry_run_result(prep: &PreparedRequest, request_name: Option<String>) -> ExecutionResult {
     let full_url = merge_url_query(&prep.url, &prep.query).unwrap_or_else(|_| prep.url.clone());
     ExecutionResult {
         method: prep.method.clone(),
+        request_name,
         status: 0,
         final_url: full_url,
         headers: prep.headers.clone(),

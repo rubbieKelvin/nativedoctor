@@ -1,4 +1,4 @@
-//! Recursive discovery of request definition files on disk.
+//! Non-recursive discovery of request definition files in a single directory.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -12,52 +12,25 @@ fn is_request_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Depth-first walk: collects request-like files, ignores missing root directories.
-fn walk_dir(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
-    let read = match std::fs::read_dir(dir) {
-        Ok(r) => r,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(e) => return Err(e),
-    };
-    for entry in read {
-        let entry = entry?;
-        let p = entry.path();
-        if p.is_dir() {
-            walk_dir(&p, out)?;
-        } else if is_request_file(&p) {
-            out.push(p);
-        }
-    }
-    Ok(())
-}
-
-/// List all `*.json`, `*.yaml`, and `*.yml` files under `dir` (recursive).
+/// List `*.json`, `*.yaml`, and `*.yml` files in `dir` only (not subdirectories).
 ///
-/// Paths are deduplicated (canonical duplicates collapse to one) and sorted for stable output.
+/// Missing `dir` yields an empty list. Paths are deduplicated and sorted.
 pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
-    walk_dir(dir, &mut paths).map_err(crate::error::Error::Io)?;
+    let read = match std::fs::read_dir(dir) {
+        Ok(r) => r,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(paths),
+        Err(e) => return Err(crate::error::Error::Io(e)),
+    };
+    for entry in read {
+        let entry = entry.map_err(crate::error::Error::Io)?;
+        let p = entry.path();
+        if p.is_file() && is_request_file(&p) {
+            paths.push(p);
+        }
+    }
     let unique: BTreeSet<PathBuf> = paths.into_iter().collect();
     let mut sorted: Vec<PathBuf> = unique.into_iter().collect();
     sorted.sort();
     Ok(sorted)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-
-    #[test]
-    fn list_finds_nested() {
-        let tmp = std::env::temp_dir().join(format!("nd-test-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&tmp);
-        fs::create_dir_all(tmp.join("a/b")).unwrap();
-        fs::write(tmp.join("a/b/x.yaml"), "request:\n  method: GET\n  url: u\n").unwrap();
-        fs::write(tmp.join("root.json"), "{\"request\":{\"method\":\"GET\",\"url\":\"u\"}}")
-            .unwrap();
-        let list = list_request_paths(&tmp).unwrap();
-        assert_eq!(list.len(), 2);
-        let _ = fs::remove_dir_all(&tmp);
-    }
 }

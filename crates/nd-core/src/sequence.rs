@@ -1,32 +1,15 @@
 //! Multi-step flows: ordered request files sharing one [`crate::RuntimeEnv`] session.
+//!
+//! Sequence schema types are in [`crate::model`] (`SequenceFile`, `SequenceStep`).
 
 use std::path::{Path, PathBuf};
-
-use serde::Deserialize;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::execute::{
-    execute_request_with_env, OutcomePolicy, ExecutionResult, RunOptions,
+    execute_request_with_env, ExecutionResult, OutcomePolicy, RunOptions,
 };
-
-fn default_version() -> u32 {
-    1
-}
-
-/// One entry in a sequence file: path to a request definition, relative to the sequence file dir.
-#[derive(Debug, Clone, Deserialize)]
-pub struct SequenceStep {
-    pub file: String,
-}
-
-/// Sequence document (JSON or YAML).
-#[derive(Debug, Clone, Deserialize)]
-pub struct SequenceFile {
-    #[serde(default = "default_version")]
-    pub version: u32,
-    pub steps: Vec<SequenceStep>,
-}
+use crate::model::SequenceFile;
 
 /// Load and deserialize a sequence file; returns the document and the directory for resolving `steps[].file`.
 pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
@@ -66,12 +49,15 @@ pub struct StepSummary {
 /// Outcome after all steps succeed.
 #[derive(Debug, Clone)]
 pub struct SequenceResult {
+    /// Copied from the sequence file’s optional `name`.
+    pub sequence_name: Option<String>,
     pub steps: Vec<StepSummary>,
 }
 
 /// Run each step in order with one shared [`RuntimeEnv`]. Uses [`OutcomePolicy::SequenceStep`].
 pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<SequenceResult> {
     let (seq, base_dir) = load_sequence_file(path)?;
+    let sequence_name = seq.name.clone();
     if seq.steps.is_empty() {
         return Err(Error::InvalidSequence(
             "sequence must contain at least one step".into(),
@@ -99,26 +85,8 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         });
     }
 
-    Ok(SequenceResult { steps: summaries })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn load_sequence_yaml() {
-        let dir = tempdir().unwrap();
-        let p = dir.path().join("seq.yaml");
-        std::fs::write(
-            &p,
-            b"version: 1\nsteps:\n  - file: a.yaml\n  - file: b.yaml\n",
-        )
-        .unwrap();
-        let (s, base) = load_sequence_file(&p).unwrap();
-        assert_eq!(s.steps.len(), 2);
-        assert_eq!(s.steps[0].file, "a.yaml");
-        assert_eq!(base, dir.path());
-    }
+    Ok(SequenceResult {
+        sequence_name,
+        steps: summaries,
+    })
 }

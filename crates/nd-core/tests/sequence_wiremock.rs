@@ -27,7 +27,8 @@ async fn sequence_shares_runtime_token_to_next_request_url() {
     std::fs::write(
         tmp.path().join("s1.yaml"),
         format!(
-            r#"request:
+            r#"name: Fetch token
+request:
   method: GET
   url: "{}/token"
 post_script: ./tok.rhai
@@ -39,7 +40,8 @@ post_script: ./tok.rhai
     std::fs::write(
         tmp.path().join("s2.yaml"),
         format!(
-            r#"request:
+            r#"name: Use token
+request:
   method: GET
   url: "{}/use/${{TOKEN}}"
 "#,
@@ -49,15 +51,18 @@ post_script: ./tok.rhai
     .unwrap();
     std::fs::write(
         tmp.path().join("seq.yaml"),
-        b"steps:\n  - file: s1.yaml\n  - file: s2.yaml\n",
+        b"name: Token flow\nsteps:\n  - file: s1.yaml\n  - file: s2.yaml\n",
     )
     .unwrap();
 
     let out = execute_sequence(&tmp.path().join("seq.yaml"), &RunOptions::default())
         .await
         .unwrap();
+    assert_eq!(out.sequence_name.as_deref(), Some("Token flow"));
     assert_eq!(out.steps.len(), 2);
+    assert_eq!(out.steps[0].result.request_name.as_deref(), Some("Fetch token"));
     assert_eq!(out.steps[0].result.status, 200);
+    assert_eq!(out.steps[1].result.request_name.as_deref(), Some("Use token"));
     assert_eq!(out.steps[1].result.status, 200);
     assert_eq!(out.steps[1].result.body, b"second-ok");
 }

@@ -6,8 +6,8 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 use nd_core::{
     execute_request_file, execute_sequence, format_prepared_request, list_request_paths,
-    load_sequence_file, prepare_request_file, prepare_request_with_env, ExecutionResult,
-    OutcomePolicy, RunOptions, RuntimeEnv,
+    load_request_file, load_sequence_file, prepare_request_file, prepare_request_with_env,
+    ExecutionResult, OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
 #[derive(Parser)]
@@ -49,7 +49,7 @@ enum Command {
     Sequence {
         path: PathBuf,
     },
-    /// Print all `*.json` / `*.yaml` / `*.yml` paths under a directory (recursive, sorted).
+    /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
     List {
         dir: PathBuf,
     },
@@ -88,6 +88,7 @@ fn run_opts(cli: &Cli) -> RunOptions {
 
 const SEQUENCE_TEMPLATE_JSON: &str = r#"{
   "version": 1,
+  "name": "My API flow",
   "steps": [
     { "file": "example-request.yaml" }
   ]
@@ -95,12 +96,14 @@ const SEQUENCE_TEMPLATE_JSON: &str = r#"{
 "#;
 
 const SEQUENCE_TEMPLATE_YAML: &str = r#"version: 1
+name: My API flow
 steps:
   - file: example-request.yaml
 "#;
 
 const REQUEST_TEMPLATE_JSON: &str = r#"{
   "version": 1,
+  "name": "Example GET",
   "request": {
     "method": "GET",
     "url": "${BASE_URL}/"
@@ -109,6 +112,7 @@ const REQUEST_TEMPLATE_JSON: &str = r#"{
 "#;
 
 const REQUEST_TEMPLATE_YAML: &str = r#"version: 1
+name: Example GET
 request:
   method: GET
   url: "${BASE_URL}/"
@@ -209,6 +213,10 @@ async fn run_one(
     opts: RunOptions,
 ) -> std::result::Result<(), String> {
     if opts.dry_run {
+        let (doc, _) = load_request_file(path).map_err(|e| e.to_string())?;
+        if let Some(n) = &doc.name {
+            println!("# {}\n", n);
+        }
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
         print!("{summary}");
@@ -238,6 +246,9 @@ async fn run_sequence(
         if seq.steps.is_empty() {
             return Err("sequence must contain at least one step".to_string());
         }
+        if let Some(n) = &seq.name {
+            println!("# sequence: {}\n", n);
+        }
         let env = RuntimeEnv::from_process_env();
         let n = seq.steps.len();
         for (i, step) in seq.steps.iter().enumerate() {
@@ -248,12 +259,19 @@ async fn run_sequence(
                     step_path.display()
                 ));
             }
+            let (step_doc, _) = load_request_file(&step_path).map_err(|e| e.to_string())?;
+            let step_label = step_doc
+                .name
+                .as_deref()
+                .map(|s| format!(" [{}]", s))
+                .unwrap_or_default();
             let (prep, _) = prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
             let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
             println!(
-                "--- dry-run step {} / {} ({}) ---\n{}",
+                "--- dry-run step {} / {}{} ({}) ---\n{}",
                 i + 1,
                 n,
+                step_label,
                 step_path.display(),
                 summary
             );
@@ -262,11 +280,21 @@ async fn run_sequence(
     }
 
     let out = execute_sequence(path, &opts).await.map_err(|e| e.to_string())?;
+    if let Some(n) = &out.sequence_name {
+        println!("sequence: {n}\n");
+    }
     for sum in &out.steps {
+        let label = sum
+            .result
+            .request_name
+            .as_deref()
+            .map(|s| format!(" [{}]", s))
+            .unwrap_or_default();
         println!(
-            "step {}/{} {} -> {} ({:?})",
+            "step {}/{}{} {} -> {} ({:?})",
             sum.index,
             sum.total,
+            label,
             sum.path.display(),
             sum.result.status,
             sum.result.duration
@@ -293,9 +321,14 @@ fn redact_headers(headers: &[(String, String)]) -> Vec<(String, String)> {
 
 /// Status line always; verbose adds headers; body is pretty-printed JSON when valid UTF-8 JSON.
 fn print_result(result: &ExecutionResult, verbose: bool) -> std::result::Result<(), String> {
+    let label = result
+        .request_name
+        .as_deref()
+        .map(|s| format!(" [{}]", s))
+        .unwrap_or_default();
     println!(
-        "{} {} -> {} ({:?})",
-        result.method, result.final_url, result.status, result.duration
+        "{}{} {} -> {} ({:?})",
+        result.method, label, result.final_url, result.status, result.duration
     );
     if verbose {
         let hdrs = redact_headers(&result.headers);

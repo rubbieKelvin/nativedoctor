@@ -22,6 +22,9 @@ pub struct RequestFile {
     /// Schema version for forward-compatible parsing (default `1`).
     #[serde(default = "default_version")]
     pub version: u32,
+    /// Optional human-readable label for logs and UIs (backward compatible when omitted).
+    #[serde(default)]
+    pub name: Option<String>,
     pub request: HttpRequestSpec,
     /// Optional Rhai script path, relative to the directory containing this request file.
     #[serde(default)]

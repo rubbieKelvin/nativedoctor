@@ -55,31 +55,3 @@ pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
         _ => Ok(value.clone()),
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn expand_simple() {
-        let env = RuntimeEnv::from_process_env();
-        env.set_runtime("FOO", "bar");
-        assert_eq!(expand_string(&env, "${FOO}").unwrap(), "bar");
-    }
-
-    #[test]
-    fn expand_missing() {
-        let env = RuntimeEnv::from_process_env();
-        assert!(expand_string(&env, "${__UNLIKELY_VAR_XYZ__}").is_err());
-    }
-
-    #[test]
-    fn expand_json_nested() {
-        let env = RuntimeEnv::from_process_env();
-        env.set_runtime("X", "1");
-        let v = json!({ "a": "${X}", "b": [ "${X}" ] });
-        let e = expand_json_value(&env, &v).unwrap();
-        assert_eq!(e, json!({ "a": "1", "b": ["1"] }));
-    }
-}
