@@ -1,6 +1,7 @@
-[package]
-name = "nativedoctor"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["crates/nd-core", "crates/nd-cli"]
+resolver = "2"
 
-[dependencies]
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
