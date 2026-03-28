@@ -29,10 +29,7 @@ fn expand_string_missing_var_errors() {
 #[test]
 fn expand_string_empty_when_no_placeholders() {
     let env = RuntimeEnv::from_process_env();
-    assert_eq!(
-        expand_string(&env, "no vars here").unwrap(),
-        "no vars here"
-    );
+    assert_eq!(expand_string(&env, "no vars here").unwrap(), "no vars here");
 }
 
 #[test]

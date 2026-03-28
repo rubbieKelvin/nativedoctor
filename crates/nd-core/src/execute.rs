@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{redirect, Client, Method, Url};
+use tracing::debug;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
@@ -82,9 +83,8 @@ pub struct PreparedRequest {
 }
 
 fn expand_http_request(env: &RuntimeEnv, spec: &HttpRequestSpec) -> Result<PreparedRequest> {
-    let method = Method::from_bytes(spec.method.to_uppercase().as_bytes()).map_err(|_| {
-        Error::InvalidRequest(format!("unsupported HTTP method: {}", spec.method))
-    })?;
+    let method = Method::from_bytes(spec.method.to_uppercase().as_bytes())
+        .map_err(|_| Error::InvalidRequest(format!("unsupported HTTP method: {}", spec.method)))?;
     let url = expand_string(env, &spec.url)?;
     let mut query = Vec::new();
     for (k, v) in &spec.query {
@@ -144,9 +144,8 @@ fn merge_url_query(base: &str, query: &[(String, String)]) -> Result<String> {
     if query.is_empty() {
         return Ok(base.to_string());
     }
-    let mut url = Url::parse(base).map_err(|e| {
-        Error::InvalidRequest(format!("invalid URL after expansion: {base}: {e}"))
-    })?;
+    let mut url = Url::parse(base)
+        .map_err(|e| Error::InvalidRequest(format!("invalid URL after expansion: {base}: {e}")))?;
     for (k, v) in query {
         url.query_pairs_mut().append_pair(k, v);
     }
@@ -156,12 +155,10 @@ fn merge_url_query(base: &str, query: &[(String, String)]) -> Result<String> {
 fn header_map(pairs: &[(String, String)]) -> Result<HeaderMap> {
     let mut map = HeaderMap::new();
     for (k, v) in pairs {
-        let name = HeaderName::from_bytes(k.as_bytes()).map_err(|_| {
-            Error::InvalidRequest(format!("invalid header name: {k}"))
-        })?;
-        let value = HeaderValue::from_str(v).map_err(|_| {
-            Error::InvalidRequest(format!("invalid header value for {k}"))
-        })?;
+        let name = HeaderName::from_bytes(k.as_bytes())
+            .map_err(|_| Error::InvalidRequest(format!("invalid header name: {k}")))?;
+        let value = HeaderValue::from_str(v)
+            .map_err(|_| Error::InvalidRequest(format!("invalid header value for {k}")))?;
         map.insert(name, value);
     }
     Ok(map)
@@ -169,6 +166,12 @@ fn header_map(pairs: &[(String, String)]) -> Result<HeaderMap> {
 
 async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest::Response> {
     let full_url = merge_url_query(&prep.url, &prep.query)?;
+    debug!(
+        method = %prep.method,
+        url = %full_url,
+        body_len = prep.body.as_ref().map(|b| b.len()).unwrap_or(0),
+        "sending HTTP request"
+    );
     let mut req = client.request(prep.method.clone(), &full_url);
     let mut hdrs = header_map(&prep.headers)?;
     if prep.body.is_some() {
@@ -204,13 +207,12 @@ fn run_request_post_script(
             if !script_path.is_file() {
                 return Err(Error::PostScriptNotFound(script_path));
             }
-            run_post_script(
-                &script_path,
-                env,
-                status,
-                resp_headers,
-                body,
-            )?;
+            debug!(
+                script = %script_path.display(),
+                http_status = status,
+                "running post_script"
+            );
+            run_post_script(&script_path, env, status, resp_headers, body)?;
         }
     }
     Ok(())
@@ -236,7 +238,16 @@ pub async fn execute_request_with_env(
     let (doc, base_dir) = load_request_file(path)?;
     let prep = expand_http_request(env, &doc.request)?;
 
+    debug!(
+        path = %path.display(),
+        request_name = ?doc.name,
+        dry_run = opts.dry_run,
+        outcome_policy = ?opts.outcome_policy,
+        "execute_request_with_env"
+    );
+
     if opts.dry_run {
+        debug!(path = %path.display(), "dry_run: skipping HTTP");
         return Ok(dry_run_result(&prep, doc.name.clone()));
     }
 
@@ -253,6 +264,14 @@ pub async fn execute_request_with_env(
         }
     }
     let body = response.bytes().await.map_err(Error::Http)?.to_vec();
+
+    debug!(
+        status,
+        final_url = %final_url,
+        ?duration,
+        body_len = body.len(),
+        "HTTP response received"
+    );
 
     let has_active_script = doc.post_script.is_some() && !opts.no_post_script;
 
@@ -308,7 +327,10 @@ pub fn prepare_request_file(path: &Path) -> Result<(PreparedRequest, std::path::
 }
 
 /// Load and expand one request file with an existing [`RuntimeEnv`] (e.g. shared sequence session).
-pub fn prepare_request_with_env(path: &Path, env: &RuntimeEnv) -> Result<(PreparedRequest, std::path::PathBuf)> {
+pub fn prepare_request_with_env(
+    path: &Path,
+    env: &RuntimeEnv,
+) -> Result<(PreparedRequest, std::path::PathBuf)> {
     let (doc, base_dir) = load_request_file(path)?;
     let prep = expand_http_request(env, &doc.request)?;
     Ok((prep, base_dir))

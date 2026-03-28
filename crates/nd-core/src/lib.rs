@@ -1,6 +1,11 @@
 //! Core library for **nativedoctor**: load request definitions (JSON/YAML), expand `${VAR}` templates,
 //! run HTTP requests, and execute optional Rhai post-scripts.
 //!
+//! # Internal logging
+//! The crate emits [`tracing`] events (e.g. `debug!` when loading files, sending HTTP, running Rhai).
+//! Consumers should install a [`tracing_subscriber`](https://docs.rs/tracing-subscriber) or use the
+//! **nativedoctor** CLI, which sets `RUST_LOG` or defaults to `nd_core=debug` when `--verbose` is passed.
+//!
 //! # Environment
 //! [`RuntimeEnv`] seeds a writable map from the process environment. Lookups use that map first,
 //! then fall back to live `std::env::var` for keys not present in the map (e.g. new vars after startup).
@@ -30,7 +35,7 @@ pub use execute::{
     execute_request_file, execute_request_with_env, format_prepared_request, prepare_request_file,
     prepare_request_with_env, ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions,
 };
-pub use sequence::{execute_sequence, load_sequence_file, SequenceResult, StepSummary};
 pub use load::{load_request_file, resolve_post_script};
 pub use model::{HttpRequestSpec, RequestBody, RequestFile, SequenceFile, SequenceStep};
+pub use sequence::{execute_sequence, load_sequence_file, SequenceResult, StepSummary};
 pub use template::{expand_json_value, expand_string};

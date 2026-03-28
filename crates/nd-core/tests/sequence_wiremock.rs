@@ -60,9 +60,15 @@ request:
         .unwrap();
     assert_eq!(out.sequence_name.as_deref(), Some("Token flow"));
     assert_eq!(out.steps.len(), 2);
-    assert_eq!(out.steps[0].result.request_name.as_deref(), Some("Fetch token"));
+    assert_eq!(
+        out.steps[0].result.request_name.as_deref(),
+        Some("Fetch token")
+    );
     assert_eq!(out.steps[0].result.status, 200);
-    assert_eq!(out.steps[1].result.request_name.as_deref(), Some("Use token"));
+    assert_eq!(
+        out.steps[1].result.request_name.as_deref(),
+        Some("Use token")
+    );
     assert_eq!(out.steps[1].result.status, 200);
     assert_eq!(out.steps[1].result.body, b"second-ok");
 }

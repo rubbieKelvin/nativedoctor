@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use nd_core::{HttpRequestSpec, RequestFile, SequenceFile, SequenceStep};
+use tracing::debug;
 
 /// Build the default sequence document (same fields as the former template).
 fn default_sequence_file() -> SequenceFile {
@@ -53,7 +54,7 @@ fn serialize_request(ext: &str) -> Result<String, String> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum TemplateKind {
     Sequence,
     Request,
@@ -99,6 +100,12 @@ fn write_template(path: &Path, kind: TemplateKind) -> Result<(), String> {
             return Err("--request path must end with .json, .yaml, or .yml".into());
         }
     };
+    debug!(
+        path = %path.display(),
+        kind = ?kind,
+        bytes = content.len(),
+        "writing new template"
+    );
     std::fs::write(path, content).map_err(|e| e.to_string())?;
     Ok(())
 }

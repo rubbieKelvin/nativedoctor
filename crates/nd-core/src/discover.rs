@@ -3,6 +3,8 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
+use tracing::debug;
+
 use crate::error::Result;
 
 fn is_request_file(path: &Path) -> bool {
@@ -32,5 +34,10 @@ pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
     let unique: BTreeSet<PathBuf> = paths.into_iter().collect();
     let mut sorted: Vec<PathBuf> = unique.into_iter().collect();
     sorted.sort();
+    debug!(
+        dir = %dir.display(),
+        count = sorted.len(),
+        "list_request_paths"
+    );
     Ok(sorted)
 }

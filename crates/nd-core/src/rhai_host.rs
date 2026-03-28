@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use rhai::{Dynamic, Engine};
 use serde_json::Value;
+use tracing::debug;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
@@ -70,9 +71,16 @@ pub fn run_post_script(
     headers: &[(String, String)],
     body: &[u8],
 ) -> Result<()> {
-    let source = std::fs::read_to_string(script_path).map_err(|_| {
-        Error::PostScriptNotFound(script_path.to_path_buf())
-    })?;
+    let source = std::fs::read_to_string(script_path)
+        .map_err(|_| Error::PostScriptNotFound(script_path.to_path_buf()))?;
+
+    debug!(
+        path = %script_path.display(),
+        status,
+        body_len = body.len(),
+        header_count = headers.len(),
+        "Rhai post_script evaluating"
+    );
 
     let header_map: HashMap<String, String> = headers.iter().cloned().collect();
     let body_str = String::from_utf8_lossy(body).to_string();
@@ -109,10 +117,7 @@ pub fn run_post_script(
 
     let e_env = env.clone();
     engine.register_fn("env", move |key: &str| {
-        e_env
-            .get(key)
-            .map(Dynamic::from)
-            .unwrap_or(Dynamic::UNIT)
+        e_env.get(key).map(Dynamic::from).unwrap_or(Dynamic::UNIT)
     });
 
     let e_set = env.clone();
@@ -125,5 +130,6 @@ pub fn run_post_script(
         .run_with_scope(&mut scope, &source)
         .map_err(|e| Error::Rhai(e.to_string()))?;
 
+    debug!(path = %script_path.display(), "Rhai post_script finished");
     Ok(())
 }

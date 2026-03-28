@@ -4,11 +4,11 @@
 
 use std::path::{Path, PathBuf};
 
+use tracing::{debug, info};
+
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
-use crate::execute::{
-    execute_request_with_env, ExecutionResult, OutcomePolicy, RunOptions,
-};
+use crate::execute::{execute_request_with_env, ExecutionResult, OutcomePolicy, RunOptions};
 use crate::model::SequenceFile;
 
 /// Load and deserialize a sequence file; returns the document and the directory for resolving `steps[].file`.
@@ -19,7 +19,7 @@ pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
         .unwrap_or("")
         .to_lowercase();
     let text = std::fs::read_to_string(path)?;
-    let file = match ext.as_str() {
+    let file: SequenceFile = match ext.as_str() {
         "yaml" | "yml" => serde_yaml::from_str(&text).map_err(|e| Error::ParseSequenceYaml {
             path: path.to_path_buf(),
             source: e,
@@ -34,6 +34,13 @@ pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
         .parent()
         .map(Path::to_path_buf)
         .unwrap_or_else(|| PathBuf::from("."));
+    debug!(
+        path = %path.display(),
+        format = %ext,
+        steps = file.steps.len(),
+        name = ?file.name,
+        "loaded sequence file"
+    );
     Ok((file, base))
 }
 
@@ -69,6 +76,12 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
     step_opts.outcome_policy = OutcomePolicy::SequenceStep;
 
     let total = seq.steps.len();
+    info!(
+        path = %path.display(),
+        name = ?sequence_name,
+        steps = total,
+        "sequence started"
+    );
     let mut summaries = Vec::with_capacity(total);
 
     for (i, step) in seq.steps.iter().enumerate() {
@@ -76,6 +89,12 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         if !step_path.is_file() {
             return Err(Error::SequenceStepNotFound(step_path));
         }
+        debug!(
+            step_index = i + 1,
+            step_total = total,
+            step_file = %step_path.display(),
+            "sequence executing step"
+        );
         let result = execute_request_with_env(&step_path, &step_opts, &env).await?;
         summaries.push(StepSummary {
             index: i + 1,
@@ -85,6 +104,11 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         });
     }
 
+    info!(
+        path = %path.display(),
+        steps_ok = summaries.len(),
+        "sequence finished"
+    );
     Ok(SequenceResult {
         sequence_name,
         steps: summaries,

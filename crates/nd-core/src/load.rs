@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use tracing::debug;
+
 use crate::error::{Error, Result};
 use crate::model::RequestFile;
 
@@ -14,7 +16,7 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
         .unwrap_or("")
         .to_lowercase();
     let text = std::fs::read_to_string(path)?;
-    let file = match ext.as_str() {
+    let file: RequestFile = match ext.as_str() {
         "yaml" | "yml" => serde_yaml::from_str(&text).map_err(|e| Error::ParseYaml {
             path: path.to_path_buf(),
             source: e,
@@ -29,6 +31,12 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
         .parent()
         .map(Path::to_path_buf)
         .unwrap_or_else(|| PathBuf::from("."));
+    debug!(
+        path = %path.display(),
+        format = %ext,
+        name = ?file.name,
+        "loaded request file"
+    );
     Ok((file, base))
 }
 

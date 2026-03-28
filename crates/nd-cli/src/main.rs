@@ -1,5 +1,6 @@
 //! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, `sequence`, `new`, and shared flags.
 
+mod logging;
 mod new_cmd;
 
 use std::path::PathBuf;
@@ -17,7 +18,8 @@ use nd_core::{
 #[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
 #[command(args_conflicts_with_subcommands = false)]
 struct Cli {
-    /// Log extra detail (full request before send, response headers on stdout).
+    /// Log extra detail (full request before send, response headers on stdout) and enable
+    /// `nd_core=debug` tracing unless `RUST_LOG` is set.
     #[arg(short, long, global = true)]
     verbose: bool,
 
@@ -63,6 +65,7 @@ enum Command {
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = Cli::parse();
+    logging::init(cli.verbose);
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {

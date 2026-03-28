@@ -45,11 +45,7 @@ fn load_sequence_unsupported_extension_errors() {
 async fn execute_sequence_missing_step_file_errors() {
     let dir = tempdir().unwrap();
     let p = dir.path().join("seq.yaml");
-    std::fs::write(
-        &p,
-        b"version: 1\nsteps:\n  - file: does-not-exist.yaml\n",
-    )
-    .unwrap();
+    std::fs::write(&p, b"version: 1\nsteps:\n  - file: does-not-exist.yaml\n").unwrap();
     let err = execute_sequence(&p, &RunOptions::default())
         .await
         .unwrap_err()

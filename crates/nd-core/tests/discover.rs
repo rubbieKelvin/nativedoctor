@@ -7,7 +7,11 @@ use tempfile::tempdir;
 #[test]
 fn lists_only_immediate_children() {
     let tmp = tempdir().unwrap();
-    fs::write(tmp.path().join("root.yaml"), "request:\n  method: GET\n  url: u\n").unwrap();
+    fs::write(
+        tmp.path().join("root.yaml"),
+        "request:\n  method: GET\n  url: u\n",
+    )
+    .unwrap();
     fs::create_dir_all(tmp.path().join("nested")).unwrap();
     fs::write(
         tmp.path().join("nested").join("inner.json"),
@@ -22,8 +26,16 @@ fn lists_only_immediate_children() {
 #[test]
 fn sorted_order() {
     let tmp = tempdir().unwrap();
-    fs::write(tmp.path().join("b.yaml"), "request:\n  method: GET\n  url: u\n").unwrap();
-    fs::write(tmp.path().join("a.json"), "{\"request\":{\"method\":\"GET\",\"url\":\"u\"}}").unwrap();
+    fs::write(
+        tmp.path().join("b.yaml"),
+        "request:\n  method: GET\n  url: u\n",
+    )
+    .unwrap();
+    fs::write(
+        tmp.path().join("a.json"),
+        "{\"request\":{\"method\":\"GET\",\"url\":\"u\"}}",
+    )
+    .unwrap();
     let list = list_request_paths(tmp.path()).unwrap();
     assert_eq!(list.len(), 2);
     assert!(list[0].to_string_lossy().contains("a.json"));
