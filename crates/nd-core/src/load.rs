@@ -1,3 +1,5 @@
+//! Load request YAML/JSON from disk and resolve relative `post_script` paths.
+
 use std::path::{Path, PathBuf};
 
 use tracing::debug;
@@ -39,10 +41,10 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
         name = ?file.name,
         "loaded request file"
     );
-    return Ok((file, base));
+    Ok((file, base))
 }
 
 /// Join `base_dir` with the relative `post_script` path from the request file.
 pub fn resolve_post_script(base_dir: &Path, rel: &str) -> PathBuf {
-    return base_dir.join(rel);
+    base_dir.join(rel)
 }

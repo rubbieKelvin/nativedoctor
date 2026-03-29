@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+nd-constants = { path = "../nd-constants" }
 nd-core = { path = "../nd-core" }
 openapiv3 = "2.2"
 regex = "1"

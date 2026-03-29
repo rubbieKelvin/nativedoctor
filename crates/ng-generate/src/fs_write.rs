@@ -1,3 +1,5 @@
+//! Emit [`nd_core::RequestFile`] values to disk, with YAML quoting for `$` in URLs.
+
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -7,8 +9,10 @@ use openapiv3::{OpenAPI, ReferenceOr};
 use crate::build_request::{file_stem, operation_to_request_file, unique_stem};
 use crate::error::{Error, Result};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Serialization format for generated request definitions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OutputFormat {
+    #[default]
     Yaml,
     Json,
 }
@@ -58,6 +62,7 @@ fn quote_yaml_urls_containing_dollar(text: &str) -> String {
     out
 }
 
+/// Serializes `file` and writes it to `path`, creating parent directories when needed.
 pub fn write_request_file(path: &Path, file: &RequestFile, format: OutputFormat) -> Result<()> {
     let data = match format {
         OutputFormat::Yaml => {

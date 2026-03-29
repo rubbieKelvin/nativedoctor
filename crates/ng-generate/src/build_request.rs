@@ -1,3 +1,5 @@
+//! Map OpenAPI paths and operations into [`nd_core::RequestFile`] values.
+
 use std::collections::{HashMap, HashSet};
 
 use nd_core::{HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile};
@@ -21,7 +23,7 @@ fn base_url(api: &OpenAPI) -> String {
     api.servers
         .first()
         .map(|s| s.url.trim_end_matches('/').to_string())
-        .unwrap_or_else(|| "${BASE_URL}".to_string())
+        .unwrap_or_else(|| nd_constants::OPENAPI_GENERATE_BASE_URL_PLACEHOLDER.to_string())
 }
 
 fn merge_parameters(path_item: &PathItem, operation: &Operation) -> Result<Vec<Parameter>> {
@@ -126,7 +128,7 @@ pub fn operation_to_request_file(
     let deprecated = operation.deprecated;
 
     Ok(RequestFile {
-        version: "0.0.0".to_string(),
+        version: nd_constants::REQUEST_FILE_DEFAULT_VERSION.to_string(),
         name,
         request: HttpRequestSpec {
             method: method.to_ascii_uppercase(),
@@ -180,8 +182,6 @@ fn sanitize_stem(s: &str) -> String {
     for c in s.chars() {
         if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
             out.push(c.to_ascii_lowercase());
-        } else if c.is_whitespace() {
-            out.push('-');
         } else {
             out.push('-');
         }
@@ -212,6 +212,7 @@ mod tests {
     }
 }
 
+/// Returns `stem` if unused, else `stem_2`, `stem_3`, … until unique (mutates `used`).
 pub fn unique_stem(stem: &str, used: &mut HashSet<String>) -> String {
     if !used.contains(stem) {
         used.insert(stem.to_string());

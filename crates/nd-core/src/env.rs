@@ -1,3 +1,5 @@
+//! Process and runtime variable map used for `${VAR}` expansion and Rhai `env` / `set`.
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

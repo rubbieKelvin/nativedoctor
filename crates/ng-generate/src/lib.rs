@@ -19,22 +19,20 @@ use std::path::Path;
 /// Options for [`generate_from_openapi_path`].
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GenerateOptions {
+    /// YAML or JSON output for each generated request file.
     pub format: OutputFormat,
-}
-
-impl Default for OutputFormat {
-    fn default() -> Self {
-        Self::Yaml
-    }
 }
 
 /// Summary of a successful generation run.
 #[derive(Debug, Clone)]
 pub struct GenerateReport {
+    /// Absolute or relative paths of files created under `out_dir`.
     pub files_written: Vec<std::path::PathBuf>,
 }
 
-/// Read OpenAPI from `input`, emit one request file per operation into `out_dir`.
+/// Read OpenAPI 3.0.x from `input`, then write one nativedoctor request file per HTTP operation into `out_dir`.
+///
+/// File names derive from `operationId` or method + path. OpenAPI 3.1+ and unsupported `$ref` forms return [`Error`].
 pub fn generate_from_openapi_path(
     input: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,

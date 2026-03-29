@@ -29,7 +29,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 fn default_version() -> String {
-    "0.0.0".into()
+    nd_constants::REQUEST_FILE_DEFAULT_VERSION.into()
 }
 
 fn default_follow_redirects() -> bool {
@@ -53,7 +53,7 @@ fn is_false(b: &bool) -> bool {
 /// `post_script`, when set, is a path string resolved relative to the request file’s directory.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct RequestFile {
-    /// Schema version for forward-compatible parsing (default `"0.0.0"` if omitted).
+    /// Schema version for forward-compatible parsing (default [`nd_constants::DOCUMENT_DEFAULT_VERSION`] if omitted).
     #[serde(default = "default_version")]
     pub version: String,
     /// Optional human-readable label for logs and UIs (backward compatible when omitted).

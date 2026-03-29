@@ -1,3 +1,5 @@
+//! Read OpenAPI 3.0.x specs from `.json`, `.yaml`, or `.yml`.
+
 use std::path::Path;
 
 use openapiv3::OpenAPI;

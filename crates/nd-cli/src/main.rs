@@ -185,7 +185,7 @@ async fn run_one(
 
     print_result(&result, cli.verbose)?;
 
-    return Ok(());
+    Ok(())
 }
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.

@@ -1,12 +1,14 @@
 //! In-memory log sink for Rhai post-scripts. The `log(level, message)` host function **always**
-//! emits [`tracing`] output (console when a subscriber is configured); when you pass a [`Logger`]
-//! into [`crate::rhai::host::run_post_script`], entries are also stored here.
+//! emits [`tracing`] output (when a subscriber is configured); when you pass a [`Logger`] into
+//! [`crate::rhai::run_post_script`], entries are also stored here.
 //!
 //! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
 //! [`Logger::drain`] after the script run when a logger was passed in.
 
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
+use nd_constants::{RHAI_LOG_INITIATOR, TRACING_TARGET_RHAI};
 
 /// Severity for a [`Log`] line (parsed from Rhai `log("info", "...")` etc.).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, strum::Display)]
@@ -131,23 +133,24 @@ impl Default for Logger {
     }
 }
 
+/// Emits a structured [`tracing`] event for one script log line (independent of in-memory capture).
 pub fn emit_script_log_to_tracing(level: LogLevel, script: &str, message: &str) {
-    // match level {
-    //     LogLevel::Trace => {
-    //         tracing::trace!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
-    //     }
-    //     LogLevel::Debug => {
-    //         tracing::debug!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
-    //     }
-    //     LogLevel::Info => {
-    //         tracing::info!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
-    //     }
-    //     LogLevel::Warn => {
-    //         tracing::warn!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
-    //     }
-    //     LogLevel::Error => {
-    //         tracing::error!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
-    //     }
-    // }
-    println!("[{level}:{script}] {message}");
+    let initiator = RHAI_LOG_INITIATOR;
+    match level {
+        LogLevel::Trace => {
+            tracing::trace!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+        }
+        LogLevel::Debug => {
+            tracing::debug!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+        }
+        LogLevel::Info => {
+            tracing::info!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+        }
+        LogLevel::Warn => {
+            tracing::warn!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+        }
+        LogLevel::Error => {
+            tracing::error!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+        }
+    }
 }

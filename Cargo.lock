@@ -814,6 +814,7 @@ dependencies = [
 name = "ng-generate"
 version = "0.1.0"
 dependencies = [
+ "nd-constants",
  "nd-core",
  "openapiv3",
  "regex",

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+/// Failure modes for loading OpenAPI, validating version, or writing generated files.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("unsupported OpenAPI version: {0} (only 3.0.x is supported in this release)")]
