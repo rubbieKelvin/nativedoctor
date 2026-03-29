@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use nd_core::{run_post_script, LogLevel, Logger, RuntimeEnv};
+use nd_core::rhai::logger::{LogLevel, Logger};
+use nd_core::{run_post_script, RuntimeEnv};
 use tempfile::tempdir;
 
 #[test]

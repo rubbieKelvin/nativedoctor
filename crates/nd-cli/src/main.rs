@@ -1,12 +1,13 @@
 //! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, `sequence`, `new`, and shared flags.
 
+mod generate_cmd;
 mod logging;
 mod new_cmd;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use nd_core::{
     execute_request_file, execute_sequence, format_prepared_request, list_request_paths,
     load_request_file, load_sequence_file, prepare_request_file, prepare_request_with_env,
@@ -43,6 +44,22 @@ struct Cli {
     file: Option<PathBuf>,
 }
 
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
+enum GenerateFormat {
+    #[default]
+    Yaml,
+    Json,
+}
+
+impl From<GenerateFormat> for ng_generate::OutputFormat {
+    fn from(f: GenerateFormat) -> Self {
+        match f {
+            GenerateFormat::Yaml => Self::Yaml,
+            GenerateFormat::Json => Self::Json,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 enum Command {
     /// Run one request definition.
@@ -51,6 +68,18 @@ enum Command {
     Sequence { path: PathBuf },
     /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
     List { dir: PathBuf },
+    /// Generate nativedoctor request files from an OpenAPI 3.0.x document (JSON or YAML).
+    Generate {
+        /// OpenAPI spec file (.json, .yaml, or .yml).
+        #[arg(short = 'i', long = "input", value_name = "FILE")]
+        input: PathBuf,
+        /// Output directory (created if missing).
+        #[arg(short = 'o', long = "output", value_name = "DIR")]
+        output: PathBuf,
+        /// Request file format for generated files.
+        #[arg(long, value_enum, default_value_t = GenerateFormat::Yaml)]
+        format: GenerateFormat,
+    },
     /// Create a starter request or sequence file (e.g. `new --sequence seq-a.json`).
     New {
         /// Write a default sequence file (.json, .yaml, or .yml).
@@ -87,6 +116,13 @@ fn run_opts(cli: &Cli) -> RunOptions {
 
 async fn run(cli: Cli) -> std::result::Result<(), String> {
     match &cli.command {
+        Some(Command::Generate {
+            input,
+            output,
+            format,
+        }) => {
+            generate_cmd::run_generate(input, output, (*format).into())?;
+        }
         Some(Command::New { sequence, request }) => {
             new_cmd::run_new(sequence.as_ref(), request.as_ref())?;
         }
