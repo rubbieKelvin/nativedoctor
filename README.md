@@ -12,24 +12,6 @@ The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-co
 
 ---
 
-## Table of contents
-
-- [Requirements](#requirements)
-- [Install](#install)
-- [Quick start](#quick-start)
-- [CLI reference](#cli-reference)
-- [Request files](#request-files)
-- [Sequences](#sequences)
-- [Environment and `${VAR}` templates](#environment-and-var-templates)
-- [Post-scripts (Rhai)](#post-scripts-rhai)
-- [OpenAPI generation](#openapi-generation)
-- [Using the library (`nd-core`)](#using-the-library-nd-core)
-- [Workspace layout](#workspace-layout)
-- [Development](#development)
-- [Release binaries (CI)](#release-binaries-ci)
-
----
-
 ## Requirements
 
 - **Rust** (2021 edition), stable toolchain, to build from source.
