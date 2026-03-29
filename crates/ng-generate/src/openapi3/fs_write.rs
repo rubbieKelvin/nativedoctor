@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use nd_core::RequestFile;
 use openapiv3::{OpenAPI, ReferenceOr};
 
-use crate::build_request::{file_stem, operation_to_request_file, unique_stem};
+use super::build_request::{file_stem, operation_to_request_file, unique_stem};
 use crate::error::{Error, Result};
 
 /// Serialization format for generated request definitions.

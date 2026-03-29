@@ -1,8 +1,8 @@
 //! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, `sequence`, `new`, and shared flags.
 
-mod generate_cmd;
+mod cmd_generate;
+mod cmd_new;
 mod logging;
-mod new_cmd;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -83,10 +83,10 @@ enum Command {
     /// Create a starter request or sequence file (e.g. `new --sequence seq-a.json`).
     New {
         /// Write a default sequence file (.json, .yaml, or .yml).
-        #[arg(long, value_name = "PATH", conflicts_with = "request")]
+        #[arg(long, short = 's', value_name = "PATH", conflicts_with = "request")]
         sequence: Option<PathBuf>,
         /// Write a default request file (.json, .yaml, or .yml).
-        #[arg(long, value_name = "PATH", conflicts_with = "sequence")]
+        #[arg(long, short = 'r', value_name = "PATH", conflicts_with = "sequence")]
         request: Option<PathBuf>,
     },
 }
@@ -121,10 +121,10 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             output,
             format,
         }) => {
-            generate_cmd::run_generate(input, output, (*format).into())?;
+            cmd_generate::run_generate(input, output, (*format).into())?;
         }
         Some(Command::New { sequence, request }) => {
-            new_cmd::run_new(sequence.as_ref(), request.as_ref())?;
+            cmd_new::run_new(sequence.as_ref(), request.as_ref())?;
         }
         Some(Command::List { dir }) => {
             let paths = list_request_paths(dir).map_err(|e| e.to_string())?;

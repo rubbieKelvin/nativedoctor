@@ -1,18 +1,18 @@
-//! Generate nativedoctor request files from **OpenAPI 3.0.x** specs (`openapiv3` parser).
+//! Generate nativedoctor request files from external API descriptions.
+//!
+//! Today the supported source is **OpenAPI 3.0.x** via [`openapi3`]. Additional sources can add
+//! their own top-level modules alongside it.
 //!
 //! OpenAPI **3.1** is rejected with a clear error until a dedicated code path exists.
 //!
 //! YAML output quotes `request.url` when it contains `${…}` so YAML 1.1 does not treat `$` as an
 //! alias. JSON output is unaffected.
 
-mod build_request;
 mod error;
-mod fs_write;
-mod load;
+pub mod openapi3;
 
-pub use build_request::path_to_url_template;
 pub use error::{Error, Result};
-pub use fs_write::OutputFormat;
+pub use openapi3::OutputFormat;
 
 use std::path::Path;
 
@@ -33,12 +33,15 @@ pub struct GenerateReport {
 /// Read OpenAPI 3.0.x from `input`, then write one nativedoctor request file per HTTP operation into `out_dir`.
 ///
 /// File names derive from `operationId` or method + path. OpenAPI 3.1+ and unsupported `$ref` forms return [`Error`].
+///
+/// For lower-level access (load only, custom naming, etc.), see [`openapi3`].
 pub fn generate_from_openapi_path(
     input: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
     options: GenerateOptions,
 ) -> Result<GenerateReport> {
-    let api = load::load_openapi(input.as_ref())?;
-    let files_written = fs_write::write_all_operations(&api, out_dir.as_ref(), options.format)?;
-    Ok(GenerateReport { files_written })
+    openapi3::generate_from_path(input.as_ref(), out_dir.as_ref(), options.format)
 }
+
+/// Convert `{param}` path segments to nativedoctor `${param}` template syntax (OpenAPI-style paths).
+pub use openapi3::path_to_url_template;
