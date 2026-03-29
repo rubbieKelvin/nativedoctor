@@ -9,7 +9,7 @@ use tracing::{debug, info};
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::execute::{execute_request_with_env, ExecutionResult, OutcomePolicy, RunOptions};
-use crate::model::SequenceFile;
+use crate::model::{SequenceFile, SequenceStep};
 
 /// Load and deserialize a sequence file; returns the document and the directory for resolving `steps[].file`.
 pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
@@ -42,6 +42,25 @@ pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
         "loaded sequence file"
     );
     Ok((file, base))
+}
+
+/// Load a sequence file from `path`, then yield each [`SequenceStep`] in order (like a Python generator).
+///
+/// Same parse rules and I/O as [`load_sequence_file`]; the returned iterator owns the steps and
+/// walks them lazily. Step `file` paths remain relative to the sequence file’s directory.
+pub fn sequence_step_iter(path: &Path) -> Result<impl Iterator<Item = (SequenceStep, PathBuf)>> {
+    let (seq, basedir) = load_sequence_file(path)?;
+
+    if seq.steps.is_empty() {
+        return Err(Error::InvalidSequence(
+            "sequence must contain at least one step".into(),
+        ));
+    }
+
+    return Ok(seq
+        .steps
+        .into_iter()
+        .map(move |s| (s.clone(), basedir.join(&s.file))));
 }
 
 /// Completed step metadata for CLI / callers.
@@ -122,4 +141,26 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
     })
 }
 
-pub async fn execute_sequence_iter() {}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn sequence_step_iter_yields_steps_in_order() {
+        let mut tmp = tempfile::NamedTempFile::with_suffix(".yaml").unwrap();
+        writeln!(
+            tmp,
+            r#"version: "0.0.0"
+steps:
+  - file: a.yaml
+  - file: b.yaml
+"#
+        )
+        .unwrap();
+        let steps: Vec<SequenceStep> = sequence_step_iter(tmp.path()).unwrap().collect();
+        assert_eq!(steps.len(), 2);
+        assert_eq!(steps[0].file, "a.yaml");
+        assert_eq!(steps[1].file, "b.yaml");
+    }
+}

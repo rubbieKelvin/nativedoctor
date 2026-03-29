@@ -3,9 +3,9 @@
 use std::path::Path;
 
 use nd_core::{
-    execute_request_post_script, execute_request_with_env, execute_sequence,
-    format_prepared_request, load_request_file, load_sequence_file, prepare_request_file,
-    prepare_request_with_env, OutcomePolicy, RunOptions, RuntimeEnv,
+    execute_request_post_script, execute_request_with_env, format_prepared_request,
+    load_request_file, load_sequence_file, prepare_request_file, prepare_request_with_env,
+    sequence_step_iter, OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
 use crate::{print::print_result, Cli, Command};
@@ -87,32 +87,22 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         return Ok(());
     }
 
-    let out = execute_sequence(path, &opts)
-        .await
-        .map_err(|e| e.to_string())?;
+    // create runtime env
+    let env = RuntimeEnv::from_process_env();
 
-    for sum in &out.steps {
-        let label = sum
-            .result
-            .request_name
-            .as_deref()
-            .map(|s| format!(" [{}]", s))
-            .unwrap_or_default();
+    for (_, step_path) in sequence_step_iter(path).map_err(|e| e.to_string())? {
+        // execute request file
+        let output = execute_request_with_env(&step_path, &opts, &env)
+            .await
+            .map_err(|e| e.to_string())?;
 
-        println!(
-            "step {}/{}{} {} -> {} ({:?})",
-            sum.index,
-            sum.total,
-            label,
-            sum.path.display(),
-            sum.result.status,
-            sum.result.duration
-        );
+        // print response output
+        print_result(&output, cli.verbose)?;
 
-        if cli.verbose {
-            print_result(&sum.result, true)?;
-        }
+        // execute post request script
+        execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
     }
+
     return Ok(());
 }
 
