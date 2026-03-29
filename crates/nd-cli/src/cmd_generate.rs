@@ -20,5 +20,5 @@ pub fn run_generate(
     for p in &report.files_written {
         println!("  {}", p.display());
     }
-    Ok(())
+    return Ok(());
 }

@@ -43,20 +43,20 @@ fn default_request_file() -> RequestFile {
 
 fn serialize_sequence(ext: &str) -> Result<String, String> {
     let doc = default_sequence_file();
-    match ext {
+    return match ext {
         "json" => serde_json::to_string_pretty(&doc).map_err(|e| e.to_string()),
         "yaml" | "yml" => serde_yaml::to_string(&doc).map_err(|e| e.to_string()),
         _ => Err(format!("unsupported extension for sequence: {ext}")),
-    }
+    };
 }
 
 fn serialize_request(ext: &str) -> Result<String, String> {
     let doc = default_request_file();
-    match ext {
+    return match ext {
         "json" => serde_json::to_string_pretty(&doc).map_err(|e| e.to_string()),
         "yaml" | "yml" => serde_yaml::to_string(&doc).map_err(|e| e.to_string()),
         _ => Err(format!("unsupported extension for request: {ext}")),
-    }
+    };
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -67,12 +67,12 @@ enum TemplateKind {
 
 /// `nativedoctor new --sequence PATH | --request PATH`
 pub fn run_new(sequence: Option<&PathBuf>, request: Option<&PathBuf>) -> Result<(), String> {
-    match (sequence, request) {
+    return match (sequence, request) {
         (Some(path), None) => write_template(path, TemplateKind::Sequence),
         (None, Some(path)) => write_template(path, TemplateKind::Request),
         (None, None) => Err("specify one sequence or request. See --help".into()),
         (Some(_), Some(_)) => Err("pass only one of sequence or request".into()),
-    }
+    };
 }
 
 fn write_template(path: &Path, kind: TemplateKind) -> Result<(), String> {
@@ -112,5 +112,5 @@ fn write_template(path: &Path, kind: TemplateKind) -> Result<(), String> {
     );
     std::fs::write(path, content).map_err(|e| e.to_string())?;
 
-    Ok(())
+    return Ok(());
 }

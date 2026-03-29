@@ -1,4 +1,4 @@
-//! CLI entry for **nativedoctor**: `run` / shorthand file path, `list`, `sequence`, `new`, and shared flags.
+//! CLI entry for **nativedoctor**: `run` (request or `--sequence`), shorthand file path, `list`, `new`, and shared flags.
 
 mod cmd_generate;
 mod cmd_new;
@@ -36,7 +36,7 @@ pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// If no subcommand is given, this file is executed (same as `run <FILE>`).
+    /// If no subcommand is given, this file is executed as a single request (same as `run <FILE>`).
     #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
     file: Option<PathBuf>,
 }
@@ -59,10 +59,14 @@ impl From<GenerateFormat> for nd_generate::OutputFormat {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Run one request definition.
-    Run { path: PathBuf },
-    /// Run an ordered list of request files with one shared runtime environment (see sequence JSON/YAML).
-    Sequence { path: PathBuf },
+    /// Run one request file, or a sequence file when `--sequence` is set.
+    Run {
+        /// Treat `FILE` as a sequence (ordered steps, one shared runtime environment).
+        #[arg(long, short = 's')]
+        sequence: bool,
+        #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
+        path: PathBuf,
+    },
     /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
     List { dir: PathBuf },
     /// Generate nativedoctor request files from an OpenAPI 3.0.x document (JSON or YAML).
@@ -116,18 +120,20 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
         Some(Command::List { dir }) => {
             let paths = list_request_paths(dir).map_err(|e| e.to_string())?;
             if paths.is_empty() {
-                println!("(no request files found)");
+                eprintln!("no request files found");
             } else {
                 for p in paths {
                     println!("{}", p.display());
                 }
             }
         }
-        Some(Command::Run { path }) => {
-            cmd_run::run_one(path, &cli, cmd_run::run_opts(&cli)).await?;
-        }
-        Some(Command::Sequence { path }) => {
-            cmd_run::run_sequence(path, &cli, cmd_run::run_opts(&cli)).await?;
+        Some(Command::Run { sequence, path }) => {
+            let opts = cmd_run::run_opts(&cli);
+            if *sequence {
+                cmd_run::run_sequence(path, &cli, opts).await?;
+            } else {
+                cmd_run::run_one(path, &cli, opts).await?;
+            }
         }
         None => {
             let path = cli
@@ -137,5 +143,5 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             cmd_run::run_one(path, &cli, cmd_run::run_opts(&cli)).await?;
         }
     }
-    Ok(())
+    return Ok(());
 }

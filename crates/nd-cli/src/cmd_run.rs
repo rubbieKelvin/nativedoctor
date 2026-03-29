@@ -1,4 +1,4 @@
-//! `nativedoctor run` (and default file path): single request execution and `sequence` runs.
+//! `nativedoctor run <FILE>` and top-level `FILE` shorthand: single request, or `run --sequence <FILE>` for sequences.
 
 use std::path::Path;
 
@@ -11,13 +11,13 @@ use nd_core::{
 use crate::Cli;
 
 pub fn run_opts(cli: &Cli) -> RunOptions {
-    RunOptions {
+    return RunOptions {
         verbose: cli.verbose,
         no_post_script: cli.no_post_script,
         dry_run: cli.dry_run,
         allow_error_status: cli.allow_error_status,
         outcome_policy: OutcomePolicy::SingleRequest,
-    }
+    };
 }
 
 /// Run or dry-run a single request file; prints human-readable output to stdout/stderr.
@@ -46,7 +46,7 @@ pub async fn run_one(
 
     print_result(&result, cli.verbose)?;
 
-    Ok(())
+    return Ok(());
 }
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.
@@ -124,7 +124,7 @@ pub async fn run_sequence(
             print_result(&sum.result, true)?;
         }
     }
-    Ok(())
+    return Ok(());
 }
 
 fn redact_headers(headers: &[(String, String)]) -> Vec<(String, String)> {
@@ -177,5 +177,5 @@ fn print_result(result: &ExecutionResult, verbose: bool) -> Result<(), String> {
     } else {
         println!("<{} bytes binary>", body.len());
     }
-    Ok(())
+    return Ok(());
 }
