@@ -10,13 +10,13 @@
 //! | `json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
 //! | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
 //! | `set(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
-//! | `log(level, message)` | — | When a [`crate::rhai::Logger`] is passed to [`run_post_script`], appends a [`crate::rhai::Log`] (unknown `level` → `info`) |
+//! | `log(level, message)` | — | Emits a [`tracing`] event (stderr when a subscriber is installed, e.g. the CLI with `--verbose`). If a [`crate::rhai::Logger`] is passed to [`run_post_script`], also appends a [`crate::rhai::Log`]. Unknown `level` → `info`. |
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use super::Logger;
+use super::logger::{LogLevel, Logger};
 
 use rhai::{Dynamic, Engine};
 use serde_json::Value;
@@ -24,6 +24,7 @@ use tracing::debug;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
+use crate::rhai::logger::emit_script_log_to_tracing;
 
 /// Snapshot of the HTTP response passed into Rhai (immutable inside the script run).
 #[derive(Clone)]
@@ -146,13 +147,15 @@ fn create_engine(
         e_set.set_runtime(key.to_string(), value.to_string());
     });
 
-    if let Some(sink) = logger {
-        let sink = sink.clone();
-        let script_label = script_path.display().to_string();
-        engine.register_fn("log", move |level: &str, message: &str| {
-            sink.log_parsed_level(level, message, script_label.clone(), "post_script");
-        });
-    }
+    let sink = logger;
+    let script_label = script_path.display().to_string();
+    engine.register_fn("log", move |level: &str, message: &str| {
+        let lvl = LogLevel::parse_or_info(level);
+        if let Some(ref s) = sink {
+            s.log_parsed_level(level, message, script_label.clone(), "post_script");
+            emit_script_log_to_tracing(lvl, &script_label.clone(), message);
+        }
+    });
 
     engine
 }

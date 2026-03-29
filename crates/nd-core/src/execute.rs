@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use base64::Engine;
@@ -18,6 +19,7 @@ use crate::model::{
     RequestBodyStructured, RequestFile,
 };
 use crate::rhai::host::run_post_script;
+use crate::rhai::logger::Logger;
 use crate::template::{expand_json_value, expand_string};
 
 /// How HTTP status and Rhai interact after a response (single `run` vs [`crate::sequence`] step).
@@ -290,7 +292,9 @@ fn run_request_post_script(
                 http_status = status,
                 "running post_script"
             );
-            run_post_script(&script_path, env, status, resp_headers, body, None)?;
+
+            let logger = Arc::new(Logger::new());
+            run_post_script(&script_path, env, status, resp_headers, body, Some(logger))?;
         }
     }
     Ok(())

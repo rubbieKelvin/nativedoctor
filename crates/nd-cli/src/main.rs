@@ -168,23 +168,29 @@ async fn run_sequence(
         }
         let env = RuntimeEnv::from_process_env();
         let n = seq.steps.len();
+
         for (i, step) in seq.steps.iter().enumerate() {
             let step_path = base_dir.join(&step.file);
+
             if !step_path.is_file() {
                 return Err(format!(
                     "sequence step request file not found: {}",
                     step_path.display()
                 ));
             }
+
             let (step_doc, _) = load_request_file(&step_path).map_err(|e| e.to_string())?;
             let step_label = step_doc
                 .name
                 .as_deref()
                 .map(|s| format!(" [{}]", s))
                 .unwrap_or_default();
+
             let (prep, _) =
                 prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
+
             let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
+
             println!(
                 "--- dry-run step {} / {}{} ({}) ---\n{}",
                 i + 1,
@@ -200,9 +206,7 @@ async fn run_sequence(
     let out = execute_sequence(path, &opts)
         .await
         .map_err(|e| e.to_string())?;
-    if let Some(n) = &out.sequence_name {
-        println!("sequence: {n}\n");
-    }
+
     for sum in &out.steps {
         let label = sum
             .result

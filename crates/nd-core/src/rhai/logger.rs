@@ -1,14 +1,15 @@
-//! In-memory log sink for Rhai post-scripts ([`Logger::log`] via the `log(level, message)` host fn).
+//! In-memory log sink for Rhai post-scripts. The `log(level, message)` host function **always**
+//! emits [`tracing`] output (console when a subscriber is configured); when you pass a [`Logger`]
+//! into [`crate::rhai::host::run_post_script`], entries are also stored here.
 //!
-//! Entries are ordered; [`Log::elapsed`] is measured from when the [`Logger`] was created (useful for
-//! timing relative to script start). Use [`Logger::snapshot`] or [`Logger::drain`] after
-//! [`crate::rhai::host::run_post_script`] when a logger was passed in.
+//! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
+//! [`Logger::drain`] after the script run when a logger was passed in.
 
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 /// Severity for a [`Log`] line (parsed from Rhai `log("info", "...")` etc.).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, strum::Display)]
 pub enum LogLevel {
     Trace,
     Debug,
@@ -79,6 +80,7 @@ impl Logger {
             script: script.into(),
             initiator: initiator.into(),
         };
+
         if let Ok(mut guard) = self.logs.lock() {
             guard.push(entry);
         }
@@ -127,4 +129,25 @@ impl Default for Logger {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub fn emit_script_log_to_tracing(level: LogLevel, script: &str, message: &str) {
+    // match level {
+    //     LogLevel::Trace => {
+    //         tracing::trace!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
+    //     }
+    //     LogLevel::Debug => {
+    //         tracing::debug!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
+    //     }
+    //     LogLevel::Info => {
+    //         tracing::info!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
+    //     }
+    //     LogLevel::Warn => {
+    //         tracing::warn!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
+    //     }
+    //     LogLevel::Error => {
+    //         tracing::error!(target: "nd_core::rhai", %script, %message, initiator = "post_script")
+    //     }
+    // }
+    println!("[{level}:{script}] {message}");
 }

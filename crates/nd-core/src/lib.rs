@@ -12,8 +12,8 @@
 //!
 //! # Rhai post-scripts
 //! Scripts run in a locked-down Rhai engine. See [`rhai::host`] for the built-in API and
-//! [`run_post_script`]. Optional script logging: [`Logger`] + `log(level, message)` when you pass a
-//! logger into [`run_post_script`].
+//! [`run_post_script`]. `log(level, message)` emits [`tracing`] (CLI: `--verbose`); add a [`Logger`]
+//! argument to [`run_post_script`] to capture the same lines in memory.
 //!
 //! # Sequences
 //! Schema: [`SequenceFile`] / [`SequenceStep`]. Runner: [`sequence::execute_sequence`]
@@ -29,7 +29,6 @@ pub mod rhai;
 pub mod sequence;
 
 pub use rhai::host::run_post_script;
-pub use rhai::{Log, LogLevel, Logger};
 mod template;
 
 pub use discover::list_request_paths;

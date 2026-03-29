@@ -24,16 +24,12 @@ fn post_script_sets_runtime_from_json_body() {
 }
 
 #[test]
-fn post_script_log_fn_requires_logger() {
+fn post_script_log_fn_without_logger_ok() {
     let dir = tempdir().unwrap();
     let script = dir.path().join("log.rhai");
     std::fs::write(&script, r#"log("warn", "x");"#).unwrap();
     let env = RuntimeEnv::from_process_env();
-    let err = run_post_script(&script, &env, 200, &[], b"", None).unwrap_err();
-    assert!(
-        err.to_string().contains("log") || err.to_string().contains("function"),
-        "{err}"
-    );
+    run_post_script(&script, &env, 200, &[], b"", None).unwrap();
 }
 
 #[test]
