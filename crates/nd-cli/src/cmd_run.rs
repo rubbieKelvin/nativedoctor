@@ -8,24 +8,34 @@ use nd_core::{
     OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
-use crate::Cli;
+use crate::{Cli, Command};
 
 pub fn run_opts(cli: &Cli) -> RunOptions {
-    return RunOptions {
-        verbose: cli.verbose,
-        no_post_script: cli.no_post_script,
-        dry_run: cli.dry_run,
-        allow_error_status: cli.allow_error_status,
-        outcome_policy: OutcomePolicy::SingleRequest,
+    return match cli.command {
+        Some(Command::Run {
+            no_post,
+            dry_run,
+            allow_error_status,
+            ..
+        }) => RunOptions {
+            verbose: cli.verbose,
+            no_post_script: no_post,
+            dry_run,
+            allow_error_status: allow_error_status,
+            outcome_policy: OutcomePolicy::SingleRequest,
+        },
+        _ => RunOptions {
+            verbose: cli.verbose,
+            no_post_script: false,
+            dry_run: false,
+            allow_error_status: false,
+            outcome_policy: OutcomePolicy::SingleRequest,
+        },
     };
 }
 
 /// Run or dry-run a single request file; prints human-readable output to stdout/stderr.
-pub async fn run_one(
-    path: &Path,
-    cli: &Cli,
-    opts: RunOptions,
-) -> Result<(), String> {
+pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
     if opts.dry_run {
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
@@ -50,11 +60,7 @@ pub async fn run_one(
 }
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.
-pub async fn run_sequence(
-    path: &Path,
-    cli: &Cli,
-    opts: RunOptions,
-) -> Result<(), String> {
+pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
     if opts.dry_run {
         let (seq, base_dir) = load_sequence_file(path).map_err(|e| e.to_string())?;
         if seq.steps.is_empty() {

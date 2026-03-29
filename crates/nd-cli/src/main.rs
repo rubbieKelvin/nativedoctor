@@ -16,23 +16,14 @@ use nd_core::list_request_paths;
 #[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
 #[command(args_conflicts_with_subcommands = false)]
 pub(crate) struct Cli {
-    /// Log extra detail (full request before send, response headers on stdout) and enable
-    /// `nd_core=debug` tracing unless `RUST_LOG` is set.
+    /// Log extra detail and enable `nd_core=debug` tracing unless `RUST_LOG` is set.
     #[arg(short, long, global = true)]
     verbose: bool,
 
-    /// Do not run `post_script` from the request file.
-    #[arg(long, global = true)]
-    no_post_script: bool,
-
-    /// Expand and print the request only; no network I/O.
-    #[arg(long, global = true)]
-    dry_run: bool,
-
-    /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).
-    #[arg(long, global = true)]
-    allow_error_status: bool,
-
+    // /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).
+    // #[arg(long, global = true)]
+    // allow_error_status: bool,
+    // ...
     #[command(subcommand)]
     command: Option<Command>,
 
@@ -64,6 +55,16 @@ enum Command {
         /// Treat `FILE` as a sequence (ordered steps, one shared runtime environment).
         #[arg(long, short = 's')]
         sequence: bool,
+        /// Do not run `post_script` from the request or sequence file.
+        #[arg(long)]
+        no_post: bool,
+        /// Expand and print the request only; no network I/O.
+        #[arg(long)]
+        dry_run: bool,
+        /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).
+        #[arg(long)]
+        allow_error_status: bool,
+        /// The path pointing to the file to run
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
         path: PathBuf,
     },
@@ -127,7 +128,7 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
                 }
             }
         }
-        Some(Command::Run { sequence, path }) => {
+        Some(Command::Run { sequence, path, .. }) => {
             let opts = cmd_run::run_opts(&cli);
             if *sequence {
                 cmd_run::run_sequence(path, &cli, opts).await?;
