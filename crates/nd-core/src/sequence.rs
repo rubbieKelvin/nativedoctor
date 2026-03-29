@@ -121,3 +121,5 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         steps: summaries,
     })
 }
+
+pub async fn execute_sequence_iter() {}

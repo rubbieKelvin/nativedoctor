@@ -1,0 +1,67 @@
+# Build release binaries for `nativedoctor` and attach them to the GitHub Release
+# that triggered this workflow (Publish release, not draft-only).
+
+name: Release binaries
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x86_64
+          - os: windows-latest
+            name: windows-x86_64
+          - os: macos-latest
+            name: darwin-aarch64
+          - os: macos-13
+            name: darwin-x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        run: cargo build --release -p nd-cli
+
+      - name: Strip binary (Unix)
+        if: runner.os != 'Windows'
+        run: strip target/release/nativedoctor || true
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: tar -czvf "nativedoctor-${{ matrix.name }}.tar.gz" -C target/release nativedoctor
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path target/release/nativedoctor.exe -DestinationPath "nativedoctor-${{ matrix.name }}.zip"
+
+      - name: Upload archive (Unix)
+        if: runner.os != 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nativedoctor-${{ matrix.name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload archive (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nativedoctor-${{ matrix.name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
