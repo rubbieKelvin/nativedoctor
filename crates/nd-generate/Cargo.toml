@@ -1,5 +1,5 @@
 [package]
-name = "ng-generate"
+name = "nd-generate"
 version.workspace = true
 edition.workspace = true
 

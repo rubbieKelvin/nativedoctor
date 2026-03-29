@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use nd_core::load_request_file;
-use ng_generate::{generate_from_openapi_path, GenerateOptions, OutputFormat};
+use nd_generate::{generate_from_openapi_path, GenerateOptions, OutputFormat};
 use tempfile::tempdir;
 
 #[test]

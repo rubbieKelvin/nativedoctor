@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/nd-core", "crates/nd-cli", "crates/ng-generate"]
+members = ["crates/nd-core", "crates/nd-cli", "crates/nd-generate"]
 resolver = "2"
 
 [workspace.package]

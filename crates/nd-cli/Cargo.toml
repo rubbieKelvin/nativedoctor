@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-ng-generate = { path = "../ng-generate" }
+nd-generate = { path = "../nd-generate" }
 nd-core = { path = "../nd-core" }
 nd-constants = { path = "../nd-constants" }
 serde_json = "1"

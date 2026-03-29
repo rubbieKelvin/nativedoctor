@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ng_generate::{generate_from_openapi_path, GenerateOptions, OutputFormat};
+use nd_generate::{generate_from_openapi_path, GenerateOptions, OutputFormat};
 
 pub fn run_generate(
     input: impl AsRef<Path>,

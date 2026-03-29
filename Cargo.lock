@@ -776,7 +776,7 @@ dependencies = [
  "clap",
  "nd-constants",
  "nd-core",
- "ng-generate",
+ "nd-generate",
  "serde_json",
  "serde_yaml",
  "tokio",
@@ -811,7 +811,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ng-generate"
+name = "nd-generate"
 version = "0.1.0"
 dependencies = [
  "nd-constants",
