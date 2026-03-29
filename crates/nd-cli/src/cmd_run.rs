@@ -3,12 +3,12 @@
 use std::path::Path;
 
 use nd_core::{
-    execute_request_file, execute_sequence, format_prepared_request, load_request_file,
-    load_sequence_file, prepare_request_file, prepare_request_with_env, ExecutionResult,
-    OutcomePolicy, RunOptions, RuntimeEnv,
+    execute_request_post_script, execute_request_with_env, execute_sequence,
+    format_prepared_request, load_request_file, load_sequence_file, prepare_request_file,
+    prepare_request_with_env, OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
-use crate::{Cli, Command};
+use crate::{print::print_result, Cli, Command};
 
 pub fn run_opts(cli: &Cli) -> RunOptions {
     return match cli.command {
@@ -36,25 +36,41 @@ pub fn run_opts(cli: &Cli) -> RunOptions {
 
 /// Run or dry-run a single request file; prints human-readable output to stdout/stderr.
 pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
-    if opts.dry_run {
+    // Print a header if we're on verbose and no dry run
+    if opts.verbose && !opts.dry_run {
+        println!("--- request ---");
+    }
+
+    // print request summary on dry run or verbose
+    if opts.dry_run || opts.verbose {
+        // Print the request summary and return. no need to do aything further
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
-        print!("{summary}");
-        return Ok(());
+        println!("{summary}");
+
+        // End execuation (no net I/O)
+        if opts.dry_run {
+            return Ok(());
+        }
     }
 
     if cli.verbose {
-        // Second load: keeps `nd-core` free of `eprintln!` while still showing the resolved request.
-        let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
-        let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
-        eprint!("--- request ---\n{summary}\n--- response ---\n");
+        println!("\n--- response ---");
     }
 
-    let result = execute_request_file(path, opts)
+    // create runtime env
+    let env = RuntimeEnv::from_process_env();
+
+    // execute request file
+    let output = execute_request_with_env(path, &opts, &env)
         .await
         .map_err(|e| e.to_string())?;
 
-    print_result(&result, cli.verbose)?;
+    // print response output
+    print_result(&output, cli.verbose)?;
+
+    // execute post request script
+    execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
 
     return Ok(());
 }
@@ -129,59 +145,6 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         if cli.verbose {
             print_result(&sum.result, true)?;
         }
-    }
-    return Ok(());
-}
-
-fn redact_headers(headers: &[(String, String)]) -> Vec<(String, String)> {
-    headers
-        .iter()
-        .map(|(k, v)| {
-            if k.eq_ignore_ascii_case("authorization") {
-                (k.clone(), "<redacted>".to_string())
-            } else {
-                (k.clone(), v.clone())
-            }
-        })
-        .collect()
-}
-
-/// Status line always; verbose adds headers; body is pretty-printed JSON when valid UTF-8 JSON.
-fn print_result(result: &ExecutionResult, verbose: bool) -> Result<(), String> {
-    let label = result
-        .request_name
-        .as_deref()
-        .map(|s| format!(" [{}]", s))
-        .unwrap_or_default();
-    println!(
-        "{}{} {} -> {} ({:?})",
-        result.method, label, result.final_url, result.status, result.duration
-    );
-    if verbose {
-        let hdrs = redact_headers(&result.headers);
-        for (k, v) in hdrs {
-            println!("{k}: {v}");
-        }
-        println!();
-    }
-    let body = &result.body;
-    if body.is_empty() {
-        return Ok(());
-    }
-    if let Ok(text) = std::str::from_utf8(body) {
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(text) {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&v).unwrap_or_else(|_| text.to_string())
-            );
-        } else {
-            print!("{text}");
-            if !text.ends_with('\n') {
-                println!();
-            }
-        }
-    } else {
-        println!("<{} bytes binary>", body.len());
     }
     return Ok(());
 }

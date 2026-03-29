@@ -35,8 +35,9 @@ pub use discover::list_request_paths;
 pub use env::RuntimeEnv;
 pub use error::{Error, Result};
 pub use execute::{
-    execute_request_file, execute_request_with_env, format_prepared_request, prepare_request_file,
-    prepare_request_with_env, ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions,
+    execute_request_post_script, execute_request_with_env, format_prepared_request,
+    prepare_request_file, prepare_request_with_env, ExecutionResult, OutcomePolicy,
+    PreparedRequest, RunOptions,
 };
 pub use load::{load_request_file, resolve_post_script};
 pub use model::{

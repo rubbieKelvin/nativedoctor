@@ -1,6 +1,6 @@
 //! Orchestrate load → expand → send → post-script → status checks.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use tracing::debug;
@@ -12,12 +12,13 @@ use super::types::{ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions};
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::load::load_request_file;
+use crate::RequestFile;
 
 /// Same as [`execute_request_with_env`] with a fresh [`RuntimeEnv::from_process_env`].
-pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<ExecutionResult> {
-    let env = RuntimeEnv::from_process_env();
-    execute_request_with_env(path, &opts, &env).await
-}
+// pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<ExecutionResult> {
+//     let env = RuntimeEnv::from_process_env();
+//     execute_request_with_env(path, &opts, &env).await
+// }
 
 /// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
 ///
@@ -41,23 +42,27 @@ pub async fn execute_request_with_env(
         "execute_request_with_env"
     );
 
+    // If this is a dry run (ie. no IO, let's skip actually calling the request)
     if opts.dry_run {
         debug!(path = %path.display(), "dry_run: skipping HTTP");
-        return Ok(dry_run_result(&prep, doc.name.clone()));
+        return Ok(dry_run_result(&prep, &doc));
     }
 
     let client = build_client(&doc.request)?;
     let start = Instant::now();
+
     let response = send_request(&client, &prep).await?;
     let duration = start.elapsed();
     let status = response.status().as_u16();
     let final_url = response.url().to_string();
     let mut resp_headers = Vec::new();
+
     for (name, value) in response.headers().iter() {
         if let Ok(s) = value.to_str() {
             resp_headers.push((name.as_str().to_string(), s.to_string()));
         }
     }
+
     let body = response.bytes().await.map_err(Error::Http)?.to_vec();
 
     debug!(
@@ -68,29 +73,8 @@ pub async fn execute_request_with_env(
         "HTTP response received"
     );
 
-    let has_active_script = doc.post_script.is_some() && !opts.no_post_script;
-
-    match opts.outcome_policy {
-        OutcomePolicy::SingleRequest => {
-            run_request_post_script(&doc, &base_dir, env, opts, status, &resp_headers, &body)?;
-            if !opts.allow_error_status && status >= 400 {
-                return Err(Error::InvalidRequest(format!(
-                    "HTTP status {status} (use --allow-error-status to accept)"
-                )));
-            }
-        }
-        OutcomePolicy::SequenceStep => {
-            if has_active_script {
-                run_request_post_script(&doc, &base_dir, env, opts, status, &resp_headers, &body)?;
-            } else if !opts.allow_error_status && status >= 400 {
-                return Err(Error::InvalidRequest(format!(
-                    "sequence step HTTP status {status} (no post_script to handle error)"
-                )));
-            }
-        }
-    }
-
-    Ok(ExecutionResult {
+    // we're done fetching request. print if need be and move on to running the post request script
+    return Ok(ExecutionResult {
         method: prep.method.clone(),
         request_name: doc.name.clone(),
         status,
@@ -98,11 +82,63 @@ pub async fn execute_request_with_env(
         headers: resp_headers,
         body,
         duration,
-    })
+        base_dir,
+        doc,
+    });
+}
+
+pub fn execute_request_post_script(
+    output: &ExecutionResult,
+    opts: &RunOptions,
+    env: &RuntimeEnv,
+) -> Result<()> {
+    let has_active_script = output.doc.post_script.is_some() && !opts.no_post_script;
+
+    match opts.outcome_policy {
+        OutcomePolicy::SingleRequest => {
+            run_request_post_script(
+                &output.doc,
+                &output.base_dir,
+                env,
+                opts,
+                output.status.clone(),
+                &output.headers,
+                &output.body,
+            )?;
+
+            if !opts.allow_error_status && output.status >= 400 {
+                return Err(Error::InvalidRequest(format!(
+                    "HTTP status {} (use --allow-error-status to accept)",
+                    output.status
+                )));
+            }
+        }
+        OutcomePolicy::SequenceStep => {
+            if has_active_script {
+                run_request_post_script(
+                    &output.doc,
+                    &output.base_dir,
+                    env,
+                    opts,
+                    output.status.clone(),
+                    &output.headers,
+                    &output.body,
+                )?;
+            } else if !opts.allow_error_status && output.status >= 400 {
+                return Err(Error::InvalidRequest(format!(
+                    "sequence step HTTP status {} (no post_script to handle error)",
+                    output.status
+                )));
+            }
+        }
+    }
+
+    return Ok(());
 }
 
 /// Build a synthetic “result” for dry-run: no network, status 0, body = request body bytes.
-fn dry_run_result(prep: &PreparedRequest, request_name: Option<String>) -> ExecutionResult {
+fn dry_run_result(prep: &PreparedRequest, doc: &RequestFile) -> ExecutionResult {
+    let request_name = doc.clone().name;
     let full_url = merge_url_query(&prep.url, &prep.query).unwrap_or_else(|_| prep.url.clone());
     ExecutionResult {
         method: prep.method.clone(),
@@ -112,6 +148,8 @@ fn dry_run_result(prep: &PreparedRequest, request_name: Option<String>) -> Execu
         headers: prep.headers.clone(),
         body: prep.body.clone().unwrap_or_default(),
         duration: Duration::ZERO,
+        base_dir: PathBuf::new(),
+        doc: doc.clone(),
     }
 }
 

@@ -4,6 +4,7 @@ mod cmd_generate;
 mod cmd_new;
 mod cmd_run;
 mod logging;
+mod print;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -58,7 +59,7 @@ enum Command {
         /// Do not run `post_script` from the request or sequence file.
         #[arg(long)]
         no_post: bool,
-        /// Expand and print the request only; no network I/O.
+        /// Expand and print the request only; no network I/O (no request is actually run).
         #[arg(long)]
         dry_run: bool,
         /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).

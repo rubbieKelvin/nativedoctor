@@ -1,8 +1,10 @@
 //! Types for HTTP execution: options, outcomes, and expanded requests.
 
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use reqwest::Method;
+
+use crate::RequestFile;
 
 /// How HTTP status and Rhai interact after a response (single `run` vs [`crate::sequence`] step).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -45,6 +47,9 @@ pub struct ExecutionResult {
     pub body: Vec<u8>,
     /// Time to receive the full response; zero for dry-run.
     pub duration: Duration,
+    /// The base directory the execution stemed from.
+    pub base_dir: PathBuf,
+    pub doc: RequestFile,
 }
 
 /// Fully expanded, ready-to-send request (templates applied).
