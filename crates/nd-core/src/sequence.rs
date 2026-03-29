@@ -61,10 +61,11 @@ pub struct SequenceResult {
     pub steps: Vec<StepSummary>,
 }
 
-/// Run each step in order with one shared [`RuntimeEnv`]. Uses [`OutcomePolicy::SequenceStep`].
+/// Run each step in order with one shared [`RuntimeEnv`].
 pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<SequenceResult> {
     let (seq, base_dir) = load_sequence_file(path)?;
     let sequence_name = seq.name.clone();
+
     if seq.steps.is_empty() {
         return Err(Error::InvalidSequence(
             "sequence must contain at least one step".into(),
@@ -76,25 +77,30 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
     step_opts.outcome_policy = OutcomePolicy::SequenceStep;
 
     let total = seq.steps.len();
+
     info!(
         path = %path.display(),
         name = ?sequence_name,
         steps = total,
         "sequence started"
     );
+
     let mut summaries = Vec::with_capacity(total);
 
     for (i, step) in seq.steps.iter().enumerate() {
         let step_path = base_dir.join(&step.file);
+
         if !step_path.is_file() {
             return Err(Error::SequenceStepNotFound(step_path));
         }
+
         debug!(
             step_index = i + 1,
             step_total = total,
             step_file = %step_path.display(),
             "sequence executing step"
         );
+
         let result = execute_request_with_env(&step_path, &step_opts, &env).await?;
         summaries.push(StepSummary {
             index: i + 1,
@@ -109,6 +115,7 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         steps_ok = summaries.len(),
         "sequence finished"
     );
+
     Ok(SequenceResult {
         sequence_name,
         steps: summaries,
