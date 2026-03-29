@@ -55,7 +55,7 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
     }
 
     if cli.verbose {
-        println!("\n--- response ---");
+        println!("--- response ---");
     }
 
     // create runtime env
@@ -69,6 +69,10 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
     // print response output
     print_result(&output, cli.verbose)?;
 
+    if cli.verbose {
+        println!("--- post-script ---");
+    }
+
     // execute post request script
     execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
 
@@ -77,48 +81,9 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.
 pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
+    // if this is a dry run, just run through and exit
     if opts.dry_run {
-        let (seq, base_dir) = load_sequence_file(path).map_err(|e| e.to_string())?;
-        if seq.steps.is_empty() {
-            return Err("sequence must contain at least one step".to_string());
-        }
-        if let Some(n) = &seq.name {
-            println!("# sequence: {}\n", n);
-        }
-        let env = RuntimeEnv::from_process_env();
-        let n = seq.steps.len();
-
-        for (i, step) in seq.steps.iter().enumerate() {
-            let step_path = base_dir.join(&step.file);
-
-            if !step_path.is_file() {
-                return Err(format!(
-                    "sequence step request file not found: {}",
-                    step_path.display()
-                ));
-            }
-
-            let (step_doc, _) = load_request_file(&step_path).map_err(|e| e.to_string())?;
-            let step_label = step_doc
-                .name
-                .as_deref()
-                .map(|s| format!(" [{}]", s))
-                .unwrap_or_default();
-
-            let (prep, _) =
-                prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
-
-            let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
-
-            println!(
-                "--- dry-run step {} / {}{} ({}) ---\n{}",
-                i + 1,
-                n,
-                step_label,
-                step_path.display(),
-                summary
-            );
-        }
+        run_dry_sequence(path)?;
         return Ok(());
     }
 
@@ -133,6 +98,7 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             .as_deref()
             .map(|s| format!(" [{}]", s))
             .unwrap_or_default();
+
         println!(
             "step {}/{}{} {} -> {} ({:?})",
             sum.index,
@@ -142,9 +108,53 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             sum.result.status,
             sum.result.duration
         );
+
         if cli.verbose {
             print_result(&sum.result, true)?;
         }
+    }
+    return Ok(());
+}
+
+fn run_dry_sequence(path: &Path) -> Result<(), String> {
+    let (seq, base_dir) = load_sequence_file(path).map_err(|e| e.to_string())?;
+
+    if seq.steps.is_empty() {
+        return Err("sequence must contain at least one step".to_string());
+    }
+    if let Some(n) = &seq.name {
+        println!("Running dry sequence (No network I/O): {n}\n");
+    }
+
+    let env = RuntimeEnv::from_process_env();
+
+    for step in seq.steps.iter() {
+        let step_path = base_dir.join(&step.file);
+
+        if !step_path.is_file() {
+            return Err(format!(
+                "sequence step request file not found: {}",
+                step_path.display()
+            ));
+        }
+
+        let (step_doc, _) = load_request_file(&step_path).map_err(|e| e.to_string())?;
+        let step_label = step_doc
+            .name
+            .as_deref()
+            .map(|s| format!("[{}]", s))
+            .unwrap_or_default();
+
+        let (prep, _) = prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
+
+        let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
+
+        println!(
+            "--- {} ({}) ---\n{}",
+            step_label,
+            step_path.display(),
+            summary
+        );
     }
     return Ok(());
 }
