@@ -1,0 +1,16 @@
+[package]
+name = "ng-generate"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+nd-core = { path = "../nd-core" }
+openapiv3 = "2.2"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"

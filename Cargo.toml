@@ -1,0 +1,7 @@
+[workspace]
+members = ["crates/nd-core", "crates/nd-cli", "crates/ng-generate"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"

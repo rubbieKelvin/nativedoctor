@@ -1,0 +1,19 @@
+[package]
+name = "nd-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "nativedoctor"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ng-generate = { path = "../ng-generate" }
+nd-core = { path = "../nd-core" }
+nd-constants = { path = "../nd-constants" }
+serde_json = "1"
+serde_yaml = "0.9"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
