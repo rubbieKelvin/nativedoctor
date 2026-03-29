@@ -17,7 +17,7 @@ use crate::model::{
     content_type_for_body_kind, HttpRequestSpec, RequestBody, RequestBodyKind,
     RequestBodyStructured, RequestFile,
 };
-use crate::rhai_host::run_post_script;
+use crate::rhai::host::run_post_script;
 use crate::template::{expand_json_value, expand_string};
 
 /// How HTTP status and Rhai interact after a response (single `run` vs [`crate::sequence`] step).
@@ -263,18 +263,6 @@ async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest
     let mut req = client.request(prep.method.clone(), &full_url);
     let hdrs = header_map(&prep.headers)?;
 
-    // if prep.body.is_some() {
-    //     let has_ct = hdrs.contains_key(reqwest::header::CONTENT_TYPE);
-    //     if !has_ct {
-    //         if let Some(ct) = &prep.content_type_if_missing {
-    //             let hv = HeaderValue::from_str(ct).map_err(|_| {
-    //                 Error::InvalidRequest(format!("invalid default Content-Type: {ct}"))
-    //             })?;
-    //             hdrs.insert(reqwest::header::CONTENT_TYPE, hv);
-    //         }
-    //     }
-    // }
-
     req = req.headers(hdrs);
     if let Some(b) = &prep.body {
         req = req.body(b.clone());
@@ -302,7 +290,7 @@ fn run_request_post_script(
                 http_status = status,
                 "running post_script"
             );
-            run_post_script(&script_path, env, status, resp_headers, body)?;
+            run_post_script(&script_path, env, status, resp_headers, body, None)?;
         }
     }
     Ok(())

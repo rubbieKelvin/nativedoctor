@@ -21,7 +21,7 @@ async fn sequence_shares_runtime_token_to_next_request_url() {
     let base = mock.uri();
     std::fs::write(
         tmp.path().join("tok.rhai"),
-        r#"let j = response_body_json(); set_runtime("TOKEN", j.t);"#,
+        r#"let j = json(); if j != () { set("TOKEN", j.t); }"#,
     )
     .unwrap();
     std::fs::write(

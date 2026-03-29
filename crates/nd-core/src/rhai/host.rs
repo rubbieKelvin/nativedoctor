@@ -4,16 +4,19 @@
 //!
 //! | Function | Returns | Notes |
 //! |----------|---------|--------|
-//! | `response_status()` | `i64` | HTTP status code |
-//! | `response_header(name)` | value or `()` | Header name is case-sensitive as stored |
-//! | `response_body_string()` | `string` | UTF-8 lossy over raw bytes |
-//! | `response_body_json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
+//! | `status()` | `i64` | HTTP status code |
+//! | `headers(name)` | value or `()` | Header name is case-sensitive as stored |
+//! | `body()` | `string` | UTF-8 lossy over raw bytes |
+//! | `json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
 //! | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
-//! | `set_runtime(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
+//! | `set(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
+//! | `log(level, message)` | — | When a [`crate::rhai::Logger`] is passed to [`run_post_script`], appends a [`crate::rhai::Log`] (unknown `level` → `info`) |
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+
+use super::Logger;
 
 use rhai::{Dynamic, Engine};
 use serde_json::Value;
@@ -70,6 +73,7 @@ pub fn run_post_script(
     status: u16,
     headers: &[(String, String)],
     body: &[u8],
+    logger: Option<Arc<Logger>>,
 ) -> Result<()> {
     let source = std::fs::read_to_string(script_path)
         .map_err(|_| Error::PostScriptNotFound(script_path.to_path_buf()))?;
@@ -93,13 +97,30 @@ pub fn run_post_script(
         json_value,
     });
 
+    let mut scope = rhai::Scope::new();
+    let engine = create_engine(ctx, env, script_path, logger);
+
+    engine
+        .run_with_scope(&mut scope, &source)
+        .map_err(|e| Error::Rhai(e.to_string()))?;
+
+    debug!(path = %script_path.display(), "Rhai post_script finished");
+    Ok(())
+}
+
+fn create_engine(
+    ctx: Arc<ResponseCtx>,
+    env: &RuntimeEnv,
+    script_path: &Path,
+    logger: Option<Arc<Logger>>,
+) -> Engine {
     let mut engine = Engine::new();
 
     let c = ctx.clone();
-    engine.register_fn("response_status", move || c.status);
+    engine.register_fn("status", move || c.status);
 
     let c = ctx.clone();
-    engine.register_fn("response_header", move |name: &str| {
+    engine.register_fn("headers", move |name: &str| {
         c.headers
             .get(name)
             .map(|s| Dynamic::from(s.clone()))
@@ -107,10 +128,10 @@ pub fn run_post_script(
     });
 
     let c = ctx.clone();
-    engine.register_fn("response_body_string", move || c.body_str.clone());
+    engine.register_fn("body", move || c.body_str.clone());
 
     let c = ctx.clone();
-    engine.register_fn("response_body_json", move || match &c.json_value {
+    engine.register_fn("json", move || match &c.json_value {
         Some(v) => json_to_dynamic(v),
         None => Dynamic::UNIT,
     });
@@ -121,15 +142,17 @@ pub fn run_post_script(
     });
 
     let e_set = env.clone();
-    engine.register_fn("set_runtime", move |key: &str, value: Dynamic| {
+    engine.register_fn("set", move |key: &str, value: Dynamic| {
         e_set.set_runtime(key.to_string(), value.to_string());
     });
 
-    let mut scope = rhai::Scope::new();
-    engine
-        .run_with_scope(&mut scope, &source)
-        .map_err(|e| Error::Rhai(e.to_string()))?;
+    if let Some(sink) = logger {
+        let sink = sink.clone();
+        let script_label = script_path.display().to_string();
+        engine.register_fn("log", move |level: &str, message: &str| {
+            sink.log_parsed_level(level, message, script_label.clone(), "post_script");
+        });
+    }
 
-    debug!(path = %script_path.display(), "Rhai post_script finished");
-    Ok(())
+    engine
 }

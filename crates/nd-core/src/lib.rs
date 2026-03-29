@@ -11,8 +11,9 @@
 //! then fall back to live `std::env::var` for keys not present in the map (e.g. new vars after startup).
 //!
 //! # Rhai post-scripts
-//! Scripts run in a locked-down Rhai engine. See [`rhai_host`] for the full API table and
-//! [`rhai_host::run_post_script`].
+//! Scripts run in a locked-down Rhai engine. See [`rhai::host`] for the built-in API and
+//! [`run_post_script`]. Optional script logging: [`Logger`] + `log(level, message)` when you pass a
+//! logger into [`run_post_script`].
 //!
 //! # Sequences
 //! Schema: [`SequenceFile`] / [`SequenceStep`]. Runner: [`sequence::execute_sequence`]
@@ -24,8 +25,11 @@ mod error;
 mod execute;
 mod load;
 mod model;
-pub mod rhai_host;
+pub mod rhai;
 pub mod sequence;
+
+pub use rhai::host::run_post_script;
+pub use rhai::{Log, LogLevel, Logger};
 mod template;
 
 pub use discover::list_request_paths;
