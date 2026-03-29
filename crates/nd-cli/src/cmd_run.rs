@@ -90,7 +90,24 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
     // create runtime env
     let env = RuntimeEnv::from_process_env();
 
-    for (_, step_path) in sequence_step_iter(path).map_err(|e| e.to_string())? {
+    for (step, step_path) in sequence_step_iter(path).map_err(|e| e.to_string())? {
+        // Print a header if we're on verbose and no dry run
+        if opts.verbose {
+            println!("--- request: [{}] ---", step.file);
+        }
+
+        // print request summary on dry run or verbose
+        if opts.verbose {
+            // Print the request summary and return. no need to do aything further
+            let (prep, _) = prepare_request_file(&step_path).map_err(|e| e.to_string())?;
+            let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
+            println!("{summary}");
+        }
+
+        if cli.verbose {
+            println!("--- response: [{}] ---", step.file);
+        }
+
         // execute request file
         let output = execute_request_with_env(&step_path, &opts, &env)
             .await
@@ -98,6 +115,10 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
 
         // print response output
         print_result(&output, cli.verbose)?;
+
+        if cli.verbose {
+            println!("--- post-script: [{}] ---", step.file);
+        }
 
         // execute post request script
         execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
