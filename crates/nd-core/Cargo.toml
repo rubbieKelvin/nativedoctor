@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+base64 = "0.22"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 schemars = { version = "0.8", features = ["derive"] }
@@ -14,6 +15,7 @@ serde_yaml = "0.9"
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 tracing = "0.1"
+nd-constants = { path = "../nd-constants" }
 
 [dev-dependencies]
 tempfile = "3"

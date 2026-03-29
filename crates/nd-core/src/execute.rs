@@ -1,8 +1,11 @@
 //! HTTP execution: expand templates, build a [`reqwest::Client`], send, then optional Rhai post-script.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
+use base64::Engine;
+use nd_constants::USER_AGENT;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{redirect, Client, Method, Url};
 use tracing::debug;
@@ -10,7 +13,10 @@ use tracing::debug;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::load::{load_request_file, resolve_post_script};
-use crate::model::{HttpRequestSpec, RequestBody, RequestFile};
+use crate::model::{
+    content_type_for_body_kind, HttpRequestSpec, RequestBody, RequestBodyKind,
+    RequestBodyStructured, RequestFile,
+};
 use crate::rhai_host::run_post_script;
 use crate::template::{expand_json_value, expand_string};
 
@@ -75,11 +81,93 @@ pub struct PreparedRequest {
     pub query: Vec<(String, String)>,
     pub headers: Vec<(String, String)>,
     pub body: Option<Vec<u8>>,
-    /// If the body is set and `Content-Type` is absent, this value is sent as the header.
-    pub content_type_if_missing: Option<String>,
     pub timeout_secs: u64,
     pub follow_redirects: bool,
     pub verify_tls: bool,
+}
+
+pub fn generate_computed_headers(spec: &HttpRequestSpec) -> HashMap<String, String> {
+    let mut headers = HashMap::new();
+    headers.insert("user-agent".to_string(), USER_AGENT.to_string());
+    headers.insert("accept".to_string(), "*/*".to_string());
+
+    let body = &spec.body;
+
+    if body.is_some()
+        && !spec
+            .headers
+            .keys()
+            .map(|k| k.to_lowercase())
+            .collect::<Vec<String>>()
+            .contains(&"content-type".to_string())
+    {
+        // headers.insert("content-type", content_type_for_body_kind(spec.body))
+        match body.clone().unwrap() {
+            RequestBody::Json(_) => content_type_for_body_kind(RequestBodyKind::Json),
+            RequestBody::Text(_) => content_type_for_body_kind(RequestBodyKind::Text),
+            RequestBody::Structured(n) => content_type_for_body_kind(n.body_type),
+        };
+    }
+
+    headers
+}
+
+fn structured_content_string(
+    env: &RuntimeEnv,
+    content: &serde_json::Value,
+    ctx: &str,
+) -> Result<String> {
+    match content {
+        serde_json::Value::String(s) => expand_string(env, s),
+        _ => Err(Error::InvalidRequest(format!(
+            "{ctx}: `content` must be a JSON string for this body type"
+        ))),
+    }
+}
+
+fn expand_structured_body(env: &RuntimeEnv, s: &RequestBodyStructured) -> Result<Option<Vec<u8>>> {
+    return match s.body_type {
+        RequestBodyKind::Json | RequestBodyKind::Graphql => {
+            let expanded = expand_json_value(env, &s.content)?;
+            let bytes = serde_json::to_vec(&expanded).map_err(|e| {
+                Error::InvalidRequest(format!("failed to serialize JSON body: {e}"))
+            })?;
+            Ok(Some(bytes))
+        }
+        RequestBodyKind::Binary => {
+            let b64 = structured_content_string(env, &s.content, "binary body")?;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(b64.trim().as_bytes())
+                .map_err(|e| Error::InvalidRequest(format!("binary body: invalid base64: {e}")))?;
+            Ok(Some(bytes))
+        }
+        RequestBodyKind::Text
+        | RequestBodyKind::Xml
+        | RequestBodyKind::Other
+        | RequestBodyKind::XWwwFormUrlencoded
+        | RequestBodyKind::FormData => {
+            let raw = structured_content_string(env, &s.content, "body")?;
+            let bytes = expand_string(env, &raw)?.into_bytes();
+            Ok(Some(bytes))
+        }
+        RequestBodyKind::None => {
+            unreachable!("This case should be handled when expanding request body")
+        }
+    };
+}
+
+fn expand_request_body(env: &RuntimeEnv, body: &RequestBody) -> Result<Option<Vec<u8>>> {
+    return match body {
+        RequestBody::Structured(s) => expand_structured_body(env, s),
+        RequestBody::Text(t) => Ok(Some(expand_string(env, t)?.into_bytes())),
+        RequestBody::Json(v) => {
+            let expanded = expand_json_value(env, v)?;
+            let bytes = serde_json::to_vec(&expanded).map_err(|e| {
+                Error::InvalidRequest(format!("failed to serialize JSON body: {e}"))
+            })?;
+            Ok(Some(bytes))
+        }
+    };
 }
 
 fn expand_http_request(env: &RuntimeEnv, spec: &HttpRequestSpec) -> Result<PreparedRequest> {
@@ -87,41 +175,41 @@ fn expand_http_request(env: &RuntimeEnv, spec: &HttpRequestSpec) -> Result<Prepa
         .map_err(|_| Error::InvalidRequest(format!("unsupported HTTP method: {}", spec.method)))?;
     let url = expand_string(env, &spec.url)?;
     let mut query = Vec::new();
+
     for (k, v) in &spec.query {
         query.push((expand_string(env, k)?, expand_string(env, v)?));
     }
+
     let mut headers = Vec::new();
+    let mut computed_headers = generate_computed_headers(spec);
+
     for (k, v) in &spec.headers {
+        computed_headers.insert(k.clone().to_lowercase(), v.clone());
+    }
+
+    for (k, v) in &computed_headers {
         headers.push((expand_string(env, k)?, expand_string(env, v)?));
     }
-    let (body, content_type_if_missing) = match &spec.body {
-        None => (None, None),
-        Some(RequestBody::Text(t)) => (
-            Some(expand_string(env, t)?.into_bytes()),
-            Some("text/plain; charset=utf-8".to_string()),
-        ),
-        Some(RequestBody::Json(v)) => {
-            let expanded = expand_json_value(env, v)?;
-            let bytes = serde_json::to_vec(&expanded).map_err(|e| {
-                Error::InvalidRequest(format!("failed to serialize JSON body: {e}"))
-            })?;
-            (Some(bytes), Some("application/json".to_string()))
-        }
+
+    let body = match &spec.body {
+        None => None,
+        Some(b) => expand_request_body(env, b)?,
     };
+
     let timeout_secs = spec
         .timeout_secs
         .unwrap_or(RequestFile::default_timeout_secs());
-    Ok(PreparedRequest {
+
+    return Ok(PreparedRequest {
         method,
         url,
         query,
         headers,
         body,
-        content_type_if_missing,
         timeout_secs,
         follow_redirects: spec.follow_redirects,
         verify_tls: spec.verify_tls,
-    })
+    });
 }
 
 fn build_client(spec: &HttpRequestSpec) -> Result<Client> {
@@ -173,18 +261,20 @@ async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest
         "sending HTTP request"
     );
     let mut req = client.request(prep.method.clone(), &full_url);
-    let mut hdrs = header_map(&prep.headers)?;
-    if prep.body.is_some() {
-        let has_ct = hdrs.contains_key(reqwest::header::CONTENT_TYPE);
-        if !has_ct {
-            if let Some(ct) = &prep.content_type_if_missing {
-                let hv = HeaderValue::from_str(ct).map_err(|_| {
-                    Error::InvalidRequest(format!("invalid default Content-Type: {ct}"))
-                })?;
-                hdrs.insert(reqwest::header::CONTENT_TYPE, hv);
-            }
-        }
-    }
+    let hdrs = header_map(&prep.headers)?;
+
+    // if prep.body.is_some() {
+    //     let has_ct = hdrs.contains_key(reqwest::header::CONTENT_TYPE);
+    //     if !has_ct {
+    //         if let Some(ct) = &prep.content_type_if_missing {
+    //             let hv = HeaderValue::from_str(ct).map_err(|_| {
+    //                 Error::InvalidRequest(format!("invalid default Content-Type: {ct}"))
+    //             })?;
+    //             hdrs.insert(reqwest::header::CONTENT_TYPE, hv);
+    //         }
+    //     }
+    // }
+
     req = req.headers(hdrs);
     if let Some(b) = &prep.body {
         req = req.body(b.clone());

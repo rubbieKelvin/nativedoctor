@@ -17,6 +17,10 @@ fn request_file_schema_contains_expected_keys() {
         "schema should describe request document: {s}"
     );
     assert!(s.contains("tags"), "schema should include tags: {s}");
+    assert!(
+        s.contains("RequestBodyKind") || s.contains("json") && s.contains("graphql"),
+        "schema should describe body kinds: {s}"
+    );
     assert!(s.contains("summary"), "schema should include summary: {s}");
     assert!(
         s.contains("method") && s.contains("url"),

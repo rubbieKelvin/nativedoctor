@@ -124,26 +124,32 @@ async fn run_one(
     opts: RunOptions,
 ) -> std::result::Result<(), String> {
     if opts.dry_run {
-        let (doc, _) = load_request_file(path).map_err(|e| e.to_string())?;
-        if let Some(n) = &doc.name {
-            println!("# {}\n", n);
-        }
+        // let (doc, _) = load_request_file(path).map_err(|e| e.to_string())?;
+
+        // if let Some(n) = &doc.name {
+        //     println!("# {}\n", n);
+        // }
+
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
         print!("{summary}");
         return Ok(());
     }
+
     if cli.verbose {
         // Second load: keeps `nd-core` free of `eprintln!` while still showing the resolved request.
         let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
         eprint!("--- request ---\n{summary}\n--- response ---\n");
     }
+
     let result = execute_request_file(path, opts)
         .await
         .map_err(|e| e.to_string())?;
+
     print_result(&result, cli.verbose)?;
-    Ok(())
+
+    return Ok(());
 }
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.

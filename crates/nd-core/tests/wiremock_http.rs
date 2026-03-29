@@ -23,7 +23,8 @@ request:
   headers:
     Content-Type: application/json
   body:
-    json:
+    type: json
+    content:
       x: 1
 "#,
         url

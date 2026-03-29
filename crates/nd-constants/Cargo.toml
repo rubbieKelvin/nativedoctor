@@ -1,0 +1,6 @@
+[package]
+name = "nd-constants"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

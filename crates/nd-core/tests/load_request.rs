@@ -49,7 +49,7 @@ fn load_json_with_name() {
     let p = dir.path().join("r.json");
     std::fs::write(
         &p,
-        r#"{"version":1,"name":"Ping","request":{"method":"GET","url":"https://x"}}"#,
+        r#"{"version":"1","name":"Ping","request":{"method":"GET","url":"https://x"}}"#,
     )
     .unwrap();
     let (req, _) = load_request_file(&p).unwrap();
@@ -86,7 +86,7 @@ fn load_json_openapi_style_metadata() {
     let p = dir.path().join("r.json");
     std::fs::write(
         &p,
-        r#"{"version":1,"request":{"method":"GET","url":"https://api.example/v1","summary":"List","description":"All widgets","tags":["widgets","read"],"deprecated":true}}"#,
+        r#"{"version":"1","request":{"method":"GET","url":"https://api.example/v1","summary":"List","description":"All widgets","tags":["widgets","read"],"deprecated":true}}"#,
     )
     .unwrap();
     let (req, _) = load_request_file(&p).unwrap();
@@ -94,6 +94,45 @@ fn load_json_openapi_style_metadata() {
     assert_eq!(req.request.description.as_deref(), Some("All widgets"));
     assert_eq!(req.request.tags, vec!["widgets", "read"]);
     assert!(req.request.deprecated);
+}
+
+#[test]
+fn load_explicit_json_body() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("r.yaml");
+    std::fs::write(
+        &p,
+        b"version: \"1\"\nrequest:\n  method: POST\n  url: https://example.com\n  body:\n    type: json\n    content:\n      a: 1\n",
+    )
+    .unwrap();
+    let (req, _) = load_request_file(&p).unwrap();
+    let body = req.request.body.expect("body");
+    match body {
+        nd_core::RequestBody::Structured(s) => {
+            assert_eq!(s.body_type, nd_core::RequestBodyKind::Json);
+            assert_eq!(s.content, serde_json::json!({"a": 1}));
+        }
+        _ => panic!("expected structured body"),
+    }
+}
+
+#[test]
+fn load_explicit_text_body_json_file() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("r.json");
+    std::fs::write(
+        &p,
+        r#"{"version":"1","request":{"method":"POST","url":"https://x","body":{"type":"text","content":"hello ${VAR}"}}}"#,
+    )
+    .unwrap();
+    let (req, _) = load_request_file(&p).unwrap();
+    match req.request.body.expect("body") {
+        nd_core::RequestBody::Structured(s) => {
+            assert_eq!(s.body_type, nd_core::RequestBodyKind::Text);
+            assert_eq!(s.content, serde_json::json!("hello ${VAR}"));
+        }
+        _ => panic!("expected structured body"),
+    }
 }
 
 #[test]

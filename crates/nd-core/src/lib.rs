@@ -37,7 +37,8 @@ pub use execute::{
 };
 pub use load::{load_request_file, resolve_post_script};
 pub use model::{
-    request_file_json_schema, HttpRequestSpec, RequestBody, RequestFile, SequenceFile, SequenceStep,
+    content_type_for_body_kind, request_file_json_schema, HttpRequestSpec, RequestBody,
+    RequestBodyKind, RequestBodyStructured, RequestFile, SequenceFile, SequenceStep,
 };
 pub use sequence::{execute_sequence, load_sequence_file, SequenceResult, StepSummary};
 pub use template::{expand_json_value, expand_string};

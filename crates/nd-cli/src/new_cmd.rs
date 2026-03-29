@@ -3,13 +3,14 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use nd_constants::VERSION;
 use nd_core::{HttpRequestSpec, RequestFile, SequenceFile, SequenceStep};
 use tracing::debug;
 
 /// Build the default sequence document (same fields as the former template).
 fn default_sequence_file() -> SequenceFile {
     SequenceFile {
-        version: 1,
+        version: VERSION.into(),
         name: Some("Sample flow".into()),
         steps: vec![SequenceStep {
             file: "example-request.yaml".into(),
@@ -20,7 +21,7 @@ fn default_sequence_file() -> SequenceFile {
 /// Build the default request document (same fields as the former template).
 fn default_request_file() -> RequestFile {
     RequestFile {
-        version: 1,
+        version: VERSION.into(),
         name: Some("Httpbin Get".into()),
         request: HttpRequestSpec {
             method: "GET".into(),

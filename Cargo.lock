@@ -772,6 +772,7 @@ name = "nd-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "nd-constants",
  "nd-core",
  "serde_json",
  "serde_yaml",
@@ -781,9 +782,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "nd-constants"
+version = "0.1.0"
+
+[[package]]
 name = "nd-core"
 version = "0.1.0"
 dependencies = [
+ "base64",
+ "nd-constants",
  "regex",
  "reqwest",
  "rhai",

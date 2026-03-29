@@ -10,11 +10,11 @@
 //! |------------|---------|
 //! | [`HttpRequestSpec::method`] | Operation HTTP method (OpenAPI uses lowercase; we accept any case and normalize when sending). |
 //! | [`HttpRequestSpec::url`] | Effective `servers` URL + `path` combined into one template string. |
-//! | [`HttpRequestSpec::query`] | `parameters` with `in: query` (flat map name → value template). |
+//! | [`HttpRequestSpec::query`] | `parameters` with `in: query` (we use a flat map of name → value template). |
 //! | [`HttpRequestSpec::headers`] | `parameters` with `in: header`. |
-//! | [`HttpRequestSpec::body`] | `requestBody.content` for **instance** payloads (`application/json` vs `text/plain` style), not schema-only bodies. We do **not** model media-type map keys separately; wire `Content-Type` is from `headers` or executor defaults from body shape. |
+//! | [`HttpRequestSpec::body`] | Instance payload. **Shorthand:** a string → text; a JSON object/array → JSON body. **Explicit:** [`RequestBodyStructured`] with `type` + `content` sets the logical format and default `Content-Type` when not overridden in `headers`. |
 //! | [`HttpRequestSpec::summary`], [`HttpRequestSpec::description`], [`HttpRequestSpec::tags`], [`HttpRequestSpec::deprecated`] | Subset of OpenAPI `Operation` metadata. Ignored by the executor. |
-//! | [`HttpRequestSpec::timeout_secs`], [`HttpRequestSpec::follow_redirects`], [`HttpRequestSpec::verify_tls`] | Client / execution behavior (not part of the OpenAPI contract model). |
+//! | [`HttpRequestSpec::timeout_secs`], [`HttpRequestSpec::follow_redirects`], [`HttpRequestSpec::verify_tls`] | Client / execution behavior (not part of OpenAPI’s contract model). |
 //! | [`RequestFile::name`] | Human-facing label for CLI and logs (optional; distinct from request-level `summary` when both are set). |
 //! | [`RequestFile::version`], [`RequestFile::post_script`] | nativedoctor extensions (no OpenAPI equivalent). |
 //!
@@ -28,8 +28,8 @@ use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-fn default_version() -> u32 {
-    1
+fn default_version() -> String {
+    "0.0.0".into()
 }
 
 fn default_follow_redirects() -> bool {
@@ -53,9 +53,9 @@ fn is_false(b: &bool) -> bool {
 /// `post_script`, when set, is a path string resolved relative to the request file’s directory.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct RequestFile {
-    /// Schema version for forward-compatible parsing (default `1`).
+    /// Schema version for forward-compatible parsing (default `"0.0.0"` if omitted).
     #[serde(default = "default_version")]
-    pub version: u32,
+    pub version: String,
     /// Optional human-readable label for logs and UIs (backward compatible when omitted).
     #[serde(default)]
     pub name: Option<String>,
@@ -100,14 +100,46 @@ pub struct HttpRequestSpec {
     pub verify_tls: bool,
 }
 
-/// Request body: either a UTF-8 text payload or a JSON value.
+/// Declared format for an explicit [`RequestBody::Structured`] body (drives default `Content-Type`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RequestBodyKind {
+    Json,
+    Text,
+    Xml,
+    Other,
+    Graphql,
+    #[serde(rename = "x_www_form_urlencoded", alias = "x-www-form-urlencoded")]
+    XWwwFormUrlencoded,
+    #[serde(rename = "form_data", alias = "form-data")]
+    FormData,
+    Binary,
+    None,
+}
+
+/// Explicit body: required `type` plus `content` (shape depends on [`RequestBodyKind`]).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+pub struct RequestBodyStructured {
+    /// Logical body format (JSON/YAML key `type`).
+    #[serde(rename = "type")]
+    pub body_type: RequestBodyKind,
+    /// For `json` / `graphql`: any JSON value (object, array, or primitive). For `text`, `xml`,
+    /// `other`, url-encoded, multipart, and `binary`: a **JSON string** (UTF-8 payload or base64 for
+    /// `binary`); `${VAR}` expansion applies to that string.
+    pub content: serde_json::Value,
+}
+
+/// Request body: shorthand or explicit `type` + `content`.
 ///
-/// Serialized with `#[serde(untagged)]` with **`Text` tried first**, then `Json`, so:
-/// - JSON `{"body": "plain"}` → text body.
-/// - JSON `{"body": {"a": 1}}` or YAML inline map under `body:` → JSON body.
+/// `#[serde(untagged)]` tries variants **in order**:
+/// 1. [`RequestBody::Structured`] — object with `type` and `content`.
+/// 2. [`RequestBody::Text`] — JSON/YAML string (plain text body).
+/// 3. [`RequestBody::Json`] — JSON object/array/primitive serialized as the request body.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 #[serde(untagged)]
 pub enum RequestBody {
+    /// `type` + `content` (explicit format and default `Content-Type`).
+    Structured(RequestBodyStructured),
     /// Plain string body (non-JSON or literal text).
     Text(String),
     /// JSON object/array/primitive serialized as the request body.
@@ -118,6 +150,19 @@ impl RequestFile {
     /// Default timeout when `request.timeout_secs` is omitted (seconds).
     pub fn default_timeout_secs() -> u64 {
         30
+    }
+}
+
+/// Default `Content-Type` (and parameters) when the request file does not set one in `headers`.
+pub fn content_type_for_body_kind(kind: RequestBodyKind) -> Option<&'static str> {
+    match kind {
+        RequestBodyKind::Json | RequestBodyKind::Graphql => Some("application/json"),
+        RequestBodyKind::Text | RequestBodyKind::Other => Some("text/plain; charset=utf-8"),
+        RequestBodyKind::Xml => Some("application/xml; charset=utf-8"),
+        RequestBodyKind::XWwwFormUrlencoded => Some("application/x-www-form-urlencoded"),
+        RequestBodyKind::FormData => Some("multipart/form-data"),
+        RequestBodyKind::Binary => Some("application/octet-stream"),
+        RequestBodyKind::None => None,
     }
 }
 

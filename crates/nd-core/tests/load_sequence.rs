@@ -25,7 +25,7 @@ fn load_sequence_json_with_name() {
     let p = dir.path().join("seq.json");
     std::fs::write(
         &p,
-        r#"{"version":1,"name":"Smoke tests","steps":[{"file":"a.yaml"}]}"#,
+        r#"{"version":"1","name":"Smoke tests","steps":[{"file":"a.yaml"}]}"#,
     )
     .unwrap();
     let (s, _) = load_sequence_file(&p).unwrap();
