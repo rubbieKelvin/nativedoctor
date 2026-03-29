@@ -15,6 +15,7 @@ use nd_core::list_request_paths;
 #[derive(Parser)]
 #[command(name = "nativedoctor")]
 #[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(args_conflicts_with_subcommands = false)]
 pub(crate) struct Cli {
     /// Log extra detail and enable `nd_core=debug` tracing unless `RUST_LOG` is set.
