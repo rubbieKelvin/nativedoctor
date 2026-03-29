@@ -15,7 +15,9 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_lowercase();
+
     let text = std::fs::read_to_string(path)?;
+
     let file: RequestFile = match ext.as_str() {
         "yaml" | "yml" => serde_yaml::from_str(&text).map_err(|e| Error::ParseYaml {
             path: path.to_path_buf(),
@@ -37,10 +39,10 @@ pub fn load_request_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
         name = ?file.name,
         "loaded request file"
     );
-    Ok((file, base))
+    return Ok((file, base));
 }
 
 /// Join `base_dir` with the relative `post_script` path from the request file.
 pub fn resolve_post_script(base_dir: &Path, rel: &str) -> PathBuf {
-    base_dir.join(rel)
+    return base_dir.join(rel);
 }

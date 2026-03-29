@@ -36,6 +36,8 @@ pub use execute::{
     prepare_request_with_env, ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions,
 };
 pub use load::{load_request_file, resolve_post_script};
-pub use model::{HttpRequestSpec, RequestBody, RequestFile, SequenceFile, SequenceStep};
+pub use model::{
+    request_file_json_schema, HttpRequestSpec, RequestBody, RequestFile, SequenceFile, SequenceStep,
+};
 pub use sequence::{execute_sequence, load_sequence_file, SequenceResult, StepSummary};
 pub use template::{expand_json_value, expand_string};

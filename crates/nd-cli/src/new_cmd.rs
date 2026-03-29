@@ -25,6 +25,10 @@ fn default_request_file() -> RequestFile {
         request: HttpRequestSpec {
             method: "GET".into(),
             url: "https://httpbin.org/anything".into(),
+            summary: None,
+            description: None,
+            tags: vec![],
+            deprecated: false,
             query: HashMap::new(),
             headers: HashMap::new(),
             body: None,

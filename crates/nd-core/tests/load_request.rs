@@ -79,3 +79,34 @@ fn invalid_json_errors() {
     std::fs::write(&p, b"{not json").unwrap();
     assert!(load_request_file(&p).is_err());
 }
+
+#[test]
+fn load_json_openapi_style_metadata() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("r.json");
+    std::fs::write(
+        &p,
+        r#"{"version":1,"request":{"method":"GET","url":"https://api.example/v1","summary":"List","description":"All widgets","tags":["widgets","read"],"deprecated":true}}"#,
+    )
+    .unwrap();
+    let (req, _) = load_request_file(&p).unwrap();
+    assert_eq!(req.request.summary.as_deref(), Some("List"));
+    assert_eq!(req.request.description.as_deref(), Some("All widgets"));
+    assert_eq!(req.request.tags, vec!["widgets", "read"]);
+    assert!(req.request.deprecated);
+}
+
+#[test]
+fn load_yaml_openapi_style_metadata() {
+    let dir = tempdir().unwrap();
+    let p = dir.path().join("r.yaml");
+    std::fs::write(
+        &p,
+        b"version: 1\nrequest:\n  method: GET\n  url: https://api.example\n  summary: Ping\n  tags:\n    - health\n  deprecated: false\n",
+    )
+    .unwrap();
+    let (req, _) = load_request_file(&p).unwrap();
+    assert_eq!(req.request.summary.as_deref(), Some("Ping"));
+    assert_eq!(req.request.tags, vec!["health"]);
+    assert!(!req.request.deprecated);
+}
