@@ -13,18 +13,18 @@ use tracing::debug;
 
 /// Build the default sequence document (same fields as the former template).
 fn default_sequence_file() -> SequenceFile {
-    SequenceFile {
+    return SequenceFile {
         version: VERSION.into(),
         name: Some("Sample flow".into()),
         steps: vec![SequenceStep {
             file: "example-request.yaml".into(),
         }],
-    }
+    };
 }
 
 /// Build the default request document (same fields as the former template).
 fn default_request_file() -> RequestFile {
-    RequestFile {
+    return RequestFile {
         version: VERSION.into(),
         name: Some("Httpbin Get".into()),
         request: HttpRequestSpec {
@@ -42,7 +42,7 @@ fn default_request_file() -> RequestFile {
             verify_tls: true,
         },
         post_script: None,
-    }
+    };
 }
 
 fn serialize_sequence(ext: &str) -> Result<String, String> {
@@ -54,11 +54,11 @@ fn serialize_sequence(ext: &str) -> Result<String, String> {
     };
     let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
     let v = with_root_schema_url(v, url);
-    match ext {
+    return match ext {
         "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
         "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
         _ => Err(format!("unsupported extension for sequence: {ext}")),
-    }
+    };
 }
 
 fn serialize_request(ext: &str) -> Result<String, String> {
@@ -70,11 +70,11 @@ fn serialize_request(ext: &str) -> Result<String, String> {
     };
     let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
     let v = with_root_schema_url(v, url);
-    match ext {
+    return match ext {
         "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
         "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
         _ => Err(format!("unsupported extension for request: {ext}")),
-    }
+    };
 }
 
 #[derive(Clone, Copy, Debug)]

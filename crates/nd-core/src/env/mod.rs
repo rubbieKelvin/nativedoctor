@@ -38,10 +38,10 @@ impl RuntimeEnv {
     /// Empty runtime map; [`Self::get`] does not read the process environment (unless you merge
     /// files or call [`Self::set_runtime`]).
     pub fn isolated() -> Self {
-        Self {
+        return Self {
             inner: Arc::new(Mutex::new(HashMap::new())),
             fallback_to_process_env: false,
-        }
+        };
     }
 
     /// Resolve a variable: runtime map first, then optionally live process environment.

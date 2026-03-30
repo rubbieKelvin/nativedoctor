@@ -18,7 +18,8 @@ use crate::error::{Error, Result};
 /// Resolve a `${!name}` function; `name` is the identifier after `!`.
 pub(crate) fn invoke(name: &str) -> Result<String> {
     let mut rng = rand::thread_rng();
-    match name {
+
+    return match name {
         "nanoid" => Ok(nanoid::nanoid!()),
         "random_name" => Ok(FirstName().fake()),
         "random_email" => Ok(SafeEmail().fake()),
@@ -38,26 +39,26 @@ pub(crate) fn invoke(name: &str) -> Result<String> {
         "tomorrow" => Ok((Utc::now() + Duration::hours(24)).to_rfc3339()),
         "color" => Ok(format!("#{:06x}", rng.gen_range(0x000000..=0xffffff))),
         _ => Err(Error::UnknownDynamicTemplate(name.to_string())),
-    }
+    };
 }
 
 fn lorem_ipsum_snippet(rng: &mut impl Rng) -> String {
     const LOREM: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
     let hi = 220.min(LOREM.len());
     let take = rng.gen_range(120..=hi);
-    LOREM[..take].to_string()
+    return LOREM[..take].to_string();
 }
 
 fn random_iso_datetime(rng: &mut impl Rng) -> String {
     let days = rng.gen_range(-5000..5000);
     let secs = rng.gen_range(0..86400);
     let t = Utc::now() + Duration::days(days) + Duration::seconds(secs);
-    t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    return t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
 }
 
 fn random_datetime_offset_days(rng: &mut impl Rng, range: std::ops::Range<i64>) -> String {
     let days = rng.gen_range(range);
     let secs = rng.gen_range(0..86400);
     let t = Utc::now() + Duration::days(days) + Duration::seconds(secs);
-    t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    return t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
 }

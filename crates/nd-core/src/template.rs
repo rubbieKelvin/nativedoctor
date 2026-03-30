@@ -41,20 +41,21 @@ pub fn expand_string(env: &RuntimeEnv, input: &str) -> Result<String> {
         }
         last = m.end();
     }
+
     out.push_str(&input[last..]);
     return Ok(out);
 }
 
 /// Recursively expand `${VAR}` / `${!name}` in JSON strings and in object keys (same rules as [`expand_string`]).
 pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
-    return match value {
-        Value::String(s) => Ok(Value::String(expand_string(env, s)?)),
+    match value {
+        Value::String(s) => return Ok(Value::String(expand_string(env, s)?)),
         Value::Array(items) => {
             let mut out = Vec::with_capacity(items.len());
             for item in items {
                 out.push(expand_json_value(env, item)?);
             }
-            Ok(Value::Array(out))
+            return Ok(Value::Array(out));
         }
         Value::Object(map) => {
             let mut out = serde_json::Map::new();
@@ -62,8 +63,8 @@ pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
                 let new_k = expand_string(env, k)?;
                 out.insert(new_k, expand_json_value(env, v)?);
             }
-            Ok(Value::Object(out))
+            return Ok(Value::Object(out));
         }
-        _ => Ok(value.clone()),
-    };
+        _ => return Ok(value.clone()),
+    }
 }
