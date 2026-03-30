@@ -9,7 +9,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const USER_AGENT: &str = concat!("nativedoctor/", env!("CARGO_PKG_VERSION"));
 
 /// Default `version` field for request and sequence JSON/YAML documents when omitted.
-pub const DOCUMENT_DEFAULT_VERSION: &str = "0.0.0";
+pub const DOCUMENT_DEFAULT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Alias for request file schema default version.
 pub const REQUEST_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
@@ -18,7 +18,7 @@ pub const REQUEST_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
 pub const SEQUENCE_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
 
 /// [`tracing`] target for Rhai post-script log lines.
-pub const TRACING_TARGET_RHAI: &str = "nd_core::rhai";
+pub const TRACING_TARGET_RHAI: &str = "nativedoctor::rhai";
 
 /// Label for who initiated a Rhai log line (post-script); used in tracing and capture buffers.
 pub const RHAI_LOG_INITIATOR: &str = "post_script";

@@ -44,7 +44,7 @@ pub fn load_sequence_file(path: &Path) -> Result<(SequenceFile, PathBuf)> {
     Ok((file, base))
 }
 
-/// Load a sequence file from `path`, then yield each [`SequenceStep`] in order (like a Python generator).
+/// Load a sequence file from `path`, then yield each [`SequenceStep`] in order.
 ///
 /// Same parse rules and I/O as [`load_sequence_file`]; the returned iterator owns the steps and
 /// walks them lazily. Step `file` paths remain relative to the sequence file’s directory.
@@ -158,9 +158,10 @@ steps:
 "#
         )
         .unwrap();
-        let steps: Vec<SequenceStep> = sequence_step_iter(tmp.path()).unwrap().collect();
+        let steps: Vec<(SequenceStep, PathBuf)> = sequence_step_iter(tmp.path()).unwrap().collect();
+
         assert_eq!(steps.len(), 2);
-        assert_eq!(steps[0].file, "a.yaml");
-        assert_eq!(steps[1].file, "b.yaml");
+        assert_eq!(steps[0].0.file, "a.yaml");
+        assert_eq!(steps[1].0.file, "b.yaml");
     }
 }

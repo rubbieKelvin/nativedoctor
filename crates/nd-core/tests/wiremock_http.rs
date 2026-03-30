@@ -1,4 +1,4 @@
-use nd_core::{execute_request_file, RunOptions};
+use nd_core::{execute_request_with_env, RunOptions, RuntimeEnv};
 use tempfile::tempdir;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -31,9 +31,13 @@ request:
     );
     std::fs::write(tmp.path().join("req.yaml"), yaml).unwrap();
 
-    let res = execute_request_file(&tmp.path().join("req.yaml"), RunOptions::default())
+    let runtime = RuntimeEnv::from_process_env();
+    let opt = RunOptions::default();
+
+    let res = execute_request_with_env(&tmp.path().join("req.yaml"), &opt, &runtime)
         .await
         .unwrap();
+
     assert_eq!(res.request_name.as_deref(), Some("Create item"));
     assert_eq!(res.status, 200);
     let body: serde_json::Value = serde_json::from_slice(&res.body).unwrap();
@@ -48,9 +52,12 @@ async fn dry_run_propagates_request_name() {
         b"version: 1\nname: Probe\nrequest:\n  method: GET\n  url: https://example.com\n",
     )
     .unwrap();
+
+    let runtime = RuntimeEnv::from_process_env();
     let mut opts = RunOptions::default();
     opts.dry_run = true;
-    let res = execute_request_file(&tmp.path().join("r.yaml"), opts)
+
+    let res = execute_request_with_env(&tmp.path().join("r.yaml"), &opts, &runtime)
         .await
         .unwrap();
     assert_eq!(res.request_name.as_deref(), Some("Probe"));
