@@ -24,6 +24,7 @@ use crate::error::{Error, Result};
 /// | `json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
 /// | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
 /// | `set(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
+/// | `assert(condition, message)` | — | If `condition` is false, aborts the script (surfaces as [`crate::Error::Rhai`]). |
 /// | `log(level, message)` | — | Always emits [`tracing`]; if a [`Logger`] is passed, also records a [`super::logger::Log`]. Unknown `level` → `info`. |
 pub fn run_post_script(
     script_path: &Path,

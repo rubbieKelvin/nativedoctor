@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use nd_constants::RHAI_LOG_INITIATOR;
-use rhai::{Dynamic, Engine};
+use rhai::{Dynamic, Engine, EvalAltResult, Position};
 
 use super::context::ResponseCtx;
 use super::logger::{emit_script_log_to_tracing, LogLevel, Logger};
@@ -46,6 +46,20 @@ fn register_env_fns(engine: &mut Engine, env: &RuntimeEnv) {
     });
 }
 
+/// Registers `assert(condition, message)` — fails script evaluation when `condition` is false.
+fn register_assert(engine: &mut Engine) {
+    engine.register_fn("assert", |condition: bool, message: &str| {
+        if condition {
+            Ok(())
+        } else {
+            Err(Box::new(EvalAltResult::ErrorRuntime(
+                format!("assertion failed: {message}").into(),
+                Position::NONE,
+            )))
+        }
+    });
+}
+
 /// Registers `log(level, message)` — always traces; optionally appends to `logger`.
 fn register_log(engine: &mut Engine, logger: Option<Arc<Logger>>, script_label: String) {
     let sink = logger;
@@ -70,6 +84,7 @@ pub(crate) fn create_engine(
 
     register_response_fns(&mut engine, ctx);
     register_env_fns(&mut engine, env);
+    register_assert(&mut engine);
     register_log(&mut engine, logger, script_label);
     return engine;
 }

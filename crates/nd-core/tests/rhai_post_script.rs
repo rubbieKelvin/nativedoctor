@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use nd_core::rhai::logger::{LogLevel, Logger};
-use nd_core::{run_post_script, RuntimeEnv};
+use nd_core::{run_post_script, Error, RuntimeEnv};
 use tempfile::tempdir;
 
 #[test]
@@ -49,4 +49,29 @@ fn post_script_logger_collects_log_calls() {
     assert_eq!(logs[1].message, "done");
     assert!(logs[0].script.ends_with("log.rhai"));
     assert_eq!(logs[0].initiator, "post_script");
+}
+
+#[test]
+fn post_script_assert_true_succeeds() {
+    let dir = tempdir().unwrap();
+    let script = dir.path().join("assert_ok.rhai");
+    std::fs::write(&script, r#"assert(true, "should not run");"#).unwrap();
+    let env = RuntimeEnv::from_process_env();
+    run_post_script(&script, &env, 200, &[], b"", None).unwrap();
+}
+
+#[test]
+fn post_script_assert_false_fails_with_message() {
+    let dir = tempdir().unwrap();
+    let script = dir.path().join("assert_fail.rhai");
+    std::fs::write(&script, r#"assert(false, "my message");"#).unwrap();
+    let env = RuntimeEnv::from_process_env();
+    let err = run_post_script(&script, &env, 200, &[], b"", None).unwrap_err();
+    match err {
+        Error::Rhai(s) => {
+            assert!(s.contains("assertion failed"), "{s}");
+            assert!(s.contains("my message"), "{s}");
+        }
+        other => panic!("expected Error::Rhai, got {other:?}"),
+    }
 }

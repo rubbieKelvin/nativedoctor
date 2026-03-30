@@ -284,11 +284,12 @@ Built-ins (see `nd_core::rhai::run_post_script` docs for details):
 | Function | Role |
 |----------|------|
 | `status()` | HTTP status code |
-| `headers(name)` | Header value (name as stored) |
+| `header(name)` | Header value (name as stored) |
 | `body()` | Response body as string (UTF-8 lossy) |
 | `json()` | Parsed JSON as Rhai value, or unit if invalid |
 | `env(key)` | Read from `RuntimeEnv` |
 | `set(key, value)` | Update runtime map (stringified value) |
+| `assert(condition, message)` | Abort script with an error if `condition` is false |
 | `log(level, message)` | Emit tracing; optional in-memory capture when a `Logger` is supplied |
 
 ---
