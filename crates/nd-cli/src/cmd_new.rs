@@ -3,8 +3,12 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use nd_constants::urls::{
+    PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL,
+    PUBLIC_SEQUENCE_JSON_SCHEMA_URL, PUBLIC_SEQUENCE_YAML_SCHEMA_URL,
+};
 use nd_constants::VERSION;
-use nd_core::{HttpRequestSpec, RequestFile, SequenceFile, SequenceStep};
+use nd_core::{with_root_schema_url, HttpRequestSpec, RequestFile, SequenceFile, SequenceStep};
 use tracing::debug;
 
 /// Build the default sequence document (same fields as the former template).
@@ -43,20 +47,34 @@ fn default_request_file() -> RequestFile {
 
 fn serialize_sequence(ext: &str) -> Result<String, String> {
     let doc = default_sequence_file();
-    return match ext {
-        "json" => serde_json::to_string_pretty(&doc).map_err(|e| e.to_string()),
-        "yaml" | "yml" => serde_yaml::to_string(&doc).map_err(|e| e.to_string()),
-        _ => Err(format!("unsupported extension for sequence: {ext}")),
+    let url = match ext {
+        "json" => PUBLIC_SEQUENCE_JSON_SCHEMA_URL,
+        "yaml" | "yml" => PUBLIC_SEQUENCE_YAML_SCHEMA_URL,
+        _ => return Err(format!("unsupported extension for sequence: {ext}")),
     };
+    let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
+    let v = with_root_schema_url(v, url);
+    match ext {
+        "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
+        "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
+        _ => Err(format!("unsupported extension for sequence: {ext}")),
+    }
 }
 
 fn serialize_request(ext: &str) -> Result<String, String> {
     let doc = default_request_file();
-    return match ext {
-        "json" => serde_json::to_string_pretty(&doc).map_err(|e| e.to_string()),
-        "yaml" | "yml" => serde_yaml::to_string(&doc).map_err(|e| e.to_string()),
-        _ => Err(format!("unsupported extension for request: {ext}")),
+    let url = match ext {
+        "json" => PUBLIC_REQUEST_JSON_SCHEMA_URL,
+        "yaml" | "yml" => PUBLIC_REQUEST_YAML_SCHEMA_URL,
+        _ => return Err(format!("unsupported extension for request: {ext}")),
     };
+    let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
+    let v = with_root_schema_url(v, url);
+    match ext {
+        "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
+        "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
+        _ => Err(format!("unsupported extension for request: {ext}")),
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

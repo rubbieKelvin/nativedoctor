@@ -3,7 +3,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use nd_core::RequestFile;
+use nd_constants::urls::{PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL};
+use nd_core::{with_root_schema_url, RequestFile};
 use openapiv3::{OpenAPI, ReferenceOr};
 
 use super::build::{file_stem, operation_to_request_file, unique_stem};
@@ -64,12 +65,18 @@ fn quote_yaml_urls_containing_dollar(text: &str) -> String {
 
 /// Serializes `file` and writes it to `path`, creating parent directories when needed.
 pub fn write_request_file(path: &Path, file: &RequestFile, format: OutputFormat) -> Result<()> {
+    let schema_url = match format {
+        OutputFormat::Yaml => PUBLIC_REQUEST_YAML_SCHEMA_URL,
+        OutputFormat::Json => PUBLIC_REQUEST_JSON_SCHEMA_URL,
+    };
+    let value = serde_json::to_value(file).map_err(Error::Json)?;
+    let value = with_root_schema_url(value, schema_url);
     let data = match format {
         OutputFormat::Yaml => {
-            let raw = serde_yaml::to_string(file).map_err(Error::Yaml)?;
+            let raw = serde_yaml::to_string(&value).map_err(Error::Yaml)?;
             quote_yaml_urls_containing_dollar(&raw)
         }
-        OutputFormat::Json => serde_json::to_string_pretty(file).map_err(Error::Json)?,
+        OutputFormat::Json => serde_json::to_string_pretty(&value).map_err(Error::Json)?,
     };
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|source| Error::Io {
