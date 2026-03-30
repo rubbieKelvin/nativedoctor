@@ -2,11 +2,11 @@
 
 **nativedoctor** is a file-driven HTTP client: you describe requests in **JSON** or **YAML**, optionally wire **Rhai** post-response scripts, and run them from the command line or embed the engine in your own Rust code. It fits API exploration, smoke tests, and light automation without ad-hoc shell `curl` scripts.
 
-- **Request files** — one HTTP call per file (method, URL, query, headers, body).
-- **Template expansion** — `${VAR}` from process environment and a runtime map (writable from Rhai).
-- **Sequences** — ordered steps sharing one **runtime environment**; optional **`initial_variables`** in the sequence file seed the session before the first request (after process env and `--env` files).
-- **OpenAPI 3.0.x** — generate starter request files from a spec (`generate`).
-- **Post-scripts** — sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
+- **Request files**: one HTTP call per file (method, URL, query, headers, body).
+- **Template expansion**: `${VAR}` from process environment and a runtime map (writable from Rhai).
+- **Sequences**: ordered steps sharing one **runtime environment**; optional **`initial_variables`** in the sequence file seed the session before the first request (after process env and `--env` files).
+- **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
+- **Post-scripts**: sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
 The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-core`** crate; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals.
 
