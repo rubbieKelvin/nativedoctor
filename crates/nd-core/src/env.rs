@@ -27,10 +27,10 @@ pub struct RuntimeEnv {
 impl RuntimeEnv {
     /// Snapshot all current process environment variables into the writable runtime map.
     pub fn from_process_env() -> Self {
-        Self {
+        return Self {
             inner: Arc::new(Mutex::new(std::env::vars().collect())),
             fallback_to_process_env: true,
-        }
+        };
     }
 
     /// Empty runtime map; [`Self::get`] does not read the process environment (unless you merge
@@ -52,11 +52,11 @@ impl RuntimeEnv {
 
         drop(g);
 
-        if self.fallback_to_process_env {
+        return if self.fallback_to_process_env {
             std::env::var(key).ok()
         } else {
             None
-        }
+        };
     }
 
     /// Insert or update a runtime-only variable
@@ -80,12 +80,12 @@ impl RuntimeEnv {
             }
             self.set_runtime(key, value);
         }
-        Ok(())
+        return Ok(());
     }
 }
 
 fn map_dotenvy_error(path: &Path, err: dotenvy::Error) -> Error {
-    match err {
+    return match err {
         dotenvy::Error::Io(source) => Error::EnvFileRead {
             path: path.to_path_buf(),
             source,
@@ -105,7 +105,7 @@ fn map_dotenvy_error(path: &Path, err: dotenvy::Error) -> Error {
             line: 0,
             message: other.to_string(),
         },
-    }
+    };
 }
 
 #[cfg(test)]
