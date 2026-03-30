@@ -11,6 +11,12 @@ definitions:
     type: object
 description: Sequence document (JSON or YAML). Types live under [`crate::model`]; see [`crate::sequence`] to run.
 properties:
+  initial_variables:
+    additionalProperties:
+      type: string
+    default: {}
+    description: Key–value pairs merged into [`crate::RuntimeEnv`] when the sequence session starts (after the process snapshot and, for the CLI, `--env` files).
+    type: object
   name:
     default: null
     description: Optional human-readable label (backward compatible when omitted).
@@ -18,6 +24,7 @@ properties:
     - string
     - 'null'
   steps:
+    description: Request steps to run
     items:
       $ref: '#/definitions/SequenceStep'
     type: array

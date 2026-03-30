@@ -74,6 +74,53 @@ request:
 }
 
 #[tokio::test]
+async fn sequence_initial_variables_available_before_first_request() {
+    let mock = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/use/abc"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("preset-ok"))
+        .mount(&mock)
+        .await;
+
+    let tmp = tempdir().unwrap();
+    let base = mock.uri();
+    std::fs::write(
+        tmp.path().join("s1.yaml"),
+        format!(
+            r#"name: Use preset token
+request:
+  method: GET
+  url: "{}/use/${{TOKEN}}"
+"#,
+            base
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        tmp.path().join("seq.yaml"),
+        br#"name: Preset vars
+initial_variables:
+  TOKEN: abc
+steps:
+  - file: s1.yaml
+"#,
+    )
+    .unwrap();
+
+    let out = execute_sequence(&tmp.path().join("seq.yaml"), &RunOptions::default())
+        .await
+        .unwrap();
+    assert_eq!(out.sequence_name.as_deref(), Some("Preset vars"));
+    assert_eq!(out.steps.len(), 1);
+    assert_eq!(
+        out.steps[0].result.request_name.as_deref(),
+        Some("Use preset token")
+    );
+    assert_eq!(out.steps[0].result.status, 200);
+    assert_eq!(out.steps[0].result.body, b"preset-ok");
+}
+
+#[tokio::test]
 async fn sequence_stops_on_http_error_when_no_post_script() {
     let mock = MockServer::start().await;
     Mock::given(method("GET"))

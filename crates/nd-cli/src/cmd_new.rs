@@ -16,6 +16,7 @@ fn default_sequence_file() -> SequenceFile {
     return SequenceFile {
         version: VERSION.into(),
         name: Some("Sample flow".into()),
+        initial_variables: HashMap::new(),
         steps: vec![SequenceStep {
             file: "example-request.yaml".into(),
         }],

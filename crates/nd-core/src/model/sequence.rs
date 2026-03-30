@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +23,10 @@ pub struct SequenceFile {
     /// Optional human-readable label (backward compatible when omitted).
     #[serde(default)]
     pub name: Option<String>,
+    /// Key–value pairs merged into [`crate::RuntimeEnv`] when the sequence session starts (after
+    /// the process snapshot and, for the CLI, `--env` files).
+    #[serde(default)]
+    pub initial_variables: HashMap<String, String>,
     /// Request steps to run
     pub steps: Vec<SequenceStep>,
 }

@@ -4,8 +4,8 @@ use std::path::Path;
 
 use nd_core::{
     execute_request_post_script, execute_request_with_env, format_prepared_request,
-    load_request_file, load_sequence_file, prepare_request_with_env, sequence_step_iter,
-    OutcomePolicy, RunOptions, RuntimeEnv,
+    load_request_file, load_sequence_file, prepare_request_with_env, OutcomePolicy, RunOptions,
+    RuntimeEnv,
 };
 
 use crate::{print::print_result, Cli, Command};
@@ -103,7 +103,24 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         return Ok(());
     }
 
-    for (step, step_path) in sequence_step_iter(path).map_err(|e| e.to_string())? {
+    let (seq, base_dir) = load_sequence_file(path).map_err(|e| e.to_string())?;
+
+    if seq.steps.is_empty() {
+        return Err("sequence must contain at least one step".to_string());
+    }
+
+    env.merge_runtime_map(&seq.initial_variables);
+
+    for step in seq.steps.iter() {
+        let step_path = base_dir.join(&step.file);
+
+        if !step_path.is_file() {
+            return Err(format!(
+                "sequence step request file not found: {}",
+                step_path.display()
+            ));
+        }
+
         // Print a header if we're on verbose and no dry run
         if opts.verbose {
             println!("--- request: [{}] ---", step.file);
@@ -147,6 +164,9 @@ fn run_dry_sequence(path: &Path, env: &RuntimeEnv) -> Result<(), String> {
     if seq.steps.is_empty() {
         return Err("sequence must contain at least one step".to_string());
     }
+
+    env.merge_runtime_map(&seq.initial_variables);
+
     if let Some(n) = &seq.name {
         println!("Running dry sequence (No network I/O): {n}\n");
     }

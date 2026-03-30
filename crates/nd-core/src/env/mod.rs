@@ -67,6 +67,14 @@ impl RuntimeEnv {
         g.insert(key.into(), value.into());
     }
 
+    /// Merge a map into the runtime map (e.g. sequence [`crate::model::SequenceFile::initial_variables`]).
+    /// Later keys override earlier ones for the same key.
+    pub fn merge_runtime_map(&self, vars: &HashMap<String, String>) {
+        for (k, v) in vars {
+            self.set_runtime(k, v);
+        }
+    }
+
     /// Merge variables from a `.env` file into the runtime map (parsed with [dotenvy](https://docs.rs/dotenvy)).
     /// Later entries override earlier ones for the same key.
     pub fn merge_env_file(&self, path: &Path) -> Result<()> {

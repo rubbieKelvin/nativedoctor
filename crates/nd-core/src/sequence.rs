@@ -60,10 +60,10 @@ pub fn sequence_step_iter(path: &Path) -> Result<impl Iterator<Item = (SequenceS
         ));
     }
 
-    Ok(seq
+    return Ok(seq
         .steps
         .into_iter()
-        .map(move |s| (s.clone(), basedir.join(&s.file))))
+        .map(move |s| (s.clone(), basedir.join(&s.file))));
 }
 
 /// Completed step metadata for CLI / callers.
@@ -95,6 +95,7 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
     }
 
     let env = RuntimeEnv::from_process_env();
+    env.merge_runtime_map(&seq.initial_variables);
     let mut step_opts = opts.clone();
     step_opts.outcome_policy = OutcomePolicy::SequenceStep;
 
@@ -168,5 +169,30 @@ steps:
         assert_eq!(steps.len(), 2);
         assert_eq!(steps[0].0.file, "a.yaml");
         assert_eq!(steps[1].0.file, "b.yaml");
+    }
+
+    #[test]
+    fn load_sequence_file_parses_initial_variables() {
+        let mut tmp = tempfile::NamedTempFile::with_suffix(".yaml").unwrap();
+        writeln!(
+            tmp,
+            r#"version: "0.0.0"
+initial_variables:
+  TOKEN: abc
+  OTHER: x y
+steps:
+  - file: a.yaml
+"#
+        )
+        .unwrap();
+        let (seq, _) = load_sequence_file(tmp.path()).unwrap();
+        assert_eq!(
+            seq.initial_variables.get("TOKEN").map(String::as_str),
+            Some("abc")
+        );
+        assert_eq!(
+            seq.initial_variables.get("OTHER").map(String::as_str),
+            Some("x y")
+        );
     }
 }
