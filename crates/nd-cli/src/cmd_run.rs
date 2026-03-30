@@ -154,6 +154,14 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             // print response output
             print_result(&output, cli.verbose)?;
             println!("--- post-script: [{}] ---", step.file);
+        } else {
+            println!(
+                "[{} ・ {} - {}] {} ",
+                &output.method,
+                output.status,
+                &output.final_url,
+                format!("{}ms", &output.duration.as_millis().to_string())
+            )
         }
 
         // execute post request script, then optional sequence post_scripts
