@@ -156,10 +156,20 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             print_result(&output, cli.verbose)?;
             println!("--- post-script: [{}] ---", step.file);
         } else {
+            let status_s = output.status.to_string();
+            let status_colored = match output.status / 100 {
+                1 => status_s.cyan(),
+                2 => status_s.green(),
+                3 => status_s.blue(),
+                4 => status_s.yellow(),
+                5 => status_s.red(),
+                _ => status_s.normal(),
+            };
+
             println!(
-                "[{} ・ {} - {}] {} ",
+                "[{}・{} - {}] {} ",
                 &output.method.as_str().blue(),
-                output.status.to_string().green(),
+                status_colored,
                 &output.final_url,
                 format!("{}ms", &output.duration.as_millis().to_string()).yellow()
             )

@@ -5,10 +5,10 @@
 //! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
 //! [`Logger::drain`] after the script run when a logger was passed in.
 
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use colored::Colorize;
 use nd_constants::{RHAI_LOG_INITIATOR, TRACING_TARGET_RHAI};
 
 /// Severity for a [`Log`] line (parsed from Rhai `log("info", "...")` etc.).
@@ -99,15 +99,19 @@ impl Logger {
     ) {
         let msg = message.into();
         let src = script.into();
+        let parsed = LogLevel::parse_or_info(level);
 
-        self.log(
-            LogLevel::parse_or_info(level),
-            msg.clone(),
-            src.clone(),
-            initiator,
-        );
+        self.log(parsed, msg.clone(), src.clone(), initiator);
 
-        println!("[{level}] {msg}");
+        let level_colored = match parsed {
+            LogLevel::Trace => level.cyan(),
+            LogLevel::Debug => level.blue(),
+            LogLevel::Info => level.green(),
+            LogLevel::Warn => level.yellow(),
+            LogLevel::Error => level.red(),
+        };
+
+        println!("[{level_colored}・{src}] {msg}");
     }
 
     /// Clone of all entries, oldest first.
