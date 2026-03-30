@@ -16,7 +16,7 @@ fn register_response_fns(engine: &mut Engine, ctx: Arc<ResponseCtx>) {
     engine.register_fn("status", move || c.status);
 
     let c = ctx.clone();
-    engine.register_fn("headers", move |name: &str| {
+    engine.register_fn("header", move |name: &str| {
         c.headers
             .get(name)
             .map(|s| Dynamic::from(s.clone()))
@@ -66,9 +66,10 @@ pub(crate) fn create_engine(
     logger: Option<Arc<Logger>>,
 ) -> Engine {
     let mut engine = Engine::new();
+    let script_label = script_path.display().to_string();
+
     register_response_fns(&mut engine, ctx);
     register_env_fns(&mut engine, env);
-    let script_label = script_path.display().to_string();
     register_log(&mut engine, logger, script_label);
-    engine
+    return engine;
 }

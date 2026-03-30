@@ -8,6 +8,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::error::{Error, Result};
 
+pub mod dynamic;
+
 /// Merged view of process environment plus in-memory overrides (“runtime” variables).
 ///
 /// Created with [`Self::from_process_env`], which copies all current `std::env` entries into an
