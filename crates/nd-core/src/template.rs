@@ -1,41 +1,53 @@
-//! `${VAR}` substitution using [`crate::RuntimeEnv`] for lookups.
+//! `${VAR}` and `${!name}` substitution: environment lookups and dynamic generators (see [`crate::env::dynamic`]).
 
 use std::sync::OnceLock;
 
 use regex::Regex;
 use serde_json::Value;
 
+use crate::env::dynamic;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
-/// Variable pattern: `${IDENT}` where `IDENT` matches `[A-Za-z_][A-Za-z0-9_]*`.
-fn var_re() -> &'static Regex {
+/// Placeholders: `${VAR}` (env) or `${!name}` (dynamic), `IDENT` = `[A-Za-z_][A-Za-z0-9_]*`.
+fn placeholder_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").expect("valid regex"))
+    return RE.get_or_init(|| {
+        Regex::new(r"\$\{(?:!([A-Za-z_][A-Za-z0-9_]*)|([A-Za-z_][A-Za-z0-9_]*))\}")
+            .expect("valid regex")
+    });
 }
 
-/// Replace every `${VAR}` in `input` with values from `env`. Fails if any variable is unset.
+/// Replace every `${VAR}` in `input` with values from `env`, and every `${!name}` with a dynamic
+/// value from [`dynamic::invoke`]. Fails if any variable is unset or the function name is unknown.
 pub fn expand_string(env: &RuntimeEnv, input: &str) -> Result<String> {
     let mut out = String::with_capacity(input.len());
     let mut last = 0usize;
 
-    for cap in var_re().captures_iter(input) {
+    for cap in placeholder_re().captures_iter(input) {
         let m = cap.get(0).expect("match");
         out.push_str(&input[last..m.start()]);
-        let name = cap.get(1).expect("group 1").as_str();
-        let value = env
-            .get(name)
-            .ok_or_else(|| Error::MissingTemplateVar(name.to_string()))?;
-        out.push_str(&value);
+
+        if let Some(dyn_m) = cap.get(1) {
+            out.push_str(&dynamic::invoke(dyn_m.as_str())?);
+        } else if let Some(var_m) = cap.get(2) {
+            let name = var_m.as_str();
+            let value = env
+                .get(name)
+                .ok_or_else(|| Error::MissingTemplateVar(name.to_string()))?;
+            out.push_str(&value);
+        } else {
+            unreachable!("placeholder regex must match dynamic or env capture group");
+        }
         last = m.end();
     }
     out.push_str(&input[last..]);
-    Ok(out)
+    return Ok(out);
 }
 
-/// Recursively expand `${VAR}` in JSON strings and in object keys (same rules as [`expand_string`]).
+/// Recursively expand `${VAR}` / `${!name}` in JSON strings and in object keys (same rules as [`expand_string`]).
 pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
-    match value {
+    return match value {
         Value::String(s) => Ok(Value::String(expand_string(env, s)?)),
         Value::Array(items) => {
             let mut out = Vec::with_capacity(items.len());
@@ -53,5 +65,5 @@ pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
             Ok(Value::Object(out))
         }
         _ => Ok(value.clone()),
-    }
+    };
 }

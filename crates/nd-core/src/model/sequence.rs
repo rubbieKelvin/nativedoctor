@@ -21,6 +21,7 @@ pub struct SequenceFile {
     /// Optional human-readable label (backward compatible when omitted).
     #[serde(default)]
     pub name: Option<String>,
+    /// Request steps to run
     pub steps: Vec<SequenceStep>,
 }
 

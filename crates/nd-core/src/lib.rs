@@ -1,4 +1,4 @@
-//! Core library for **nativedoctor**: load request definitions (JSON/YAML), expand `${VAR}` templates,
+//! Core library for **nativedoctor**: load request definitions (JSON/YAML), expand `${VAR}` and `${!name}` templates,
 //! run HTTP requests, and execute optional Rhai post-scripts.
 //!
 //! # Internal logging

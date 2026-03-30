@@ -29,6 +29,10 @@ pub enum Error {
     #[error("missing environment variable '{0}' in template")]
     MissingTemplateVar(String),
 
+    /// Unknown `${!name}` dynamic template function (see `env::dynamic`).
+    #[error("unknown dynamic template '{0}'")]
+    UnknownDynamicTemplate(String),
+
     #[error("invalid HTTP request: {0}")]
     InvalidRequest(String),
 

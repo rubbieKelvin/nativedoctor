@@ -3,6 +3,10 @@
 use nd_core::{expand_json_value, expand_string, RuntimeEnv};
 use serde_json::json;
 
+fn isolated() -> RuntimeEnv {
+    RuntimeEnv::isolated()
+}
+
 #[test]
 fn expand_string_replaces_var() {
     let env = RuntimeEnv::from_process_env();
@@ -56,4 +60,48 @@ fn expand_json_value_leaves_numbers_bool_null() {
     let v = json!({ "n": 42, "b": true, "z": null });
     let e = expand_json_value(&env, &v).unwrap();
     assert_eq!(e, v);
+}
+
+#[test]
+fn expand_string_dynamic_uuidv4() {
+    let env = isolated();
+    let s = expand_string(&env, "${!uuidv4}").unwrap();
+    assert_eq!(s.len(), 36);
+    assert_eq!(s.chars().filter(|c| *c == '-').count(), 4);
+}
+
+#[test]
+fn expand_string_dynamic_color_hex() {
+    let env = isolated();
+    let s = expand_string(&env, "${!color}").unwrap();
+    assert!(s.starts_with('#'));
+    assert_eq!(s.len(), 7);
+    assert!(s[1..].chars().all(|c| c.is_ascii_hexdigit()));
+}
+
+#[test]
+fn expand_string_unknown_dynamic_errors() {
+    let env = isolated();
+    let err = expand_string(&env, "${!__not_a_builtin__}")
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("__not_a_builtin__"));
+}
+
+#[test]
+fn expand_string_mixed_env_and_dynamic() {
+    let env = isolated();
+    env.set_runtime("PREFIX", "id-");
+    let s = expand_string(&env, "${PREFIX}${!nanoid}").unwrap();
+    assert!(s.starts_with("id-"));
+    assert!(s.len() > "id-".len());
+}
+
+#[test]
+fn expand_json_value_dynamic_in_string() {
+    let env = isolated();
+    let v = json!({ "id": "${!uuidv4}" });
+    let e = expand_json_value(&env, &v).unwrap();
+    let id = e.get("id").and_then(|x| x.as_str()).expect("id string");
+    assert_eq!(id.len(), 36);
 }
