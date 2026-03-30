@@ -4,7 +4,7 @@
 
 - **Request files** — one HTTP call per file (method, URL, query, headers, body).
 - **Template expansion** — `${VAR}` from process environment and a runtime map (writable from Rhai).
-- **Sequences** — ordered steps sharing one **runtime environment** (tokens and variables flow forward).
+- **Sequences** — ordered steps sharing one **runtime environment**; optional **`initial_variables`** in the sequence file seed the session before the first request (after process env and `--env` files).
 - **OpenAPI 3.0.x** — generate starter request files from a spec (`generate`).
 - **Post-scripts** — sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
@@ -163,7 +163,9 @@ Useful fields (non-exhaustive):
 
 ## Sequences
 
-A sequence file lists **steps**; each step’s `file` is relative to the sequence file’s directory.
+A sequence file lists **steps**; each step’s `file` is relative to the sequence file’s directory. All steps share a single **`RuntimeEnv`**: template expansion (`${VAR}`) and Rhai `env()` / `set()` see the same map for the whole run, so values produced in earlier steps (for example from a login response via a post-script) are visible in later steps.
+
+### Basic example
 
 ```yaml
 version: "0.0.0"
@@ -173,16 +175,39 @@ steps:
   - file: fetch-resource.yaml
 ```
 
-Execution rules (summary):
+### `initial_variables`
 
-- One shared **`RuntimeEnv`** for all steps (environment + values set via Rhai `set` / templates).
-- **Outcome policy** differs from a single request: with an active post-script, HTTP errors can be handled in script; without one, a failing status may fail the step (see `OutcomePolicy::SequenceStep` in `nd-core`).
+Use **`initial_variables`** when you want fixed key–value pairs loaded into the runtime map **once**, at the start of the sequence, before any step runs. Typical uses include base URLs, API keys or tokens already known outside the flow, feature flags, or test fixtures. Values are plain strings; use `${VAR}` in request files to reference them.
 
-Run with:
+```yaml
+version: "0.0.0"
+name: Staging checkout
+initial_variables:
+  API_BASE: https://api.example.com
+  TENANT_ID: acme
+steps:
+  - file: list-orders.yaml
+  - file: place-order.yaml
+```
+
+**Precedence (CLI):** the runtime map is built in this order: copy of the process environment (unless `--no-default-system-env`), then each **`--env`** file in order, then **`initial_variables`** from the sequence file. Later sources override earlier ones for the same key. Within the run, Rhai **`set`** and template expansion continue to update the map as usual.
+
+The same field is applied when using **`execute_sequence`** in **`nd-core`**: after `RuntimeEnv::from_process_env()`, `initial_variables` are merged before the first step.
+
+### Execution behavior
+
+- **Shared session:** one **`RuntimeEnv`** for all steps (process/`--env`/`initial_variables`, plus Rhai `set` and `${VAR}` expansion).
+- **Step outcomes:** unlike a single request, sequence steps use **`OutcomePolicy::SequenceStep`**: when a post-script is present it may handle HTTP errors; without a post-script, a non-success status can fail the step. See **`nd-core`** for exact rules.
+
+Run from the CLI:
 
 ```bash
 nativedoctor run -s sequence.yaml
 ```
+
+Dry-run expands requests with the same environment (including `initial_variables`).
+
+**JSON Schema** for tooling: `nd_core::sequence_file_json_schema()` describes `SequenceFile`, including `initial_variables` and `steps`.
 
 ---
 
@@ -194,9 +219,11 @@ By default the CLI seeds the runtime map from the **current process environment*
 
 With **`--no-default-system-env`**, the map starts empty (no process snapshot); use **`--env`** to supply variables or rely on Rhai `set` during the run.
 
+For **`nativedoctor run -s`**, after the above, the sequence file’s **`initial_variables`** (if any) are merged into the same map. That keeps a single, predictable pipeline: process → `--env` → sequence defaults → per-step Rhai and HTTP.
+
 Resolution order for lookups:
 
-1. **Runtime map** (process copy unless disabled, then `--env` merges, then Rhai `set`).
+1. **Runtime map** (process copy unless disabled, then `--env` merges, then sequence **`initial_variables`** when running a sequence, then values from Rhai **`set`** as the run progresses).
 2. **`std::env::var`** when the runtime was built with process fallback (default CLI behavior).
 
 Missing variables produce an error at expansion time.
@@ -237,7 +264,7 @@ Add a path or crates.io dependency on **`nd-core`** (when published). Typical en
 
 - **Load / expand:** `load_request_file`, `prepare_request_file`, `prepare_request_with_env`, `expand_string`, `expand_json_value`
 - **Execute:** `execute_request_with_env`, `RunOptions`, `OutcomePolicy`, `ExecutionResult`
-- **Sequences:** `execute_sequence`, `load_sequence_file`, `sequence_step_iter`
+- **Sequences:** `execute_sequence`, `load_sequence_file`, `sequence_step_iter`; sequence documents support **`initial_variables`** (merged into the shared `RuntimeEnv` at session start).
 - **Post-script only:** `execute_request_post_script`, `run_post_script`
 - **Discovery:** `list_request_paths`
 
