@@ -111,7 +111,9 @@ impl Logger {
             LogLevel::Error => level.red(),
         };
 
-        println!("[{level_colored}・{src}] {msg}");
+        let src_colored = src.color("#444444");
+
+        println!("[{level_colored}・{src_colored}] {msg}");
     }
 
     /// Clone of all entries, oldest first.

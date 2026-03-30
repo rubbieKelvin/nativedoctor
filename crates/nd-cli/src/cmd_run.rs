@@ -167,7 +167,7 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             };
 
             println!(
-                "[{}・{} - {}] {} ",
+                "[{}・{}] {} {} ",
                 &output.method.as_str().blue(),
                 status_colored,
                 &output.final_url,
