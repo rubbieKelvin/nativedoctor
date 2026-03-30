@@ -41,7 +41,7 @@ pub use execute::{
     prepare_request_file, prepare_request_with_env, ExecutionResult, OutcomePolicy,
     PreparedRequest, RunOptions,
 };
-pub use load::{load_request_file, resolve_post_script};
+pub use load::{load_request_file, normalize_path_lexical, resolve_post_script};
 pub use model::{
     content_type_for_body_kind, request_file_json_schema, sequence_file_json_schema,
     with_root_schema_url, HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured,

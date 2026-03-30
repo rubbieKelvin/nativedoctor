@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use nd_core::load_request_file;
-use nd_core::resolve_post_script;
+use nd_core::{normalize_path_lexical, resolve_post_script};
 use tempfile::tempdir;
 
 #[test]
@@ -11,6 +11,37 @@ fn resolve_post_script_joins_base() {
     assert_eq!(
         resolve_post_script(Path::new("/foo/bar"), "./x.rhai"),
         PathBuf::from("/foo/bar/x.rhai")
+    );
+}
+
+#[test]
+fn normalize_path_lexical_collapses_dotdot() {
+    assert_eq!(
+        normalize_path_lexical(Path::new("/a/b/../c/./d/e.rhai")),
+        PathBuf::from("/a/c/d/e.rhai")
+    );
+}
+
+#[test]
+fn resolve_post_script_finds_file_with_parent_segments() {
+    let dir = tempdir().unwrap();
+    let script = dir.path().join("requests").join("scripts").join("hook.rhai");
+    std::fs::create_dir_all(script.parent().unwrap()).unwrap();
+    std::fs::write(&script, b"1;").unwrap();
+    let base = dir.path().join("requests").join("mhi");
+    std::fs::create_dir_all(&base).unwrap();
+    let rel = "../scripts/./hook.rhai";
+    let resolved = resolve_post_script(&base, rel);
+    assert!(
+        resolved.is_file(),
+        "expected file at {}, got {}",
+        script.display(),
+        resolved.display()
+    );
+    assert_eq!(
+        resolved,
+        std::fs::canonicalize(&script).unwrap(),
+        "normalized path should match real script location"
     );
 }
 
