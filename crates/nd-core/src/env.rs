@@ -1,4 +1,6 @@
 //! Process and runtime variable map used for `${VAR}` expansion and Rhai `env` / `set`.
+//!
+//! `.env` file loading for [`RuntimeEnv::merge_env_file`] uses the [`dotenvy`] crate.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -57,32 +59,22 @@ impl RuntimeEnv {
         }
     }
 
-    /// Insert or update a runtime-only variable (visible to [`Self::get`] and Rhai `env()`).
+    /// Insert or update a runtime-only variable
     pub fn set_runtime(&self, key: impl Into<String>, value: impl Into<String>) {
         let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         g.insert(key.into(), value.into());
     }
 
-    /// Merge `KEY=value` lines from a dotenv-style file into the runtime map (later lines override
-    /// earlier ones for the same key). Empty lines and `#` comments are skipped.
+    /// Merge variables from a `.env` file into the runtime map
+    /// Later entries override earlier ones for the same key.
     pub fn merge_env_file(&self, path: &Path) -> Result<()> {
-        let text = std::fs::read_to_string(path).map_err(|source| Error::EnvFileRead {
-            path: path.to_path_buf(),
-            source,
-        })?;
-
-        for (i, raw_line) in text.lines().enumerate() {
-            let line_no = i + 1;
-            let line = raw_line.trim();
-            if line.is_empty() || line.starts_with('#') {
-                continue;
-            }
-            let line = line.strip_prefix("export ").map(str::trim).unwrap_or(line);
-            let (key, value) = parse_env_key_value(line, path, line_no)?;
+        let iter = dotenvy::from_path_iter(path).map_err(|e| map_dotenvy_error(path, e))?;
+        for item in iter {
+            let (key, value) = item.map_err(|e| map_dotenvy_error(path, e))?;
             if key.is_empty() {
                 return Err(Error::EnvFileParse {
                     path: path.to_path_buf(),
-                    line: line_no,
+                    line: 0,
                     message: "empty variable name".into(),
                 });
             }
@@ -92,32 +84,28 @@ impl RuntimeEnv {
     }
 }
 
-fn parse_env_key_value(line: &str, path: &Path, line_no: usize) -> Result<(String, String)> {
-    let Some(eq) = line.find('=') else {
-        return Err(Error::EnvFileParse {
+fn map_dotenvy_error(path: &Path, err: dotenvy::Error) -> Error {
+    match err {
+        dotenvy::Error::Io(source) => Error::EnvFileRead {
             path: path.to_path_buf(),
-            line: line_no,
-            message: "expected KEY=value".into(),
-        });
-    };
-    let key = line[..eq].trim().to_string();
-    if key.is_empty() {
-        return Err(Error::EnvFileParse {
+            source,
+        },
+        dotenvy::Error::LineParse(line, index) => Error::EnvFileParse {
             path: path.to_path_buf(),
-            line: line_no,
-            message: "empty variable name before '='".into(),
-        });
+            line: index.saturating_add(1),
+            message: format!("invalid line: {line:?}"),
+        },
+        dotenvy::Error::EnvVar(e) => Error::EnvFileParse {
+            path: path.to_path_buf(),
+            line: 0,
+            message: e.to_string(),
+        },
+        other => Error::EnvFileParse {
+            path: path.to_path_buf(),
+            line: 0,
+            message: other.to_string(),
+        },
     }
-    let mut value = line[eq + 1..].trim();
-    if value.len() >= 2 {
-        let bytes = value.as_bytes();
-        if (bytes[0] == b'"' && bytes[value.len() - 1] == b'"')
-            || (bytes[0] == b'\'' && bytes[value.len() - 1] == b'\'')
-        {
-            value = &value[1..value.len() - 1];
-        }
-    }
-    Ok((key, value.to_string()))
 }
 
 #[cfg(test)]

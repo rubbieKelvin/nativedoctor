@@ -18,6 +18,7 @@ tracing = "0.1"
 nd-constants = { path = "../nd-constants" }
 strum_macros = "0.28"
 strum = {version="0.28.0", features = ["derive"]}
+dotenvy = "0.15"
 
 [dev-dependencies]
 tempfile = "3"
