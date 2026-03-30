@@ -5,6 +5,7 @@
 //! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
 //! [`Logger::drain`] after the script run when a logger was passed in.
 
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -102,10 +103,11 @@ impl Logger {
         self.log(
             LogLevel::parse_or_info(level),
             msg.clone(),
-            msg.clone(),
+            src.clone(),
             initiator,
         );
-        println!("[{level}:{src}] {msg}");
+
+        println!("[{level}] {msg}");
     }
 
     /// Clone of all entries, oldest first.

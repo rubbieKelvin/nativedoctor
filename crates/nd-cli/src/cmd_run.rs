@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use colored::Colorize;
 use nd_core::{
     execute_request_post_script, execute_request_with_env, expand_hashmap_values,
     format_prepared_request, load_request_file, load_sequence_file, prepare_request_with_env,
@@ -157,10 +158,10 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         } else {
             println!(
                 "[{} ・ {} - {}] {} ",
-                &output.method,
-                output.status,
+                &output.method.as_str().blue(),
+                output.status.to_string().green(),
                 &output.final_url,
-                format!("{}ms", &output.duration.as_millis().to_string())
+                format!("{}ms", &output.duration.as_millis().to_string()).yellow()
             )
         }
 
