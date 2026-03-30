@@ -215,6 +215,34 @@ Dry-run expands requests with the same environment (including `initial_variables
 
 Before the request is sent, strings in URLs, query values, headers, and JSON/text bodies are expanded using **`${IDENT}`** (identifier rules: letters, digits, underscore; see template implementation in `nd-core`).
 
+Dynamic placeholders use **`${!name}`** and generate a fresh value each time they are expanded. They work anywhere normal template expansion is supported (URL, query, headers, and JSON/text body fields).
+
+Common built-ins include:
+
+- `uuidv4`, `nanoid`
+- `random_email`, `random_username`, `random_name`, `random_phone`
+- `random_int`, `random_bool`, `color`
+- `random_words`, `random_paragraph`, `lorem_ipsum`
+- `now`, `yesterday`, `tomorrow`, `random_iso_date_string`, `random_date_past`, `random_date_future`
+
+Example:
+
+```yaml
+request:
+  method: POST
+  url: "https://httpbin.org/anything/${!uuidv4}"
+  headers:
+    x-request-id: "${!nanoid}"
+  body:
+    type: json
+    json:
+      username: "${!random_username}"
+      created_at: "${!random_iso_date_string}"
+      favorite_color: "${!color}"
+```
+
+Unknown dynamic function names fail fast with an error.
+
 By default the CLI seeds the runtime map from the **current process environment**, then merges each **`--env`** file in order (same rules as typical `.env` files: parsed by **[dotenvy](https://docs.rs/dotenvy)** inside `nd-core`).
 
 With **`--no-default-system-env`**, the map starts empty (no process snapshot); use **`--env`** to supply variables or rely on Rhai `set` during the run.
