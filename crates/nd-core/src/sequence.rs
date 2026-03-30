@@ -84,6 +84,7 @@ pub struct SequenceResult {
 }
 
 /// Run each step in order with one shared [`RuntimeEnv`].
+/// TODO(rubbie): Might delete this..
 pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<SequenceResult> {
     let (seq, base_dir) = load_sequence_file(path)?;
     let sequence_name = seq.name.clone();
@@ -125,7 +126,7 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         );
 
         let result = execute_request_with_env(&step_path, &step_opts, &env).await?;
-        execute_request_post_script(&result, &step_opts, &env)?;
+        execute_request_post_script(&result, &step_opts, &env, Some((step, base_dir.as_path())))?;
 
         summaries.push(StepSummary {
             index: i + 1,

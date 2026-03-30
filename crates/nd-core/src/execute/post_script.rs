@@ -9,7 +9,7 @@ use super::types::RunOptions;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::load::resolve_post_script;
-use crate::model::RequestFile;
+use crate::model::{RequestFile, SequenceStep};
 use crate::rhai::logger::Logger;
 use crate::rhai::run_post_script;
 
@@ -43,4 +43,36 @@ pub(crate) fn run_request_post_script(
         }
     }
     Ok(())
+}
+
+/// Rhai scripts listed on [`SequenceStep::post_scripts`], resolved from the sequence file directory.
+pub(crate) fn run_sequence_flow_post_scripts(
+    step: &SequenceStep,
+    sequence_base_dir: &Path,
+    env: &RuntimeEnv,
+    opts: &RunOptions,
+    status: u16,
+    resp_headers: &[(String, String)],
+    body: &[u8],
+) -> Result<()> {
+    if opts.no_post_script {
+        return Ok(());
+    }
+
+    for rel in &step.post_scripts {
+        let script_path = resolve_post_script(sequence_base_dir, rel);
+        if !script_path.is_file() {
+            return Err(Error::PostScriptNotFound(script_path));
+        }
+
+        debug!(
+            script = %script_path.display(),
+            http_status = status,
+            "running sequence post_script"
+        );
+
+        let logger = Arc::new(Logger::new());
+        run_post_script(&script_path, env, status, resp_headers, body, Some(logger))?;
+    }
+    return Ok(());
 }

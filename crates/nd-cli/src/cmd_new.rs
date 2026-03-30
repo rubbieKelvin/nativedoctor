@@ -19,6 +19,7 @@ fn default_sequence_file() -> SequenceFile {
         initial_variables: HashMap::new(),
         steps: vec![SequenceStep {
             file: "example-request.yaml".into(),
+            post_scripts: vec![],
         }],
     };
 }

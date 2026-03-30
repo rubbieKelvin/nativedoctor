@@ -6,20 +6,21 @@ use std::time::{Duration, Instant};
 use tracing::debug;
 
 use super::client::{build_client, merge_url_query, send_request};
-use super::post_script::run_request_post_script;
+use super::post_script::{run_request_post_script, run_sequence_flow_post_scripts};
 use super::prepare::expand_http_request;
 use super::types::{ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions};
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::load::load_request_file;
+use crate::model::SequenceStep;
 use crate::RequestFile;
 
 /// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
 ///
 /// [`OutcomePolicy::SingleRequest`]: post-script runs before failing on HTTP ≥ 400 (unless
-/// `allow_error_status`). [`OutcomePolicy::SequenceStep`]: without an active post-script, fail on
-/// HTTP ≥ 400 when `allow_error_status` is false; with post-script, run Rhai and never fail on HTTP
-/// status alone.
+/// `allow_error_status`). [`OutcomePolicy::SequenceStep`]: without a request `post_script` or
+/// sequence `post_scripts` on the step, fail on HTTP ≥ 400 when `allow_error_status` is false;
+/// otherwise run Rhai and do not fail on HTTP status alone.
 pub async fn execute_request_with_env(
     path: &Path,
     opts: &RunOptions,
@@ -80,12 +81,20 @@ pub async fn execute_request_with_env(
     });
 }
 
+/// Runs the request file’s optional `post_script`, then optional sequence-level `post_scripts` on
+/// the step when `sequence_step` is `Some`.
+///
+/// Pass **`None`** for `sequence_step` when not running a sequence step (single-request runs).
 pub fn execute_request_post_script(
     output: &ExecutionResult,
     opts: &RunOptions,
     env: &RuntimeEnv,
+    sequence_step: Option<(&SequenceStep, &Path)>,
 ) -> Result<()> {
-    let has_active_script = output.doc.post_script.is_some() && !opts.no_post_script;
+    let has_request_script = output.doc.post_script.is_some() && !opts.no_post_script;
+    let has_flow_scripts = sequence_step
+        .map(|(s, _)| !s.post_scripts.is_empty() && !opts.no_post_script)
+        .unwrap_or(false);
 
     match opts.outcome_policy {
         OutcomePolicy::SingleRequest => {
@@ -107,7 +116,18 @@ pub fn execute_request_post_script(
             }
         }
         OutcomePolicy::SequenceStep => {
-            if has_active_script {
+            if !opts.allow_error_status
+                && output.status >= 400
+                && !has_request_script
+                && !has_flow_scripts
+            {
+                return Err(Error::InvalidRequest(format!(
+                    "sequence step HTTP status {} (no request post_script or sequence post_scripts to handle error)",
+                    output.status
+                )));
+            }
+
+            if has_request_script {
                 run_request_post_script(
                     &output.doc,
                     &output.base_dir,
@@ -117,11 +137,18 @@ pub fn execute_request_post_script(
                     &output.headers,
                     &output.body,
                 )?;
-            } else if !opts.allow_error_status && output.status >= 400 {
-                return Err(Error::InvalidRequest(format!(
-                    "sequence step HTTP status {} (no post_script to handle error)",
-                    output.status
-                )));
+            }
+
+            if let Some((step, seq_base)) = sequence_step {
+                run_sequence_flow_post_scripts(
+                    step,
+                    seq_base,
+                    env,
+                    opts,
+                    output.status,
+                    &output.headers,
+                    &output.body,
+                )?;
             }
         }
     }

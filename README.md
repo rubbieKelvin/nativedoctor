@@ -4,7 +4,7 @@
 
 - **Request files**: one HTTP call per file (method, URL, query, headers, body).
 - **Template expansion**: `${VAR}` from process environment and a runtime map (writable from Rhai).
-- **Sequences**: ordered steps sharing one **runtime environment**; optional **`initial_variables`** in the sequence file seed the session before the first request (after process env and `--env` files).
+- **Sequences**: ordered steps sharing one **runtime environment**; optional **`initial_variables`** seed the session; each step may list **`post_scripts`** (Rhai after the request’s own `post_script`).
 - **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
 - **Post-scripts**: sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
@@ -194,10 +194,27 @@ steps:
 
 The same field is applied when using **`execute_sequence`** in **`nd-core`**: after `RuntimeEnv::from_process_env()`, `initial_variables` are merged before the first step.
 
+### `steps[].post_scripts`
+
+Each step may include **`post_scripts`**: a list of paths to Rhai files, **relative to the sequence file’s directory**. They run **in order** after the HTTP response is received and after that request file’s optional **`post_script`** (if any). They receive the **same** status code, headers, and body as the request-level script (`status()`, `headers()`, `body()`, `json()`, `set()`, etc.).
+
+Use this for flow-level cleanup, assertions, or setting runtime variables from a response when you prefer not to put that logic in the request file’s single `post_script`, or to split logic across multiple scripts.
+
+```yaml
+steps:
+  - file: create-user.yaml
+    post_scripts:
+      - ./assert-201.rhai
+      - ./capture-id.rhai
+  - file: fetch-user.yaml
+```
+
+**`--no-post`** skips both request **`post_script`** and sequence **`post_scripts`**.
+
 ### Execution behavior
 
 - **Shared session:** one **`RuntimeEnv`** for all steps (process/`--env`/`initial_variables`, plus Rhai `set` and `${VAR}` expansion).
-- **Step outcomes:** unlike a single request, sequence steps use **`OutcomePolicy::SequenceStep`**: when a post-script is present it may handle HTTP errors; without a post-script, a non-success status can fail the step. See **`nd-core`** for exact rules.
+- **Step outcomes:** sequence steps use **`OutcomePolicy::SequenceStep`**. If either the request file defines a **`post_script`** or the step lists **`post_scripts`**, HTTP 4xx/5xx responses do not fail the step on status alone; otherwise a non-success status can fail the step (unless **`--allow-error-status`**). See **`nd-core`** for exact rules.
 
 Run from the CLI:
 
@@ -207,7 +224,7 @@ nativedoctor run -s sequence.yaml
 
 Dry-run expands requests with the same environment (including `initial_variables`).
 
-**JSON Schema** for tooling: `nd_core::sequence_file_json_schema()` describes `SequenceFile`, including `initial_variables` and `steps`.
+**JSON Schema** for tooling: `nd_core::sequence_file_json_schema()` describes `SequenceFile`, including `initial_variables`, `steps`, and per-step `post_scripts`.
 
 ---
 
@@ -292,8 +309,8 @@ Add a path or crates.io dependency on **`nd-core`** (when published). Typical en
 
 - **Load / expand:** `load_request_file`, `prepare_request_file`, `prepare_request_with_env`, `expand_string`, `expand_json_value`
 - **Execute:** `execute_request_with_env`, `RunOptions`, `OutcomePolicy`, `ExecutionResult`
-- **Sequences:** `execute_sequence`, `load_sequence_file`, `sequence_step_iter`; sequence documents support **`initial_variables`** (merged into the shared `RuntimeEnv` at session start).
-- **Post-script only:** `execute_request_post_script`, `run_post_script`
+- **Sequences:** `execute_sequence`, `load_sequence_file`, `sequence_step_iter`; sequence documents support **`initial_variables`** and **`steps[].post_scripts`**.
+- **Post-scripts:** `execute_request_post_script` (pass `None` for the sequence-step argument on single-request runs), `run_post_script`
 - **Discovery:** `list_request_paths`
 
 Install a **`tracing`** subscriber in your binary if you want logs from the core crate (mirrors what the CLI does with `RUST_LOG` / `--verbose`).

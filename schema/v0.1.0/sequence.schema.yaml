@@ -6,6 +6,12 @@ definitions:
       file:
         description: Path to a request file, relative to the sequence file’s directory.
         type: string
+      post_scripts:
+        default: []
+        description: Rhai scripts to run sequentially after the step’s HTTP response and request `post_script` (paths relative to the sequence file’s directory).
+        items:
+          type: string
+        type: array
     required:
     - file
     type: object
@@ -18,7 +24,6 @@ properties:
     description: Key–value pairs merged into [`crate::RuntimeEnv`] when the sequence session starts (after the process snapshot and, for the CLI, `--env` files).
     type: object
   name:
-    default: null
     description: Optional human-readable label (backward compatible when omitted).
     type:
     - string

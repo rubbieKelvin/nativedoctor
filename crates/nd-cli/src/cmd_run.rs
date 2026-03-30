@@ -88,7 +88,7 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
     }
 
     // execute post request script
-    execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
+    execute_request_post_script(&output, &opts, &env, None).map_err(|e| e.to_string())?;
 
     return Ok(());
 }
@@ -113,6 +113,9 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         expand_hashmap_values(&env, &seq.initial_variables).map_err(|e| e.to_string())?;
 
     env.merge_runtime_map(&expanded_initial_vars);
+
+    let mut step_opts = opts.clone();
+    step_opts.outcome_policy = OutcomePolicy::SequenceStep;
 
     for step in seq.steps.iter() {
         let step_path = base_dir.join(&step.file);
@@ -143,7 +146,7 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         }
 
         // execute request file
-        let output = execute_request_with_env(&step_path, &opts, &env)
+        let output = execute_request_with_env(&step_path, &step_opts, &env)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -154,8 +157,14 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             println!("--- post-script: [{}] ---", step.file);
         }
 
-        // execute post request script
-        execute_request_post_script(&output, &opts, &env).map_err(|e| e.to_string())?;
+        // execute post request script, then optional sequence post_scripts
+        execute_request_post_script(
+            &output,
+            &step_opts,
+            &env,
+            Some((step, base_dir.as_path())),
+        )
+        .map_err(|e| e.to_string())?;
     }
 
     return Ok(());
@@ -169,7 +178,7 @@ fn run_dry_sequence(path: &Path, env: &RuntimeEnv) -> Result<(), String> {
     }
 
     let expanded_initial_vars =
-        expand_hashmap_values(&env, &seq.initial_variables).map_err(|e| e.to_string())?;
+        expand_hashmap_values(env, &seq.initial_variables).map_err(|e| e.to_string())?;
     env.merge_runtime_map(&expanded_initial_vars);
 
     if let Some(n) = &seq.name {

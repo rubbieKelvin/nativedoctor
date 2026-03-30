@@ -224,3 +224,107 @@ post_script: ./noop.rhai
     assert_eq!(out.steps[1].result.status, 200);
     assert_eq!(out.steps[1].result.body, b"ok");
 }
+
+#[tokio::test]
+async fn sequence_step_post_scripts_set_runtime_for_next_step() {
+    let mock = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/ping"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+        .mount(&mock)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/use/hello"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("second-ok"))
+        .mount(&mock)
+        .await;
+
+    let tmp = tempdir().unwrap();
+    let base = mock.uri();
+    std::fs::write(tmp.path().join("flow.rhai"), r#"set("FLOW_TOKEN", "hello");"#).unwrap();
+    std::fs::write(
+        tmp.path().join("s1.yaml"),
+        format!(
+            r#"name: Ping
+request:
+  method: GET
+  url: "{}/ping"
+"#,
+            base
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        tmp.path().join("s2.yaml"),
+        format!(
+            r#"name: Use flow token
+request:
+  method: GET
+  url: "{}/use/${{FLOW_TOKEN}}"
+"#,
+            base
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        tmp.path().join("seq.yaml"),
+        format!(
+            r#"name: Flow post_scripts
+steps:
+  - file: s1.yaml
+    post_scripts:
+      - ./flow.rhai
+  - file: s2.yaml
+"#
+        ),
+    )
+    .unwrap();
+
+    let out = execute_sequence(&tmp.path().join("seq.yaml"), &RunOptions::default())
+        .await
+        .unwrap();
+    assert_eq!(out.steps.len(), 2);
+    assert_eq!(out.steps[1].result.body, b"second-ok");
+}
+
+#[tokio::test]
+async fn sequence_step_post_scripts_allow_http_error_without_request_post_script() {
+    let mock = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/bad"))
+        .respond_with(ResponseTemplate::new(404))
+        .mount(&mock)
+        .await;
+
+    let tmp = tempdir().unwrap();
+    let base = mock.uri();
+    std::fs::write(tmp.path().join("noop.rhai"), b"1;").unwrap();
+    std::fs::write(
+        tmp.path().join("s1.yaml"),
+        format!(
+            r#"request:
+  method: GET
+  url: "{}/bad"
+"#,
+            base
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        tmp.path().join("seq.yaml"),
+        format!(
+            r#"steps:
+  - file: s1.yaml
+    post_scripts:
+      - ./noop.rhai
+"#
+        ),
+    )
+    .unwrap();
+
+    let out = execute_sequence(&tmp.path().join("seq.yaml"), &RunOptions::default())
+        .await
+        .unwrap();
+    assert_eq!(out.steps.len(), 1);
+    assert_eq!(out.steps[0].result.status, 404);
+}
