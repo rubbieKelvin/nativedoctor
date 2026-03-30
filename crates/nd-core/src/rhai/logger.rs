@@ -96,7 +96,16 @@ impl Logger {
         script: impl Into<String>,
         initiator: impl Into<String>,
     ) {
-        self.log(LogLevel::parse_or_info(level), message, script, initiator);
+        let msg = message.into();
+        let src = script.into();
+
+        self.log(
+            LogLevel::parse_or_info(level),
+            msg.clone(),
+            msg.clone(),
+            initiator,
+        );
+        println!("[{level}:{src}] {msg}");
     }
 
     /// Clone of all entries, oldest first.

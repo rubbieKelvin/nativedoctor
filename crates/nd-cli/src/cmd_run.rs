@@ -150,21 +150,15 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
             .await
             .map_err(|e| e.to_string())?;
 
-        // print response output
-        print_result(&output, cli.verbose)?;
-
         if cli.verbose {
+            // print response output
+            print_result(&output, cli.verbose)?;
             println!("--- post-script: [{}] ---", step.file);
         }
 
         // execute post request script, then optional sequence post_scripts
-        execute_request_post_script(
-            &output,
-            &step_opts,
-            &env,
-            Some((step, base_dir.as_path())),
-        )
-        .map_err(|e| e.to_string())?;
+        execute_request_post_script(&output, &step_opts, &env, Some((step, base_dir.as_path())))
+            .map_err(|e| e.to_string())?;
     }
 
     return Ok(());
