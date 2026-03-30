@@ -2,6 +2,8 @@
 //! tracing targets, CLI filters, and generator placeholders. Use this crate so runtime (`nd-core`),
 //! CLI (`nd-cli`), and tools (`ng-generate`) stay aligned.
 
+pub mod urls;
+
 /// Package version of this crate (matches workspace via `version.workspace` in `Cargo.toml`).
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
