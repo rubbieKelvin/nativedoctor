@@ -50,4 +50,4 @@ pub use model::{
 pub use sequence::{
     execute_sequence, load_sequence_file, sequence_step_iter, SequenceResult, StepSummary,
 };
-pub use template::{expand_json_value, expand_string};
+pub use template::{expand_hashmap_values, expand_json_value, expand_string};

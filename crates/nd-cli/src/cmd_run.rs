@@ -3,9 +3,9 @@
 use std::path::Path;
 
 use nd_core::{
-    execute_request_post_script, execute_request_with_env, format_prepared_request,
-    load_request_file, load_sequence_file, prepare_request_with_env, OutcomePolicy, RunOptions,
-    RuntimeEnv,
+    execute_request_post_script, execute_request_with_env, expand_hashmap_values,
+    format_prepared_request, load_request_file, load_sequence_file, prepare_request_with_env,
+    OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
 use crate::{print::print_result, Cli, Command};
@@ -109,7 +109,10 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         return Err("sequence must contain at least one step".to_string());
     }
 
-    env.merge_runtime_map(&seq.initial_variables);
+    let expanded_initial_vars =
+        expand_hashmap_values(&env, &seq.initial_variables).map_err(|e| e.to_string())?;
+
+    env.merge_runtime_map(&expanded_initial_vars);
 
     for step in seq.steps.iter() {
         let step_path = base_dir.join(&step.file);
@@ -165,7 +168,9 @@ fn run_dry_sequence(path: &Path, env: &RuntimeEnv) -> Result<(), String> {
         return Err("sequence must contain at least one step".to_string());
     }
 
-    env.merge_runtime_map(&seq.initial_variables);
+    let expanded_initial_vars =
+        expand_hashmap_values(&env, &seq.initial_variables).map_err(|e| e.to_string())?;
+    env.merge_runtime_map(&expanded_initial_vars);
 
     if let Some(n) = &seq.name {
         println!("Running dry sequence (No network I/O): {n}\n");

@@ -1,5 +1,6 @@
 //! `${VAR}` and `${!name}` substitution: environment lookups and dynamic generators (see [`crate::env::dynamic`]).
 
+use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use regex::Regex;
@@ -67,4 +68,18 @@ pub fn expand_json_value(env: &RuntimeEnv, value: &Value) -> Result<Value> {
         }
         _ => return Ok(value.clone()),
     }
+}
+
+/// Expands rust native hashmap.
+/// unlike expand_json_value, this will only expand the values and not the keys
+pub fn expand_hashmap_values(
+    env: &RuntimeEnv,
+    value: &HashMap<String, String>,
+) -> Result<HashMap<String, String>> {
+    let mut newmap = HashMap::new();
+    for (k, v) in value.iter() {
+        let new_v = expand_string(env, v)?;
+        newmap.insert(k.clone(), new_v);
+    }
+    return Ok(newmap);
 }
