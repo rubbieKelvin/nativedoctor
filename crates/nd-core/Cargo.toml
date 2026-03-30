@@ -20,6 +20,9 @@ strum_macros = "0.28"
 strum = {version="0.28.0", features = ["derive"]}
 dotenvy = "0.15"
 
+[lints.clippy]
+needless_return = "allow"
+
 [dev-dependencies]
 tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

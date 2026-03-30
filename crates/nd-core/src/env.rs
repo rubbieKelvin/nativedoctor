@@ -1,6 +1,6 @@
 //! Process and runtime variable map used for `${VAR}` expansion and Rhai `env` / `set`.
 //!
-//! `.env` file loading for [`RuntimeEnv::merge_env_file`] uses the [`dotenvy`] crate.
+//! `.env` file loading for [`RuntimeEnv::merge_env_file`] uses the [dotenvy](https://docs.rs/dotenvy) crate.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -59,13 +59,13 @@ impl RuntimeEnv {
         };
     }
 
-    /// Insert or update a runtime-only variable
+    /// Insert or update a runtime-only variable (visible to [`Self::get`] and Rhai `env()`).
     pub fn set_runtime(&self, key: impl Into<String>, value: impl Into<String>) {
         let mut g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         g.insert(key.into(), value.into());
     }
 
-    /// Merge variables from a `.env` file into the runtime map
+    /// Merge variables from a `.env` file into the runtime map (parsed with [dotenvy](https://docs.rs/dotenvy)).
     /// Later entries override earlier ones for the same key.
     pub fn merge_env_file(&self, path: &Path) -> Result<()> {
         let iter = dotenvy::from_path_iter(path).map_err(|e| map_dotenvy_error(path, e))?;
