@@ -1,5 +1,3 @@
-//! Build a locked-down Rhai [`Engine`](rhai::Engine) with response, env, and `log` hooks.
-
 use std::path::Path;
 use std::sync::Arc;
 
@@ -7,8 +5,8 @@ use nd_constants::RHAI_LOG_INITIATOR;
 use rhai::{Dynamic, Engine};
 
 use super::context::ResponseCtx;
-use super::json_dynamic::json_to_dynamic;
 use super::logger::{emit_script_log_to_tracing, LogLevel, Logger};
+use super::utils::json_to_dynamic;
 
 use crate::env::RuntimeEnv;
 

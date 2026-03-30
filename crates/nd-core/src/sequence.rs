@@ -8,7 +8,10 @@ use tracing::{debug, info};
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
-use crate::execute::{execute_request_with_env, ExecutionResult, OutcomePolicy, RunOptions};
+use crate::execute::{
+    execute_request_post_script, execute_request_with_env, ExecutionResult, OutcomePolicy,
+    RunOptions,
+};
 use crate::model::{SequenceFile, SequenceStep};
 
 /// Load and deserialize a sequence file; returns the document and the directory for resolving `steps[].file`.
@@ -57,10 +60,10 @@ pub fn sequence_step_iter(path: &Path) -> Result<impl Iterator<Item = (SequenceS
         ));
     }
 
-    return Ok(seq
+    Ok(seq
         .steps
         .into_iter()
-        .map(move |s| (s.clone(), basedir.join(&s.file))));
+        .map(move |s| (s.clone(), basedir.join(&s.file))))
 }
 
 /// Completed step metadata for CLI / callers.
@@ -121,6 +124,8 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
         );
 
         let result = execute_request_with_env(&step_path, &step_opts, &env).await?;
+        execute_request_post_script(&result, &step_opts, &env)?;
+
         summaries.push(StepSummary {
             index: i + 1,
             total,

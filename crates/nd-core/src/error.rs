@@ -60,6 +60,20 @@ pub enum Error {
 
     #[error("sequence step request file not found: {0}")]
     SequenceStepNotFound(PathBuf),
+
+    #[error("failed to read env file {path}: {source}")]
+    EnvFileRead {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("invalid env file {path} line {line}: {message}")]
+    EnvFileParse {
+        path: PathBuf,
+        line: usize,
+        message: String,
+    },
 }
 
 /// Convenient alias used across this crate.

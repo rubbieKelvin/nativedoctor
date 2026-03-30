@@ -14,12 +14,6 @@ use crate::error::{Error, Result};
 use crate::load::load_request_file;
 use crate::RequestFile;
 
-/// Same as [`execute_request_with_env`] with a fresh [`RuntimeEnv::from_process_env`].
-// pub async fn execute_request_file(path: &Path, opts: RunOptions) -> Result<ExecutionResult> {
-//     let env = RuntimeEnv::from_process_env();
-//     execute_request_with_env(path, &opts, &env).await
-// }
-
 /// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
 ///
 /// [`OutcomePolicy::SingleRequest`]: post-script runs before failing on HTTP ≥ 400 (unless
@@ -73,7 +67,6 @@ pub async fn execute_request_with_env(
         "HTTP response received"
     );
 
-    // we're done fetching request. print if need be and move on to running the post request script
     return Ok(ExecutionResult {
         method: prep.method.clone(),
         request_name: doc.name.clone(),
@@ -101,7 +94,7 @@ pub fn execute_request_post_script(
                 &output.base_dir,
                 env,
                 opts,
-                output.status.clone(),
+                output.status,
                 &output.headers,
                 &output.body,
             )?;
@@ -120,7 +113,7 @@ pub fn execute_request_post_script(
                     &output.base_dir,
                     env,
                     opts,
-                    output.status.clone(),
+                    output.status,
                     &output.headers,
                     &output.body,
                 )?;
@@ -156,7 +149,7 @@ fn dry_run_result(prep: &PreparedRequest, doc: &RequestFile) -> ExecutionResult 
 /// Load and expand one request file using a fresh environment.
 pub fn prepare_request_file(path: &Path) -> Result<(PreparedRequest, std::path::PathBuf)> {
     let env = RuntimeEnv::from_process_env();
-    prepare_request_with_env(path, &env)
+    return prepare_request_with_env(path, &env);
 }
 
 /// Load and expand one request file with an existing [`RuntimeEnv`] (e.g. shared sequence session).
@@ -166,5 +159,5 @@ pub fn prepare_request_with_env(
 ) -> Result<(PreparedRequest, std::path::PathBuf)> {
     let (doc, base_dir) = load_request_file(path)?;
     let prep = expand_http_request(env, &doc.request)?;
-    Ok((prep, base_dir))
+    return Ok((prep, base_dir));
 }

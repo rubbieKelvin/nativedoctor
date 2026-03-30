@@ -4,11 +4,26 @@ use std::path::Path;
 
 use nd_core::{
     execute_request_post_script, execute_request_with_env, format_prepared_request,
-    load_request_file, load_sequence_file, prepare_request_file, prepare_request_with_env,
-    sequence_step_iter, OutcomePolicy, RunOptions, RuntimeEnv,
+    load_request_file, load_sequence_file, prepare_request_with_env, sequence_step_iter,
+    OutcomePolicy, RunOptions, RuntimeEnv,
 };
 
 use crate::{print::print_result, Cli, Command};
+
+/// Build [`RuntimeEnv`] from global CLI flags: optional process snapshot, then each `--env` file.
+pub fn build_runtime_env(cli: &Cli) -> Result<RuntimeEnv, String> {
+    let env = if cli.no_default_system_env {
+        RuntimeEnv::isolated()
+    } else {
+        RuntimeEnv::from_process_env()
+    };
+
+    for path in &cli.env {
+        env.merge_env_file(path).map_err(|e| e.to_string())?;
+    }
+
+    return Ok(env);
+}
 
 pub fn run_opts(cli: &Cli) -> RunOptions {
     return match cli.command {
@@ -21,7 +36,7 @@ pub fn run_opts(cli: &Cli) -> RunOptions {
             verbose: cli.verbose,
             no_post_script: no_post,
             dry_run,
-            allow_error_status: allow_error_status,
+            allow_error_status,
             outcome_policy: OutcomePolicy::SingleRequest,
         },
         _ => RunOptions {
@@ -36,6 +51,8 @@ pub fn run_opts(cli: &Cli) -> RunOptions {
 
 /// Run or dry-run a single request file; prints human-readable output to stdout/stderr.
 pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
+    let env = build_runtime_env(cli)?;
+
     // Print a header if we're on verbose and no dry run
     if opts.verbose && !opts.dry_run {
         println!("--- request ---");
@@ -44,7 +61,7 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
     // print request summary on dry run or verbose
     if opts.dry_run || opts.verbose {
         // Print the request summary and return. no need to do aything further
-        let (prep, _) = prepare_request_file(path).map_err(|e| e.to_string())?;
+        let (prep, _) = prepare_request_with_env(path, &env).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
         println!("{summary}");
 
@@ -57,9 +74,6 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
     if cli.verbose {
         println!("--- response ---");
     }
-
-    // create runtime env
-    let env = RuntimeEnv::from_process_env();
 
     // execute request file
     let output = execute_request_with_env(path, &opts, &env)
@@ -81,14 +95,13 @@ pub async fn run_one(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), Str
 
 /// Run a sequence file: shared [`RuntimeEnv`], [`OutcomePolicy::SequenceStep`] per step.
 pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<(), String> {
+    let env = build_runtime_env(cli)?;
+
     // if this is a dry run, just run through and exit
     if opts.dry_run {
-        run_dry_sequence(path)?;
+        run_dry_sequence(path, &env)?;
         return Ok(());
     }
-
-    // create runtime env
-    let env = RuntimeEnv::from_process_env();
 
     for (step, step_path) in sequence_step_iter(path).map_err(|e| e.to_string())? {
         // Print a header if we're on verbose and no dry run
@@ -99,7 +112,8 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
         // print request summary on dry run or verbose
         if opts.verbose {
             // Print the request summary and return. no need to do aything further
-            let (prep, _) = prepare_request_file(&step_path).map_err(|e| e.to_string())?;
+            let (prep, _) =
+                prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
             let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
             println!("{summary}");
         }
@@ -127,7 +141,7 @@ pub async fn run_sequence(path: &Path, cli: &Cli, opts: RunOptions) -> Result<()
     return Ok(());
 }
 
-fn run_dry_sequence(path: &Path) -> Result<(), String> {
+fn run_dry_sequence(path: &Path, env: &RuntimeEnv) -> Result<(), String> {
     let (seq, base_dir) = load_sequence_file(path).map_err(|e| e.to_string())?;
 
     if seq.steps.is_empty() {
@@ -136,8 +150,6 @@ fn run_dry_sequence(path: &Path) -> Result<(), String> {
     if let Some(n) = &seq.name {
         println!("Running dry sequence (No network I/O): {n}\n");
     }
-
-    let env = RuntimeEnv::from_process_env();
 
     for step in seq.steps.iter() {
         let step_path = base_dir.join(&step.file);
@@ -156,7 +168,7 @@ fn run_dry_sequence(path: &Path) -> Result<(), String> {
             .map(|s| format!("[{}]", s))
             .unwrap_or_default();
 
-        let (prep, _) = prepare_request_with_env(&step_path, &env).map_err(|e| e.to_string())?;
+        let (prep, _) = prepare_request_with_env(&step_path, env).map_err(|e| e.to_string())?;
 
         let summary = format_prepared_request(&prep).map_err(|e| e.to_string())?;
 

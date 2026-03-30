@@ -7,8 +7,10 @@
 //! **nativedoctor** CLI, which sets `RUST_LOG` or defaults to `nd_core=debug` when `--verbose` is passed.
 //!
 //! # Environment
-//! [`RuntimeEnv`] seeds a writable map from the process environment. Lookups use that map first,
-//! then fall back to live `std::env::var` for keys not present in the map (e.g. new vars after startup).
+//! [`RuntimeEnv`] holds a writable map. [`RuntimeEnv::from_process_env`] copies the process
+//! environment; [`RuntimeEnv::isolated`] starts empty (no process fallback). Lookups use the map
+//! first, then (when configured) live `std::env::var` for keys not present in the map. [`RuntimeEnv::merge_env_file`]
+//! loads dotenv-style `KEY=value` files into the map. The CLI can pass `--env` files and optional `--no-default-system-env`.
 //!
 //! # Rhai post-scripts
 //! Scripts run in a locked-down Rhai engine. See [`rhai::run`] for the built-in API and

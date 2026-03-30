@@ -20,21 +20,27 @@ pub fn print_result(result: &ExecutionResult, verbose: bool) -> Result<(), Strin
         .as_deref()
         .map(|s| format!(" [{}]", s))
         .unwrap_or_default();
+
     println!(
         "{}{} {} -> {} ({:?})",
         result.method, label, result.final_url, result.status, result.duration
     );
+
     if verbose {
         let hdrs = redact_headers(&result.headers);
+
         for (k, v) in hdrs {
             println!("{k}: {v}");
         }
+
         println!();
     }
+
     let body = &result.body;
     if body.is_empty() {
         return Ok(());
     }
+
     if let Ok(text) = std::str::from_utf8(body) {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(text) {
             println!(
@@ -50,5 +56,6 @@ pub fn print_result(result: &ExecutionResult, verbose: bool) -> Result<(), Strin
     } else {
         println!("<{} bytes binary>", body.len());
     }
+
     return Ok(());
 }

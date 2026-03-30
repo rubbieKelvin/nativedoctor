@@ -9,23 +9,28 @@ mod print;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use nd_core::list_request_paths;
 
 #[derive(Parser)]
 #[command(name = "nativedoctor")]
 #[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(author = "rubbie kelvin <dev.rubbie@gmail.com>")]
 #[command(args_conflicts_with_subcommands = false)]
 pub(crate) struct Cli {
+    /// Load `KEY=value` pairs from each dotenv-style file into the runtime (later files override earlier).
+    #[arg(long = "env", value_name = "FILE", global = true, action = ArgAction::Append)]
+    env: Vec<PathBuf>,
+
+    /// Do not seed the runtime map from the current process environment (only `--env` files).
+    #[arg(long, global = true)]
+    no_default_system_env: bool,
+
     /// Log extra detail and enable `nd_core=debug` tracing unless `RUST_LOG` is set.
     #[arg(short, long, global = true)]
     verbose: bool,
 
-    // /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first).
-    // #[arg(long, global = true)]
-    // allow_error_status: bool,
-    // ...
     #[command(subcommand)]
     command: Option<Command>,
 

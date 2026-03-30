@@ -78,6 +78,8 @@ Global options apply to subcommands that support them (see below).
 | Option | Description |
 |--------|-------------|
 | `-v`, `--verbose` | More detailed output; default tracing filter `nd_core=debug` unless `RUST_LOG` is set. |
+| `--env <FILE>` | Merge `KEY=value` lines from a dotenv-style file into the runtime (repeatable; later files override earlier). Applied after the process environment unless `--no-default-system-env` is set. |
+| `--no-default-system-env` | Do not copy the current process environment into the runtime (only `--env` files and values set via Rhai `set`). |
 
 ### `run`
 
@@ -188,10 +190,14 @@ nativedoctor run -s sequence.yaml
 
 Before the request is sent, strings in URLs, query values, headers, and JSON/text bodies are expanded using **`${IDENT}`** (identifier rules: letters, digits, underscore; see template implementation in `nd-core`).
 
-Resolution order:
+By default the CLI seeds the runtime map from the **current process environment**, then merges each **`--env`** file in order (dotenv-style: `KEY=value`, `#` comments, optional `export` prefix; double- or single-quoted values).
 
-1. **Runtime map** (in-memory; Rhai `set` updates this map).
-2. **`std::env::var`** for keys not in the map.
+With **`--no-default-system-env`**, the map starts empty (no process snapshot); use **`--env`** to supply variables or rely on Rhai `set` during the run.
+
+Resolution order for lookups:
+
+1. **Runtime map** (process copy unless disabled, then `--env` merges, then Rhai `set`).
+2. **`std::env::var`** when the runtime was built with process fallback (default CLI behavior).
 
 Missing variables produce an error at expansion time.
 
