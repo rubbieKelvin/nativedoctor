@@ -5,6 +5,7 @@
 //! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
 //! [`Logger::drain`] after the script run when a logger was passed in.
 
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -47,7 +48,7 @@ pub struct Log {
     pub elapsed: Duration,
     pub level: LogLevel,
     pub message: String,
-    /// Source script path or label (e.g. post-script file path).
+    /// Source script label (file name when the path was supplied).
     pub script: String,
     /// Caller context (e.g. `"post_script"`).
     pub initiator: String,
@@ -98,7 +99,7 @@ impl Logger {
         initiator: impl Into<String>,
     ) {
         let msg = message.into();
-        let src = script.into();
+        let src = script_file_name(&script.into());
         let parsed = LogLevel::parse_or_info(level);
 
         self.log(parsed, msg.clone(), src.clone(), initiator);
@@ -150,8 +151,17 @@ impl Default for Logger {
     }
 }
 
+fn script_file_name(script: &str) -> String {
+    Path::new(script)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(String::from)
+        .unwrap_or_else(|| script.to_string())
+}
+
 /// Emits a structured [`tracing`] event for one script log line (independent of in-memory capture).
 pub fn emit_script_log_to_tracing(level: LogLevel, script: &str, message: &str) {
+    let script = script_file_name(script);
     let initiator = RHAI_LOG_INITIATOR;
     match level {
         LogLevel::Trace => {
