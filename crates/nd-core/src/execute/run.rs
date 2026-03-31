@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
+use nd_constants::RUNTIME_PERSIST_FILENAME;
 use tracing::debug;
 
 use super::client::{build_client, merge_url_query, send_request};
@@ -14,6 +15,12 @@ use crate::error::{Error, Result};
 use crate::load::load_request_file;
 use crate::model::SequenceStep;
 use crate::RequestFile;
+
+/// Path to `runtime.nativedoctor.json` in the process current working directory.
+fn runtime_persist_file() -> Result<PathBuf> {
+    let cwd = std::env::current_dir().map_err(Error::Io)?;
+    Ok(cwd.join(RUNTIME_PERSIST_FILENAME))
+}
 
 /// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
 ///
@@ -96,6 +103,8 @@ pub fn execute_request_post_script(
         .map(|(s, _)| !s.post_scripts.is_empty() && !opts.no_post_script)
         .unwrap_or(false);
 
+    let persist_file = Some(runtime_persist_file()?);
+
     match opts.outcome_policy {
         OutcomePolicy::SingleRequest => {
             run_request_post_script(
@@ -106,6 +115,7 @@ pub fn execute_request_post_script(
                 output.status,
                 &output.headers,
                 &output.body,
+                persist_file.clone(),
             )?;
 
             if !opts.allow_error_status && output.status >= 400 {
@@ -136,6 +146,7 @@ pub fn execute_request_post_script(
                     output.status,
                     &output.headers,
                     &output.body,
+                    persist_file.clone(),
                 )?;
             }
 
@@ -148,6 +159,7 @@ pub fn execute_request_post_script(
                     output.status,
                     &output.headers,
                     &output.body,
+                    persist_file.clone(),
                 )?;
             }
         }

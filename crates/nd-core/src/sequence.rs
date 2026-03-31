@@ -96,6 +96,8 @@ pub async fn execute_sequence(path: &Path, opts: &RunOptions) -> Result<Sequence
     }
 
     let env = RuntimeEnv::from_process_env();
+    let cwd = std::env::current_dir().map_err(Error::Io)?;
+    env.merge_runtime_persist_dir(&cwd)?;
     env.merge_runtime_map(&seq.initial_variables);
     let mut step_opts = opts.clone();
     step_opts.outcome_policy = OutcomePolicy::SequenceStep;

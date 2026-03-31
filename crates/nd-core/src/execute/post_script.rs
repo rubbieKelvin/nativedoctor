@@ -1,6 +1,6 @@
 //! Run optional Rhai `post_script` after a response.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use tracing::debug;
@@ -17,6 +17,7 @@ use crate::rhai::run_post_script;
 ///
 /// A **fresh** [`Logger`] is created per invocation so in-memory log capture is scoped to this
 /// run only (nothing is read back today; [`tracing`] still receives every `log()` line regardless).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn run_request_post_script(
     doc: &RequestFile,
     base_dir: &Path,
@@ -25,6 +26,7 @@ pub(crate) fn run_request_post_script(
     status: u16,
     resp_headers: &[(String, String)],
     body: &[u8],
+    persist_file: Option<PathBuf>,
 ) -> Result<()> {
     if let Some(rel) = &doc.post_script {
         if !opts.no_post_script {
@@ -39,13 +41,22 @@ pub(crate) fn run_request_post_script(
             );
 
             let logger = Arc::new(Logger::new());
-            run_post_script(&script_path, env, status, resp_headers, body, Some(logger))?;
+            run_post_script(
+                &script_path,
+                env,
+                status,
+                resp_headers,
+                body,
+                Some(logger),
+                persist_file,
+            )?;
         }
     }
     Ok(())
 }
 
 /// Rhai scripts listed on [`SequenceStep::post_scripts`], resolved from the sequence file directory.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn run_sequence_flow_post_scripts(
     step: &SequenceStep,
     sequence_base_dir: &Path,
@@ -54,6 +65,7 @@ pub(crate) fn run_sequence_flow_post_scripts(
     status: u16,
     resp_headers: &[(String, String)],
     body: &[u8],
+    persist_file: Option<PathBuf>,
 ) -> Result<()> {
     if opts.no_post_script {
         return Ok(());
@@ -72,7 +84,15 @@ pub(crate) fn run_sequence_flow_post_scripts(
         );
 
         let logger = Arc::new(Logger::new());
-        run_post_script(&script_path, env, status, resp_headers, body, Some(logger))?;
+        run_post_script(
+            &script_path,
+            env,
+            status,
+            resp_headers,
+            body,
+            Some(logger),
+            persist_file.clone(),
+        )?;
     }
     return Ok(());
 }

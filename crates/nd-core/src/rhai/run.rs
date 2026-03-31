@@ -1,6 +1,6 @@
 //! Orchestrate reading a post-script, building [`ResponseCtx`](super::context::ResponseCtx), and running Rhai.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use tracing::debug;
@@ -12,7 +12,7 @@ use super::logger::Logger;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
-/// Rhai **post-response** scripts: no filesystem or network inside the engine.
+/// Rhai **post-response** scripts: optional `persist` writes `runtime.nativedoctor.json` when configured.
 ///
 /// # Built-in functions
 ///
@@ -24,6 +24,7 @@ use crate::error::{Error, Result};
 /// | `json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
 /// | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
 /// | `set(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
+/// | `persist(key, value)` | — | Present only when `persist_file` is `Some`; updates map and that JSON path. Core execution uses **cwd** / `runtime.nativedoctor.json`. |
 /// | `assert(condition, message)` | — | If `condition` is false, aborts the script (surfaces as [`crate::Error::Rhai`]). |
 /// | `log(level, message)` | — | Always emits [`tracing`]; if a [`Logger`] is passed, also records a [`super::logger::Log`]. Unknown `level` → `info`. |
 pub fn run_post_script(
@@ -33,6 +34,7 @@ pub fn run_post_script(
     headers: &[(String, String)],
     body: &[u8],
     logger: Option<Arc<Logger>>,
+    persist_file: Option<PathBuf>,
 ) -> Result<()> {
     let source = std::fs::read_to_string(script_path)
         .map_err(|_| Error::PostScriptNotFound(script_path.to_path_buf()))?;
@@ -47,7 +49,7 @@ pub fn run_post_script(
 
     let ctx = Arc::new(ResponseCtx::from_parts(status, headers, body));
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(ctx, env, script_path, logger);
+    let engine = create_engine(ctx, env, script_path, logger, persist_file);
 
     engine
         .run_with_scope(&mut scope, &source)

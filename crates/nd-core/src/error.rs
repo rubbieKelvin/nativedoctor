@@ -78,6 +78,9 @@ pub enum Error {
         line: usize,
         message: String,
     },
+
+    #[error("invalid runtime persist file {path}: {message}")]
+    InvalidRuntimePersistFile { path: PathBuf, message: String },
 }
 
 /// Convenient alias used across this crate.

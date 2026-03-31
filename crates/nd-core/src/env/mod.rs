@@ -1,6 +1,7 @@
 //! Process and runtime variable map used for `${VAR}` expansion and Rhai `env` / `set`.
 //!
 //! `.env` file loading for [`RuntimeEnv::merge_env_file`] uses the [dotenvy](https://docs.rs/dotenvy) crate.
+//! [`RuntimeEnv::merge_runtime_persist_file`] loads `runtime.nativedoctor.json` when present.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -9,6 +10,8 @@ use std::sync::{Arc, Mutex};
 use crate::error::{Error, Result};
 
 pub mod dynamic;
+
+mod persist;
 
 /// Merged view of process environment plus in-memory overrides (“runtime” variables).
 ///
@@ -73,6 +76,23 @@ impl RuntimeEnv {
         for (k, v) in vars {
             self.set_runtime(k, v);
         }
+    }
+
+    /// Merge key–value pairs from `runtime.nativedoctor.json` at `path` (full file path).
+    /// No-op if the file does not exist.
+    pub fn merge_runtime_persist_file(&self, path: &Path) -> Result<()> {
+        persist::merge_persist_file_into_env(self, path)
+    }
+
+    /// Merge key–value pairs from `runtime.nativedoctor.json` in `dir`.
+    /// No-op if the file does not exist.
+    pub fn merge_runtime_persist_dir(&self, dir: &Path) -> Result<()> {
+        persist::merge_persist_file_into_env(self, &persist::runtime_persist_path_in_dir(dir))
+    }
+
+    /// Stringifies `value`, updates the runtime map, and merges into `runtime.nativedoctor.json` at `path` (full file path).
+    pub fn persist_key_to_file(&self, path: &Path, key: &str, value: &str) -> Result<()> {
+        persist::persist_key_in_file(self, path, key, value)
     }
 
     /// Merge variables from a `.env` file into the runtime map (parsed with [dotenvy](https://docs.rs/dotenvy)).

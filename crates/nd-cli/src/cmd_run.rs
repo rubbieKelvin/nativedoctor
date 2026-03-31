@@ -11,13 +11,19 @@ use nd_core::{
 
 use crate::{print::print_result, Cli, Command};
 
-/// Build [`RuntimeEnv`] from global CLI flags: optional process snapshot, then each `--env` file.
+/// Build [`RuntimeEnv`] from global CLI flags: optional process snapshot, persisted JSON in the
+/// **current working directory** (`runtime.nativedoctor.json`), then each `--env` file (later
+/// overrides earlier for duplicate keys).
 pub fn build_runtime_env(cli: &Cli) -> Result<RuntimeEnv, String> {
     let env = if cli.no_default_system_env {
         RuntimeEnv::isolated()
     } else {
         RuntimeEnv::from_process_env()
     };
+
+    let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
+    env.merge_runtime_persist_dir(&cwd)
+        .map_err(|e| e.to_string())?;
 
     for path in &cli.env {
         env.merge_env_file(path).map_err(|e| e.to_string())?;
