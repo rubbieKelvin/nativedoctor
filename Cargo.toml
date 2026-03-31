@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/nd-core", "crates/nd-cli", "crates/nd-generate"]
+members = [
+    "crates/nd-core",
+    "crates/nd-cli",
+    "crates/nd-generate",
+    "crates/nd-web",
+]
 default-members = ["crates/nd-cli"]
 resolver = "2"
 

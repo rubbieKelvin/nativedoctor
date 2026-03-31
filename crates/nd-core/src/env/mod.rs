@@ -4,7 +4,7 @@
 //! [`RuntimeEnv::merge_runtime_persist_file`] loads `runtime.nativedoctor.json` when present.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::error::{Error, Result};
@@ -45,6 +45,30 @@ impl RuntimeEnv {
             inner: Arc::new(Mutex::new(HashMap::new())),
             fallback_to_process_env: false,
         };
+    }
+
+    /// Build a runtime environment the same way the CLI does for `run` / `runall` / `web`:
+    /// optional process snapshot (`no_default_system_env` disables it), then
+    /// `runtime.nativedoctor.json` in the **current working directory**, then each `--env` file in
+    /// order (later files override earlier keys).
+    pub fn from_cli_options(
+        no_default_system_env: bool,
+        env_files: &[PathBuf],
+    ) -> Result<Self> {
+        let env = if no_default_system_env {
+            Self::isolated()
+        } else {
+            Self::from_process_env()
+        };
+
+        let cwd = std::env::current_dir()?;
+        env.merge_runtime_persist_dir(&cwd)?;
+
+        for path in env_files {
+            env.merge_env_file(path)?;
+        }
+
+        return Ok(env);
     }
 
     /// Resolve a variable: runtime map first, then optionally live process environment.

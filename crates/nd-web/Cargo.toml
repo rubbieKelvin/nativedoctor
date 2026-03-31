@@ -1,0 +1,30 @@
+[package]
+name = "nd-web"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+dioxus = { version = "0.7.4", default-features = false, features = [
+    "macro",
+    "html",
+    "signals",
+    "hooks",
+    "launch",
+    "document",
+    "fullstack",
+    "server",
+    "warnings",
+    "cli-config",
+] }
+nd-core = { path = "../nd-core" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[features]
+default = ["server"]
+server = ["dioxus/server"]
+
+[lints.clippy]
+needless_return = "allow"

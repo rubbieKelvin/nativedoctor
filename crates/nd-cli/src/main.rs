@@ -4,9 +4,11 @@ mod cmd_generate;
 mod cmd_new;
 mod cmd_run;
 mod cmd_runall;
+mod cmd_web;
 mod logging;
 mod print;
 
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -107,6 +109,15 @@ enum Command {
         )]
         files: Vec<PathBuf>,
     },
+    /// Serve a local web UI (Dioxus) to list and run request files in a directory.
+    Web {
+        /// Address and port to bind (default: loopback only).
+        #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
+        bind: SocketAddr,
+        /// Directory whose top-level `*.json` / `*.yaml` / `*.yml` files are listed.
+        #[arg(long, value_name = "DIR", default_value = ".", value_hint = clap::ValueHint::FilePath)]
+        dir: PathBuf,
+    },
     /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
     List { dir: PathBuf },
     /// Generate nativedoctor request files from an OpenAPI 3.0.x document (JSON or YAML).
@@ -192,6 +203,18 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
                 opts,
             )
             .await?;
+        }
+        Some(Command::Web { bind, dir }) => {
+            let bind = *bind;
+            let dir = dir.clone();
+            let no_default_system_env = cli.no_default_system_env;
+            let env_files = cli.env.clone();
+            let verbose = cli.verbose;
+            tokio::task::spawn_blocking(move || {
+                cmd_web::run(bind, dir, no_default_system_env, env_files, verbose)
+            })
+            .await
+            .map_err(|e| format!("web server task: {e}"))??;
         }
         None => {
             let path = cli

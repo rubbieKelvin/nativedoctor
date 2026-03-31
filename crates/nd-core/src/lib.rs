@@ -12,7 +12,8 @@
 //! first, then (when configured) live `std::env::var` for keys not present in the map. [`RuntimeEnv::merge_env_file`]
 //! loads dotenv-style `KEY=value` files into the map. [`RuntimeEnv::merge_runtime_persist_dir`] loads
 //! `runtime.nativedoctor.json` from a given directory (the CLI uses the **current working directory**).
-//! The CLI can pass `--env` files and optional `--no-default-system-env`.
+//! [`RuntimeEnv::from_cli_options`] matches the CLI layering: optional `--no-default-system-env`, cwd
+//! persist file, then each `--env` file in order.
 //!
 //! # Rhai post-scripts
 //! Scripts run in a locked-down Rhai engine. See [`rhai::run`] for the built-in API and

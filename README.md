@@ -9,7 +9,7 @@
 - **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
 - **Post-scripts**: sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
-The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-core`** crate; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals.
+The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-core`** crate; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** serves an optional local web UI (Dioxus **0.7**) for listing and running request files.
 
 ---
 
@@ -77,6 +77,12 @@ nativedoctor new --sequence examples/flow.yaml
 nativedoctor generate -i openapi.json -o ./generated --format yaml
 ```
 
+**Browse and run request files in a browser** (local HTTP UI; see [`web`](#web)):
+
+```bash
+nativedoctor web --dir .
+```
+
 ---
 
 ## CLI reference
@@ -125,6 +131,25 @@ Global `--env` and `--no-default-system-env` behave like `run`. With **`--retain
 | `--retain-runtime` | Reuse one shared runtime environment for all files in this invocation (default: build a fresh env per file). |
 | `--quit-on-failure` | Stop at the first failed file. Without it, every file is still run and the command fails at the end if any failed (multi-line summary). |
 | `<FILE>...` | One or more request or sequence paths. |
+
+### `web`
+
+```text
+nativedoctor web [OPTIONS]
+```
+
+Starts an HTTP server with a small **Dioxus 0.7** UI that lists top-level `*.json`, `*.yaml`, and `*.yml` files in a directory (same non-recursive discovery as [`list`](#list)) and lets you run each file from the browser.
+
+| Option | Description |
+|--------|-------------|
+| `--bind <ADDR>` | Address and port to listen on (default: **`127.0.0.1:8080`** — loopback only). |
+| `--dir <DIR>` | Root directory to scan for request files (default: **`.`**, the current working directory). |
+
+Global options **[`--env`](#cli-reference)** and **`--no-default-system-env`** apply to each request run from the UI (same order as [`run`](#run): process env unless disabled, `runtime.nativedoctor.json` in the current working directory, then each `--env` file). **`--verbose`** affects tracing during those runs.
+
+On startup the server ensures an empty **`public`** directory next to the `nativedoctor` binary and sets Dioxus’s **`DIOXUS_PUBLIC_PATH`** so static asset serving does not panic when the folder was missing (for example after a fresh `cargo build`).
+
+**Security:** treat this as a **local development** tool. Anyone who can reach the bound address can trigger runs that perform **outbound HTTP** to URLs defined in your request files (and execute Rhai post-scripts as configured). Keep the default loopback bind unless you understand the exposure.
 
 ### `list`
 
@@ -355,6 +380,7 @@ crates/
   nd-core/       # HTTP execution, templates, Rhai, sequences
   nd-generate/   # OpenAPI → request files (openapi3 module)
   nd-constants/  # Shared version strings, placeholders, header names, etc.
+  nd-web/        # Dioxus web UI for list/run (nativedoctor web)
 ```
 
 ```mermaid
@@ -363,9 +389,12 @@ flowchart LR
   core[nd_core]
   gen[nd_generate]
   konst[nd_constants]
+  web[nd_web]
   cli --> core
   cli --> gen
   cli --> konst
+  cli --> web
+  web --> core
   core --> konst
   gen --> konst
   gen --> core
