@@ -6,6 +6,10 @@ edition.workspace = true
 [lib]
 path = "src/lib.rs"
 
+[[bin]]
+name = "nd-web"
+path = "src/main.rs"
+
 [dependencies]
 dioxus = { version = "0.7.4", default-features = false, features = [
     "macro",
@@ -17,14 +21,19 @@ dioxus = { version = "0.7.4", default-features = false, features = [
     "fullstack",
     "server",
     "warnings",
+    "router",
     "cli-config",
+    "asset",
 ] }
 nd-core = { path = "../nd-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = ["server"]
 server = ["dioxus/server"]
+web = ["dioxus/web"]
 
 [lints.clippy]
 needless_return = "allow"

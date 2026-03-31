@@ -25,7 +25,11 @@ fn normalize_path_lexical_collapses_dotdot() {
 #[test]
 fn resolve_post_script_finds_file_with_parent_segments() {
     let dir = tempdir().unwrap();
-    let script = dir.path().join("requests").join("scripts").join("hook.rhai");
+    let script = dir
+        .path()
+        .join("requests")
+        .join("scripts")
+        .join("hook.rhai");
     std::fs::create_dir_all(script.parent().unwrap()).unwrap();
     std::fs::write(&script, b"1;").unwrap();
     let base = dir.path().join("requests").join("mhi");

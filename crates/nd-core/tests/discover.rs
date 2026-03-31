@@ -1,6 +1,8 @@
-//! Tests for non-recursive [`nd_core::list_request_paths`].
+//! Tests for non-recursive [`nd_core::list_request_paths`] and workspace catalog classification.
 
-use nd_core::list_request_paths;
+use nd_core::{
+    classify_nativedoctor_file, list_request_paths, list_workspace_catalog, WorkspaceFileKind,
+};
 use std::fs;
 use tempfile::tempdir;
 
@@ -64,4 +66,41 @@ fn ignores_non_request_extensions() {
     fs::write(tmp.path().join("y.md"), "x").unwrap();
     let list = list_request_paths(tmp.path()).unwrap();
     assert!(list.is_empty());
+}
+
+#[test]
+fn classify_request_vs_sequence() {
+    let tmp = tempdir().unwrap();
+    let req = tmp.path().join("r.yaml");
+    fs::write(
+        &req,
+        "request:\n  method: GET\n  url: https://example.com\n",
+    )
+    .unwrap();
+    let seq = tmp.path().join("s.yaml");
+    fs::write(&seq, "steps:\n  - file: r.yaml\n").unwrap();
+    assert_eq!(
+        classify_nativedoctor_file(&req).unwrap(),
+        WorkspaceFileKind::Request
+    );
+    assert_eq!(
+        classify_nativedoctor_file(&seq).unwrap(),
+        WorkspaceFileKind::Sequence
+    );
+}
+
+#[test]
+fn list_workspace_catalog_groups_kinds() {
+    let tmp = tempdir().unwrap();
+    fs::write(
+        tmp.path().join("a.yaml"),
+        "request:\n  method: GET\n  url: https://example.com\n",
+    )
+    .unwrap();
+    fs::write(tmp.path().join("b.yaml"), "steps:\n  - file: a.yaml\n").unwrap();
+    let cat = list_workspace_catalog(tmp.path()).unwrap();
+    assert_eq!(cat.len(), 2);
+    let kinds: Vec<_> = cat.iter().map(|(_, k)| *k).collect();
+    assert!(kinds.contains(&WorkspaceFileKind::Request));
+    assert!(kinds.contains(&WorkspaceFileKind::Sequence));
 }

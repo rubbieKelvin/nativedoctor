@@ -30,10 +30,12 @@ pub(crate) fn read_runtime_persist_object(path: &Path) -> Result<Option<Map<Stri
         path: path.to_path_buf(),
         message: e.to_string(),
     })?;
-    let obj = v.as_object().ok_or_else(|| Error::InvalidRuntimePersistFile {
-        path: path.to_path_buf(),
-        message: "expected JSON object at top level".into(),
-    })?;
+    let obj = v
+        .as_object()
+        .ok_or_else(|| Error::InvalidRuntimePersistFile {
+            path: path.to_path_buf(),
+            message: "expected JSON object at top level".into(),
+        })?;
     Ok(Some(obj.clone()))
 }
 

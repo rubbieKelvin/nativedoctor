@@ -9,7 +9,7 @@
 - **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
 - **Post-scripts**: sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
-The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-core`** crate; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** serves an optional local web UI (Dioxus **0.7**) for listing and running request files.
+The CLI binary is named **`nativedoctor`**. The core logic lives in the **`nd-core`** crate; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** serves an optional local web UI (Dioxus **0.7**) for listing and running request and sequence files.
 
 ---
 
@@ -138,7 +138,7 @@ Global `--env` and `--no-default-system-env` behave like `run`. With **`--retain
 nativedoctor web [OPTIONS]
 ```
 
-Starts an HTTP server with a small **Dioxus 0.7** UI that lists top-level `*.json`, `*.yaml`, and `*.yml` files in a directory (same non-recursive discovery as [`list`](#list)) and lets you run each file from the browser.
+Starts an HTTP server with a small **Dioxus 0.7** UI. It lists top-level `*.json`, `*.yaml`, and `*.yml` files in a directory (same non-recursive discovery as [`list`](#list)), **classifies** them as **single-request** vs **sequence** documents (by top-level `request` vs non-empty `steps`), shows **unrecognized** files separately, and lets you **Run** requests and sequences from the browser.
 
 | Option | Description |
 |--------|-------------|
@@ -380,7 +380,7 @@ crates/
   nd-core/       # HTTP execution, templates, Rhai, sequences
   nd-generate/   # OpenAPI → request files (openapi3 module)
   nd-constants/  # Shared version strings, placeholders, header names, etc.
-  nd-web/        # Dioxus web UI for list/run (nativedoctor web)
+  nd-web/        # Dioxus web UI: catalog requests/sequences, run (nativedoctor web)
 ```
 
 ```mermaid

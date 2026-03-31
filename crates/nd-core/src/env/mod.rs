@@ -51,10 +51,7 @@ impl RuntimeEnv {
     /// optional process snapshot (`no_default_system_env` disables it), then
     /// `runtime.nativedoctor.json` in the **current working directory**, then each `--env` file in
     /// order (later files override earlier keys).
-    pub fn from_cli_options(
-        no_default_system_env: bool,
-        env_files: &[PathBuf],
-    ) -> Result<Self> {
+    pub fn from_cli_options(no_default_system_env: bool, env_files: &[PathBuf]) -> Result<Self> {
         let env = if no_default_system_env {
             Self::isolated()
         } else {

@@ -241,7 +241,11 @@ async fn sequence_step_post_scripts_set_runtime_for_next_step() {
 
     let tmp = tempdir().unwrap();
     let base = mock.uri();
-    std::fs::write(tmp.path().join("flow.rhai"), r#"set("FLOW_TOKEN", "hello");"#).unwrap();
+    std::fs::write(
+        tmp.path().join("flow.rhai"),
+        r#"set("FLOW_TOKEN", "hello");"#,
+    )
+    .unwrap();
     std::fs::write(
         tmp.path().join("s1.yaml"),
         format!(

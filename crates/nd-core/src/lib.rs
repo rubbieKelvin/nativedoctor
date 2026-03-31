@@ -36,7 +36,9 @@ pub mod sequence;
 pub use rhai::run_post_script;
 mod template;
 
-pub use discover::list_request_paths;
+pub use discover::{
+    classify_nativedoctor_file, list_request_paths, list_workspace_catalog, WorkspaceFileKind,
+};
 pub use env::RuntimeEnv;
 pub use error::{Error, Result};
 pub use execute::{
