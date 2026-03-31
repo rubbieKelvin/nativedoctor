@@ -5,6 +5,7 @@
 - **Request files**: one HTTP call per file (method, URL, query, headers, body).
 - **Template expansion**: `${VAR}` from process environment and a runtime map (writable from Rhai).
 - **Sequences**: ordered steps sharing one **runtime environment**; optional **`initial_variables`** seed the session; each step may list **`post_scripts`** (Rhai after the request’s own `post_script`).
+- **`runall`**: run several request or sequence files in one command, with optional **`--retain-runtime`** and **`--quit-on-failure`** (see CLI reference).
 - **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
 - **Post-scripts**: sandboxed **Rhai** scripts after each response (inspect body, set vars, log).
 
@@ -56,6 +57,13 @@ nativedoctor run my-request.yaml --dry-run
 nativedoctor run -s my-sequence.yaml
 ```
 
+**Run several files in one go** (each path is a request, or each is a sequence with `-s`):
+
+```bash
+nativedoctor runall ./a.yaml ./b.yaml
+nativedoctor runall -s ./seq-one.yaml ./seq-two.yaml
+```
+
 **Scaffold files**:
 
 ```bash
@@ -96,6 +104,27 @@ nativedoctor run [OPTIONS] <FILE>
 | `<FILE>` | Path to a request or sequence file (`.json`, `.yaml`, `.yml`). |
 
 **Shorthand:** if you omit the subcommand, a single positional `FILE` runs as a **single request** (same as `run` without `-s`). Flags such as `--dry-run` are only available on the explicit `run` subcommand in that form.
+
+### `runall`
+
+```text
+nativedoctor runall [OPTIONS] <FILE>...
+```
+
+Runs **one or more** paths in order. The same mode applies to **every** file: by default each `FILE` is a **single request**; with `-s` / `--sequence`, each `FILE` is a **sequence** definition. Optional `--request` states request mode explicitly (same as the default) and **conflicts** with `--sequence`.
+
+Global `--env` and `--no-default-system-env` behave like `run`. With **`--retain-runtime`**, the runtime map is built **once** (process env, cwd `runtime.nativedoctor.json`, then each `--env` file) and reused for every file, so Rhai `set` / `persist` and `${VAR}` expansion can carry across runs. Each **sequence** file still merges its `initial_variables` onto that shared env when it runs, so later files see values from earlier ones.
+
+| Option | Description |
+|--------|-------------|
+| `-s`, `--sequence` | Treat **every** `FILE` as a sequence (conflicts with `--request`). |
+| `--request` | Treat **every** `FILE` as a single request (default; conflicts with `--sequence`). |
+| `--no-post` | Same as `run`. |
+| `--dry-run` | Same as `run`. |
+| `--allow-error-status` | Same as `run`. |
+| `--retain-runtime` | Reuse one shared runtime environment for all files in this invocation (default: build a fresh env per file). |
+| `--quit-on-failure` | Stop at the first failed file. Without it, every file is still run and the command fails at the end if any failed (multi-line summary). |
+| `<FILE>...` | One or more request or sequence paths. |
 
 ### `list`
 

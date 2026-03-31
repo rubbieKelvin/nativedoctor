@@ -1,8 +1,9 @@
-//! CLI entry for **nativedoctor**: `run` (request or `--sequence`), shorthand file path, `list`, `new`, and shared flags.
+//! CLI entry for **nativedoctor**: `run`, `runall`, shorthand file path, `list`, `new`, and shared flags.
 
 mod cmd_generate;
 mod cmd_new;
 mod cmd_run;
+mod cmd_runall;
 mod logging;
 mod print;
 
@@ -75,6 +76,37 @@ enum Command {
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
         path: PathBuf,
     },
+    /// Run multiple request files or multiple sequence files (see `--sequence`).
+    Runall {
+        /// Treat every `FILE` as a sequence definition (conflicts with `--request`).
+        #[arg(long, short = 's', conflicts_with = "request")]
+        sequence: bool,
+        /// Every `FILE` is a single request (default; use to assert intent). Conflicts with `--sequence`.
+        #[arg(long, conflicts_with = "sequence")]
+        request: bool,
+        /// Do not run `post_script` from the request or sequence file.
+        #[arg(long)]
+        no_post: bool,
+        /// Expand and print only; no HTTP.
+        #[arg(long)]
+        dry_run: bool,
+        /// Treat HTTP 4xx/5xx as success for exit status (post-script still runs first when present).
+        #[arg(long)]
+        allow_error_status: bool,
+        /// Build the runtime environment once and reuse it across all files (variables persist between runs).
+        #[arg(long)]
+        retain_runtime: bool,
+        /// Stop at the first failed file instead of running the rest.
+        #[arg(long)]
+        quit_on_failure: bool,
+        #[arg(
+            required = true,
+            value_name = "FILE",
+            value_hint = clap::ValueHint::FilePath,
+            num_args = 1..
+        )]
+        files: Vec<PathBuf>,
+    },
     /// List `*.json` / `*.yaml` / `*.yml` in a directory (immediate children only, sorted).
     List { dir: PathBuf },
     /// Generate nativedoctor request files from an OpenAPI 3.0.x document (JSON or YAML).
@@ -142,6 +174,24 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             } else {
                 cmd_run::run_one(path, &cli, opts).await?;
             }
+        }
+        Some(Command::Runall {
+            sequence,
+            retain_runtime,
+            quit_on_failure,
+            files,
+            ..
+        }) => {
+            let opts = cmd_run::run_opts(&cli);
+            cmd_runall::run_all(
+                files,
+                *sequence,
+                *retain_runtime,
+                *quit_on_failure,
+                &cli,
+                opts,
+            )
+            .await?;
         }
         None => {
             let path = cli
