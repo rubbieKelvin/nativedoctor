@@ -23,7 +23,11 @@
 //! Use [`request_file_json_schema`] for a JSON Schema value describing [`RequestFile`] (e.g. embed
 //! under `components.schemas` in a larger OpenAPI document).
 
+use crate::error::{Error, Result};
+use nd_constants::REQUEST_FILE_DEFAULT_VERSION;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use tracing::debug;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -44,6 +48,7 @@ fn default_deprecated() -> bool {
     false
 }
 
+// serde helper
 fn is_false(b: &bool) -> bool {
     !*b
 }
@@ -60,9 +65,6 @@ pub struct RequestFile {
     #[serde(default)]
     pub name: Option<String>,
     pub request: HttpRequestSpec,
-    /// Optional Rhai script path, relative to the directory containing this request file.
-    #[serde(default)]
-    pub post_script: Option<String>,
 }
 
 /// HTTP request fields after file parsing; `${VAR}` expansion happens later in the executor.
@@ -149,7 +151,79 @@ pub enum RequestBody {
 impl RequestFile {
     /// Default timeout when `request.timeout_secs` is omitted (seconds).
     pub fn default_timeout_secs() -> u64 {
-        30
+        return 30;
+    }
+
+    /// create JSON Schema ([draft 2020-12](https://json-schema.org/)) for [`RequestFile`], as a JSON value.
+    ///
+    /// Suitable for `$schema` pointers or embedding under `components.schemas` in OpenAPI-related
+    /// tooling.
+    pub fn schema() -> serde_json::Value {
+        let schema = schemars::schema_for!(Self);
+        return serde_json::to_value(&schema).expect("RequestFile JsonSchema serializes to JSON");
+    }
+
+    /// Read and deserialize a request file. Extension must be `.json`, `.yaml`, or `.yml`.
+    ///
+    /// Returns the parsed document and the **parent directory** of `path`, used to resolve
+    /// [`RequestFile::post_script`] paths.
+    pub fn from_file(path: &Path) -> Result<(RequestFile, PathBuf)> {
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        let text = std::fs::read_to_string(path)?;
+
+        let file: RequestFile = match ext.as_str() {
+            "yaml" | "yml" => serde_yaml::from_str(&text).map_err(|e| Error::ParseYaml {
+                path: path.to_path_buf(),
+                source: e,
+            })?,
+            "json" => serde_json::from_str(&text).map_err(|e| Error::ParseJson {
+                path: path.to_path_buf(),
+                source: e,
+            })?,
+            _ => return Err(Error::UnsupportedFormat(path.to_path_buf())),
+        };
+
+        let base = path
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from("."));
+
+        debug!(
+            path = %path.display(),
+            format = %ext,
+            name = ?file.name,
+            "loaded request file"
+        );
+
+        return Ok((file, base));
+    }
+}
+
+impl Default for RequestFile {
+    fn default() -> Self {
+        return RequestFile {
+            version: REQUEST_FILE_DEFAULT_VERSION.into(),
+            name: Some("Httpbin Get".into()),
+            request: HttpRequestSpec {
+                method: "GET".into(),
+                url: "https://httpbin.org/anything".into(),
+                summary: None,
+                description: None,
+                tags: vec![],
+                deprecated: false,
+                query: HashMap::new(),
+                headers: HashMap::new(),
+                body: None,
+                timeout_secs: None,
+                follow_redirects: true,
+                verify_tls: true,
+            },
+        };
     }
 }
 
@@ -164,13 +238,4 @@ pub fn content_type_for_body_kind(kind: RequestBodyKind) -> Option<&'static str>
         RequestBodyKind::Binary => Some("application/octet-stream"),
         RequestBodyKind::None => None,
     }
-}
-
-/// JSON Schema ([draft 2020-12](https://json-schema.org/)) for [`RequestFile`], as a JSON value.
-///
-/// Suitable for `$schema` pointers or embedding under `components.schemas` in OpenAPI-related
-/// tooling.
-pub fn request_file_json_schema() -> serde_json::Value {
-    let schema = schemars::schema_for!(RequestFile);
-    serde_json::to_value(&schema).expect("RequestFile JsonSchema serializes to JSON")
 }

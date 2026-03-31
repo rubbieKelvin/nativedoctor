@@ -6,7 +6,7 @@ use tracing::debug;
 
 use super::types::PreparedRequest;
 use crate::error::{Error, Result};
-use crate::model::{HttpRequestSpec, RequestFile};
+use crate::model::request::{HttpRequestSpec, RequestFile};
 
 /// Builds a client from timeout, redirect, and TLS verification fields on the spec.
 pub(crate) fn build_client(spec: &HttpRequestSpec) -> Result<Client> {

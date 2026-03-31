@@ -11,11 +11,11 @@ use reqwest::Method;
 use super::types::PreparedRequest;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
-use crate::model::{
+use crate::model::request::{
     content_type_for_body_kind, HttpRequestSpec, RequestBody, RequestBodyKind,
     RequestBodyStructured, RequestFile,
 };
-use crate::template::{expand_json_value, expand_string};
+use crate::utils::template::{expand_json_value, expand_string};
 
 /// Adds default `User-Agent`, `Accept`, and (when applicable) `Content-Type` before user headers.
 pub(crate) fn generate_computed_headers(spec: &HttpRequestSpec) -> HashMap<String, String> {

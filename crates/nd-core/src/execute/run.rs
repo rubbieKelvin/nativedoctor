@@ -7,19 +7,16 @@ use nd_constants::RUNTIME_PERSIST_FILENAME;
 use tracing::debug;
 
 use super::client::{build_client, merge_url_query, send_request};
-use super::post_script::{run_request_post_script, run_sequence_flow_post_scripts};
 use super::prepare::expand_http_request;
-use super::types::{ExecutionResult, OutcomePolicy, PreparedRequest, RunOptions};
+use super::types::{ExecutionResult, PreparedRequest, RunOptions};
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
-use crate::load::load_request_file;
-use crate::model::SequenceStep;
-use crate::RequestFile;
+use crate::model::request::RequestFile;
 
 /// Path to `runtime.nativedoctor.json` in the process current working directory.
 fn runtime_persist_file() -> Result<PathBuf> {
     let cwd = std::env::current_dir().map_err(Error::Io)?;
-    Ok(cwd.join(RUNTIME_PERSIST_FILENAME))
+    return Ok(cwd.join(RUNTIME_PERSIST_FILENAME));
 }
 
 /// Load → expand with `env` → send (unless dry-run) → Rhai / status handling per [`RunOptions::outcome_policy`].
@@ -33,14 +30,13 @@ pub async fn execute_request_with_env(
     opts: &RunOptions,
     env: &RuntimeEnv,
 ) -> Result<ExecutionResult> {
-    let (doc, base_dir) = load_request_file(path)?;
+    let (doc, base_dir) = RequestFile::from_file(path)?;
     let prep = expand_http_request(env, &doc.request)?;
 
     debug!(
         path = %path.display(),
         request_name = ?doc.name,
         dry_run = opts.dry_run,
-        outcome_policy = ?opts.outcome_policy,
         "execute_request_with_env"
     );
 
@@ -88,86 +84,6 @@ pub async fn execute_request_with_env(
     });
 }
 
-/// Runs the request file’s optional `post_script`, then optional sequence-level `post_scripts` on
-/// the step when `sequence_step` is `Some`.
-///
-/// Pass **`None`** for `sequence_step` when not running a sequence step (single-request runs).
-pub fn execute_request_post_script(
-    output: &ExecutionResult,
-    opts: &RunOptions,
-    env: &RuntimeEnv,
-    sequence_step: Option<(&SequenceStep, &Path)>,
-) -> Result<()> {
-    let has_request_script = output.doc.post_script.is_some() && !opts.no_post_script;
-    let has_flow_scripts = sequence_step
-        .map(|(s, _)| !s.post_scripts.is_empty() && !opts.no_post_script)
-        .unwrap_or(false);
-
-    let persist_file = Some(runtime_persist_file()?);
-
-    match opts.outcome_policy {
-        OutcomePolicy::SingleRequest => {
-            run_request_post_script(
-                &output.doc,
-                &output.base_dir,
-                env,
-                opts,
-                output.status,
-                &output.headers,
-                &output.body,
-                persist_file.clone(),
-            )?;
-
-            if !opts.allow_error_status && output.status >= 400 {
-                return Err(Error::InvalidRequest(format!(
-                    "HTTP status {} (use --allow-error-status to accept)",
-                    output.status
-                )));
-            }
-        }
-        OutcomePolicy::SequenceStep => {
-            if !opts.allow_error_status
-                && output.status >= 400
-                && !has_request_script
-                && !has_flow_scripts
-            {
-                return Err(Error::InvalidRequest(format!(
-                    "sequence step HTTP status {} (no request post_script or sequence post_scripts to handle error)",
-                    output.status
-                )));
-            }
-
-            if has_request_script {
-                run_request_post_script(
-                    &output.doc,
-                    &output.base_dir,
-                    env,
-                    opts,
-                    output.status,
-                    &output.headers,
-                    &output.body,
-                    persist_file.clone(),
-                )?;
-            }
-
-            if let Some((step, seq_base)) = sequence_step {
-                run_sequence_flow_post_scripts(
-                    step,
-                    seq_base,
-                    env,
-                    opts,
-                    output.status,
-                    &output.headers,
-                    &output.body,
-                    persist_file.clone(),
-                )?;
-            }
-        }
-    }
-
-    return Ok(());
-}
-
 /// Build a synthetic “result” for dry-run: no network, status 0, body = request body bytes.
 fn dry_run_result(prep: &PreparedRequest, doc: &RequestFile) -> ExecutionResult {
     let request_name = doc.clone().name;
@@ -196,7 +112,7 @@ pub fn prepare_request_with_env(
     path: &Path,
     env: &RuntimeEnv,
 ) -> Result<(PreparedRequest, std::path::PathBuf)> {
-    let (doc, base_dir) = load_request_file(path)?;
+    let (doc, base_dir) = RequestFile::from_file(path)?;
     let prep = expand_http_request(env, &doc.request)?;
     return Ok((prep, base_dir));
 }

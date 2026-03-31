@@ -1,5 +1,4 @@
-mod request;
-mod sequence;
+pub mod request;
 
 /// Inserts [`$schema`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-the-schema-keyword)
 /// at the root of a JSON object, before other keys, so editors and validators resolve the public
@@ -19,9 +18,3 @@ pub fn with_root_schema_url(root: serde_json::Value, schema_url: &str) -> serde_
         other => other,
     }
 }
-
-pub use request::{
-    content_type_for_body_kind, request_file_json_schema, HttpRequestSpec, RequestBody,
-    RequestBodyKind, RequestBodyStructured, RequestFile,
-};
-pub use sequence::{sequence_file_json_schema, SequenceFile, SequenceStep};

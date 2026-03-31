@@ -24,35 +24,10 @@
 //! Schema: [`SequenceFile`] / [`SequenceStep`]. Runner: [`sequence::execute_sequence`]
 //! uses one shared [`RuntimeEnv`]. Step outcomes follow [`execute::OutcomePolicy::SequenceStep`].
 
-mod discover;
-mod env;
-mod error;
-mod execute;
-mod load;
-mod model;
+pub mod discover;
+pub mod env;
+pub mod error;
+pub mod execute;
+pub mod model;
 pub mod rhai;
-pub mod sequence;
-
-pub use rhai::run_post_script;
-mod template;
-
-pub use discover::{
-    classify_nativedoctor_file, list_request_paths, list_workspace_catalog, WorkspaceFileKind,
-};
-pub use env::RuntimeEnv;
-pub use error::{Error, Result};
-pub use execute::{
-    execute_request_post_script, execute_request_with_env, format_prepared_request,
-    prepare_request_file, prepare_request_with_env, ExecutionResult, OutcomePolicy,
-    PreparedRequest, RunOptions,
-};
-pub use load::{load_request_file, normalize_path_lexical, resolve_post_script};
-pub use model::{
-    content_type_for_body_kind, request_file_json_schema, sequence_file_json_schema,
-    with_root_schema_url, HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured,
-    RequestFile, SequenceFile, SequenceStep,
-};
-pub use sequence::{
-    execute_sequence, load_sequence_file, sequence_step_iter, SequenceResult, StepSummary,
-};
-pub use template::{expand_hashmap_values, expand_json_value, expand_string};
+pub mod utils;

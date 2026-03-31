@@ -4,18 +4,7 @@ use std::{path::PathBuf, time::Duration};
 
 use reqwest::Method;
 
-use crate::RequestFile;
-
-/// How HTTP status and Rhai interact after a response (single `run` vs [`crate::sequence`] step).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum OutcomePolicy {
-    /// Post-script runs before failing on HTTP ≥ 400 (unless [`RunOptions::allow_error_status`]).
-    #[default]
-    SingleRequest,
-    /// Sequence rules: without a post-script, HTTP ≥ 400 fails the step; with a post-script, Rhai
-    /// runs and only Rhai failure fails — HTTP status alone never fails the step.
-    SequenceStep,
-}
+use crate::model::request::RequestFile;
 
 /// Options for [`execute_request_file`](crate::execute::execute_request_file) /
 /// [`execute_request_with_env`](crate::execute::execute_request_with_env) (mirrors CLI flags).
@@ -29,7 +18,6 @@ pub struct RunOptions {
     /// If false, status codes ≥ 400 become [`crate::Error::InvalidRequest`] after the post-script runs
     /// ([`OutcomePolicy::SingleRequest`] only, or sequence steps **without** a post-script).
     pub allow_error_status: bool,
-    pub outcome_policy: OutcomePolicy,
 }
 
 /// Outcome of a real HTTP call (or a synthetic row for dry-run — see field docs).

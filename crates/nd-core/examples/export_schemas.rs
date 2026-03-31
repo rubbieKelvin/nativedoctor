@@ -2,6 +2,7 @@
 //!
 //! `cargo run -p nd-core --example export_schemas`
 
+use nd_core::model::request::RequestFile;
 use std::fs;
 use std::path::PathBuf;
 
@@ -19,8 +20,7 @@ fn main() {
 
     fs::create_dir_all(&schema_dir).expect("create schema/");
 
-    let request = nd_core::request_file_json_schema();
-    let sequence = nd_core::sequence_file_json_schema();
+    let request = RequestFile::schema();
 
     // Write request json
     let filename = "request.schema.json";
@@ -28,15 +28,6 @@ fn main() {
     fs::write(
         schema_dir.join(filename),
         serde_json::to_string_pretty(&request).expect("request schema JSON"),
-    )
-    .expect(format!("write {filename}").as_str());
-
-    // Write sequence json
-    let filename = "sequence.schema.json";
-
-    fs::write(
-        schema_dir.join(filename),
-        serde_json::to_string_pretty(&sequence).expect("sequence schema JSON"),
     )
     .expect(format!("write {filename}").as_str());
 
@@ -48,15 +39,4 @@ fn main() {
         serde_yaml::to_string(&request).expect("request schema YAML"),
     )
     .expect(format!("write {filename}").as_str());
-
-    // Write sequence yaml
-    let filename = "sequence.schema.yaml";
-
-    fs::write(
-        schema_dir.join(filename),
-        serde_yaml::to_string(&sequence).expect("sequence schema YAML"),
-    )
-    .expect(format!("write {filename}").as_str());
-
-    eprintln!("Wrote schemas under {}", schema_dir.display());
 }
