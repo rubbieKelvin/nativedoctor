@@ -1,136 +1,69 @@
 //! `nativedoctor new`: write starter files by serializing [`nd_core`] schema types.
+use std::path::PathBuf;
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
-use nd_constants::urls::{
-    PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL,
-    PUBLIC_SEQUENCE_JSON_SCHEMA_URL, PUBLIC_SEQUENCE_YAML_SCHEMA_URL,
-};
-use nd_constants::VERSION;
-use nd_core::{with_root_schema_url, HttpRequestSpec, RequestFile, SequenceFile, SequenceStep};
+use nd_constants::urls::{PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL};
+use nd_core::model::request::RequestFile;
+use nd_core::model::with_root_schema_url;
 use tracing::debug;
 
-/// Build the default sequence document (same fields as the former template).
-fn default_sequence_file() -> SequenceFile {
-    return SequenceFile {
-        version: VERSION.into(),
-        name: Some("Sample flow".into()),
-        initial_variables: HashMap::new(),
-        steps: vec![SequenceStep {
-            file: "example-request.yaml".into(),
-            post_scripts: vec![],
-        }],
-    };
+use crate::Command;
+
+pub(crate) struct NewOption {
+    pub url: Option<String>,
+    pub name: Option<String>,
+    pub path: PathBuf,
 }
 
-/// Build the default request document (same fields as the former template).
-fn default_request_file() -> RequestFile {
-    return RequestFile {
-        version: VERSION.into(),
-        name: Some("Httpbin Get".into()),
-        request: HttpRequestSpec {
-            method: "GET".into(),
-            url: "https://httpbin.org/anything".into(),
-            summary: None,
-            description: None,
-            tags: vec![],
-            deprecated: false,
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: None,
-            timeout_secs: None,
-            follow_redirects: true,
-            verify_tls: true,
-        },
-        post_script: None,
-    };
-}
-
-fn serialize_sequence(ext: &str) -> Result<String, String> {
-    let doc = default_sequence_file();
-    let url = match ext {
-        "json" => PUBLIC_SEQUENCE_JSON_SCHEMA_URL,
-        "yaml" | "yml" => PUBLIC_SEQUENCE_YAML_SCHEMA_URL,
-        _ => return Err(format!("unsupported extension for sequence: {ext}")),
-    };
-    let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
-    let v = with_root_schema_url(v, url);
-    return match ext {
-        "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
-        "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
-        _ => Err(format!("unsupported extension for sequence: {ext}")),
-    };
-}
-
-fn serialize_request(ext: &str) -> Result<String, String> {
-    let doc = default_request_file();
-    let url = match ext {
-        "json" => PUBLIC_REQUEST_JSON_SCHEMA_URL,
-        "yaml" | "yml" => PUBLIC_REQUEST_YAML_SCHEMA_URL,
-        _ => return Err(format!("unsupported extension for request: {ext}")),
-    };
-    let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
-    let v = with_root_schema_url(v, url);
-    return match ext {
-        "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
-        "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
-        _ => Err(format!("unsupported extension for request: {ext}")),
-    };
-}
-
-#[derive(Clone, Copy, Debug)]
-enum TemplateKind {
-    Sequence,
-    Request,
-}
-
-/// `nativedoctor new --sequence PATH | --request PATH`
-pub fn run_new(sequence: Option<&PathBuf>, request: Option<&PathBuf>) -> Result<(), String> {
-    return match (sequence, request) {
-        (Some(path), None) => write_template(path, TemplateKind::Sequence),
-        (None, Some(path)) => write_template(path, TemplateKind::Request),
-        (None, None) => Err("specify one sequence or request. See --help".into()),
-        (Some(_), Some(_)) => Err("pass only one of sequence or request".into()),
-    };
-}
-
-fn write_template(path: &Path, kind: TemplateKind) -> Result<(), String> {
-    if path.exists() {
+pub fn run_new(option: NewOption) -> Result<(), String> {
+    // path check
+    if option.path.exists() {
         return Err(format!(
             "refusing to overwrite existing file: {}",
-            path.display()
+            option.path.display()
         ));
     }
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        }
-    }
-    let ext = path
+
+    let ext = option
+        .path
         .extension()
         .and_then(|e| e.to_str())
         .map(|s| s.to_lowercase())
         .unwrap_or_default();
 
-    let content = match (kind, ext.as_str()) {
-        (TemplateKind::Sequence, "json" | "yaml" | "yml") => serialize_sequence(ext.as_str())?,
-        (TemplateKind::Request, "json" | "yaml" | "yml") => serialize_request(ext.as_str())?,
-        (TemplateKind::Sequence, _) => {
-            return Err("sequence path must end with .json, .yaml, or .yml".into());
-        }
-        (TemplateKind::Request, _) => {
-            return Err("request path must end with .json, .yaml, or .yml".into());
-        }
+    // create and mutate document
+    let mut doc = RequestFile::default();
+
+    if let Some(name) = option.name {
+        doc.name = Some(name);
+    }
+
+    if let Some(url) = option.url {
+        doc.request.url = url;
+    }
+
+    // inject schema url
+    let schema_url = match ext.as_str() {
+        "json" => PUBLIC_REQUEST_JSON_SCHEMA_URL,
+        "yaml" | "yml" => PUBLIC_REQUEST_YAML_SCHEMA_URL,
+        _ => return Err(format!("unsupported extension for request: {ext}")),
     };
 
+    let v = serde_json::to_value(&doc).map_err(|e| e.to_string())?;
+    let v = with_root_schema_url(v, schema_url);
+
+    // convert to string
+    let content = match ext.as_str() {
+        "json" => serde_json::to_string_pretty(&v).map_err(|e| e.to_string()),
+        "yaml" | "yml" => serde_yaml::to_string(&v).map_err(|e| e.to_string()),
+        _ => Err(format!("unsupported extension for request: {ext}")),
+    }?;
+
+    // write
     debug!(
-        path = %path.display(),
-        kind = ?kind,
+        path = %option.path.display(),
         bytes = content.len(),
         "writing new template"
     );
-    std::fs::write(path, content).map_err(|e| e.to_string())?;
-
+    std::fs::write(option.path, content).map_err(|e| e.to_string())?;
     return Ok(());
 }
