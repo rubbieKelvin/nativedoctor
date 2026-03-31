@@ -16,9 +16,6 @@ pub const DOCUMENT_DEFAULT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Alias for request file schema default version.
 pub const REQUEST_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
 
-/// Alias for sequence file schema default version.
-pub const SEQUENCE_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
-
 /// [`tracing`] target for Rhai post-script log lines.
 pub const TRACING_TARGET_RHAI: &str = "nativedoctor::rhai";
 
