@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "HttpRequestSpec": {
+      "description": "HTTP request fields after file parsing; `${VAR}` expansion happens later in the executor.\n\nOpenAPI-style metadata fields ([`HttpRequestSpec::summary`], etc.) are optional and ignored when sending the request; they exist for documentation, JSON Schema, and tooling.",
+      "properties": {
+        "body": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RequestBody"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "description": "Long description (OpenAPI `description`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "follow_redirects": {
+          "default": true,
+          "type": "boolean"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "type": "object"
+        },
+        "method": {
+          "description": "Case-insensitive method name (e.g. `GET`, `POST`).",
+          "type": "string"
+        },
+        "query": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "type": "object"
+        },
+        "summary": {
+          "description": "Short summary (OpenAPI `summary`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "timeout_secs": {
+          "default": null,
+          "description": "Total request timeout in seconds. If omitted, [`RequestFile::default_timeout_secs`] is used.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "url": {
+          "type": "string"
+        },
+        "verify_tls": {
+          "default": true,
+          "description": "When `false`, TLS certificates are not verified (insecure; for local/dev only).",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "method",
+        "url"
+      ],
+      "type": "object"
+    },
+    "RequestBody": {
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/RequestBodyStructured"
+            }
+          ],
+          "description": "`type` + `content` (explicit format and default `Content-Type`)."
+        },
+        {
+          "description": "Plain string body (non-JSON or literal text).",
+          "type": "string"
+        },
+        {
+          "description": "JSON object/array/primitive serialized as the request body."
+        }
+      ],
+      "description": "Request body: shorthand or explicit `type` + `content`.\n\n`#[serde(untagged)]` tries variants **in order**: 1. [`RequestBody::Structured`] — object with `type` and `content`. 2. [`RequestBody::Text`] — JSON/YAML string (plain text body). 3. [`RequestBody::Json`] — JSON object/array/primitive serialized as the request body."
+    },
+    "RequestBodyKind": {
+      "description": "Declared format for an explicit [`RequestBody::Structured`] body (drives default `Content-Type`).",
+      "enum": [
+        "json",
+        "text",
+        "xml",
+        "other",
+        "graphql",
+        "x_www_form_urlencoded",
+        "form_data",
+        "binary",
+        "none"
+      ],
+      "type": "string"
+    },
+    "RequestBodyStructured": {
+      "description": "Explicit body: required `type` plus `content` (shape depends on [`RequestBodyKind`]).",
+      "properties": {
+        "content": {
+          "description": "For `json` / `graphql`: any JSON value (object, array, or primitive). For `text`, `xml`, `other`, url-encoded, multipart, and `binary`: a **JSON string** (UTF-8 payload or base64 for `binary`); `${VAR}` expansion applies to that string."
+        },
+        "type": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/RequestBodyKind"
+            }
+          ],
+          "description": "Logical body format (JSON/YAML key `type`)."
+        }
+      },
+      "required": [
+        "content",
+        "type"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Root document for a single request file (JSON or YAML).\n\n`post_script`, when set, is a path string resolved relative to the request file’s directory.",
+  "properties": {
+    "name": {
+      "default": null,
+      "description": "Optional human-readable label for logs and UIs (backward compatible when omitted).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "post_script": {
+      "default": null,
+      "description": "Optional Rhai script path, relative to the directory containing this request file.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "request": {
+      "$ref": "#/definitions/HttpRequestSpec"
+    },
+    "version": {
+      "default": "0.1.1",
+      "description": "Schema version for forward-compatible parsing (default [`nd_constants::DOCUMENT_DEFAULT_VERSION`] if omitted).",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request"
+  ],
+  "title": "RequestFile",
+  "type": "object"
+}

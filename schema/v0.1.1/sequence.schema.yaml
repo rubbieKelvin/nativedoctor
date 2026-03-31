@@ -1,0 +1,43 @@
+$schema: http://json-schema.org/draft-07/schema#
+definitions:
+  SequenceStep:
+    description: 'One entry in a sequence file: path to a request definition, relative to the sequence file dir.'
+    properties:
+      file:
+        description: Path to a request file, relative to the sequence file’s directory.
+        type: string
+      post_scripts:
+        default: []
+        description: Rhai scripts to run sequentially after the step’s HTTP response and request `post_script` (paths relative to the sequence file’s directory).
+        items:
+          type: string
+        type: array
+    required:
+    - file
+    type: object
+description: Sequence document (JSON or YAML). Types live under [`crate::model`]; see [`crate::sequence`] to run.
+properties:
+  initial_variables:
+    additionalProperties:
+      type: string
+    default: {}
+    description: Key–value pairs merged into [`crate::RuntimeEnv`] when the sequence session starts (after the process snapshot and, for the CLI, `--env` files).
+    type: object
+  name:
+    description: Optional human-readable label (backward compatible when omitted).
+    type:
+    - string
+    - 'null'
+  steps:
+    description: Request steps to run
+    items:
+      $ref: '#/definitions/SequenceStep'
+    type: array
+  version:
+    default: 0.1.1
+    description: Document schema version (default [`nd_constants::DOCUMENT_DEFAULT_VERSION`] if omitted).
+    type: string
+required:
+- steps
+title: SequenceFile
+type: object
