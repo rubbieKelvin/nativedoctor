@@ -4,7 +4,8 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use nd_constants::urls::{PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL};
-use nd_core::{with_root_schema_url, RequestFile};
+use nd_core::model::request::RequestFile;
+use nd_core::model::with_root_schema_url;
 use openapiv3::{OpenAPI, ReferenceOr};
 
 use super::build::{file_stem, operation_to_request_file, unique_stem};
@@ -22,20 +23,20 @@ impl std::str::FromStr for OutputFormat {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
+        return match s.to_ascii_lowercase().as_str() {
             "yaml" | "yml" => Ok(Self::Yaml),
             "json" => Ok(Self::Json),
             other => Err(format!("expected yaml or json, got {other}")),
-        }
+        };
     }
 }
 
 impl OutputFormat {
     fn extension(self) -> &'static str {
-        match self {
+        return match self {
             Self::Yaml => "yaml",
             Self::Json => "json",
-        }
+        };
     }
 }
 
@@ -60,7 +61,7 @@ fn quote_yaml_urls_containing_dollar(text: &str) -> String {
         out.push_str(line);
         out.push('\n');
     }
-    out
+    return out;
 }
 
 /// Serializes `file` and writes it to `path`, creating parent directories when needed.
@@ -88,7 +89,7 @@ pub fn write_request_file(path: &Path, file: &RequestFile, format: OutputFormat)
         path: path.to_path_buf(),
         source,
     })?;
-    Ok(())
+    return Ok(());
 }
 
 /// Generate one file per operation under `out_dir`.
@@ -123,5 +124,5 @@ pub fn write_all_operations(
         }
     }
 
-    Ok(written)
+    return Ok(written);
 }

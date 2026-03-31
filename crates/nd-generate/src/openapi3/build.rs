@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use nd_core::{HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile};
+use nd_core::model::request::{
+    HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile,
+};
 use openapiv3::{
     OpenAPI, Operation, Parameter, PathItem, ReferenceOr, RequestBody as OasRequestBody,
 };
@@ -144,7 +146,6 @@ pub fn operation_to_request_file(
             follow_redirects: true,
             verify_tls: true,
         },
-        post_script: None,
     })
 }
 

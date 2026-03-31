@@ -1,9 +1,7 @@
 //! Workspace dashboard: requests, sequences, and unrecognized files.
 
 use dioxus::prelude::*;
-use nd_core::WorkspaceFileKind;
 
-use crate::components::{RequestRow, SequenceRow, UnknownRow};
 use crate::server::{list_catalog, CatalogEntry};
 
 #[component]
@@ -30,58 +28,5 @@ pub fn Home() -> Element {
 
 #[component]
 fn WorkspaceSections(entries: Vec<CatalogEntry>) -> Element {
-    let requests: Vec<_> = entries
-        .iter()
-        .filter(|e| e.kind == WorkspaceFileKind::Request)
-        .cloned()
-        .collect();
-    let sequences: Vec<_> = entries
-        .iter()
-        .filter(|e| e.kind == WorkspaceFileKind::Sequence)
-        .cloned()
-        .collect();
-    let unknown: Vec<_> = entries
-        .iter()
-        .filter(|e| e.kind == WorkspaceFileKind::Unknown)
-        .cloned()
-        .collect();
-
-    rsx! {
-        section { class: "nd-section",
-            h2 { "Requests" }
-            if requests.is_empty() {
-                p { class: "nd-muted", "No request files." }
-            } else {
-                ul { class: "nd-list",
-                    for e in requests {
-                        RequestRow { name: e.name.clone() }
-                    }
-                }
-            }
-        }
-        section { class: "nd-section",
-            h2 { "Sequences" }
-            if sequences.is_empty() {
-                p { class: "nd-muted", "No sequence files." }
-            } else {
-                ul { class: "nd-list",
-                    for e in sequences {
-                        SequenceRow { name: e.name.clone() }
-                    }
-                }
-            }
-        }
-        section { class: "nd-section",
-            h2 { "Unrecognized" }
-            if unknown.is_empty() {
-                p { class: "nd-muted", "None." }
-            } else {
-                ul { class: "nd-list",
-                    for e in unknown {
-                        UnknownRow { name: e.name.clone() }
-                    }
-                }
-            }
-        }
-    }
+    rsx! {}
 }

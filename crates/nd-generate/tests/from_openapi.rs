@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use nd_core::load_request_file;
+use nd_core::model::request::RequestFile;
 use nd_generate::{generate_from_openapi_path, GenerateOptions, OutputFormat};
 use tempfile::tempdir;
 
@@ -24,18 +24,18 @@ fn generates_three_operations_and_loads_one() {
 
     let list_pets = out.join("listpets.yaml");
     assert!(list_pets.is_file(), "expected listpets.yaml");
-    let (req, _) = load_request_file(&list_pets).expect("load yaml");
+    let (req, _) = RequestFile::from_file(&list_pets).expect("load yaml");
     assert_eq!(req.request.method, "GET");
     assert_eq!(req.request.url, "https://api.example.com/pets");
     assert_eq!(req.name.as_deref(), Some("listPets"));
     assert_eq!(req.request.summary.as_deref(), Some("List pets"));
 
     let get_pet = out.join("getpet.yaml");
-    let (req2, _) = load_request_file(&get_pet).expect("load getPet");
+    let (req2, _) = RequestFile::from_file(&get_pet).expect("load getPet");
     assert_eq!(req2.request.url, "https://api.example.com/pets/${petId}");
 
     let note = out.join("createpetnote.yaml");
-    let (req3, _) = load_request_file(&note).expect("load post");
+    let (req3, _) = RequestFile::from_file(&note).expect("load post");
     assert!(req3.request.body.is_some());
 }
 

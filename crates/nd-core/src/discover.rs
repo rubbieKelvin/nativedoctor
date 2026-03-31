@@ -14,15 +14,15 @@ use crate::error::Result;
 #[serde(rename_all = "snake_case")]
 pub enum WorkspaceFileKind {
     Request,
-    Sequence,
-    Unknown,
+    Script,
 }
 
 fn is_request_file(path: &Path) -> bool {
-    path.extension()
+    return path
+        .extension()
         .and_then(|e| e.to_str())
         .map(|e| matches!(e.to_lowercase().as_str(), "json" | "yaml" | "yml"))
-        .unwrap_or(false)
+        .unwrap_or(false);
 }
 
 /// List `*.json`, `*.yaml`, and `*.yml` files in `dir` only (not subdirectories).
@@ -35,6 +35,7 @@ pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(paths),
         Err(e) => return Err(crate::error::Error::Io(e)),
     };
+
     for entry in read {
         let entry = entry.map_err(crate::error::Error::Io)?;
         let p = entry.path();
@@ -42,24 +43,28 @@ pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
             paths.push(p);
         }
     }
+
     let unique: BTreeSet<PathBuf> = paths.into_iter().collect();
     let mut sorted: Vec<PathBuf> = unique.into_iter().collect();
     sorted.sort();
+
     debug!(
         dir = %dir.display(),
         count = sorted.len(),
         "list_request_paths"
     );
-    Ok(sorted)
+    return Ok(sorted);
 }
 
+// TODO: remove this if nothing else is calling
 fn parse_as_json_value(path: &Path, text: &str) -> crate::error::Result<serde_json::Value> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_lowercase();
-    match ext.as_str() {
+
+    return match ext.as_str() {
         "json" => serde_json::from_str(text).map_err(|source| crate::error::Error::ParseJson {
             path: path.to_path_buf(),
             source,
@@ -71,43 +76,15 @@ fn parse_as_json_value(path: &Path, text: &str) -> crate::error::Result<serde_js
             })
         }
         _ => Err(crate::error::Error::UnsupportedFormat(path.to_path_buf())),
-    }
-}
-
-fn classify_json_document(v: &serde_json::Value) -> WorkspaceFileKind {
-    if let Some(arr) = v.get("steps").and_then(|s| s.as_array()) {
-        if !arr.is_empty() {
-            return WorkspaceFileKind::Sequence;
-        }
-    }
-    if v.get("request").is_some() {
-        return WorkspaceFileKind::Request;
-    }
-    WorkspaceFileKind::Unknown
-}
-
-/// Read a single `*.json` / `*.yaml` / `*.yml` file and classify it by top-level keys (`steps` vs `request`).
-pub fn classify_nativedoctor_file(path: &Path) -> Result<WorkspaceFileKind> {
-    let text = std::fs::read_to_string(path)?;
-    let v = parse_as_json_value(path, &text)?;
-    Ok(classify_json_document(&v))
+    };
 }
 
 /// Like [`list_request_paths`], but each path is classified. Files that fail to read or parse are skipped with a warning.
 pub fn list_workspace_catalog(dir: &Path) -> Result<Vec<(PathBuf, WorkspaceFileKind)>> {
     let paths = list_request_paths(dir)?;
-    let mut out = Vec::with_capacity(paths.len());
-    for p in paths {
-        match classify_nativedoctor_file(&p) {
-            Ok(kind) => out.push((p, kind)),
-            Err(e) => {
-                warn!(
-                    path = %p.display(),
-                    error = %e,
-                    "workspace catalog: skipped file"
-                );
-            }
-        }
+    let /*mut*/ out = Vec::with_capacity(paths.len());
+    for _p in paths {
+        todo!("Finish writing this function");
     }
     Ok(out)
 }
