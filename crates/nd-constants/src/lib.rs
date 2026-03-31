@@ -22,9 +22,6 @@ pub const TRACING_TARGET_RHAI: &str = "nativedoctor::rhai";
 /// Label for who initiated a Rhai log line (post-script); used in tracing and capture buffers.
 pub const RHAI_LOG_INITIATOR: &str = "post_script";
 
-/// Persisted key–value JSON file (typically in the process working directory): runtime map + Rhai `persist`.
-pub const RUNTIME_PERSIST_FILENAME: &str = "runtime.nativedoctor.json";
-
 /// Lowercase HTTP header name used for computed `User-Agent`.
 pub const HTTP_HEADER_USER_AGENT: &str = "user-agent";
 

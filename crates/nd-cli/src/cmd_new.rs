@@ -6,12 +6,26 @@ use nd_core::model::request::RequestFile;
 use nd_core::model::with_root_schema_url;
 use tracing::debug;
 
-use crate::Command;
+use crate::{Cli, Command};
 
+#[derive(Debug, Clone)]
 pub(crate) struct NewOption {
-    pub url: Option<String>,
-    pub name: Option<String>,
-    pub path: PathBuf,
+    url: Option<String>,
+    name: Option<String>,
+    path: PathBuf,
+}
+
+impl NewOption {
+    pub(crate) fn from_cli(cli: &Cli) -> NewOption {
+        return match &cli.command {
+            Some(Command::New { url, name, path }) => NewOption {
+                url: *url,
+                name: *name,
+                path: *path,
+            },
+            _ => unreachable!("We should never have gotten here"),
+        };
+    }
 }
 
 pub fn run_new(option: NewOption) -> Result<(), String> {

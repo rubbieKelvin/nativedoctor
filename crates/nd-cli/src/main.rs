@@ -14,7 +14,7 @@ use std::process::ExitCode;
 
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 
-use crate::cmd_new::NewOption;
+use crate::{cmd_new::NewOption, cmd_run::RunOptions};
 
 #[derive(Parser)]
 #[command(name = "nativedoctor")]
@@ -24,12 +24,8 @@ use crate::cmd_new::NewOption;
 #[command(args_conflicts_with_subcommands = false)]
 pub(crate) struct Cli {
     /// Load `KEY=value` pairs from each dotenv-style file into the runtime (later files override earlier).
-    #[arg(long = "env", value_name = "FILE", global = true, action = ArgAction::Append)]
+    #[arg(long, value_name = "FILE", global = true, action = ArgAction::Append)]
     env: Vec<PathBuf>,
-
-    /// Do not seed the runtime map from the current process environment (only `--env` files).
-    #[arg(long, global = true)]
-    no_default_system_env: bool,
 
     /// Log extra detail and enable `nd_core=debug` tracing unless `RUST_LOG` is set.
     #[arg(short, long, global = true)]
@@ -69,9 +65,12 @@ enum Command {
         /// Build the runtime environment once and reuse it across all files (runtime variables persist between runs).
         #[arg(long)]
         retain_runtime: bool,
+        /// Persistence file, .yaml file where persisted values should be stored
+        #[arg(long, value_name = "FILE", global = true)]
+        persistence_file: Option<PathBuf>,
         /// The path pointing to the file(s) to run
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
-        path: Vec<PathBuf>,
+        paths: Vec<PathBuf>,
     },
     /// Serve a local web UI (Dioxus) to list and run request files in a directory.
     Web {
@@ -94,7 +93,7 @@ enum Command {
         #[arg(long, value_enum, default_value_t = GenerateFormat::Yaml)]
         format: GenerateFormat,
     },
-    /// Create a starter request or sequence file (e.g. `new --sequence seq-a.json`).
+    /// Create a starter request file
     New {
         /// Request url
         #[arg(long, short = 'u', value_name = "URL")]
@@ -130,34 +129,26 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
         }) => {
             cmd_generate::run_generate(input, output, (*format).into())?;
         }
-        Some(Command::New { name, url, path }) => {
-            let opt = NewOption {
-                name: name.clone(),
-                url: url.clone(),
-                path: path.clone(),
-            };
-
+        Some(Command::New { .. }) => {
+            let opt = NewOption::from_cli(&cli);
             cmd_new::run_new(opt)?;
         }
-        Some(Command::Run { sequence, path, .. }) => {
-            let opts = cmd_run::run_opts(&cli);
-            if *sequence {
-                cmd_run::run_sequence(path, &cli, opts).await?;
-            } else {
-                cmd_run::run_one(path, &cli, opts).await?;
-            }
+        Some(Command::Run { .. }) => {
+            let opts = RunOptions::from_cli(&cli);
+            cmd_run::run_one(path, &cli, opts).await?;
         }
         Some(Command::Web { bind, dir }) => {
-            let bind = *bind;
-            let dir = dir.clone();
-            let no_default_system_env = cli.no_default_system_env;
-            let env_files = cli.env.clone();
-            let verbose = cli.verbose;
-            tokio::task::spawn_blocking(move || {
-                cmd_web::run(bind, dir, no_default_system_env, env_files, verbose)
-            })
-            .await
-            .map_err(|e| format!("web server task: {e}"))??;
+            todo!("Not done yet");
+            // let bind = *bind;
+            // let dir = dir.clone();
+            // let no_default_system_env = cli.no_default_system_env;
+            // let env_files = cli.env.clone();
+            // let verbose = cli.verbose;
+            // tokio::task::spawn_blocking(move || {
+            //     cmd_web::run(bind, dir, no_default_system_env, env_files, verbose)
+            // })
+            // .await
+            // .map_err(|e| format!("web server task: {e}"))??;
         }
         None => {
             let path = cli

@@ -1,51 +1,69 @@
 //! `nativedoctor run <FILE>` and top-level `FILE` shorthand: single request, or `run --sequence <FILE>` for sequences.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use colored::Colorize;
-use nd_core::{
-    execute_request_post_script, execute_request_with_env, expand_hashmap_values,
-    format_prepared_request, load_request_file, load_sequence_file, prepare_request_with_env,
-    OutcomePolicy, RunOptions, RuntimeEnv,
-};
+use nd_core::env::RuntimeEnv;
+// use nd_core::{
+//     execute_request_post_script, execute_request_with_env, expand_hashmap_values,
+//     format_prepared_request, load_request_file, load_sequence_file, prepare_request_with_env,
+//     OutcomePolicy, RunOptions, RuntimeEnv,
+// };
 
 use crate::{print::print_result, Cli, Command};
 
 /// Build [`RuntimeEnv`] from global CLI flags: optional process snapshot, persisted JSON in the
 /// **current working directory** (`runtime.nativedoctor.json`), then each `--env` file (later
 /// overrides earlier for duplicate keys).
-pub fn build_runtime_env(cli: &Cli) -> Result<RuntimeEnv, String> {
-    RuntimeEnv::from_cli_options(cli.no_default_system_env, &cli.env).map_err(|e| e.to_string())
+// pub fn build_runtime_env(cli: &Cli) -> Result<RuntimeEnv, String> {
+//     RuntimeEnv::from_cli_options(cli.no_default_system_env, &cli.env).map_err(|e| e.to_string())
+// }
+//
+
+#[derive(Debug, Clone)]
+pub struct RunOptions {
+    // Log extra detail
+    pub verbose: bool,
+    /// If true, returns immediately without I/O using a synthetic [`ExecutionResult`] (status 0).
+    pub no_network_io: bool,
+    /// Retain run time across runs
+    pub retain_runtime: bool,
+    /// requests/scripts to run
+    pub paths: Vec<PathBuf>,
+    pub persistence_file: Option<PathBuf>,
 }
 
-pub fn run_opts(cli: &Cli) -> RunOptions {
-    return match &cli.command {
-        Some(Command::Run {
-            no_post,
-            dry_run,
-            allow_error_status,
-            ..
-        })
-        | Some(Command::Runall {
-            no_post,
-            dry_run,
-            allow_error_status,
-            ..
-        }) => RunOptions {
-            verbose: cli.verbose,
-            no_post_script: *no_post,
-            dry_run: *dry_run,
-            allow_error_status: *allow_error_status,
-            outcome_policy: OutcomePolicy::SingleRequest,
-        },
-        _ => RunOptions {
-            verbose: cli.verbose,
-            no_post_script: false,
-            dry_run: false,
-            allow_error_status: false,
-            outcome_policy: OutcomePolicy::SingleRequest,
-        },
-    };
+impl RunOptions {
+    pub(crate) fn from_cli(cli: &Cli) -> RunOptions {
+        return match &cli.command {
+            Some(Command::Run {
+                no_network_io,
+                retain_runtime,
+                paths,
+                persistence_file,
+            }) => RunOptions {
+                verbose: cli.verbose,
+                no_network_io: *no_network_io,
+                retain_runtime: *retain_runtime,
+                paths: paths.clone(),
+                persistence_file: *persistence_file,
+            },
+            _ => unreachable!("Shouldn't get here"),
+        };
+    }
+}
+
+pub(crate) async fn run_run(opts: RunOptions) -> Result<()> {
+    let runtime = RuntimeEnv::new()
+        .with_env_files(paths)?
+        .with_persistence(opts.persistence_file)?;
+
+    if opts.verbose && !opts.no_network_io {
+        println!("--- request ---");
+    }
+
+    // TODO: I stopped here.
+    if opts.no_network_io || opts.verbose {}
 }
 
 /// Run or dry-run a single request file; prints human-readable output to stdout/stderr.

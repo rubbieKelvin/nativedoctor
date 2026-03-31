@@ -79,6 +79,9 @@ pub enum Error {
         message: String,
     },
 
+    #[error("No runtime persist file: {message}")]
+    NoRuntimePersistFile { message: String },
+
     #[error("invalid runtime persist file {path}: {message}")]
     InvalidRuntimePersistFile { path: PathBuf, message: String },
 }
