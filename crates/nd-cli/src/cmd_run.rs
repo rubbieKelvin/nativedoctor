@@ -65,6 +65,11 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     for path in opts.paths.iter() {
+        if !path.try_exists().map_err(|e| e.to_string())? {
+            tracing::error!(path = %path.display(), "File does not exist");
+            continue;
+        }
+
         let ext = path
             .extension()
             .and_then(|e| e.to_str())
