@@ -64,7 +64,7 @@ impl From<GenerateFormat> for nd_generate::OutputFormat {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Run one request file, or a sequence file when `--sequence` is set.
+    /// Run one or more request-file or rhai scripts
     Run {
         /// Build the runtime environment once and reuse it across all files (runtime variables persist between runs).
         #[arg(long)]

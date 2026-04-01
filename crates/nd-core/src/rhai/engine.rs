@@ -3,34 +3,9 @@ use std::sync::Arc;
 
 use rhai::{Dynamic, Engine, EvalAltResult, Position};
 
-use super::context::ResponseCtx;
 use super::logger::{emit_script_log_to_tracing, LogLevel, Logger};
-use super::utils::json_to_dynamic;
 
 use crate::env::RuntimeEnv;
-
-/// Registers `status`, `headers`, `body`, and `json` against `ctx`.
-fn register_response_fns(engine: &mut Engine, ctx: Arc<ResponseCtx>) {
-    let c = ctx.clone();
-    engine.register_fn("status", move || c.status);
-
-    let c = ctx.clone();
-    engine.register_fn("header", move |name: &str| {
-        c.headers
-            .get(name)
-            .map(|s| Dynamic::from(s.clone()))
-            .unwrap_or(Dynamic::UNIT)
-    });
-
-    let c = ctx.clone();
-    engine.register_fn("body", move || c.body_str.clone());
-
-    let c = ctx.clone();
-    engine.register_fn("json", move || match &c.json_value {
-        Some(v) => json_to_dynamic(v),
-        None => Dynamic::UNIT,
-    });
-}
 
 /// Registers `env` and `set` for template/runtime map access.
 fn register_env_fns(engine: &mut Engine, env: &RuntimeEnv) {
@@ -87,7 +62,6 @@ fn register_persist(engine: &mut Engine, env: &RuntimeEnv) {
 
 /// Creates the post-script engine: no raw network inside Rhai; optional `persist` writes the persist file.
 pub(crate) fn create_engine(
-    ctx: Arc<ResponseCtx>,
     env: &RuntimeEnv,
     script_path: &Path,
     logger: Option<Arc<Logger>>,
@@ -95,7 +69,6 @@ pub(crate) fn create_engine(
     let mut engine = Engine::new();
     let script_label = script_path.display().to_string();
 
-    register_response_fns(&mut engine, ctx);
     register_env_fns(&mut engine, env);
     register_assert(&mut engine);
     register_log(&mut engine, logger, script_label);

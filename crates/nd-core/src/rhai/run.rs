@@ -5,55 +5,28 @@ use std::sync::Arc;
 
 use tracing::debug;
 
-use super::context::ResponseCtx;
 use super::engine::create_engine;
 use super::logger::Logger;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
-/// Rhai **post-response** scripts: optional `persist` writes `runtime.nativedoctor.json` when configured.
-///
-/// # Built-in functions
-///
-/// | Function | Returns | Notes |
-/// |----------|---------|--------|
-/// | `status()` | `i64` | HTTP status code |
-/// | `headers(name)` | value or `()` | Header name is case-sensitive as stored |
-/// | `body()` | `string` | UTF-8 lossy over raw bytes |
-/// | `json()` | value or `()` | Parsed JSON as Rhai value; `()` if body is not valid JSON |
-/// | `env(key)` | value or `()` | Uses [`crate::RuntimeEnv::get`] |
-/// | `set(key, value)` | — | Updates runtime map via [`crate::RuntimeEnv::set_runtime`]; `value` is stringified |
-/// | `persist(key, value)` | — | Present only when `persist_file` is `Some`; updates map and that JSON path. Core execution uses **cwd** / `runtime.nativedoctor.json`. |
-/// | `assert(condition, message)` | — | If `condition` is false, aborts the script (surfaces as [`crate::Error::Rhai`]). |
-/// | `log(level, message)` | — | Always emits [`tracing`]; if a [`Logger`] is passed, also records a [`super::logger::Log`]. Unknown `level` → `info`. |
-pub fn run_post_script(
-    script_path: &Path,
-    env: &RuntimeEnv,
-    status: u16,
-    headers: &[(String, String)],
-    body: &[u8],
-    logger: Option<Arc<Logger>>,
-) -> Result<()> {
-    let source = std::fs::read_to_string(script_path)
-        .map_err(|_| Error::PostScriptNotFound(script_path.to_path_buf()))?;
+pub fn run_rhai_script(path: &Path, env: &RuntimeEnv, logger: Option<Arc<Logger>>) -> Result<()> {
+    let source =
+        std::fs::read_to_string(path).map_err(|_| Error::PostScriptNotFound(path.to_path_buf()))?;
 
     debug!(
-        path = %script_path.display(),
-        status,
-        body_len = body.len(),
-        header_count = headers.len(),
+        path = %path.display(),
         "Rhai post_script evaluating"
     );
 
-    let ctx = Arc::new(ResponseCtx::from_parts(status, headers, body));
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(ctx, env, script_path, logger);
+    let engine = create_engine(env, path, logger);
 
     engine
         .run_with_scope(&mut scope, &source)
         .map_err(|e| Error::Rhai(e.to_string()))?;
 
-    debug!(path = %script_path.display(), "Rhai post_script finished");
+    debug!(path = %path.display(), "Rhai post_script finished");
     Ok(())
 }

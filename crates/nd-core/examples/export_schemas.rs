@@ -1,4 +1,4 @@
-//! Writes JSON Schema files for request and sequence documents to `schema/` at the repo root.
+//! Writes JSON Schema files for request documents to `schema/` at the repo root.
 //!
 //! `cargo run -p nd-core --example export_schemas`
 
