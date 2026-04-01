@@ -13,7 +13,8 @@ pub(crate) fn build_client(spec: &HttpRequestSpec) -> Result<Client> {
     let timeout_secs = spec
         .timeout_secs
         .unwrap_or(RequestFile::default_timeout_secs());
-    Client::builder()
+
+    return Client::builder()
         .timeout(std::time::Duration::from_secs(timeout_secs))
         .redirect(if spec.follow_redirects {
             redirect::Policy::default()
@@ -22,7 +23,7 @@ pub(crate) fn build_client(spec: &HttpRequestSpec) -> Result<Client> {
         })
         .danger_accept_invalid_certs(!spec.verify_tls)
         .build()
-        .map_err(Error::Http)
+        .map_err(Error::Http);
 }
 
 /// Appends query pairs to `base` (must be a valid URL).
@@ -35,7 +36,7 @@ pub(crate) fn merge_url_query(base: &str, query: &[(String, String)]) -> Result<
     for (k, v) in query {
         url.query_pairs_mut().append_pair(k, v);
     }
-    Ok(url.to_string())
+    return Ok(url.to_string());
 }
 
 pub(crate) fn header_map(pairs: &[(String, String)]) -> Result<HeaderMap> {
@@ -47,7 +48,7 @@ pub(crate) fn header_map(pairs: &[(String, String)]) -> Result<HeaderMap> {
             .map_err(|_| Error::InvalidRequest(format!("invalid header value for {k}")))?;
         map.insert(name, value);
     }
-    Ok(map)
+    return Ok(map);
 }
 
 pub(crate) async fn send_request(
@@ -68,5 +69,5 @@ pub(crate) async fn send_request(
     if let Some(b) = &prep.body {
         req = req.body(b.clone());
     }
-    req.send().await.map_err(Error::Http)
+    return req.send().await.map_err(Error::Http);
 }

@@ -35,9 +35,9 @@ pub struct ExecutionResult {
     pub body: Vec<u8>,
     /// Time to receive the full response; zero for dry-run.
     pub duration: Duration,
-    /// The base directory the execution stemed from.
-    pub base_dir: PathBuf,
     pub doc: RequestFile,
+    /// The script that triggered the call to this request
+    pub initiator_script: Option<PathBuf>,
 }
 
 /// Fully expanded, ready-to-send request (templates applied).

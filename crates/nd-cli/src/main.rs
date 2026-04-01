@@ -72,7 +72,7 @@ enum Command {
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
         paths: Vec<PathBuf>,
     },
-    /// Serve a local web UI (Dioxus) to list and run request files in a directory.
+    /// Serve web UI exposing directories directory.
     Web {
         /// Address and port to bind (default: loopback only).
         #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]

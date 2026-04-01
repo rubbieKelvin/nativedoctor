@@ -1,7 +1,6 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
-use nd_constants::RHAI_LOG_INITIATOR;
 use rhai::{Dynamic, Engine, EvalAltResult, Position};
 
 use super::context::ResponseCtx;
@@ -42,7 +41,7 @@ fn register_env_fns(engine: &mut Engine, env: &RuntimeEnv) {
 
     let e_set = env.clone();
     engine.register_fn("set", move |key: &str, value: Dynamic| {
-        e_set.set_runtime(key.to_string(), value.to_string());
+        e_set.set(key.to_string(), value.to_string());
     });
 }
 
@@ -67,25 +66,23 @@ fn register_log(engine: &mut Engine, logger: Option<Arc<Logger>>, script_label: 
         let lvl = LogLevel::parse_or_info(level);
         emit_script_log_to_tracing(lvl, &script_label, message);
         if let Some(ref s) = sink {
-            s.log_parsed_level(level, message, script_label.clone(), RHAI_LOG_INITIATOR);
+            s.log_parsed_level(level, message, script_label.clone(), "");
         }
     });
 }
 
 /// Registers `persist(key, value)` when `persist_file` is set — updates env and `runtime.nativedoctor.json`.
-fn register_persist(engine: &mut Engine, env: &RuntimeEnv, persist_file: Option<PathBuf>) {
-    if let Some(path) = persist_file {
-        let e = env.clone();
-        engine.register_fn("persist", move |key: &str, value: Dynamic| {
-            let s = value.to_string();
-            e.persist_key_to_file(&path, key, &s).map_err(|err| {
-                Box::new(EvalAltResult::ErrorRuntime(
-                    format!("persist failed: {err}").into(),
-                    Position::NONE,
-                ))
-            })
-        });
-    }
+fn register_persist(engine: &mut Engine, env: &RuntimeEnv) {
+    let e = env.clone();
+    engine.register_fn("persist", move |key: &str, value: Dynamic| {
+        let s = value.to_string();
+        e.persist(key, &s).map_err(|err| {
+            Box::new(EvalAltResult::ErrorRuntime(
+                format!("persist failed: {err}").into(),
+                Position::NONE,
+            ))
+        })
+    });
 }
 
 /// Creates the post-script engine: no raw network inside Rhai; optional `persist` writes the persist file.
@@ -94,7 +91,6 @@ pub(crate) fn create_engine(
     env: &RuntimeEnv,
     script_path: &Path,
     logger: Option<Arc<Logger>>,
-    persist_file: Option<PathBuf>,
 ) -> Engine {
     let mut engine = Engine::new();
     let script_label = script_path.display().to_string();
@@ -103,6 +99,6 @@ pub(crate) fn create_engine(
     register_env_fns(&mut engine, env);
     register_assert(&mut engine);
     register_log(&mut engine, logger, script_label);
-    register_persist(&mut engine, env, persist_file);
+    register_persist(&mut engine, env);
     return engine;
 }

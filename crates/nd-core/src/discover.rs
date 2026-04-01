@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use tracing::debug;
-use tracing::warn;
 
 use crate::error::Result;
 
@@ -54,29 +53,6 @@ pub fn list_request_paths(dir: &Path) -> Result<Vec<PathBuf>> {
         "list_request_paths"
     );
     return Ok(sorted);
-}
-
-// TODO: remove this if nothing else is calling
-fn parse_as_json_value(path: &Path, text: &str) -> crate::error::Result<serde_json::Value> {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-
-    return match ext.as_str() {
-        "json" => serde_json::from_str(text).map_err(|source| crate::error::Error::ParseJson {
-            path: path.to_path_buf(),
-            source,
-        }),
-        "yaml" | "yml" => {
-            serde_yaml::from_str(text).map_err(|source| crate::error::Error::ParseYaml {
-                path: path.to_path_buf(),
-                source,
-            })
-        }
-        _ => Err(crate::error::Error::UnsupportedFormat(path.to_path_buf())),
-    };
 }
 
 /// Like [`list_request_paths`], but each path is classified. Files that fail to read or parse are skipped with a warning.

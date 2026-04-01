@@ -1,6 +1,6 @@
 //! Orchestrate reading a post-script, building [`ResponseCtx`](super::context::ResponseCtx), and running Rhai.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use tracing::debug;
@@ -34,7 +34,6 @@ pub fn run_post_script(
     headers: &[(String, String)],
     body: &[u8],
     logger: Option<Arc<Logger>>,
-    persist_file: Option<PathBuf>,
 ) -> Result<()> {
     let source = std::fs::read_to_string(script_path)
         .map_err(|_| Error::PostScriptNotFound(script_path.to_path_buf()))?;
@@ -49,7 +48,7 @@ pub fn run_post_script(
 
     let ctx = Arc::new(ResponseCtx::from_parts(status, headers, body));
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(ctx, env, script_path, logger, persist_file);
+    let engine = create_engine(ctx, env, script_path, logger);
 
     engine
         .run_with_scope(&mut scope, &source)

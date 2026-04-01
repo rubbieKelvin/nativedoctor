@@ -146,6 +146,7 @@ pub fn operation_to_request_file(
             follow_redirects: true,
             verify_tls: true,
         },
+        ..Default::default()
     })
 }
 

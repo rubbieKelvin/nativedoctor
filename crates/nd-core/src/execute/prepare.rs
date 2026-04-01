@@ -12,8 +12,7 @@ use super::types::PreparedRequest;
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::model::request::{
-    content_type_for_body_kind, HttpRequestSpec, RequestBody, RequestBodyKind,
-    RequestBodyStructured, RequestFile,
+    HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile,
 };
 use crate::utils::template::{expand_json_value, expand_string};
 
@@ -23,27 +22,19 @@ pub(crate) fn generate_computed_headers(spec: &HttpRequestSpec) -> HashMap<Strin
     headers.insert(HTTP_HEADER_USER_AGENT.to_string(), USER_AGENT.to_string());
     headers.insert(HTTP_HEADER_ACCEPT.to_string(), "*/*".to_string());
 
-    let Some(body) = &spec.body else {
-        return headers;
-    };
-
     let has_content_type = spec
         .headers
         .keys()
         .any(|k| k.to_ascii_lowercase() == HTTP_HEADER_CONTENT_TYPE);
 
     if !has_content_type {
-        let ct = match body {
-            RequestBody::Json(_) => content_type_for_body_kind(RequestBodyKind::Json),
-            RequestBody::Text(_) => content_type_for_body_kind(RequestBodyKind::Text),
-            RequestBody::Structured(n) => content_type_for_body_kind(n.body_type),
-        };
-        if let Some(ct) = ct {
+        let content_type = spec.get_contenttype_hint();
+        if let Some(ct) = content_type {
             headers.insert(HTTP_HEADER_CONTENT_TYPE.to_string(), ct.to_string());
         }
     }
 
-    headers
+    return headers;
 }
 
 fn structured_content_string(

@@ -3,5 +3,4 @@
 pub mod client;
 pub mod format;
 pub mod prepare;
-pub mod run;
 pub mod types;

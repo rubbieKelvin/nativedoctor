@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use colored::Colorize;
-use nd_constants::{RHAI_LOG_INITIATOR, TRACING_TARGET_RHAI};
+use nd_constants::TRACING_TARGET_RHAI;
 
 /// Severity for a [`Log`] line (parsed from Rhai `log("info", "...")` etc.).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, strum::Display)]
@@ -162,22 +162,22 @@ fn script_file_name(script: &str) -> String {
 /// Emits a structured [`tracing`] event for one script log line (independent of in-memory capture).
 pub fn emit_script_log_to_tracing(level: LogLevel, script: &str, message: &str) {
     let script = script_file_name(script);
-    let initiator = RHAI_LOG_INITIATOR;
+
     match level {
         LogLevel::Trace => {
-            tracing::trace!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+            tracing::trace!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
         }
         LogLevel::Debug => {
-            tracing::debug!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+            tracing::debug!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
         }
         LogLevel::Info => {
-            tracing::info!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+            tracing::info!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
         }
         LogLevel::Warn => {
-            tracing::warn!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+            tracing::warn!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
         }
         LogLevel::Error => {
-            tracing::error!(target: TRACING_TARGET_RHAI, %script, %message, initiator);
+            tracing::error!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
         }
     }
 }

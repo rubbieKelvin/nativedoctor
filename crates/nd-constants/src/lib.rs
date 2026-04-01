@@ -19,9 +19,6 @@ pub const REQUEST_FILE_DEFAULT_VERSION: &str = DOCUMENT_DEFAULT_VERSION;
 /// [`tracing`] target for Rhai post-script log lines.
 pub const TRACING_TARGET_RHAI: &str = "nativedoctor::rhai";
 
-/// Label for who initiated a Rhai log line (post-script); used in tracing and capture buffers.
-pub const RHAI_LOG_INITIATOR: &str = "post_script";
-
 /// Lowercase HTTP header name used for computed `User-Agent`.
 pub const HTTP_HEADER_USER_AGENT: &str = "user-agent";
 
