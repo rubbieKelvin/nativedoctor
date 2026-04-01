@@ -19,9 +19,9 @@ impl NewOption {
     pub(crate) fn from_cli(cli: &Cli) -> NewOption {
         return match &cli.command {
             Some(Command::New { url, name, path }) => NewOption {
-                url: *url,
-                name: *name,
-                path: *path,
+                url: url.clone(),
+                name: name.clone(),
+                path: path.clone(),
             },
             _ => unreachable!("We should never have gotten here"),
         };

@@ -1,4 +1,4 @@
-use nd_core::ExecutionResult;
+use nd_core::execute::types::ExecutionResult;
 
 fn redact_headers(headers: &[(String, String)]) -> Vec<(String, String)> {
     headers

@@ -37,7 +37,7 @@ impl RuntimeEnv {
         };
     }
 
-    pub fn with_env_files(self, paths: Vec<PathBuf>) -> Result<Self> {
+    pub fn with_env_files(self, paths: &Vec<PathBuf>) -> Result<Self> {
         for path in paths.iter() {
             self.merge_env_file(path)?;
         }
@@ -45,7 +45,7 @@ impl RuntimeEnv {
         return Ok(self);
     }
 
-    pub fn with_persistence(mut self, path: Option<PathBuf>) -> Result<Self> {
+    pub fn with_persistence(mut self, path: &Option<PathBuf>) -> Result<Self> {
         self.file = path.clone();
 
         if let Some(path) = path {

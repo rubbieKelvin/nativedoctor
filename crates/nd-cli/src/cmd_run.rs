@@ -2,7 +2,6 @@
 
 use std::path::{Path, PathBuf};
 
-use colored::Colorize;
 use nd_core::{
     env::RuntimeEnv, execute::format::format_prepared_request, model::request::RequestFile,
 };
@@ -24,31 +23,46 @@ pub struct RunOptions {
 }
 
 impl RunOptions {
-    pub(crate) fn from_cli(cli: &Cli) -> RunOptions {
-        return match &cli.command {
+    pub(crate) fn from_cli(cli: &Cli) -> Result<RunOptions, String> {
+        return Ok(match &cli.command {
             Some(Command::Run {
-                no_network_io,
                 retain_runtime,
                 paths,
-                persistence_file,
             }) => RunOptions {
                 verbose: cli.verbose,
-                no_network_io: *no_network_io,
+                no_network_io: cli.no_network_io,
                 retain_runtime: *retain_runtime,
                 paths: paths.clone(),
-                persistence_file: *persistence_file,
+                persistence_file: cli.persistence_file.clone(),
                 env_files: cli.env.clone(),
             },
+            None => {
+                let path = cli
+                    .file
+                    .clone()
+                    .ok_or_else(|| "expected a subcommand or a request file path".to_string())?;
+
+                RunOptions {
+                    verbose: cli.verbose,
+                    no_network_io: cli.no_network_io,
+                    retain_runtime: true,
+                    paths: vec![path],
+                    persistence_file: cli.persistence_file.clone(),
+                    env_files: cli.env.clone(),
+                }
+            }
             _ => unreachable!("Shouldn't get here"),
-        };
+        });
     }
 }
 
-pub(crate) async fn run_run(opts: RunOptions) -> Result<()> {
+pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
     // create runtime session
     let runtime = RuntimeEnv::new()
-        .with_env_files(opts.env_files)?
-        .with_persistence(opts.persistence_file)?;
+        .with_env_files(&opts.env_files)
+        .map_err(|e| e.to_string())?
+        .with_persistence(&opts.persistence_file)
+        .map_err(|e| e.to_string())?;
 
     for path in opts.paths.iter() {
         let ext = path
@@ -58,29 +72,36 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<()> {
             .unwrap_or_default();
 
         match ext.as_str() {
-            "json" | "yaml" | "yml" => run_request(path, &opts, env).await?,
-            "rhai" => run_script(path, &opts, env).await?,
+            "json" | "yaml" | "yml" => run_request(path, &opts, &runtime).await?,
+            "rhai" => run_script(path, &opts, &runtime).await?,
+            _ => {
+                return Err(String::from(
+                    "Invalid file type. only json, yaml, yml, rhai files accepted",
+                ))
+            }
         };
 
-        run_request(path, &opts, env).await?;
+        run_request(path, &opts, &runtime).await?;
 
         if !opts.retain_runtime {
             runtime.clear();
         }
     }
+
+    return Ok(());
 }
 
 /// Run one request
 pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Result<(), String> {
-    let document = RequestFile::from_file(path)?;
+    let document = RequestFile::from_file(path).map_err(|e| e.to_string())?;
 
     // return run_one_with_env(path, cli, opts, &env).await;
     if opts.verbose && !opts.no_network_io {
-        println!(format!("--- request/{:?} ---", document.name));
+        println!("{}", format!("--- request/{:?} ---", document.name));
     }
 
     if opts.no_network_io || opts.verbose {
-        let request = document.request.expand(env)?;
+        let request = document.request.expand(env).map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&request).map_err(|e| e.to_string())?;
         println!("{summary}");
 
@@ -93,12 +114,13 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
         println!("--- response/{:?} ---", document.name);
     }
 
-    let output = document.execute(&env).await?.map_err(|e| e.to_string())?;
-    print_result(&output, cli.verbose)?;
+    let output = document.execute(&env).await.map_err(|e| e.to_string())?;
+    print_result(&output, opts.verbose)?;
 
     return Ok(());
 }
 
+#[allow(unused)]
 pub async fn run_script(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Result<(), String> {
     todo!("I havent imlpemented this fearture yet")
 }

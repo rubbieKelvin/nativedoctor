@@ -3,7 +3,6 @@
 mod cmd_generate;
 mod cmd_new;
 mod cmd_run;
-mod cmd_runall;
 mod cmd_web;
 mod logging;
 mod print;
@@ -30,6 +29,14 @@ pub(crate) struct Cli {
     /// Log extra detail and enable `nd_core=debug` tracing unless `RUST_LOG` is set.
     #[arg(short, long, global = true)]
     verbose: bool,
+
+    /// Persistence file, .yaml file where persisted values should be stored
+    #[arg(long, value_name = "FILE", global = true)]
+    persistence_file: Option<PathBuf>,
+
+    /// Expand and print the request only; no network I/O (no request is actually run).
+    #[arg(long, global = true)]
+    no_network_io: bool,
 
     #[command(subcommand)]
     command: Option<Command>,
@@ -59,15 +66,9 @@ impl From<GenerateFormat> for nd_generate::OutputFormat {
 enum Command {
     /// Run one request file, or a sequence file when `--sequence` is set.
     Run {
-        /// Expand and print the request only; no network I/O (no request is actually run).
-        #[arg(long)]
-        no_network_io: bool,
         /// Build the runtime environment once and reuse it across all files (runtime variables persist between runs).
         #[arg(long)]
         retain_runtime: bool,
-        /// Persistence file, .yaml file where persisted values should be stored
-        #[arg(long, value_name = "FILE", global = true)]
-        persistence_file: Option<PathBuf>,
         /// The path pointing to the file(s) to run
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
         paths: Vec<PathBuf>,
@@ -134,9 +135,10 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             cmd_new::run_new(opt)?;
         }
         Some(Command::Run { .. }) => {
-            let opts = RunOptions::from_cli(&cli);
-            cmd_run::run_one(path, &cli, opts).await?;
+            let opts = RunOptions::from_cli(&cli)?;
+            cmd_run::run_run(opts).await?;
         }
+        #[allow(unused)]
         Some(Command::Web { bind, dir }) => {
             todo!("Not done yet");
             // let bind = *bind;
@@ -151,11 +153,8 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             // .map_err(|e| format!("web server task: {e}"))??;
         }
         None => {
-            let path = cli
-                .file
-                .as_ref()
-                .ok_or_else(|| "expected a subcommand or a request file path".to_string())?;
-            cmd_run::run_one(path, &cli, cmd_run::run_opts(&cli)).await?;
+            let opts = RunOptions::from_cli(&cli)?;
+            cmd_run::run_run(opts).await?;
         }
     }
     return Ok(());
