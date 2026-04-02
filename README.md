@@ -7,15 +7,17 @@
 - **Template expansion**: `${VAR}` from the runtime map (process env, `--env` files, Rhai `set`, optional persistence); **dynamic** `${!name}` helpers (see below).
 - **Imported requests**: `import "api.json" as api` then **`api::invoke(#{ user_id: "42" })`** to run that HTTP request with per-call variable overrides (overrides win over the runtime map).
 - **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
-- **Rhai definition files**: emit **`.d.rhai`** stubs for editors / language servers (`rhai-definitions`).
+- **Rhai definition files**: emit **`.d.rhai`** stubs for editors / language servers (`definitions`).
+- **Web UI** (optional): local **Axum** server + **Vue 3** / **TypeScript** / **Tailwind CSS v4** SPA, embedded in the binary with **`rust-embed`** (`web`).
 
-The CLI binary is **`nativedoctor`**. Core logic lives in **`nd-core`**; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** is an optional local web UI (Dioxus **0.7**, work in progress).
+The CLI binary is **`nativedoctor`**. Core logic lives in **`nd-core`**; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** serves the browser UI and JSON API.
 
 ---
 
 ## Requirements
 
 - **Rust** (2021 edition), stable toolchain, to build from source.
+- **pnpm** on `PATH` when building **`nd-web`**: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so assets can be embedded. To skip that (e.g. CI with a prebuilt `frontend/dist/`), set **`ND_WEB_SKIP_FRONTEND_BUILD=1`** (see [`nd-web` crate](crates/nd-web)).
 - Network access for real HTTP calls (optional: **`--no-network-io`** expands and prints only).
 
 ---
@@ -29,6 +31,8 @@ cargo build --release -p nd-cli
 ```
 
 The binary is at `target/release/nativedoctor`. Add that directory to your `PATH`, or run it by path.
+
+Building **`nd-web`** as a dependency pulls in the frontend build via `build.rs` (requires **pnpm** unless you use **`ND_WEB_SKIP_FRONTEND_BUILD=1`** with an existing `crates/nd-web/frontend/dist/`).
 
 ### Prebuilt archives
 
@@ -82,18 +86,19 @@ nativedoctor new -u https://httpbin.org/get -n Demo examples/demo.yaml
 nativedoctor generate -i openapi.json -o ./generated --format yaml
 ```
 
-**Emit Rhai `.d.rhai` definitions** (IDE / LSP — see [Rhai metadata](https://rhai.rs/book/engine/metadata/index.html)):
+**Emit Rhai `.d.rhai` definitions** (IDE / LSP checkout [Rhai metadata](https://rhai.rs/book/engine/metadata/index.html)):
 
 ```bash
-nativedoctor rhai-definitions --out-dir .rhai/definitions
+nativedoctor definitions --out-dir .rhai/definitions
 # or a single merged file:
-nativedoctor rhai-definitions --out-file nativedoctor.d.rhai
+nativedoctor definitions --out-file nativedoctor.d.rhai
 ```
 
 **Browse and run request files in a browser** (local HTTP UI; see [`web`](#web)):
 
 ```bash
-nativedoctor web --dir .
+nativedoctor web
+nativedoctor web ./api ./scripts
 ```
 
 ---
@@ -107,7 +112,7 @@ Global options apply where noted.
 | `-v`, `--verbose` | More detailed output; default tracing filter `nd_core=debug` unless `RUST_LOG` is set. |
 | `--env <FILE>` | Merge variables from a dotenv-style file into the runtime ([dotenvy](https://docs.rs/dotenvy); repeatable; later files override earlier). |
 | `--persistence-file <FILE>` | Optional persistence file for Rhai `persist()` (see `RuntimeEnv` in `nd-core`). |
-| `--no-network-io` | **Request files:** expand and print the prepared request; no HTTP. **Rhai scripts:** still run; `invoke()` on imported requests uses dry-run behavior (no real HTTP) when this flag is set. |
+| `--no-network-io` | **Request files:** expand and print the prepared request; no HTTP. **Rhai scripts:** still run; `invoke()` on imported requests uses dry-run behavior (no real HTTP) when this flag is set. **Web UI:** request “Send” becomes expand-only; script behavior follows `nd-core` options. |
 
 ### `run`
 
@@ -122,10 +127,10 @@ nativedoctor run [OPTIONS] <FILE>...
 
 **Shorthand:** with no subcommand, a single positional `FILE` runs like `run` with one path.
 
-### `rhai-definitions`
+### `definitions`
 
 ```text
-nativedoctor rhai-definitions (--out-dir <DIR> | --out-file <FILE>)
+nativedoctor definitions (--out-dir <DIR> | --out-file <FILE>)
 ```
 
 Writes Rhai definition stubs (`.d.rhai`) for autocompletion / language servers: Rhai builtins plus nativedoctor globals (`env`, `set`, `assert`, `log`, `persist`), plus a small supplement for **`invoke`** on imported request modules. Use **`--out-dir`** for the usual multi-file layout or **`--out-file`** for one merged file.
@@ -133,15 +138,15 @@ Writes Rhai definition stubs (`.d.rhai`) for autocompletion / language servers: 
 ### `web`
 
 ```text
-nativedoctor web [OPTIONS]
+nativedoctor web [OPTIONS] [DIR]...
 ```
 
-Starts an HTTP server with a **Dioxus 0.7** UI. Lists top-level request-related files under **`--dir`** (non-recursive). **Work in progress** (some code paths may still be stubbed).
+Starts a local **Axum** server: JSON API under **`/api`** and a **Vue** SPA (static assets embedded at compile time). Each **`DIR`** is scanned **non-recursively** for top-level `*.json` / `*.yaml` / `*.yml` request files (validated before listing) and `*.rhai` scripts. Omit **`DIR`** to use the current directory.
 
 | Option | Description |
 |--------|-------------|
 | `--bind <ADDR>` | Listen address (default **`127.0.0.1:8080`**). |
-| `--dir <DIR>` | Directories to scan (default **`.`**). |
+| `[DIR]...` | One or more workspace roots (default **`.`** when omitted). |
 
 **Security:** treat as a **local development** tool. Anyone who can reach the bind address can trigger outbound HTTP to URLs in your files and run configured Rhai. Prefer loopback unless you understand the exposure.
 
@@ -258,39 +263,9 @@ Path or crates.io dependency on **`nd-core`**. Typical entry points:
 - **Load / expand:** `RequestFile::from_file`, `HttpRequestSpec::expand` / `expand_with_overrides`, template helpers in `nd_core::utils::template`
 - **Execute:** `RequestFile::execute` / `execute_with_overrides`, `ExecutionResult`
 - **Rhai:** `run_rhai_script`, `RhaiScriptRunOptions`, definition export helpers in `nd_core::rhai`
-- **Discovery:** `list_request_paths` (and related APIs)
+- **Discovery:** `list_request_paths`, `list_rhai_paths`, `partition_valid_request_paths`
 
 Install a **`tracing`** subscriber if you want structured logs from the core crate.
-
----
-
-## Workspace layout
-
-```text
-crates/
-  nd-cli/        # CLI binary (nativedoctor)
-  nd-core/       # HTTP execution, templates, Rhai engine + imports, definition export
-  nd-generate/   # OpenAPI → request files
-  nd-constants/  # Version strings, placeholders, header names, etc.
-  nd-web/        # Dioxus web UI (WIP)
-```
-
-```mermaid
-flowchart LR
-  cli[nd_cli nativedoctor]
-  core[nd_core]
-  gen[nd_generate]
-  konst[nd_constants]
-  web[nd_web]
-  cli --> core
-  cli --> gen
-  cli --> konst
-  cli --> web
-  web --> core
-  core --> konst
-  gen --> konst
-  gen --> core
-```
 
 ---
 
@@ -303,11 +278,21 @@ cargo fmt --all
 cargo clippy --workspace -- -D warnings
 ```
 
+**Frontend (`nd-web`):** package manager is **pnpm** (`crates/nd-web/frontend`). The **`nd-web`** crate runs `pnpm install` / `pnpm build` from **`build.rs`** before compiling so the SPA is embedded. For a fast iteration loop on the UI alone:
+
+```bash
+cd crates/nd-web/frontend && pnpm install && pnpm dev
+```
+
+(run the Rust server separately, with Vite proxying `/api` to it, per `vite.config.ts`).
+
 ---
 
 ## Release binaries (CI)
 
 Publishing a **GitHub Release** (not draft-only) triggers `.github/workflows/release.yml`, which builds **`nativedoctor`** for Linux x86_64, Windows x86_64, macOS Apple Silicon, and macOS Intel, then uploads archives to that release. Builds use the release **tag** as the checkout ref so assets match the tagged sources.
+
+Release jobs must have **Node + pnpm** (or pre-seed `frontend/dist` and set **`ND_WEB_SKIP_FRONTEND_BUILD=1`**) if the release build includes **`nd-web`**.
 
 ---
 
