@@ -98,7 +98,7 @@ enum Command {
         format: GenerateFormat,
     },
     /// Write Rhai definition files (`.d.rhai`) for IDE / language-server support (builtins + nativedoctor globals).
-    RhaiDefinitions {
+    Definitions {
         /// Output directory for multiple definition files (see Rhai book: Engine definitions).
         #[arg(long, value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
         out_dir: Option<PathBuf>,
@@ -142,7 +142,7 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
         }) => {
             cmd_generate::run_generate(input, output, (*format).into())?;
         }
-        Some(Command::RhaiDefinitions { out_dir, out_file }) => {
+        Some(Command::Definitions { out_dir, out_file }) => {
             cmd_rhai_definitions::run_rhai_definitions(RhaiDefinitionsOptions {
                 out_dir: out_dir.clone(),
                 out_file: out_file.clone(),
