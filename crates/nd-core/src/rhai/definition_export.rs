@@ -9,7 +9,8 @@ use crate::env::RuntimeEnv;
 use super::engine::create_engine;
 use super::RhaiScriptRunOptions;
 
-static REQUEST_IMPORT_SUPPLEMENT: &str = include_str!("../../definitions/nativedoctor-request.d.rhai");
+static REQUEST_IMPORT_SUPPLEMENT: &str =
+    include_str!("../../definitions/nativedoctor-request.d.rhai");
 
 /// Writes Rhai definition files into `out_dir` (creates the directory).
 ///
@@ -31,11 +32,12 @@ pub fn write_rhai_definition_files(out_dir: &Path) -> io::Result<()> {
     let stub = Path::new(".nativedoctor/stub.rhai");
     let engine = create_engine(&env, stub, None, RhaiScriptRunOptions::default());
     engine.definitions().write_to_dir(out_dir)?;
+
     fs::write(
         out_dir.join("nativedoctor-request.d.rhai"),
         REQUEST_IMPORT_SUPPLEMENT,
     )?;
-    Ok(())
+    return Ok(());
 }
 
 /// Merged single-file definitions (Rhai builtins + nativedoctor globals), plus the request-import supplement.
@@ -43,15 +45,17 @@ pub fn write_rhai_definition_files(out_dir: &Path) -> io::Result<()> {
 /// Equivalent to [`Definitions::single_file`] with extra content appended.
 pub fn rhai_definitions_single_file() -> String {
     let env = RuntimeEnv::new();
+
     let stub = Path::new(".nativedoctor/stub.rhai");
     let engine = create_engine(&env, stub, None, RhaiScriptRunOptions::default());
+
     let mut s = engine.definitions().single_file();
     s.push_str("\n\n");
     s.push_str(REQUEST_IMPORT_SUPPLEMENT);
-    s
+    return s;
 }
 
 /// Writes [`rhai_definitions_single_file`] to `path` (overwrites).
 pub fn write_rhai_definitions_file(path: &Path) -> io::Result<()> {
-    fs::write(path, rhai_definitions_single_file())
+    return fs::write(path, rhai_definitions_single_file());
 }

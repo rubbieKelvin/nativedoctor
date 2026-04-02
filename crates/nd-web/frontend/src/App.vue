@@ -492,9 +492,9 @@ onMounted(loadWorkspace);
                                 {{ response.status }} ·
                                 {{ response.duration_ms }}ms
                             </span>
-                            <span v-if="sendErr" class="text-red-700">{{
-                                sendErr
-                            }}</span>
+                            <span v-if="sendErr" class="text-red-700">
+                                {{ sendErr }}
+                            </span>
                         </div>
                         <div
                             class="flex gap-2 border-b border-neutral-200 px-2"
