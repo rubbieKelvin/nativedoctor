@@ -13,6 +13,35 @@ pub enum PrintOptions {
     Verbose,
 }
 
+/// Color HTTP status for terminal output (dry-run, redirects, client/server errors).
+fn status_colored(status: u16) -> colored::ColoredString {
+    let s = status.to_string();
+    match status {
+        0 => s.dimmed(),
+        100..=199 => s.bright_blue(),
+        200..=299 => s.green(),
+        300..=399 => s.cyan(),
+        400..=499 => s.yellow(),
+        500..=599 => s.red(),
+        _ => s.normal(),
+    }
+}
+
+/// Color HTTP method for terminal output (verb semantics).
+fn method_colored(method: &Method) -> colored::ColoredString {
+    let s = method.as_str();
+    match s {
+        "GET" => s.cyan(),
+        "POST" => s.green(),
+        "PUT" | "PATCH" => s.yellow(),
+        "DELETE" => s.red(),
+        "HEAD" => s.dimmed(),
+        "OPTIONS" => s.bright_black(),
+        "CONNECT" | "TRACE" => s.bright_blue(),
+        _ => s.normal(),
+    }
+}
+
 /// Outcome of a real HTTP call (or a synthetic row for dry-run — see field docs).
 #[derive(Debug, Clone)]
 pub struct ExecutionResult {
@@ -36,21 +65,21 @@ pub struct ExecutionResult {
 impl ExecutionResult {
     pub fn print(&self, style: PrintOptions) {
         let label = self.request_name.as_deref().unwrap_or_default();
+        let duration = format!("{:?}", self.duration).color("#333333");
+        let method = method_colored(&self.method);
+        let status = status_colored(self.status);
 
         match style {
             PrintOptions::Compact => {
                 println!(
-                    "[{}・{}] {} ({:?})",
-                    self.method.as_str().red(),
-                    self.final_url,
-                    self.status,
-                    self.duration
+                    "[{}・{}] {} ({})",
+                    method, status, self.final_url, duration
                 );
             }
             PrintOptions::Normal | PrintOptions::Verbose => {
                 println!(
-                    "{}{} {} -> {} ({:?})",
-                    self.method, label, self.final_url, self.status, self.duration
+                    "{}{} {} -> {} ({})",
+                    method, label, self.final_url, status, duration
                 );
 
                 if matches!(style, PrintOptions::Verbose) {
