@@ -2,6 +2,7 @@
 
 mod cmd_generate;
 mod cmd_new;
+mod cmd_rhai_definitions;
 mod cmd_run;
 mod cmd_web;
 mod logging;
@@ -13,7 +14,9 @@ use std::process::ExitCode;
 
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 
-use crate::{cmd_new::NewOption, cmd_run::RunOptions};
+use crate::{
+    cmd_new::NewOption, cmd_rhai_definitions::RhaiDefinitionsOptions, cmd_run::RunOptions,
+};
 
 #[derive(Parser)]
 #[command(name = "nativedoctor")]
@@ -94,6 +97,15 @@ enum Command {
         #[arg(long, value_enum, default_value_t = GenerateFormat::Yaml)]
         format: GenerateFormat,
     },
+    /// Write Rhai definition files (`.d.rhai`) for IDE / language-server support (builtins + nativedoctor globals).
+    RhaiDefinitions {
+        /// Output directory for multiple definition files (see Rhai book: Engine definitions).
+        #[arg(long, value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
+        out_dir: Option<PathBuf>,
+        /// Write a single merged definitions file instead of a directory.
+        #[arg(long, value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
+        out_file: Option<PathBuf>,
+    },
     /// Create a starter request file
     New {
         /// Request url
@@ -129,6 +141,12 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             format,
         }) => {
             cmd_generate::run_generate(input, output, (*format).into())?;
+        }
+        Some(Command::RhaiDefinitions { out_dir, out_file }) => {
+            cmd_rhai_definitions::run_rhai_definitions(RhaiDefinitionsOptions {
+                out_dir: out_dir.clone(),
+                out_file: out_file.clone(),
+            })?;
         }
         Some(Command::New { .. }) => {
             let opt = NewOption::from_cli(&cli);

@@ -13,7 +13,8 @@ rand = "0.8"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 schemars = { version = "0.8", features = ["derive"] }
-rhai = { version = "1.20", features = ["sync"] }
+# `metadata` + `internals`: doc comments on registered functions and `Engine::definitions()` for `.d.rhai` LSP stubs.
+rhai = { version = "1.20", features = ["sync", "metadata", "internals"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
