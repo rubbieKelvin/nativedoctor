@@ -11,6 +11,38 @@ fn headers_to_map(headers: Vec<(String, String)>) -> HashMap<String, String> {
 }
 
 #[test]
+fn request_expand_overrides_take_precedence_over_env() {
+    let env = RuntimeEnv::new();
+    env.set("ID", "from-env");
+
+    let spec = HttpRequestSpec {
+        method: "GET".into(),
+        url: "https://example.test/items/${ID}".into(),
+        summary: None,
+        description: None,
+        tags: vec![],
+        deprecated: false,
+        query: HashMap::new(),
+        headers: HashMap::new(),
+        body: None,
+        timeout_secs: None,
+        follow_redirects: true,
+        verify_tls: true,
+    };
+
+    let mut overrides = HashMap::new();
+    overrides.insert("ID".into(), "from-override".into());
+
+    let prepared = spec
+        .expand_with_overrides(&env, Some(&overrides))
+        .unwrap();
+    assert_eq!(prepared.url, "https://example.test/items/from-override");
+
+    let prepared_env_only = spec.expand(&env).unwrap();
+    assert_eq!(prepared_env_only.url, "https://example.test/items/from-env");
+}
+
+#[test]
 fn request_expand_applies_templates_and_computed_headers() {
     let env = RuntimeEnv::new();
     env.set("HOST", "api.example.test");

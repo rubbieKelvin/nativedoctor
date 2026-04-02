@@ -1,4 +1,4 @@
-//! `nativedoctor run <FILE>` and top-level `FILE` shorthand: single request, or `run --sequence <FILE>` for sequences.
+//! `nativedoctor run <FILE>` and top-level `FILE` shorthand: request files or Rhai scripts.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -7,7 +7,7 @@ use nd_core::{
     env::RuntimeEnv,
     execute::format::format_prepared_request,
     model::request::RequestFile,
-    rhai::{run_rhai_script, Logger},
+    rhai::{run_rhai_script, Logger, RhaiScriptRunOptions},
 };
 
 use crate::{print::print_result, Cli, Command};
@@ -145,5 +145,13 @@ pub async fn run_script(
         );
     }
 
-    return run_rhai_script(path, env, Some(logger)).map_err(|e| e.to_string());
+    return run_rhai_script(
+        path,
+        env,
+        Some(logger),
+        RhaiScriptRunOptions {
+            no_network_io: opts.no_network_io,
+        },
+    )
+    .map_err(|e| e.to_string());
 }

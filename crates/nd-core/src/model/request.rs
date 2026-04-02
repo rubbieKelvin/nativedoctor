@@ -9,7 +9,7 @@
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 use crate::execute::client::{build_client, send_request};
-use crate::execute::prepare::expand_http_request;
+use crate::execute::prepare::expand_http_request_with_overrides;
 use crate::execute::types::{ExecutionResult, PreparedRequest};
 use nd_constants::REQUEST_FILE_DEFAULT_VERSION;
 use std::collections::HashMap;
@@ -108,6 +108,16 @@ impl RequestFile {
     }
 
     pub async fn execute(&self, env: &RuntimeEnv) -> Result<ExecutionResult> {
+        return self.execute_with_overrides(env, None).await;
+    }
+
+    /// Run the HTTP request after expanding templates. `var_overrides` take precedence over
+    /// [`RuntimeEnv`] for `${VAR}` placeholders (not `${!name}` dynamics).
+    pub async fn execute_with_overrides(
+        &self,
+        env: &RuntimeEnv,
+        var_overrides: Option<&HashMap<String, String>>,
+    ) -> Result<ExecutionResult> {
         let name = if let Some(name) = &self.name {
             name.clone()
         } else {
@@ -127,7 +137,9 @@ impl RequestFile {
         );
 
         // build client and start timer
-        let prep = self.request.expand(env)?;
+        let prep = self
+            .request
+            .expand_with_overrides(env, var_overrides)?;
         let client = build_client(&self.request)?;
         let start = Instant::now();
 
@@ -235,7 +247,15 @@ impl HttpRequestSpec {
     }
 
     pub fn expand(&self, env: &RuntimeEnv) -> Result<PreparedRequest> {
-        return expand_http_request(env, self);
+        return self.expand_with_overrides(env, None);
+    }
+
+    pub fn expand_with_overrides(
+        &self,
+        env: &RuntimeEnv,
+        overrides: Option<&HashMap<String, String>>,
+    ) -> Result<PreparedRequest> {
+        return expand_http_request_with_overrides(env, self, overrides);
     }
 }
 

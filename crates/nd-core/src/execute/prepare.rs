@@ -14,7 +14,9 @@ use crate::error::{Error, Result};
 use crate::model::request::{
     HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile,
 };
-use crate::utils::template::{expand_json_value, expand_string};
+use crate::utils::template::{
+    expand_json_value_with_overrides, expand_string_with_overrides,
+};
 
 /// Adds default `User-Agent`, `Accept`, and (when applicable) `Content-Type` before user headers.
 pub(crate) fn generate_computed_headers(spec: &HttpRequestSpec) -> HashMap<String, String> {
@@ -39,28 +41,33 @@ pub(crate) fn generate_computed_headers(spec: &HttpRequestSpec) -> HashMap<Strin
 
 fn structured_content_string(
     env: &RuntimeEnv,
+    overrides: Option<&HashMap<String, String>>,
     content: &serde_json::Value,
     ctx: &str,
 ) -> Result<String> {
     match content {
-        serde_json::Value::String(s) => expand_string(env, s),
+        serde_json::Value::String(s) => expand_string_with_overrides(env, overrides, s),
         _ => Err(Error::InvalidRequest(format!(
             "{ctx}: `content` must be a JSON string for this body type"
         ))),
     }
 }
 
-fn expand_structured_body(env: &RuntimeEnv, s: &RequestBodyStructured) -> Result<Option<Vec<u8>>> {
+fn expand_structured_body(
+    env: &RuntimeEnv,
+    overrides: Option<&HashMap<String, String>>,
+    s: &RequestBodyStructured,
+) -> Result<Option<Vec<u8>>> {
     match s.body_type {
         RequestBodyKind::Json | RequestBodyKind::Graphql => {
-            let expanded = expand_json_value(env, &s.content)?;
+            let expanded = expand_json_value_with_overrides(env, overrides, &s.content)?;
             let bytes = serde_json::to_vec(&expanded).map_err(|e| {
                 Error::InvalidRequest(format!("failed to serialize JSON body: {e}"))
             })?;
             Ok(Some(bytes))
         }
         RequestBodyKind::Binary => {
-            let b64 = structured_content_string(env, &s.content, "binary body")?;
+            let b64 = structured_content_string(env, overrides, &s.content, "binary body")?;
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(b64.trim().as_bytes())
                 .map_err(|e| Error::InvalidRequest(format!("binary body: invalid base64: {e}")))?;
@@ -71,8 +78,8 @@ fn expand_structured_body(env: &RuntimeEnv, s: &RequestBodyStructured) -> Result
         | RequestBodyKind::Other
         | RequestBodyKind::XWwwFormUrlencoded
         | RequestBodyKind::FormData => {
-            let raw = structured_content_string(env, &s.content, "body")?;
-            let bytes = expand_string(env, &raw)?.into_bytes();
+            let raw = structured_content_string(env, overrides, &s.content, "body")?;
+            let bytes = expand_string_with_overrides(env, overrides, &raw)?.into_bytes();
             Ok(Some(bytes))
         }
         RequestBodyKind::None => {
@@ -81,12 +88,18 @@ fn expand_structured_body(env: &RuntimeEnv, s: &RequestBodyStructured) -> Result
     }
 }
 
-fn expand_request_body(env: &RuntimeEnv, body: &RequestBody) -> Result<Option<Vec<u8>>> {
+fn expand_request_body(
+    env: &RuntimeEnv,
+    overrides: Option<&HashMap<String, String>>,
+    body: &RequestBody,
+) -> Result<Option<Vec<u8>>> {
     match body {
-        RequestBody::Structured(s) => expand_structured_body(env, s),
-        RequestBody::Text(t) => Ok(Some(expand_string(env, t)?.into_bytes())),
+        RequestBody::Structured(s) => expand_structured_body(env, overrides, s),
+        RequestBody::Text(t) => Ok(Some(
+            expand_string_with_overrides(env, overrides, t)?.into_bytes(),
+        )),
         RequestBody::Json(v) => {
-            let expanded = expand_json_value(env, v)?;
+            let expanded = expand_json_value_with_overrides(env, overrides, v)?;
             let bytes = serde_json::to_vec(&expanded).map_err(|e| {
                 Error::InvalidRequest(format!("failed to serialize JSON body: {e}"))
             })?;
@@ -95,18 +108,22 @@ fn expand_request_body(env: &RuntimeEnv, body: &RequestBody) -> Result<Option<Ve
     }
 }
 
-/// Applies env expansion to method, URL, query, headers, and body.
-pub(crate) fn expand_http_request(
+/// Applies env expansion to method, URL, query, headers, and body. Pass `overrides: None` for env-only expansion.
+pub(crate) fn expand_http_request_with_overrides(
     env: &RuntimeEnv,
     spec: &HttpRequestSpec,
+    overrides: Option<&HashMap<String, String>>,
 ) -> Result<PreparedRequest> {
     let method = Method::from_bytes(spec.method.to_uppercase().as_bytes())
         .map_err(|_| Error::InvalidRequest(format!("unsupported HTTP method: {}", spec.method)))?;
-    let url = expand_string(env, &spec.url)?;
+    let url = expand_string_with_overrides(env, overrides, &spec.url)?;
     let mut query = Vec::new();
 
     for (k, v) in &spec.query {
-        query.push((expand_string(env, k)?, expand_string(env, v)?));
+        query.push((
+            expand_string_with_overrides(env, overrides, k)?,
+            expand_string_with_overrides(env, overrides, v)?,
+        ));
     }
 
     let mut headers = Vec::new();
@@ -117,12 +134,15 @@ pub(crate) fn expand_http_request(
     }
 
     for (k, v) in &computed_headers {
-        headers.push((expand_string(env, k)?, expand_string(env, v)?));
+        headers.push((
+            expand_string_with_overrides(env, overrides, k)?,
+            expand_string_with_overrides(env, overrides, v)?,
+        ));
     }
 
     let body = match &spec.body {
         None => None,
-        Some(b) => expand_request_body(env, b)?,
+        Some(b) => expand_request_body(env, overrides, b)?,
     };
 
     let timeout_secs = spec

@@ -7,11 +7,17 @@ use tracing::debug;
 
 use super::engine::create_engine;
 use super::logger::Logger;
+use super::resolver::RhaiScriptRunOptions;
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
-pub fn run_rhai_script(path: &Path, env: &RuntimeEnv, logger: Option<Arc<Logger>>) -> Result<()> {
+pub fn run_rhai_script(
+    path: &Path,
+    env: &RuntimeEnv,
+    logger: Option<Arc<Logger>>,
+    script_options: RhaiScriptRunOptions,
+) -> Result<()> {
     let source =
         std::fs::read_to_string(path).map_err(|_| Error::PostScriptNotFound(path.to_path_buf()))?;
 
@@ -21,7 +27,7 @@ pub fn run_rhai_script(path: &Path, env: &RuntimeEnv, logger: Option<Arc<Logger>
     );
 
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(env, path, logger);
+    let engine = create_engine(env, path, logger, script_options);
 
     engine
         .run_with_scope(&mut scope, &source)

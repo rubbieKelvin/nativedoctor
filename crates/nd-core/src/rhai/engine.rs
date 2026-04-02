@@ -4,6 +4,7 @@ use std::sync::Arc;
 use rhai::{Dynamic, Engine, EvalAltResult, Position};
 
 use super::logger::{emit_script_log_to_tracing, LogLevel, Logger};
+use super::resolver::{NativeImportResolver, RhaiScriptRunOptions};
 
 use crate::env::RuntimeEnv;
 
@@ -61,11 +62,12 @@ fn register_persist(engine: &mut Engine, env: &RuntimeEnv) {
     });
 }
 
-/// Creates the post-script engine: no raw network inside Rhai; optional `persist` writes the persist file.
+/// Creates the script engine: builtins, `import` resolution (`.rhai` and request files), optional `persist`.
 pub(crate) fn create_engine(
     env: &RuntimeEnv,
     script_path: &Path,
     logger: Option<Arc<Logger>>,
+    script_options: RhaiScriptRunOptions,
 ) -> Engine {
     let mut engine = Engine::new();
     let script_label = script_path.display().to_string();
@@ -75,6 +77,10 @@ pub(crate) fn create_engine(
     register_assert(&mut engine);
     register_log(&mut engine, logger, script_label);
     register_persist(&mut engine, env);
+
+    let env_arc = Arc::new(env.clone());
+    let resolver = NativeImportResolver::new(script_path, env_arc, script_options);
+    engine.set_module_resolver(resolver);
 
     return engine;
 }
