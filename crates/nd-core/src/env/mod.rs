@@ -1,7 +1,7 @@
 //! Process and runtime variable map used for `${VAR}` expansion and Rhai `env` / `set`.
 //!
 //! `.env` file loading for [`RuntimeEnv::merge_env_file`] uses the [dotenvy](https://docs.rs/dotenvy) crate.
-//! [`RuntimeEnv::merge_runtime_persist_file`] loads `runtime.nativedoctor.json` when present.
+//! [`RuntimeEnv::merge_runtime_persist_file`] loads a `.json`, `.yaml`, or `.yml` persistence file when present.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -43,11 +43,12 @@ impl RuntimeEnv {
         return Ok(self);
     }
 
+    /// Stores the persistence path and merges an existing file. The path must use extension `.json`, `.yaml`, or `.yml`.
     pub fn with_persistence(mut self, path: &Option<PathBuf>) -> Result<Self> {
         self.file = path.clone();
 
         if let Some(path) = path {
-            self.merge_runtime_persist_file(&path)?;
+            self.merge_runtime_persist_file(path)?;
         }
 
         return Ok(self);
@@ -83,7 +84,7 @@ impl RuntimeEnv {
         }
     }
 
-    /// Stringifies `value`, updates the runtime map, and merges into `runtime.nativedoctor.json` at `path` (full file path).
+    /// Stringifies `value`, updates the runtime map, and merges into the persistence file at `path` (JSON or YAML per extension).
     pub fn persist(&self, key: &str, value: &str) -> Result<()> {
         if let Some(file) = &self.file {
             persist::persist_key_in_file(self, &file, key, value)

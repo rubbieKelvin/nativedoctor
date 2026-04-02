@@ -71,7 +71,7 @@ fn register_log(engine: &mut Engine, logger: Option<Arc<Logger>>, script_label: 
         });
 }
 
-/// Registers `persist(key, value)` when `persist_file` is set — updates env and `runtime.nativedoctor.json`.
+/// Registers `persist(key, value)` when `persist_file` is set — updates env and the configured persistence file (JSON or YAML).
 fn register_persist(engine: &mut Engine, env: &RuntimeEnv) {
     let e = env.clone();
 

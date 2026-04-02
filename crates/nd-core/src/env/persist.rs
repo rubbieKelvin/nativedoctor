@@ -1,4 +1,7 @@
-//! Load and update `runtime.nativedoctor.json` for [`super::RuntimeEnv`].
+//! Load and update a runtime persistence file for [`super::RuntimeEnv`].
+//!
+//! Supported formats (by file extension, case-insensitive): **`.json`**, **`.yaml`**, **`.yml`**.
+//! The document must be a single **object** (map) at the root; arrays and scalars are rejected.
 
 use std::fs;
 use std::path::Path;
@@ -8,6 +11,41 @@ use serde_json::{Map, Value};
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PersistFormat {
+    Json,
+    Yaml,
+}
+
+fn persist_format(path: &Path) -> Result<PersistFormat> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase())
+        .unwrap_or_default();
+    match ext.as_str() {
+        "json" => Ok(PersistFormat::Json),
+        "yaml" | "yml" => Ok(PersistFormat::Yaml),
+        _ => Err(Error::InvalidRuntimePersistFile {
+            path: path.to_path_buf(),
+            message: "persistence file must use extension .json, .yaml, or .yml".into(),
+        }),
+    }
+}
+
+fn parse_persist_value(text: &str, format: PersistFormat, path: &Path) -> Result<Value> {
+    match format {
+        PersistFormat::Json => serde_json::from_str(text).map_err(|e| Error::InvalidRuntimePersistFile {
+            path: path.to_path_buf(),
+            message: e.to_string(),
+        }),
+        PersistFormat::Yaml => serde_yaml::from_str(text).map_err(|e| Error::InvalidRuntimePersistFile {
+            path: path.to_path_buf(),
+            message: e.to_string(),
+        }),
+    }
+}
+
 /// Converts a JSON value into the string stored in the runtime map (same rules as loading from file).
 pub(crate) fn json_value_to_runtime_string(v: &Value) -> String {
     return match v {
@@ -16,8 +54,9 @@ pub(crate) fn json_value_to_runtime_string(v: &Value) -> String {
     };
 }
 
-/// Reads the JSON object from `path` if the file exists; returns `Ok(None)` if missing.
+/// Reads the persisted object from `path` if the file exists; returns `Ok(None)` if the file is missing.
 pub(crate) fn read_runtime_persist_object(path: &Path) -> Result<Option<Map<String, Value>>> {
+    let format = persist_format(path)?;
     if !path.is_file() {
         return Ok(None);
     }
@@ -25,25 +64,36 @@ pub(crate) fn read_runtime_persist_object(path: &Path) -> Result<Option<Map<Stri
         path: path.to_path_buf(),
         message: e.to_string(),
     })?;
-    let v: Value = serde_json::from_str(&text).map_err(|e| Error::InvalidRuntimePersistFile {
-        path: path.to_path_buf(),
-        message: e.to_string(),
-    })?;
+    let v: Value = parse_persist_value(&text, format, path)?;
     let obj = v
         .as_object()
         .ok_or_else(|| Error::InvalidRuntimePersistFile {
             path: path.to_path_buf(),
-            message: "expected JSON object at top level".into(),
+            message: "expected mapping (object) at top level".into(),
         })?;
     return Ok(Some(obj.clone()));
 }
 
-/// Writes `map` to `path` as pretty-printed JSON.
+/// Writes `map` to `path` using pretty JSON or YAML according to the path extension.
 pub(crate) fn write_runtime_persist_object(path: &Path, map: &Map<String, Value>) -> Result<()> {
-    let text = serde_json::to_string_pretty(map).map_err(|e| Error::InvalidRuntimePersistFile {
-        path: path.to_path_buf(),
-        message: e.to_string(),
-    })?;
+    let format = persist_format(path)?;
+    let text = match format {
+        PersistFormat::Json => serde_json::to_string_pretty(map).map_err(|e| {
+            Error::InvalidRuntimePersistFile {
+                path: path.to_path_buf(),
+                message: e.to_string(),
+            }
+        })?,
+        PersistFormat::Yaml => serde_yaml::to_string(map).map_err(|e| Error::InvalidRuntimePersistFile {
+            path: path.to_path_buf(),
+            message: e.to_string(),
+        })?,
+    };
+    let text = if text.ends_with('\n') {
+        text
+    } else {
+        format!("{text}\n")
+    };
 
     return fs::write(path, text).map_err(|e| Error::InvalidRuntimePersistFile {
         path: path.to_path_buf(),

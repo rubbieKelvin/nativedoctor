@@ -94,7 +94,7 @@ nativedoctor definitions --out-dir .rhai/definitions
 nativedoctor definitions --out-file nativedoctor.d.rhai
 ```
 
-**Browse and run request files in a browser** (local HTTP UI; see [`web`](#web)):
+**Browse and run request files in a browser**:
 
 ```bash
 nativedoctor web
@@ -111,7 +111,7 @@ Global options apply where noted.
 |--------|-------------|
 | `-v`, `--verbose` | More detailed output; default tracing filter `nd_core=debug` unless `RUST_LOG` is set. |
 | `--env <FILE>` | Merge variables from a dotenv-style file into the runtime ([dotenvy](https://docs.rs/dotenvy); repeatable; later files override earlier). |
-| `--persistence-file <FILE>` | Optional persistence file for Rhai `persist()` (see `RuntimeEnv` in `nd-core`). |
+| `--persistence-file <FILE>` | Optional **JSON** or **YAML** persistence file: path must end with `.json`, `.yaml`, or `.yml` (Rhai `persist()`; see `RuntimeEnv` in `nd-core`). |
 | `--no-network-io` | **Request files:** expand and print the prepared request; no HTTP. **Rhai scripts:** still run; `invoke()` on imported requests uses dry-run behavior (no real HTTP) when this flag is set. **Web UI:** request “Send” becomes expand-only; script behavior follows `nd-core` options. |
 
 ### `run`
@@ -285,14 +285,6 @@ cd crates/nd-web/frontend && pnpm install && pnpm dev
 ```
 
 (run the Rust server separately, with Vite proxying `/api` to it, per `vite.config.ts`).
-
----
-
-## Release binaries (CI)
-
-Publishing a **GitHub Release** (not draft-only) triggers `.github/workflows/release.yml`, which builds **`nativedoctor`** for Linux x86_64, Windows x86_64, macOS Apple Silicon, and macOS Intel, then uploads archives to that release. Builds use the release **tag** as the checkout ref so assets match the tagged sources.
-
-Release jobs must have **Node + pnpm** (or pre-seed `frontend/dist` and set **`ND_WEB_SKIP_FRONTEND_BUILD=1`**) if the release build includes **`nd-web`**.
 
 ---
 

@@ -65,3 +65,60 @@ fn persist_without_configured_file_returns_error() {
         other => panic!("unexpected error: {other}"),
     }
 }
+
+#[test]
+fn with_persistence_loads_existing_values_from_yaml_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let persist_path = dir.path().join("runtime.yaml");
+    std::fs::write(
+        &persist_path,
+        r#"TOKEN: abc123
+COUNT: 7
+FLAGS:
+  beta: true
+"#,
+    )
+    .unwrap();
+
+    let env = RuntimeEnv::new()
+        .with_persistence(&Some(persist_path.clone()))
+        .unwrap();
+
+    assert_eq!(env.get("TOKEN").as_deref(), Some("abc123"));
+    assert_eq!(env.get("COUNT").as_deref(), Some("7"));
+    assert_eq!(env.get("FLAGS").as_deref(), Some(r#"{"beta":true}"#));
+}
+
+#[test]
+fn persist_updates_runtime_and_writes_yaml_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let persist_path = dir.path().join("runtime.yml");
+
+    let env = RuntimeEnv::new()
+        .with_persistence(&Some(persist_path.clone()))
+        .unwrap();
+    env.persist("TOKEN", "fresh-value").unwrap();
+
+    assert_eq!(env.get("TOKEN").as_deref(), Some("fresh-value"));
+
+    let written = std::fs::read_to_string(&persist_path).unwrap();
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&written).unwrap();
+    assert_eq!(yaml["TOKEN"], serde_yaml::Value::String("fresh-value".into()));
+}
+
+#[test]
+fn persistence_rejects_unsupported_file_extension() {
+    let dir = tempfile::tempdir().unwrap();
+    let bad_path = dir.path().join("runtime.txt");
+
+    let err = RuntimeEnv::new()
+        .with_persistence(&Some(bad_path))
+        .unwrap_err();
+
+    match err {
+        Error::InvalidRuntimePersistFile { message, .. } => {
+            assert!(message.contains(".json") || message.contains("yaml"));
+        }
+        other => panic!("unexpected error: {other}"),
+    }
+}

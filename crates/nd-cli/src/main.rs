@@ -32,7 +32,7 @@ pub(crate) struct Cli {
     #[arg(short, long, global = true)]
     verbose: bool,
 
-    /// Persistence file, .yaml file where persisted values should be stored
+    /// JSON or YAML file (use extension `.json`, `.yaml`, or `.yml`) for Rhai `persist()` and runtime merge
     #[arg(long, value_name = "FILE", global = true)]
     persistence_file: Option<PathBuf>,
 
