@@ -75,14 +75,14 @@ enum Command {
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
         paths: Vec<PathBuf>,
     },
-    /// Serve web UI exposing directories directory.
+    /// Serve web UI for one or more workspace directories (non-recursive listing).
     Web {
         /// Address and port to bind (default: loopback only).
         #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
         bind: SocketAddr,
-        /// get the Directories whose top-level `*.json` / `*.yaml` / `*.yml` / `.rhai` files are listed.
-        #[arg(long, value_name = "DIR", default_value = ".", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
-        dir: Vec<PathBuf>,
+        /// Directories whose top-level `*.json` / `*.yaml` / `*.yml` / `*.rhai` files are listed. Defaults to `.` when omitted.
+        #[arg(value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
+        dirs: Vec<PathBuf>,
     },
     /// Generate nativedoctor request files from an OpenAPI 3.0.x document (JSON or YAML).
     Generate {
@@ -155,19 +155,20 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
             let opts = RunOptions::from_cli(&cli)?;
             cmd_run::run_run(opts).await?;
         }
-        #[allow(unused)]
-        Some(Command::Web { bind, dir }) => {
-            todo!("Not done yet");
-            // let bind = *bind;
-            // let dir = dir.clone();
-            // let no_default_system_env = cli.no_default_system_env;
-            // let env_files = cli.env.clone();
-            // let verbose = cli.verbose;
-            // tokio::task::spawn_blocking(move || {
-            //     cmd_web::run(bind, dir, no_default_system_env, env_files, verbose)
-            // })
-            // .await
-            // .map_err(|e| format!("web server task: {e}"))??;
+        Some(Command::Web { bind, dirs }) => {
+            let mut roots = dirs.clone();
+            if roots.is_empty() {
+                roots.push(PathBuf::from("."));
+            }
+
+            cmd_web::run(
+                *bind,
+                roots,
+                cli.env.clone(),
+                cli.persistence_file.clone(),
+                cli.no_network_io,
+            )
+            .await?;
         }
         None => {
             let opts = RunOptions::from_cli(&cli)?;

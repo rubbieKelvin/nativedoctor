@@ -1,17 +1,31 @@
-//! `nativedoctor web` — local Dioxus UI for listing and running request files.
+//! `nativedoctor web` — local API + Vue UI for listing and running request files and Rhai scripts.
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-#[allow(unused)]
-pub fn run(
+pub async fn run(
     bind: SocketAddr,
-    dir: PathBuf,
-    no_default_system_env: bool,
+    dirs: Vec<PathBuf>,
     env_files: Vec<PathBuf>,
-    verbose: bool,
+    persistence_file: Option<PathBuf>,
+    no_network_io: bool,
 ) -> Result<(), String> {
-    println!("Running web UI on http://{} (dir: {})", bind, dir.display());
-    // return nd_web::run_web(dir, bind, no_default_system_env, env_files, verbose);
-    return Ok(());
+    println!(
+        "Web UI: http://{} (roots: {})",
+        bind,
+        dirs.iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+
+    nd_web::run_web(nd_web::WebServerOptions {
+        bind,
+        roots: dirs,
+        env_files,
+        persistence_file,
+        no_network_io,
+    })
+    .await
+    .map_err(|e| e.to_string())
 }

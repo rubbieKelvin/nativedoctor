@@ -2,3 +2,34 @@
 name = "nd-web"
 version.workspace = true
 edition.workspace = true
+
+[lib]
+name = "nd_web"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nd-web"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+axum = "0.7"
+base64 = "0.22"
+nd-core = { path = "../nd-core" }
+nd-constants = { path = "../nd-constants" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tower = "0.5"
+tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+hyper = "1"
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tower = { version = "0.5", features = ["util"] }
+
+[lints.clippy]
+needless_return = "allow"
