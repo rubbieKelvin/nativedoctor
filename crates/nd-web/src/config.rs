@@ -6,7 +6,6 @@ use std::sync::OnceLock;
 /// Global options passed from `nativedoctor web` (mirrors CLI globals for runs).
 pub struct WebConfig {
     pub root: PathBuf,
-    pub no_default_system_env: bool,
     pub env_files: Vec<PathBuf>,
     pub verbose: bool,
 }

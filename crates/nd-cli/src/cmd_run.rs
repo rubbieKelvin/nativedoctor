@@ -1,9 +1,13 @@
 //! `nativedoctor run <FILE>` and top-level `FILE` shorthand: single request, or `run --sequence <FILE>` for sequences.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use nd_core::{
-    env::RuntimeEnv, execute::format::format_prepared_request, model::request::RequestFile,
+    env::RuntimeEnv,
+    execute::format::format_prepared_request,
+    model::request::RequestFile,
+    rhai::{run_rhai_script, Logger},
 };
 
 use crate::{print::print_result, Cli, Command};
@@ -63,6 +67,7 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
         .map_err(|e| e.to_string())?
         .with_persistence(&opts.persistence_file)
         .map_err(|e| e.to_string())?;
+    let logger = Arc::new(Logger::new());
 
     for path in opts.paths.iter() {
         if !path.try_exists().map_err(|e| e.to_string())? {
@@ -78,15 +83,13 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
 
         match ext.as_str() {
             "json" | "yaml" | "yml" => run_request(path, &opts, &runtime).await?,
-            "rhai" => run_script(path, &opts, &runtime).await?,
+            "rhai" => run_script(path, &opts, &runtime, logger.clone()).await?,
             _ => {
                 return Err(String::from(
                     "Invalid file type. only json, yaml, yml, rhai files accepted",
                 ))
             }
         };
-
-        run_request(path, &opts, &runtime).await?;
 
         if !opts.retain_runtime {
             runtime.clear();
@@ -125,7 +128,22 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
     return Ok(());
 }
 
-#[allow(unused)]
-pub async fn run_script(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Result<(), String> {
-    todo!("I havent imlpemented this fearture yet")
+pub async fn run_script(
+    path: &Path,
+    opts: &RunOptions,
+    env: &RuntimeEnv,
+    logger: Arc<Logger>,
+) -> Result<(), String> {
+    if opts.verbose {
+        println!("--- script/{} ---", path.display());
+    }
+
+    if opts.no_network_io {
+        tracing::warn!(
+            path = %path.display(),
+            "--no-network-io is ignored for scripts"
+        );
+    }
+
+    return run_rhai_script(path, env, Some(logger)).map_err(|e| e.to_string());
 }

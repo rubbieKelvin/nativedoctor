@@ -28,5 +28,5 @@ pub fn run_rhai_script(path: &Path, env: &RuntimeEnv, logger: Option<Arc<Logger>
         .map_err(|e| Error::Rhai(e.to_string()))?;
 
     debug!(path = %path.display(), "Rhai post_script finished");
-    Ok(())
+    return Ok(());
 }

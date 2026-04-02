@@ -49,6 +49,7 @@ fn register_log(engine: &mut Engine, logger: Option<Arc<Logger>>, script_label: 
 /// Registers `persist(key, value)` when `persist_file` is set — updates env and `runtime.nativedoctor.json`.
 fn register_persist(engine: &mut Engine, env: &RuntimeEnv) {
     let e = env.clone();
+
     engine.register_fn("persist", move |key: &str, value: Dynamic| {
         let s = value.to_string();
         e.persist(key, &s).map_err(|err| {
@@ -69,9 +70,11 @@ pub(crate) fn create_engine(
     let mut engine = Engine::new();
     let script_label = script_path.display().to_string();
 
+    // register functions
     register_env_fns(&mut engine, env);
     register_assert(&mut engine);
     register_log(&mut engine, logger, script_label);
     register_persist(&mut engine, env);
+
     return engine;
 }

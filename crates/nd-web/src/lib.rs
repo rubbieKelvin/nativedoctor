@@ -27,7 +27,6 @@ pub fn run_web(
 ) -> Result<(), String> {
     config::set_web_config(WebConfig {
         root,
-        no_default_system_env,
         env_files,
         verbose,
     })?;
