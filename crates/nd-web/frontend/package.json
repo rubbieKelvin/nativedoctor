@@ -2,6 +2,7 @@
   "name": "nd-web-ui",
   "private": true,
   "version": "0.2.0",
+  "packageManager": "pnpm@9.15.4",
   "type": "module",
   "scripts": {
     "dev": "vite",

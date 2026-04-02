@@ -1,3 +1,8 @@
+//! Optional standalone binary for the web UI (primary entry is `nativedoctor web` from `nd-cli`).
+//!
+//! Initializes `tracing` from `RUST_LOG` (default `info`), then calls [`nd_web::run_web`] with minimal CLI parsing:
+//! `--bind ADDR` and positional workspace directories (default `.`).
+
 use std::net::SocketAddr;
 use std::path::PathBuf;
 

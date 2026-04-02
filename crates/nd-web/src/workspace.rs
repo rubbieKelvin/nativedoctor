@@ -1,4 +1,8 @@
-//! Aggregate discovery across one or more non-recursive directory roots.
+//! Workspace discovery: aggregate non-recursive listings from one or more directory roots.
+//!
+//! Each root is scanned independently; results are grouped per root so the UI can show labels when
+//! multiple roots are configured. Invalid request files are omitted from the tree but reported in
+//! `skipped_requests`.
 
 use std::path::PathBuf;
 
@@ -10,20 +14,25 @@ use tracing::debug;
 
 use crate::path_sandbox::canonicalize_roots;
 
+/// One configured workspace root after canonicalization.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct RootInfo {
+    /// Stable index matching [`GroupedFiles::root_index`].
     pub index: usize,
+    /// Absolute path string for APIs and display.
     pub path: String,
     /// Short label (directory name) for UI when multiple roots.
     pub label: String,
 }
 
+/// A single discoverable file (request or script) with display name.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct FileEntry {
     pub path: String,
     pub name: String,
 }
 
+/// Files under one root within a category (requests or scripts).
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct GroupedFiles {
     pub root_index: usize,
@@ -31,6 +40,7 @@ pub struct GroupedFiles {
     pub entries: Vec<FileEntry>,
 }
 
+/// Full `GET /api/workspace` payload: two parallel trees (requests vs scripts) plus parse failures.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct WorkspaceSnapshot {
     pub roots: Vec<RootInfo>,
@@ -39,6 +49,7 @@ pub struct WorkspaceSnapshot {
     pub skipped_requests: Vec<SkippedRequestFile>,
 }
 
+/// For each root, list request files and keep only those that load with `RequestFile::from_file`, list `.rhai` scripts, and merge skip diagnostics.
 pub fn build_workspace(roots: &[PathBuf]) -> NdResult<WorkspaceSnapshot> {
     let canon =
         canonicalize_roots(roots).map_err(|e| Error::InvalidRequest(format!("workspace roots: {e}")))?;
@@ -115,8 +126,4 @@ pub fn build_workspace(roots: &[PathBuf]) -> NdResult<WorkspaceSnapshot> {
         scripts: script_groups,
         skipped_requests: all_skipped,
     })
-}
-
-pub fn dist_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("frontend/dist")
 }
