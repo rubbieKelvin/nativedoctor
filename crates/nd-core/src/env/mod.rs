@@ -20,8 +20,6 @@ mod persist;
 /// is true) falls back to `std::env::var` if the key is missing (handles variables added to the
 /// process after construction). [`Self::set_runtime`] only updates the internal map, so Rhai `set`
 /// affects later template resolution within the same run without mutating the OS environment.
-///
-/// Use [`Self::isolated`] for an empty map with no process fallback (e.g. CLI `--no-default-system-env`).
 #[derive(Debug, Clone)]
 pub struct RuntimeEnv {
     // Persistence file

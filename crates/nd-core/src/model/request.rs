@@ -21,24 +21,24 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 fn default_version() -> String {
-    nd_constants::REQUEST_FILE_DEFAULT_VERSION.into()
+    return nd_constants::REQUEST_FILE_DEFAULT_VERSION.into();
 }
 
 fn default_follow_redirects() -> bool {
-    true
+    return true;
 }
 
 fn default_verify_tls() -> bool {
-    true
+    return true;
 }
 
 fn default_deprecated() -> bool {
-    false
+    return false;
 }
 
 // serde helper
 fn is_false(b: &bool) -> bool {
-    !*b
+    return !*b;
 }
 
 /// Root document for a single request file (JSON or YAML).
@@ -53,6 +53,9 @@ pub struct RequestFile {
     #[serde(default)]
     pub name: Option<String>,
     pub request: HttpRequestSpec,
+    /// Set only by [`RequestFile::from_file`]; not part of the on-disk format.
+    #[serde(skip)]
+    #[schemars(skip)]
     pub _path: Option<PathBuf>,
 }
 
@@ -137,9 +140,7 @@ impl RequestFile {
         );
 
         // build client and start timer
-        let prep = self
-            .request
-            .expand_with_overrides(env, var_overrides)?;
+        let prep = self.request.expand_with_overrides(env, var_overrides)?;
         let client = build_client(&self.request)?;
         let start = Instant::now();
 

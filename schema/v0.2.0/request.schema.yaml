@@ -104,10 +104,6 @@ description: |-
 
   `post_script`, when set, is a path string resolved relative to the request file’s directory.
 properties:
-  _path:
-    type:
-    - string
-    - 'null'
   name:
     default: null
     description: Optional human-readable label for logs and UIs (backward compatible when omitted).
