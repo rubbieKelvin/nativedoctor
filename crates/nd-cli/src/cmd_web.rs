@@ -12,5 +12,6 @@ pub fn run(
     verbose: bool,
 ) -> Result<(), String> {
     println!("Running web UI on http://{} (dir: {})", bind, dir.display());
-    nd_web::run_web(dir, bind, no_default_system_env, env_files, verbose)
+    // return nd_web::run_web(dir, bind, no_default_system_env, env_files, verbose);
+    return Ok(());
 }
