@@ -2425,7 +2425,7 @@ dependencies = [
 
 [[package]]
 name = "nd-cli"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "clap",
  "colored",
@@ -2442,11 +2442,11 @@ dependencies = [
 
 [[package]]
 name = "nd-constants"
-version = "0.1.1"
+version = "0.2.0"
 
 [[package]]
 name = "nd-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64",
  "chrono",
@@ -2475,7 +2475,7 @@ dependencies = [
 
 [[package]]
 name = "nd-generate"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "nd-constants",
  "nd-core",
@@ -2490,7 +2490,7 @@ dependencies = [
 
 [[package]]
 name = "nd-web"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "dioxus",
  "nd-core",

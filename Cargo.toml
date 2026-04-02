@@ -9,6 +9,6 @@ default-members = ["crates/nd-cli"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["rubbie kelvin <dev@gmail.com>"]
