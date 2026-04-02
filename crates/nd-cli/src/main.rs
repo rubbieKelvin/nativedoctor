@@ -6,7 +6,6 @@ mod cmd_rhai_definitions;
 mod cmd_run;
 mod cmd_web;
 mod logging;
-mod print;
 
 use std::net::SocketAddr;
 use std::path::PathBuf;

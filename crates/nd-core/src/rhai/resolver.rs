@@ -12,7 +12,7 @@ use rhai::{EvalAltResult, Module, ModuleResolver, Position, Scope, Shared};
 use super::utils::json_to_dynamic;
 use crate::env::RuntimeEnv;
 use crate::error::Error as NdError;
-use crate::execute::types::ExecutionResult;
+use crate::execute::types::{ExecutionResult, PrintOptions};
 use crate::model::request::RequestFile;
 use crate::utils::path::resolve_file_path;
 
@@ -246,14 +246,15 @@ fn execute_request_call(
             doc.execute_with_overrides(env.as_ref(), overrides.as_ref())
                 .await
         })
-    });
-
-    let result = result.map_err(|e: NdError| {
+    })
+    .map_err(|e: NdError| {
         Box::new(EvalAltResult::ErrorRuntime(
             format!("HTTP request failed: {e}").into(),
             pos,
         ))
     })?;
+
+    result.print(PrintOptions::Compact);
 
     return Ok(execution_result_to_dynamic(&result));
 }

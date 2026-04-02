@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use nd_core::execute::types::PrintOptions;
 use nd_core::{
     env::RuntimeEnv,
     execute::format::format_prepared_request,
@@ -10,7 +11,7 @@ use nd_core::{
     rhai::{run_rhai_script, Logger, RhaiScriptRunOptions},
 };
 
-use crate::{print::print_result, Cli, Command};
+use crate::{Cli, Command};
 
 #[derive(Debug, Clone)]
 pub struct RunOptions {
@@ -123,7 +124,12 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
     }
 
     let output = document.execute(&env).await.map_err(|e| e.to_string())?;
-    print_result(&output, opts.verbose)?;
+
+    output.print(if opts.verbose {
+        PrintOptions::Verbose
+    } else {
+        PrintOptions::Normal
+    });
 
     return Ok(());
 }

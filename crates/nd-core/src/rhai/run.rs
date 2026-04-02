@@ -1,4 +1,4 @@
-//! Orchestrate reading a post-script, building [`ResponseCtx`](super::context::ResponseCtx), and running Rhai.
+//! Orchestrate compiling a Rhai script from disk (so `import` sees a real file source) and running it.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -18,21 +18,30 @@ pub fn run_rhai_script(
     logger: Option<Arc<Logger>>,
     script_options: RhaiScriptRunOptions,
 ) -> Result<()> {
-    let source =
-        std::fs::read_to_string(path).map_err(|_| Error::PostScriptNotFound(path.to_path_buf()))?;
+    if !path.is_file() {
+        return Err(Error::PostScriptNotFound(path.to_path_buf()));
+    }
+
+    // Absolute path so module resolution and Rhai's `global.source()` agree on the script directory
+    // regardless of the process working directory.
+    let script_path = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
     debug!(
-        path = %path.display(),
-        "Rhai post_script evaluating"
+        path = %script_path.display(),
+        "Rhai script evaluating"
     );
 
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(env, path, logger, script_options);
+    let engine = create_engine(env, &script_path, logger, script_options);
 
-    engine
-        .run_with_scope(&mut scope, &source)
+    let ast = engine
+        .compile_file_with_scope(&scope, script_path.clone())
         .map_err(|e| Error::Rhai(e.to_string()))?;
 
-    debug!(path = %path.display(), "Rhai post_script finished");
+    engine
+        .run_ast_with_scope(&mut scope, &ast)
+        .map_err(|e| Error::Rhai(e.to_string()))?;
+
+    debug!(path = %script_path.display(), "Rhai script finished");
     return Ok(());
 }

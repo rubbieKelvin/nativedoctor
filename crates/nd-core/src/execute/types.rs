@@ -2,23 +2,16 @@
 
 use std::{path::PathBuf, time::Duration};
 
+use colored::Colorize;
 use reqwest::Method;
 
 use crate::model::request::RequestFile;
 
-// /// Options for [`execute_request_file`](crate::execute::execute_request_file) /
-// /// [`execute_request_with_env`](crate::execute::execute_request_with_env) (mirrors CLI flags).
-// #[derive(Debug, Clone, Default)]
-// pub struct RunOptions {
-//     pub verbose: bool,
-//     /// Skip `post_script` even if the request file defines one.
-//     pub no_post_script: bool,
-//     /// If true, returns immediately without I/O using a synthetic [`ExecutionResult`] (status 0).
-//     pub dry_run: bool,
-//     /// If false, status codes ≥ 400 become [`crate::Error::InvalidRequest`] after the post-script runs
-//     /// ([`OutcomePolicy::SingleRequest`] only, or sequence steps **without** a post-script).
-//     pub allow_error_status: bool,
-// }
+pub enum PrintOptions {
+    Compact,
+    Normal,
+    Verbose,
+}
 
 /// Outcome of a real HTTP call (or a synthetic row for dry-run — see field docs).
 #[derive(Debug, Clone)]
@@ -38,6 +31,72 @@ pub struct ExecutionResult {
     pub doc: RequestFile,
     /// The script that triggered the call to this request
     pub initiator_script: Option<PathBuf>,
+}
+
+impl ExecutionResult {
+    pub fn print(&self, style: PrintOptions) {
+        let label = self.request_name.as_deref().unwrap_or_default();
+
+        match style {
+            PrintOptions::Compact => {
+                println!(
+                    "[{}・{}] {} ({:?})",
+                    self.method.as_str().red(),
+                    self.final_url,
+                    self.status,
+                    self.duration
+                );
+            }
+            PrintOptions::Normal | PrintOptions::Verbose => {
+                println!(
+                    "{}{} {} -> {} ({:?})",
+                    self.method, label, self.final_url, self.status, self.duration
+                );
+
+                if matches!(style, PrintOptions::Verbose) {
+                    let hdrs = &self
+                        .headers
+                        .iter()
+                        .map(|(k, v)| {
+                            if k.eq_ignore_ascii_case("authorization") {
+                                (k.clone(), "<redacted>".to_string())
+                            } else {
+                                (k.clone(), v.clone())
+                            }
+                        })
+                        .collect::<Vec<(String, String)>>();
+
+                    for (k, v) in hdrs {
+                        println!("{k}: {v}");
+                    }
+
+                    println!();
+                }
+
+                let body = &self.body;
+
+                if body.is_empty() {
+                    return;
+                }
+
+                if let Ok(text) = std::str::from_utf8(body) {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(text) {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&v).unwrap_or_else(|_| text.to_string())
+                        );
+                    } else {
+                        print!("{text}");
+                        if !text.ends_with('\n') {
+                            println!();
+                        }
+                    }
+                } else {
+                    println!("<{} bytes binary>", body.len());
+                }
+            }
+        };
+    }
 }
 
 /// Fully expanded, ready-to-send request (templates applied).
