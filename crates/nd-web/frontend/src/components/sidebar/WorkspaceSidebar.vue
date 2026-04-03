@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import RuntimeEnvPanel from "@/components/env/RuntimeEnvPanel.vue";
 import type { WorkspaceSnapshot } from "@/api";
 
 defineProps<{
@@ -17,17 +16,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <aside
-        class="flex w-56 shrink-0 flex-col border-r border-border bg-background"
-    >
+    <aside class="flex h-full min-h-0 min-w-0 flex-col border-r border-border bg-background">
         <div
-            class="flex items-center justify-between gap-1 border-b border-border px-2 py-1.5"
+            class="flex items-center border-b border-border px-2 py-1.5"
         >
             <span
                 class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
                 >NativeDoctor</span
             >
-            <RuntimeEnvPanel />
         </div>
         <div v-if="loadErr" class="p-2 text-sm text-destructive">
             {{ loadErr }}

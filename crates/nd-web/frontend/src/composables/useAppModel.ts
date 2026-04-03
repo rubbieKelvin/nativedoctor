@@ -2,10 +2,12 @@ import { computed, reactive, ref } from "vue";
 import YAML from "yaml";
 import {
     fetchFile,
+    fetchRuntimeEnv,
     fetchWorkspace,
     runScript,
     sendHttp,
     type ExecutionResultDto,
+    type RuntimeEnvEntry,
     type WorkspaceSnapshot,
 } from "@/api";
 import type { EditorTab, ReqSubTab } from "@/types/editor";
@@ -34,6 +36,9 @@ export function useAppModel() {
     >([]);
     const scriptRunError = ref<string | null>(null);
     const bodyView = ref<"pretty" | "raw">("pretty");
+    const runtimeEnvEntries = ref<RuntimeEnvEntry[]>([]);
+    const runtimeEnvErr = ref<string | null>(null);
+    const runtimeEnvLoading = ref(false);
 
     const activeTab = computed(
         () => tabs.value.find((t) => t.id === activeId.value) ?? null,
@@ -61,6 +66,20 @@ export function useAppModel() {
     function syncDoc(tab: EditorTab): void {
         tab.doc = parseRaw(tab.raw, tab.ext);
         tab.parseError = tab.doc ? null : "Invalid JSON/YAML";
+    }
+
+    async function refreshRuntimeEnv() {
+        runtimeEnvLoading.value = true;
+        runtimeEnvErr.value = null;
+        try {
+            const r = await fetchRuntimeEnv();
+            runtimeEnvEntries.value = r.entries;
+        } catch (e) {
+            runtimeEnvErr.value = e instanceof Error ? e.message : String(e);
+            runtimeEnvEntries.value = [];
+        } finally {
+            runtimeEnvLoading.value = false;
+        }
     }
 
     async function loadWorkspace() {
@@ -222,6 +241,7 @@ export function useAppModel() {
             sendErr.value = e instanceof Error ? e.message : String(e);
         } finally {
             sending.value = false;
+            void refreshRuntimeEnv();
         }
     }
 
@@ -240,6 +260,7 @@ export function useAppModel() {
             sendErr.value = e instanceof Error ? e.message : String(e);
         } finally {
             sending.value = false;
+            void refreshRuntimeEnv();
         }
     }
 
@@ -378,6 +399,10 @@ export function useAppModel() {
         scriptLogs,
         scriptRunError,
         bodyView,
+        runtimeEnvEntries,
+        runtimeEnvErr,
+        runtimeEnvLoading,
+        refreshRuntimeEnv,
         openFile,
         closeTab,
         requestSpec,

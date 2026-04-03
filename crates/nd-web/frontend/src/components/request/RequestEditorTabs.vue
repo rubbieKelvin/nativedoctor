@@ -14,7 +14,10 @@ defineProps<{
 </script>
 
 <template>
-    <Tabs v-model="app.reqSubTab" class="flex min-h-0 flex-1 flex-col gap-0">
+    <Tabs
+        v-model="app.reqSubTab"
+        class="flex min-h-0 min-w-0 flex-1 flex-col gap-0"
+    >
         <TabsList
             class="h-9 w-full shrink-0 justify-start rounded-none border-b border-border bg-background px-2"
         >
@@ -25,7 +28,7 @@ defineProps<{
             <TabsTrigger value="auth" class="text-xs">Auth</TabsTrigger>
         </TabsList>
 
-        <div class="min-h-0 flex-1 overflow-auto p-2">
+        <div class="min-h-0 min-w-0 flex-1 overflow-auto p-2">
             <p
                 v-if="app.activeTab?.parseError"
                 class="mb-2 text-sm text-destructive"
@@ -38,7 +41,7 @@ defineProps<{
                     <CardContent class="p-2 pt-3">
                         <textarea
                             v-model="app.queryJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] shadow-sm focus-visible:outline-none focus-visible:ring-1"
+                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
                             spellcheck="false"
                         />
                     </CardContent>
@@ -50,7 +53,7 @@ defineProps<{
                     <CardContent class="p-2 pt-3">
                         <textarea
                             v-model="app.headersJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] shadow-sm focus-visible:outline-none focus-visible:ring-1"
+                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
                             spellcheck="false"
                         />
                     </CardContent>
@@ -62,7 +65,7 @@ defineProps<{
                     <CardContent class="p-2 pt-3">
                         <textarea
                             v-model="app.bodyText"
-                            class="border-input bg-background focus-visible:ring-ring h-48 w-full resize-y rounded-md border p-2 font-mono text-[11px] shadow-sm focus-visible:outline-none focus-visible:ring-1"
+                            class="border-input bg-background focus-visible:ring-ring h-48 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
                             spellcheck="false"
                         />
                     </CardContent>
@@ -86,7 +89,7 @@ defineProps<{
                         </p>
                         <textarea
                             v-model="app.overridesJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] shadow-sm focus-visible:outline-none focus-visible:ring-1"
+                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
                             spellcheck="false"
                             placeholder='{ "ID": "42", "TOKEN": "secret" }'
                         />

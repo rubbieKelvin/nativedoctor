@@ -27,12 +27,15 @@ onMounted(() => {
 
         <div
             v-if="!app.activeTab"
-            class="text-muted-foreground flex flex-1 items-center justify-center text-sm"
+            class="text-muted-foreground flex min-h-0 flex-1 items-center justify-center p-8 text-sm"
         >
             Select a request or script from the sidebar
         </div>
 
-        <template v-else>
+        <div
+            v-else
+            class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+        >
             <EditorTabBar
                 :tabs="app.tabs"
                 :active-id="app.activeId"
@@ -44,6 +47,6 @@ onMounted(() => {
                 :app="app"
             />
             <ScriptWorkspace v-else :app="app" />
-        </template>
+        </div>
     </AppLayout>
 </template>

@@ -2,14 +2,14 @@
 import { computed, ref } from "vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Table,
@@ -19,6 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { ChevronDown } from "lucide-vue-next";
 
 const props = defineProps<{
     logs: { level: string; message: string; elapsed_ms: number }[];
@@ -26,7 +27,7 @@ const props = defineProps<{
 }>();
 
 const filterText = ref("");
-const levelFilter = ref<"all" | string>("all");
+const levelFilter = ref<string>("all");
 
 const filtered = computed(() => {
     let rows = props.logs;
@@ -52,6 +53,11 @@ const levels = computed(() => {
     return Array.from(s).sort();
 });
 
+const levelLabel = computed(() => {
+    if (levelFilter.value === "all") return "All levels";
+    return levelFilter.value;
+});
+
 function badgeVariant(
     level: string,
 ): "default" | "secondary" | "destructive" | "outline" {
@@ -63,43 +69,52 @@ function badgeVariant(
 
 function copyAll() {
     const text = filtered.value
-        .map(
-            (l) =>
-                `${l.elapsed_ms}ms [${l.level}] ${l.message}`,
-        )
+        .map((l) => `${l.elapsed_ms}ms [${l.level}] ${l.message}`)
         .join("\n");
     void navigator.clipboard.writeText(text);
 }
 </script>
 
 <template>
-    <div
-        class="flex min-h-[10rem] max-h-[42vh] flex-col border-t border-border bg-muted/30"
-    >
+    <div class="flex min-h-0 flex-1 flex-col bg-background">
         <div
             class="flex flex-wrap items-center gap-2 border-b border-border px-2 py-1.5"
         >
-            <span class="text-xs font-semibold">Script output</span>
             <Input
                 v-model="filterText"
                 class="h-7 max-w-xs font-mono text-xs"
                 placeholder="Filter messages…"
             />
-            <Select v-model="levelFilter">
-                <SelectTrigger class="h-7 w-[7.5rem] text-xs">
-                    <SelectValue placeholder="Level" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All levels</SelectItem>
-                    <SelectItem
-                        v-for="lv in levels"
-                        :key="lv"
-                        :value="lv"
+            <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class="h-7 min-w-[8.5rem] justify-between gap-1 text-xs"
                     >
-                        {{ lv }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
+                        {{ levelLabel }}
+                        <ChevronDown class="h-3.5 w-3.5 opacity-60" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" class="min-w-[10rem]">
+                    <DropdownMenuRadioGroup v-model="levelFilter">
+                        <DropdownMenuRadioItem
+                            value="all"
+                            class="text-xs"
+                        >
+                            All levels
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem
+                            v-for="lv in levels"
+                            :key="lv"
+                            :value="lv"
+                            class="text-xs"
+                        >
+                            {{ lv }}
+                        </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <Button
                 size="sm"
                 variant="secondary"
@@ -109,9 +124,12 @@ function copyAll() {
             >
                 Copy all
             </Button>
-            <Badge v-if="error" variant="destructive" class="text-[10px]">{{
-                error
-            }}</Badge>
+            <Badge
+                v-if="error"
+                variant="destructive"
+                class="text-[10px]"
+                >{{ error }}</Badge
+            >
         </div>
         <ScrollArea class="min-h-0 flex-1">
             <Table>
@@ -144,9 +162,10 @@ function copyAll() {
                                 >{{ row.level }}</Badge
                             >
                         </TableCell>
-                        <TableCell class="whitespace-pre-wrap break-all align-top">{{
-                            row.message
-                        }}</TableCell>
+                        <TableCell
+                            class="whitespace-pre-wrap break-all align-top"
+                            >{{ row.message }}</TableCell
+                        >
                     </TableRow>
                 </TableBody>
             </Table>
