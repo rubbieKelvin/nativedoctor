@@ -33,6 +33,8 @@ fn main() {
         "pnpm-lock.yaml",
         "vite.config.ts",
         "tsconfig.json",
+        "components.json",
+        "tsconfig.json",
         "tsconfig.node.json",
         "index.html",
     ] {

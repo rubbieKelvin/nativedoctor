@@ -76,6 +76,20 @@ impl RuntimeEnv {
         g.clear();
     }
 
+    /// All key–value pairs currently stored in the in-memory runtime map, sorted by key.
+    ///
+    /// This reflects merged `.env` files, persistence merges, and Rhai `set` updates. It is **not**
+    /// a dump of the OS process environment unless those variables were loaded into this map.
+    pub fn entries(&self) -> Vec<(String, String)> {
+        let g = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let mut out: Vec<(String, String)> = g
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        return out;
+    }
+
     /// Merge a map into the runtime map (e.g. sequence [`crate::model::SequenceFile::initial_variables`]).
     /// Later keys override earlier ones for the same key.
     pub fn merge_runtime_map(&self, vars: &HashMap<String, String>) {
@@ -156,5 +170,21 @@ mod tests {
         env.merge_env_file(tmp.path()).unwrap();
         assert_eq!(env.get("FOO").as_deref(), Some("2"));
         assert_eq!(env.get("BAR").as_deref(), Some("x y"));
+    }
+
+    #[test]
+    fn entries_sorted_by_key() {
+        let env = RuntimeEnv::new();
+        env.set("zebra", "z");
+        env.set("alpha", "a");
+        env.set("mid", "m");
+        assert_eq!(
+            env.entries(),
+            vec![
+                ("alpha".into(), "a".into()),
+                ("mid".into(), "m".into()),
+                ("zebra".into(), "z".into()),
+            ]
+        );
     }
 }

@@ -8,6 +8,7 @@
 //! | GET | `/file?path=` | Raw file text for the editor (sandboxed to roots) |
 //! | POST | `/requests/send` | Run a request (from disk or inline JSON document) |
 //! | POST | `/scripts/run` | Run a Rhai script under `nd-core` semantics |
+//! | GET | `/runtime-env` | Snapshot of [`nd_core::env::RuntimeEnv`] entries (sorted by key) |
 //!
 //! Non-API paths are served from [`crate::embed`] (SPA fallback to `index.html`).
 
@@ -24,6 +25,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::embed::embedded_static_response;
 
+pub mod env;
 pub mod file;
 pub mod script;
 pub mod send;
@@ -54,6 +56,7 @@ pub fn api_router(state: AppState) -> Router {
     Router::new()
         .route("/workspace", get(workspace::get_workspace))
         .route("/file", get(file::get_file))
+        .route("/runtime-env", get(env::get_runtime_env))
         .route("/requests/send", post(send::post_send))
         .route("/scripts/run", post(script::post_script_run))
         .with_state(state)
