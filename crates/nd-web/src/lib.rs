@@ -1,6 +1,9 @@
-//! Local HTTP server for the NativeDoctor web UI: JSON API plus a Vue SPA shipped as embedded static assets.
+//! Local HTTP server for the NativeDoctor web UI: JSON API plus a Vue SPA.
 //!
-//! The SPA is built by this crate's `build.rs` (`pnpm build` → `frontend/dist`) and embedded with the `rust-embed` crate.
+//! **Release** builds embed `frontend/dist` via `rust-embed`. **Debug** builds serve the same files from
+//! disk (see [`embed`]) so development binaries do not embed asset contents. The crate `build.rs` runs
+//! `pnpm build` when needed; see its module docs for profile-specific behaviour.
+//!
 //! Run the binary via **`nativedoctor web`** from `nd-cli`, or depend on this crate from other tools.
 
 mod api;

@@ -1,11 +1,16 @@
-//! Builds the Vue frontend into `frontend/dist` before `rustc` runs so [`rust_embed::RustEmbed`] can pack assets.
+//! Builds the Vue frontend into `frontend/dist` when needed so the server can serve the SPA.
 //!
 //! # Behaviour
 //!
-//! - By default runs **`pnpm install --frozen-lockfile`** (when `pnpm-lock.yaml` exists) then **`pnpm build`**
-//!   in [`frontend/`], producing `frontend/dist/`.
-//! - Set **`ND_WEB_SKIP_FRONTEND_BUILD=1`** to skip those steps (e.g. offline or pre-populated `dist/`).
-//!   In that case **`frontend/dist/index.html` must already exist** or this script panics.
+//! - **Release (`PROFILE=release`):** runs **`pnpm install`** (with `--frozen-lockfile` when
+//!   `pnpm-lock.yaml` exists) then **`pnpm build`**, producing `frontend/dist/`, which is **embedded**
+//!   into the binary via [`rust_embed::RustEmbed`].
+//! - **Debug (`PROFILE=debug`):** does **not** embed assets; the app serves files from
+//!   `frontend/dist/` at runtime. To keep rebuilds fast, **`pnpm build` is skipped** when
+//!   `frontend/dist/index.html` already exists. If `dist/` is missing (fresh clone), this script runs
+//!   `pnpm install` + `pnpm build` once so `cargo test` and `cargo run` can find assets.
+//! - Set **`ND_WEB_SKIP_FRONTEND_BUILD=1`** to skip `pnpm` entirely. Then **`frontend/dist/index.html`**
+//!   must already exist or this script panics.
 //!
 //! # Rebuild triggers
 //!
@@ -20,6 +25,8 @@ fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let frontend = manifest_dir.join("frontend");
     let dist_index = frontend.join("dist/index.html");
+    // let profile = env::var("PROFILE").unwrap_or_default();
+    // let is_release = profile == "release";
 
     // rebuild if we change build
     println!(
@@ -63,10 +70,21 @@ fn main() {
         return;
     }
 
+    // let force_frontend = env::var("ND_WEB_FORCE_FRONTEND_BUILD").ok().as_deref() == Some("1");
+
+    // if !is_release && dist_index.is_file() && !force_frontend {
+    //     // Debug: dist already built — skip pnpm for fast Rust iteration; assets are read from disk, not embedded.
+    //     return;
+    // }
+
+    run_pnpm_frontend_build(&frontend, &dist_index);
+}
+
+fn run_pnpm_frontend_build(frontend: &std::path::Path, dist_index: &std::path::Path) {
     // install front end packages with pnpm
     let mut install = Command::new("pnpm");
     install
-        .current_dir(&frontend)
+        .current_dir(frontend)
         .arg("install")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
@@ -91,7 +109,7 @@ fn main() {
 
     // build frontend
     let status = Command::new("pnpm")
-        .current_dir(&frontend)
+        .current_dir(frontend)
         .args(["run", "build"])
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
