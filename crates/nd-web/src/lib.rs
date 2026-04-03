@@ -16,7 +16,7 @@ use axum::Router;
 use nd_core::env::RuntimeEnv;
 use tracing::info;
 
-pub use api::{app_router, AppState};
+pub use api::{api_router, app_router, AppState};
 
 /// Configuration for [`run_web`], mirroring global `nativedoctor` CLI flags for the `web` subcommand.
 pub struct WebServerOptions {
