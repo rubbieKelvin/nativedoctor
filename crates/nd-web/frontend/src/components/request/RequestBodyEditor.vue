@@ -33,7 +33,10 @@ const BODY_OPTIONS: { value: BodyKindUi; label: string }[] = [
     { value: "graphql", label: "GraphQL" },
     { value: "text", label: "Plain text" },
     { value: "xml", label: "XML" },
-    { value: "x_www_form_urlencoded", label: "URL-encoded (x-www-form-urlencoded)" },
+    {
+        value: "x_www_form_urlencoded",
+        label: "URL-encoded (x-www-form-urlencoded)",
+    },
     { value: "form_data", label: "Multipart (form-data)" },
     { value: "binary", label: "Binary (base64 in content)" },
     { value: "other", label: "Other" },
@@ -49,11 +52,7 @@ const STRING_KINDS: ReadonlySet<BodyKindUi> = new Set([
     "binary",
 ]);
 
-const ALL_KINDS = new Set<BodyKindUi>([
-    "none",
-    ...JSON_KINDS,
-    ...STRING_KINDS,
-]);
+const ALL_KINDS = new Set<BodyKindUi>(["none", ...JSON_KINDS, ...STRING_KINDS]);
 
 function isStructuredBody(
     body: unknown,
@@ -109,7 +108,10 @@ function defaultContentForKind(kind: BodyKindUi): unknown {
     return null;
 }
 
-function structuredBody(kind: BodyKindUi, content: unknown): Record<string, unknown> {
+function structuredBody(
+    kind: BodyKindUi,
+    content: unknown,
+): Record<string, unknown> {
     return { type: kind, content };
 }
 
@@ -152,9 +154,7 @@ const localJson = ref("");
 const localString = ref("");
 const jsonError = ref<string | null>(null);
 
-const inferredKind = computed(() =>
-    inferKind(props.app.requestSpec?.body),
-);
+const inferredKind = computed(() => inferKind(props.app.requestSpec?.body));
 
 function applyBody(body: unknown) {
     const req = props.app.ensureRequestDoc();
@@ -228,8 +228,7 @@ function commitJson() {
         try {
             parsed = JSON.parse(raw) as unknown;
         } catch (e) {
-            jsonError.value =
-                e instanceof Error ? e.message : "Invalid JSON";
+            jsonError.value = e instanceof Error ? e.message : "Invalid JSON";
             return;
         }
     }
@@ -269,12 +268,16 @@ const hint = computed(() => {
 </script>
 
 <template>
-    <Card>
-        <CardContent class="space-y-3 p-2 pt-3">
-            <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                <span class="text-muted-foreground shrink-0 text-[11px] font-medium"
-                    >Body type</span
+    <Card class="h-full border-none!">
+        <CardContent class="space-y-3 h-full flex flex-col gap-1 p-0!">
+            <div
+                class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3"
+            >
+                <span
+                    class="text-muted-foreground shrink-0 text-[11px] font-medium"
                 >
+                    Body type
+                </span>
                 <Select
                     :model-value="inferredKind"
                     @update:model-value="onKindChange"
@@ -302,13 +305,13 @@ const hint = computed(() => {
             <template v-if="JSON_KINDS.has(inferredKind)">
                 <textarea
                     v-model="localJson"
-                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
+                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1 grow"
                     spellcheck="false"
                     @blur="commitJson"
                 />
-                <p v-if="jsonError" class="text-sm text-destructive">{{
-                    jsonError
-                }}</p>
+                <p v-if="jsonError" class="text-sm text-destructive">
+                    {{ jsonError }}
+                </p>
                 <p class="text-muted-foreground text-[11px]">
                     JSON is validated on blur. Use a valid JSON value or object
                     (GraphQL often uses
@@ -320,7 +323,7 @@ const hint = computed(() => {
             <template v-else-if="STRING_KINDS.has(inferredKind)">
                 <textarea
                     v-model="localString"
-                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
+                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1 h-full"
                     spellcheck="false"
                 />
             </template>

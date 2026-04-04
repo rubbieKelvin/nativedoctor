@@ -33,19 +33,19 @@ defineProps<{
                 {{ app.activeTab.parseError }} — fix document
             </p>
 
-            <TabsContent value="params" class="mt-0">
+            <TabsContent value="params" class="mt-0 h-full">
                 <KeyValueEditor v-model="app.queryRecord" />
             </TabsContent>
 
-            <TabsContent value="headers" class="mt-0">
+            <TabsContent value="headers" class="mt-0 h-full">
                 <KeyValueEditor v-model="app.headersRecord" />
             </TabsContent>
 
-            <TabsContent value="body" class="mt-0">
+            <TabsContent value="body" class="mt-0 h-full">
                 <RequestBodyEditor :app="app" />
             </TabsContent>
 
-            <TabsContent value="input" class="mt-0">
+            <TabsContent value="input" class="mt-0 h-full">
                 <p
                     v-if="app.overridesJsonError"
                     class="text-sm text-destructive"
@@ -55,7 +55,7 @@ defineProps<{
                 <KeyValueEditor v-model="app.overridesRecord" />
             </TabsContent>
 
-            <TabsContent value="auth" class="mt-0">
+            <TabsContent value="auth" class="mt-0 h-full">
                 <p class="text-muted-foreground text-xs">
                     Use <strong>Headers</strong> for
                     <code class="rounded bg-muted px-1">Authorization</code>, or
