@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import type { AppModel } from "@/composables/useAppModel";
+import KeyValueEditor from "@/components/request/KeyValueEditor.vue";
+import RequestBodyEditor from "@/components/request/RequestBodyEditor.vue";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 defineProps<{
     app: AppModel;
@@ -37,71 +34,32 @@ defineProps<{
             </p>
 
             <TabsContent value="params" class="mt-0">
-                <Card>
-                    <CardContent class="p-2 pt-3">
-                        <textarea
-                            v-model="app.queryJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
-                            spellcheck="false"
-                        />
-                    </CardContent>
-                </Card>
+                <KeyValueEditor v-model="app.queryRecord" />
             </TabsContent>
 
             <TabsContent value="headers" class="mt-0">
-                <Card>
-                    <CardContent class="p-2 pt-3">
-                        <textarea
-                            v-model="app.headersJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
-                            spellcheck="false"
-                        />
-                    </CardContent>
-                </Card>
+                <KeyValueEditor v-model="app.headersRecord" />
             </TabsContent>
 
             <TabsContent value="body" class="mt-0">
-                <Card>
-                    <CardContent class="p-2 pt-3">
-                        <textarea
-                            v-model="app.bodyText"
-                            class="border-input bg-background focus-visible:ring-ring h-48 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
-                            spellcheck="false"
-                        />
-                    </CardContent>
-                </Card>
+                <RequestBodyEditor :app="app" />
             </TabsContent>
 
             <TabsContent value="input" class="mt-0">
-                <Card>
-                    <CardContent class="space-y-2 p-2 pt-3">
-                        <p class="text-muted-foreground text-[11px] leading-snug">
-                            JSON object of per-send variable overrides (merged
-                            with runtime env; same as CLI). Stringify values;
-                            applied to URL, headers, and body template
-                            expansion.
-                        </p>
-                        <p
-                            v-if="app.overridesJsonError"
-                            class="text-sm text-destructive"
-                        >
-                            {{ app.overridesJsonError }}
-                        </p>
-                        <textarea
-                            v-model="app.overridesJson"
-                            class="border-input bg-background focus-visible:ring-ring h-40 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1"
-                            spellcheck="false"
-                            placeholder='{ "ID": "42", "TOKEN": "secret" }'
-                        />
-                    </CardContent>
-                </Card>
+                <p
+                    v-if="app.overridesJsonError"
+                    class="text-sm text-destructive"
+                >
+                    {{ app.overridesJsonError }}
+                </p>
+                <KeyValueEditor v-model="app.overridesRecord" />
             </TabsContent>
 
             <TabsContent value="auth" class="mt-0">
                 <p class="text-muted-foreground text-xs">
                     Use <strong>Headers</strong> for
-                    <code class="rounded bg-muted px-1">Authorization</code>,
-                    or reference runtime variables in the URL/body.
+                    <code class="rounded bg-muted px-1">Authorization</code>, or
+                    reference runtime variables in the URL/body.
                 </p>
             </TabsContent>
         </div>

@@ -4,10 +4,11 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { SidebarProvider } from "@/components/ui/sidebar";
 </script>
 
 <template>
-    <div class="flex h-full min-h-0 font-mono text-xs">
+    <SidebarProvider class="flex h-full min-h-0 font-mono text-xs">
         <ResizablePanelGroup
             id="nd-app-shell"
             direction="horizontal"
@@ -20,12 +21,10 @@ import {
             <ResizableHandle with-handle />
             <ResizablePanel :default-size="80" :min-size="40">
                 <!-- Panel is a flex item, not a flex container: fill it with h-full so nested flex-1 chains work -->
-                <div
-                    class="flex h-full min-h-0 min-w-0 flex-col bg-muted/15"
-                >
+                <div class="flex h-full min-h-0 min-w-0 flex-col bg-muted/15">
                     <slot />
                 </div>
             </ResizablePanel>
         </ResizablePanelGroup>
-    </div>
+    </SidebarProvider>
 </template>

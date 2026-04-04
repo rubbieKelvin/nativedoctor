@@ -170,6 +170,37 @@ export function useAppModel() {
         t.raw = serializeDoc(t);
     }
 
+/** Flatten overrides JSON to a string map for the KeyValue editor; invalid → {}. */
+    function parseOverridesToRecord(raw: string): Record<string, string> {
+        const s = raw.trim();
+        if (s === "" || s === "{}") {
+            return {};
+        }
+        try {
+            const o = JSON.parse(s) as unknown;
+            if (o === null || typeof o !== "object" || Array.isArray(o)) {
+                return {};
+            }
+            const out: Record<string, string> = {};
+            for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+                if (v === null || v === undefined) {
+                    out[k] = "";
+                } else if (
+                    typeof v === "string" ||
+                    typeof v === "number" ||
+                    typeof v === "boolean"
+                ) {
+                    out[k] = String(v);
+                } else {
+                    return {};
+                }
+            }
+            return out;
+        } catch {
+            return {};
+        }
+    }
+
     function parseOverridesForSend(
         raw: string,
     ): { ok: true; overrides: Record<string, string> } | { ok: false; message: string } {
@@ -264,80 +295,65 @@ export function useAppModel() {
         }
     }
 
-    const queryJson = computed({
-        get() {
-            const r = requestSpec.value;
-            const q = (r?.query as Record<string, string> | undefined) ?? {};
-            return JSON.stringify(q, null, 2);
-        },
-        set(v: string) {
-            const req = ensureRequestDoc();
-            if (!req) return;
-            try {
-                req.query = JSON.parse(v) as unknown;
-            } catch {
-                /* keep previous */
-            }
-            applyRequestField();
-        },
-    });
-
-    const headersJson = computed({
-        get() {
-            const r = requestSpec.value;
-            const h =
-                (r?.headers as Record<string, string> | undefined) ?? {};
-            return JSON.stringify(h, null, 2);
-        },
-        set(v: string) {
-            const req = ensureRequestDoc();
-            if (!req) return;
-            try {
-                req.headers = JSON.parse(v) as unknown;
-            } catch {
-                /* keep previous */
-            }
-            applyRequestField();
-        },
-    });
-
-    const bodyText = computed({
-        get() {
-            const r = requestSpec.value;
-            if (!r?.body) return "";
-            try {
-                return JSON.stringify(r.body, null, 2);
-            } catch {
-                return String(r.body);
-            }
-        },
-        set(v: string) {
-            const req = ensureRequestDoc();
-            if (!req) return;
-            const t = v.trim();
-            if (!t) {
-                req.body = undefined;
+    function recordFromQueryish(
+        src: Record<string, unknown> | undefined,
+    ): Record<string, string> {
+        const out: Record<string, string> = {};
+        if (!src || typeof src !== "object") return out;
+        for (const [k, v] of Object.entries(src)) {
+            if (v === null || v === undefined) {
+                out[k] = "";
+            } else if (
+                typeof v === "string" ||
+                typeof v === "number" ||
+                typeof v === "boolean"
+            ) {
+                out[k] = String(v);
             } else {
-                try {
-                    req.body = JSON.parse(t) as unknown;
-                } catch {
-                    req.body = t;
-                }
+                out[k] = JSON.stringify(v);
             }
+        }
+        return out;
+    }
+
+    const queryRecord = computed({
+        get() {
+            const r = requestSpec.value;
+            const q = r?.query as Record<string, unknown> | undefined;
+            return recordFromQueryish(q);
+        },
+        set(rec: Record<string, string>) {
+            const req = ensureRequestDoc();
+            if (!req) return;
+            req.query = { ...rec };
             applyRequestField();
         },
     });
 
-    const overridesJson = computed({
+    const headersRecord = computed({
+        get() {
+            const r = requestSpec.value;
+            const h = r?.headers as Record<string, unknown> | undefined;
+            return recordFromQueryish(h);
+        },
+        set(rec: Record<string, string>) {
+            const req = ensureRequestDoc();
+            if (!req) return;
+            req.headers = { ...rec };
+            applyRequestField();
+        },
+    });
+
+    const overridesRecord = computed({
         get() {
             const t = activeTab.value;
-            if (!t || t.kind !== "request") return "{}";
-            return t.overridesJson;
+            if (!t || t.kind !== "request") return {};
+            return parseOverridesToRecord(t.overridesJson);
         },
-        set(v: string) {
+        set(rec: Record<string, string>) {
             const t = activeTab.value;
             if (!t || t.kind !== "request") return;
-            t.overridesJson = v;
+            t.overridesJson = JSON.stringify(rec, null, 2);
         },
     });
 
@@ -410,10 +426,9 @@ export function useAppModel() {
         applyRequestField,
         doSend,
         doRunScript,
-        queryJson,
-        headersJson,
-        bodyText,
-        overridesJson,
+        queryRecord,
+        headersRecord,
+        overridesRecord,
         overridesJsonError,
         prettyResponse,
         scriptRaw,

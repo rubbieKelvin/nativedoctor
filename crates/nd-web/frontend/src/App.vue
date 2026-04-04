@@ -2,7 +2,7 @@
 import { onMounted } from "vue";
 import { useAppModel } from "@/composables/useAppModel";
 import AppLayout from "@/components/layout/AppLayout.vue";
-import WorkspaceSidebar from "@/components/sidebar/WorkspaceSidebar.vue";
+import AppSideBar from "@/components/sidebar/AppSideBar.vue";
 import EditorTabBar from "@/components/editor/EditorTabBar.vue";
 import RequestWorkspace from "@/components/request/RequestWorkspace.vue";
 import ScriptWorkspace from "@/components/script/ScriptWorkspace.vue";
@@ -17,7 +17,7 @@ onMounted(() => {
 <template>
     <AppLayout>
         <template #sidebar>
-            <WorkspaceSidebar
+            <AppSideBar
                 :workspace="app.workspace"
                 :load-err="app.loadErr"
                 :active-id="app.activeId"
