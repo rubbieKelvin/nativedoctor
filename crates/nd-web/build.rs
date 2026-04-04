@@ -112,6 +112,8 @@ fn build_fe_on_release(frontend: &std::path::Path, dist_index: &std::path::Path)
         .args(["run", "build"])
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
+        .env("VITE_NATIVEDOCTOR_VERSION", env!("CARGO_PKG_VERSION"))
+        .env("VITE_NATIVEDOCTOR_API_ENDPOINT", "")
         .status()
         .unwrap_or_else(|e| {
             panic!(
@@ -119,6 +121,7 @@ fn build_fe_on_release(frontend: &std::path::Path, dist_index: &std::path::Path)
                 frontend.display()
             );
         });
+
     if !status.success() {
         panic!(
             "`pnpm run build` failed with status {status} in {}",

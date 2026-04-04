@@ -93,7 +93,7 @@ pub async fn run_web(opts: WebServerOptions) -> anyhow::Result<()> {
 
     // vite server proccess will shut down when we drop this variable
     #[cfg(debug_assertions)]
-    let _vite_dev = match vite::maybe_start_vite_dev(opts.bind)? {
+    let _vite_dev = match vite::maybe_start_vite_dev(&opts.bind)? {
         Some(guard) => {
             info!(
                 vite = "http://127.0.0.1:5173",

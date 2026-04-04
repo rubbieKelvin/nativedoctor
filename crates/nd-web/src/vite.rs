@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 
 use nd_constants::VERSION;
+use std::net::SocketAddr;
 
 const SKIP_ENV: &str = "ND_WEB_SKIP_VITE_DEV";
 
@@ -23,7 +24,14 @@ fn frontend_dir() -> PathBuf {
     return PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("frontend");
 }
 
-fn spawn_pnpm_dev(api_endpoint: &str) -> anyhow::Result<Child> {
+fn spawn_pnpm_dev(api_endpoint: &SocketAddr) -> anyhow::Result<Child> {
+    let api = api_endpoint.to_string();
+
+    #[cfg(debug_assertions)]
+    println!(
+        "Debug UI (Vite HMR): http://127.0.0.1:5173 — proxied to this API. Set ND_WEB_SKIP_VITE_DEV=1 to skip auto `pnpm dev`."
+    );
+
     let frontend = frontend_dir();
     // return Command::new(format!("VITE_NATIVEDOCTOR_VERSION={} pnpm", VERSION))
     return Command::new("pnpm")
@@ -33,7 +41,7 @@ fn spawn_pnpm_dev(api_endpoint: &str) -> anyhow::Result<Child> {
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .env("VITE_NATIVEDOCTOR_VERSION", VERSION)
-        .env("VITE_NATIVEDOCTOR_API_ENDPOINT", api_endpoint)
+        .env("VITE_NATIVEDOCTOR_API_ENDPOINT", format!("http://{api}"))
         .spawn()
         .map_err(|e| {
             anyhow::anyhow!(
@@ -44,7 +52,7 @@ fn spawn_pnpm_dev(api_endpoint: &str) -> anyhow::Result<Child> {
 }
 
 /// Spawns Vite unless `ND_WEB_SKIP_VITE_DEV=1`.
-pub fn maybe_start_vite_dev(api_endpoint: &str) -> anyhow::Result<Option<ViteDevGuard>> {
+pub fn maybe_start_vite_dev(api_endpoint: &SocketAddr) -> anyhow::Result<Option<ViteDevGuard>> {
     if std::env::var(SKIP_ENV).ok().as_deref() == Some("1") {
         return Ok(None);
     }

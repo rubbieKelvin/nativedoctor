@@ -17,6 +17,8 @@ import { IconInnerShadowTop } from "@tabler/icons-vue";
 import { Search } from "lucide-vue-next";
 import { computed, ref } from "vue";
 
+const VITE_NATIVEDOCTOR_VERSION = import.meta.env.VITE_NATIVEDOCTOR_VERSION;
+
 const props = defineProps<{
     workspace: WorkspaceSnapshot | null;
     loadErr: string | null;
@@ -31,10 +33,7 @@ const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
 
 const searchQuery = ref("");
 
-function filterGrouped(
-    groups: GroupedFiles[],
-    qRaw: string,
-): GroupedFiles[] {
+function filterGrouped(groups: GroupedFiles[], qRaw: string): GroupedFiles[] {
     const q = qRaw.trim().toLowerCase();
     if (!q) return groups;
     return groups
@@ -74,10 +73,7 @@ const filteredScripts = computed(() =>
             <div
                 class="text-sidebar-foreground/50 flex items-center gap-1.5 px-2 pb-2"
             >
-                <Search
-                    class="size-3.5 shrink-0"
-                    aria-hidden="true"
-                />
+                <Search class="size-3.5 shrink-0" aria-hidden="true" />
                 <SidebarInput
                     v-model="searchQuery"
                     class="min-w-0 flex-1 font-sans text-xs"
@@ -90,10 +86,7 @@ const filteredScripts = computed(() =>
         </SidebarHeader>
 
         <SidebarContent>
-            <div
-                v-if="loadErr"
-                class="text-destructive px-2 text-sm"
-            >
+            <div v-if="loadErr" class="text-destructive px-2 text-sm">
                 {{ loadErr }}
             </div>
 
@@ -113,10 +106,7 @@ const filteredScripts = computed(() =>
                                 >{{ g.root_label }}</span
                             >
                         </SidebarMenuItem>
-                        <SidebarMenuItem
-                            v-for="e in g.entries"
-                            :key="e.path"
-                        >
+                        <SidebarMenuItem v-for="e in g.entries" :key="e.path">
                             <SidebarMenuButton
                                 :is-active="activeId === e.path"
                                 :tooltip="e.path"
@@ -150,10 +140,7 @@ const filteredScripts = computed(() =>
                                 >{{ g.root_label }}</span
                             >
                         </SidebarMenuItem>
-                        <SidebarMenuItem
-                            v-for="e in g.entries"
-                            :key="e.path"
-                        >
+                        <SidebarMenuItem v-for="e in g.entries" :key="e.path">
                             <SidebarMenuButton
                                 :is-active="activeId === e.path"
                                 :tooltip="e.path"
@@ -171,7 +158,9 @@ const filteredScripts = computed(() =>
         </SidebarContent>
 
         <SidebarFooter>
-            <p class="text-sm text-muted-foreground">v0.0.0</p>
+            <p class="text-sm text-muted-foreground">
+                v{{ VITE_NATIVEDOCTOR_VERSION }}
+            </p>
         </SidebarFooter>
     </Sidebar>
 </template>
