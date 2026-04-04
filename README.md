@@ -16,8 +16,8 @@ The CLI binary is **`nativedoctor`**. Core logic lives in **`nd-core`**; **`nd-g
 
 ## Requirements
 
-- **Rust** (2021 edition), stable toolchain, to build from source.
-- **pnpm** on `PATH` when building **`nd-web`**: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so assets can be embedded. To skip that (e.g. CI with a prebuilt `frontend/dist/`), set **`ND_WEB_SKIP_FRONTEND_BUILD=1`** (see [`nd-web` crate](crates/nd-web)).
+- **Rust** stable toolchain, to build from source.
+- **pnpm** on `PATH` when building **`nd-web`**: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so assets can be embedded. CI with a prebuilt `frontend/dist/`).
 - Network access for real HTTP calls (optional: **`--no-network-io`** expands and prints only).
 
 ---

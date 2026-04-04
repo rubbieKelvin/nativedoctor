@@ -5,10 +5,12 @@
 //! - **Release (`PROFILE=release`):** runs **`pnpm install`** (with `--frozen-lockfile` when
 //!   `pnpm-lock.yaml` exists) then **`pnpm build`**, producing `frontend/dist/`, which is **embedded**
 //!   into the binary via [`rust_embed::RustEmbed`].
-//! - **Debug (`PROFILE=debug`):** does **not** embed assets; the app serves files from
-//!   `frontend/dist/` at runtime. To keep rebuilds fast, **`pnpm build` is skipped** when
-//!   `frontend/dist/index.html` already exists. If `dist/` is missing (fresh clone), this script runs
-//!   `pnpm install` + `pnpm build` once so `cargo test` and `cargo run` can find assets.
+//! - **Debug (`PROFILE=debug`):** does **not** embed assets; the API serves files from `frontend/dist/`
+//!   when present. A **debug** `nd_web::run_web` also starts **`pnpm run dev`** (Vite on port 5173, HMR)
+//!   unless **`ND_WEB_SKIP_VITE_DEV=1`**; Vite proxies `/api` to the Rust server. To keep Cargo rebuilds
+//!   fast, **`pnpm build` is skipped** in this script when `frontend/dist/index.html` already exists. If
+//!   `dist/` is missing (fresh clone), this script runs `pnpm install` + `pnpm build` once so `cargo test`
+//!   and opening the API URL without Vite still find assets.
 //! - Set **`ND_WEB_SKIP_FRONTEND_BUILD=1`** to skip `pnpm` entirely. Then **`frontend/dist/index.html`**
 //!   must already exist or this script panics.
 //!
@@ -25,8 +27,8 @@ fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let frontend = manifest_dir.join("frontend");
     let dist_index = frontend.join("dist/index.html");
-    // let profile = env::var("PROFILE").unwrap_or_default();
-    // let is_release = profile == "release";
+    let profile = env::var("PROFILE").unwrap_or_default();
+    let is_release = profile == "release";
 
     // rebuild if we change build
     println!(
@@ -34,6 +36,11 @@ fn main() {
         manifest_dir.join("build.rs").display()
     );
 
+    rerun_if_changed_fe(&frontend);
+    run_pnpm_frontend_build(&frontend, &dist_index, is_release);
+}
+
+fn rerun_if_changed_fe(frontend: &std::path::Path) {
     // rebuild if we change these
     for rel in [
         "package.json",
@@ -49,6 +56,7 @@ fn main() {
     }
 
     let src = frontend.join("src");
+
     if src.is_dir() {
         for entry in walkdir::WalkDir::new(&src)
             .into_iter()
@@ -59,28 +67,19 @@ fn main() {
             }
         }
     }
-
-    if env::var("ND_WEB_SKIP_FRONTEND_BUILD").ok().as_deref() == Some("1") {
-        if !dist_index.is_file() {
-            panic!(
-                "ND_WEB_SKIP_FRONTEND_BUILD=1 but `{}` is missing; run `pnpm build` in frontend/ first",
-                dist_index.display()
-            );
-        }
-        return;
-    }
-
-    // let force_frontend = env::var("ND_WEB_FORCE_FRONTEND_BUILD").ok().as_deref() == Some("1");
-
-    // if !is_release && dist_index.is_file() && !force_frontend {
-    //     // Debug: dist already built — skip pnpm for fast Rust iteration; assets are read from disk, not embedded.
-    //     return;
-    // }
-
-    run_pnpm_frontend_build(&frontend, &dist_index);
 }
 
-fn run_pnpm_frontend_build(frontend: &std::path::Path, dist_index: &std::path::Path) {
+fn run_pnpm_frontend_build(
+    frontend: &std::path::Path,
+    dist_index: &std::path::Path,
+    is_release: bool,
+) {
+    if is_release {
+        build_fe_on_release(frontend, dist_index);
+    }
+}
+
+fn build_fe_on_release(frontend: &std::path::Path, dist_index: &std::path::Path) {
     // install front end packages with pnpm
     let mut install = Command::new("pnpm");
     install

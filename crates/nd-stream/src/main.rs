@@ -1,3 +1,3 @@
-fn main() {
-    println!("Hello, world!");
+pub enum StreamEvent {
+    NewSessionStarted(String),
 }

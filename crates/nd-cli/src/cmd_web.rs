@@ -10,14 +10,21 @@ pub async fn run(
     persistence_file: Option<PathBuf>,
     no_network_io: bool,
 ) -> Result<(), String> {
+    let roots_list = dirs
+        .iter()
+        .map(|p| p.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    println!("API: http://{bind} (roots: {roots_list})");
+
+    #[cfg(debug_assertions)]
     println!(
-        "Web UI: http://{} (roots: {})",
-        bind,
-        dirs.iter()
-            .map(|p| p.display().to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
+        "Debug UI (Vite HMR): http://127.0.0.1:5173 — proxied to this API. Set ND_WEB_SKIP_VITE_DEV=1 to skip auto `pnpm dev`."
     );
+
+    #[cfg(not(debug_assertions))]
+    println!("Web UI is served from the API URL above.");
 
     nd_web::run_web(nd_web::WebServerOptions {
         bind,
