@@ -1110,6 +1110,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "nd-stream"
+version = "0.2.0"
+
+[[package]]
 name = "nd-web"
 version = "0.2.0"
 dependencies = [
