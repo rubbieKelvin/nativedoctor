@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkspaceSnapshot } from "@/api";
+import type { GroupedFiles, WorkspaceSnapshot } from "@/api";
 import {
     Sidebar,
     SidebarContent,
@@ -7,13 +7,15 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarHeader,
+    SidebarInput,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { IconInnerShadowTop } from "@tabler/icons-vue";
-import { computed } from "vue";
+import { Search } from "lucide-vue-next";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
     workspace: WorkspaceSnapshot | null;
@@ -26,6 +28,34 @@ const emit = defineEmits<{
 }>();
 
 const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
+
+const searchQuery = ref("");
+
+function filterGrouped(
+    groups: GroupedFiles[],
+    qRaw: string,
+): GroupedFiles[] {
+    const q = qRaw.trim().toLowerCase();
+    if (!q) return groups;
+    return groups
+        .map((g) => ({
+            ...g,
+            entries: g.entries.filter(
+                (e) =>
+                    e.name.toLowerCase().includes(q) ||
+                    e.path.toLowerCase().includes(q),
+            ),
+        }))
+        .filter((g) => g.entries.length > 0);
+}
+
+const filteredRequests = computed(() =>
+    filterGrouped(props.workspace?.requests ?? [], searchQuery.value),
+);
+
+const filteredScripts = computed(() =>
+    filterGrouped(props.workspace?.scripts ?? [], searchQuery.value),
+);
 </script>
 
 <template>
@@ -41,6 +71,22 @@ const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
+            <div
+                class="text-sidebar-foreground/50 flex items-center gap-1.5 px-2 pb-2"
+            >
+                <Search
+                    class="size-3.5 shrink-0"
+                    aria-hidden="true"
+                />
+                <SidebarInput
+                    v-model="searchQuery"
+                    class="min-w-0 flex-1 font-sans text-xs"
+                    placeholder="Search requests & scripts…"
+                    type="search"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
         </SidebarHeader>
 
         <SidebarContent>
@@ -55,7 +101,7 @@ const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
                 <SidebarGroupLabel>Requests</SidebarGroupLabel>
                 <SidebarMenu>
                     <template
-                        v-for="g in workspace?.requests ?? []"
+                        v-for="g in filteredRequests"
                         :key="'rq-' + g.root_index"
                     >
                         <SidebarMenuItem
@@ -92,7 +138,7 @@ const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
                 <SidebarGroupLabel>Scripts</SidebarGroupLabel>
                 <SidebarMenu>
                     <template
-                        v-for="g in workspace?.scripts ?? []"
+                        v-for="g in filteredScripts"
                         :key="'sc-' + g.root_index"
                     >
                         <SidebarMenuItem
