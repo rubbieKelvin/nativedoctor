@@ -1,11 +1,13 @@
 use nd_core::{
+    env::RuntimeEnv,
     rhai,
     stream::{events, Session},
 };
 
 #[test]
 fn session_starts_with_id_and_zero_elapsed() {
-    let s = Session::new();
+    let s = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
+
     assert!(!s.session_id().is_empty());
     match &s.events()[0] {
         events::Event::SessionStarted {
@@ -21,7 +23,7 @@ fn session_starts_with_id_and_zero_elapsed() {
 
 #[test]
 fn emit_stamps_elapsed_finish_appends_ended() {
-    let mut s = Session::new();
+    let mut s = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
     let sid = s.session_id().to_string();
     s.emit(|e| events::Event::RuntimeLog {
         level: rhai::LogLevel::Info,
@@ -30,9 +32,13 @@ fn emit_stamps_elapsed_finish_appends_ended() {
         elapsed: e,
     });
     let out = s.finish();
-    assert_eq!(out.len(), 3);
-    assert!(matches!(&out[1], events::Event::RuntimeLog { .. }));
-    match &out[2] {
+    assert_eq!(out.len(), 4);
+    assert!(matches!(
+        &out[1],
+        events::Event::RuntimeVariablesInitialized { .. }
+    ));
+    assert!(matches!(&out[2], events::Event::RuntimeLog { .. }));
+    match &out[3] {
         events::Event::SessionEnded {
             session_id,
             elapsed,
@@ -49,13 +55,19 @@ fn live_sink_sees_every_event() {
     use std::sync::{Arc, Mutex};
     let n = Arc::new(Mutex::new(0usize));
     let w = n.clone();
-    let mut s = Session::with_live_sink(move |_| {
-        *w.lock().unwrap() += 1;
-    });
+
+    let mut s = Session::new(
+        || Ok(RuntimeEnv::new()),
+        Some(Box::new(move |_| {
+            *w.lock().unwrap() += 1;
+        })),
+    )
+    .unwrap();
+
     s.emit(|e| events::Event::NewStepEncountered {
         name: "a".into(),
         elapsed: e,
     });
     let _ = s.finish();
-    assert_eq!(*n.lock().unwrap(), 3);
+    assert_eq!(*n.lock().unwrap(), 4);
 }

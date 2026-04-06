@@ -1,5 +1,7 @@
 use std::time::{Duration, Instant};
 
+use crate::env::RuntimeEnv;
+
 pub mod events;
 
 /// In-process timeline for one run: stamps monotonic [`Duration`]s and optionally forwards each event (SSE, channels).
@@ -7,29 +9,16 @@ pub struct Session {
     id: String,
     start: Instant,
     events: Vec<events::Event>,
+    pub runtime: RuntimeEnv,
     live: Option<Box<dyn FnMut(events::Event) + Send>>,
-}
-
-impl Default for Session {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Session {
     /// New session: generates an id, records [`events::Event::SessionStarted`] at `elapsed == 0`.
-    pub fn new() -> Self {
-        Self::with_live_opt(None)
-    }
-
-    /// Same as [`Self::new`], plus a hook invoked for every event (including the initial `SessionStarted`).
-    ///
-    /// The hook receives a clone suitable for streaming; the session also retains a full copy in [`Self::events`].
-    pub fn with_live_sink(sink: impl FnMut(events::Event) + Send + 'static) -> Self {
-        Self::with_live_opt(Some(Box::new(sink)))
-    }
-
-    fn with_live_opt(live: Option<Box<dyn FnMut(events::Event) + Send>>) -> Self {
+    pub fn new(
+        runtime: impl Fn() -> Result<RuntimeEnv, String>,
+        sink: Option<Box<dyn FnMut(events::Event) + Send>>,
+    ) -> Result<Self, String> {
         let session_id = nanoid::nanoid!();
         let start = Instant::now();
 
@@ -37,14 +26,22 @@ impl Session {
             id: session_id,
             start,
             events: Vec::new(),
-            live,
+            live: sink,
+            runtime: runtime()?,
         };
 
         instance.record(events::Event::SessionStarted {
             session_id: instance.id.clone(),
             elapsed: Duration::ZERO,
         });
-        return instance;
+
+        let entries = instance.runtime.entries();
+        instance.emit(|e| events::Event::RuntimeVariablesInitialized {
+            elapsed: e,
+            entries,
+        });
+
+        return Ok(instance);
     }
 
     pub fn session_id(&self) -> &str {
@@ -78,7 +75,7 @@ impl Session {
             elapsed,
         };
         self.record(end);
-        self.events
+        return self.events;
     }
 
     /// Consume the buffer without appending `SessionEnded` (e.g. after fatal error you already recorded).
@@ -90,6 +87,16 @@ impl Session {
         if let Some(cb) = self.live.as_mut() {
             cb(event.clone());
         }
-        self.events.push(event);
+        return self.events.push(event);
+    }
+
+    pub fn reload_runtime(&mut self) {
+        self.runtime.clear();
+        let entries = self.runtime.entries();
+
+        self.emit(|e| events::Event::RuntimeVariablesInitialized {
+            elapsed: e,
+            entries,
+        });
     }
 }

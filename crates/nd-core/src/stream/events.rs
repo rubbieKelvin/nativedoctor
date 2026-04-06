@@ -1,6 +1,6 @@
 use crate::rhai::LogLevel;
-use serde_json::{Map, Value};
-use std::time::Duration;
+use serde_json::Value;
+use std::{path::PathBuf, time::Duration};
 
 /// Streamed update while a run is in progress
 #[derive(Debug, Clone)]
@@ -66,7 +66,7 @@ pub enum Event {
     },
     RuntimeVariablesInitialized {
         elapsed: Duration,
-        values: Map<String, Value>,
+        entries: Vec<(String, String)>,
     },
     RuntimeVariablePushed {
         elapsed: Duration,
@@ -106,4 +106,6 @@ pub enum Event {
     },
     /// we'd add a new rhai function step(string) that just shoots this events. basically does nothing else
     NewStepEncountered { name: String, elapsed: Duration },
+    /// Called when we load a file, request or session
+    FileLoaded { elapsed: Duration, path: PathBuf },
 }

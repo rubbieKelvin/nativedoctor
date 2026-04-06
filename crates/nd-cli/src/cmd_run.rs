@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use nd_core::execute::types::PrintOptions;
+use nd_core::stream::events::Event;
+use nd_core::stream::Session;
 use nd_core::{
     env::RuntimeEnv,
     execute::format::format_prepared_request,
@@ -63,18 +65,36 @@ impl RunOptions {
 
 pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
     // create runtime session
-    let runtime = RuntimeEnv::new()
-        .with_env_files(&opts.env_files)
-        .map_err(|e| e.to_string())?
-        .with_persistence(&opts.persistence_file)
-        .map_err(|e| e.to_string())?;
+    let mut session = Session::new(
+        || {
+            RuntimeEnv::new()
+                .with_env_files(&opts.env_files)
+                .map_err(|e| e.to_string())?
+                .with_persistence(&opts.persistence_file)
+                .map_err(|e| e.to_string())
+        },
+        None,
+    )?;
+
     let logger = Arc::new(Logger::new());
 
     for path in opts.paths.iter() {
+        let mut session = &mut session;
+
         if !path.try_exists().map_err(|e| e.to_string())? {
             tracing::error!(path = %path.display(), "File does not exist");
+            session.emit(|e| Event::Error {
+                elapsed: e,
+                message: format!("File does not exist: {}", path.display()),
+            });
+
             continue;
         }
+
+        session.emit(|e| Event::FileLoaded {
+            elapsed: e,
+            path: path.clone(),
+        });
 
         let ext = path
             .extension()
@@ -83,8 +103,8 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
             .unwrap_or_default();
 
         match ext.as_str() {
-            "json" | "yaml" | "yml" => run_request(path, &opts, &runtime).await?,
-            "rhai" => run_script(path, &opts, &runtime, logger.clone()).await?,
+            "json" | "yaml" | "yml" => run_request(path, &opts, &mut session).await?,
+            "rhai" => run_script(path, &opts, &mut session, logger.clone()).await?,
             _ => {
                 return Err(String::from(
                     "Invalid file type. only json, yaml, yml, rhai files accepted",
@@ -93,7 +113,7 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
         };
 
         if !opts.retain_runtime {
-            runtime.clear();
+            session.reload_runtime();
         }
     }
 
@@ -101,7 +121,11 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
 }
 
 /// Run one request
-pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Result<(), String> {
+pub async fn run_request(
+    path: &Path,
+    opts: &RunOptions,
+    session: &mut Session,
+) -> Result<(), String> {
     let document = RequestFile::from_file(path).map_err(|e| e.to_string())?;
 
     // return run_one_with_env(path, cli, opts, &env).await;
@@ -110,7 +134,10 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
     }
 
     if opts.no_network_io || opts.verbose {
-        let request = document.request.expand(env).map_err(|e| e.to_string())?;
+        let request = document
+            .request
+            .expand(&session.runtime)
+            .map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&request).map_err(|e| e.to_string())?;
         println!("{summary}");
 
@@ -123,7 +150,10 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
         println!("--- response/{:?} ---", document.name);
     }
 
-    let output = document.execute(&env).await.map_err(|e| e.to_string())?;
+    let output = document
+        .execute(&session.runtime)
+        .await
+        .map_err(|e| e.to_string())?;
 
     output.print(if opts.verbose {
         PrintOptions::Verbose
@@ -137,7 +167,7 @@ pub async fn run_request(path: &Path, opts: &RunOptions, env: &RuntimeEnv) -> Re
 pub async fn run_script(
     path: &Path,
     opts: &RunOptions,
-    env: &RuntimeEnv,
+    session: &mut Session,
     logger: Arc<Logger>,
 ) -> Result<(), String> {
     if opts.verbose {
@@ -153,7 +183,7 @@ pub async fn run_script(
 
     return run_rhai_script(
         path,
-        env,
+        &session.runtime,
         Some(logger),
         RhaiScriptRunOptions {
             no_network_io: opts.no_network_io,
