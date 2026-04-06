@@ -1,9 +1,10 @@
 use crate::rhai::logger::LogLevel;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{path::PathBuf, time::Duration};
 
 /// Streamed update while a run is in progress
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Event {
     /// A new client run was accepted; correlate later events with `session_id`.
     SessionStarted { id: String, elapsed: Duration },

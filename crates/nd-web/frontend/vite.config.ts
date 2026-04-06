@@ -21,6 +21,7 @@ export default defineConfig({
       "/api": {
         target: VITE_NATIVEDOCTOR_API_ENDPOINT,
         changeOrigin: true,
+        ws: true,
       },
     },
   },

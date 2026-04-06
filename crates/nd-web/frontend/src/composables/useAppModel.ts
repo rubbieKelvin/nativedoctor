@@ -4,8 +4,7 @@ import {
     fetchFile,
     fetchRuntimeEnv,
     fetchWorkspace,
-    runScript,
-    sendHttp,
+    runSessionCommand,
     type ExecutionResultDto,
     type RuntimeEnvEntry,
     type WorkspaceSnapshot,
@@ -261,12 +260,17 @@ export function useAppModel() {
         sendErr.value = null;
         response.value = null;
         try {
-            const res = await sendHttp({
-                source_path: t.path,
-                document: t.doc,
-                overrides: payloadOverrides,
-            });
-            if (res.error) sendErr.value = res.error;
+            const res = await runSessionCommand(
+                {
+                    type: "run_request",
+                    source_path: t.path,
+                    document: t.doc,
+                    overrides: payloadOverrides ?? {},
+                    stream: false,
+                },
+            );
+            if (!res.ok) sendErr.value = res.error ?? "Request failed";
+            else sendErr.value = null;
             response.value = res.result ?? null;
         } catch (e) {
             sendErr.value = e instanceof Error ? e.message : String(e);
@@ -284,9 +288,36 @@ export function useAppModel() {
         scriptRunError.value = null;
         sendErr.value = null;
         try {
-            const res = await runScript(t.path);
-            scriptLogs.value = res.logs;
-            scriptRunError.value = res.error ?? null;
+            const logs: {
+                level: string;
+                message: string;
+                elapsed_ms: number;
+            }[] = [];
+            const res = await runSessionCommand(
+                {
+                    type: "run_script",
+                    path: t.path,
+                },
+                {
+                    onEvent: (ev) => {
+                        const o = ev as {
+                            kind?: string;
+                            level?: string;
+                            message?: string;
+                            elapsed_ms?: number;
+                        };
+                        if (o.kind === "Log" && o.message != null) {
+                            logs.push({
+                                level: String(o.level ?? "info"),
+                                message: o.message,
+                                elapsed_ms: Number(o.elapsed_ms ?? 0),
+                            });
+                        }
+                    },
+                },
+            );
+            scriptLogs.value = logs;
+            scriptRunError.value = res.ok ? null : (res.error ?? "Script failed");
         } catch (e) {
             sendErr.value = e instanceof Error ? e.message : String(e);
         } finally {

@@ -2,9 +2,12 @@ use std::path::Path;
 
 use colored::Colorize;
 use nd_constants::TRACING_TARGET_RHAI;
+use serde::{Deserialize, Serialize};
 
 /// Severity for a [`Log`] line (parsed from Rhai `log("info", "...")` etc.).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, strum::Display)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, strum::Display, Serialize, Deserialize,
+)]
 pub enum LogLevel {
     Trace,
     Debug,

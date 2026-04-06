@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use super::{json_err, AppState};
 use crate::path_sandbox::resolve_allowed_file;
 
-fn runtime_env_for_state(state: &AppState) -> Result<RuntimeEnv, String> {
+pub(crate) fn runtime_env_for_state(state: &AppState) -> Result<RuntimeEnv, String> {
     RuntimeEnv::new()
         .with_env_files(state.env_files.as_ref())
         .map_err(|e| e.to_string())?
@@ -147,7 +147,7 @@ pub async fn post_send(
     }))
 }
 
-fn execution_to_dto(exec: &ExecutionResult) -> ExecutionResultDto {
+pub(crate) fn execution_to_dto(exec: &ExecutionResult) -> ExecutionResultDto {
     let body_utf8 = std::str::from_utf8(&exec.body).ok();
     let (body_text, body_base64) = if let Some(s) = body_utf8 {
         (Some(s.to_string()), None)

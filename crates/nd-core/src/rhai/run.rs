@@ -9,7 +9,8 @@ use super::engine::create_engine;
 use super::resolver::RhaiScriptRunOptions;
 
 use crate::error::{Error, Result};
-use crate::stream::Session;
+use crate::stream::events::Event;
+use crate::stream::{MutexSession, Session};
 
 pub fn run_rhai_script(
     path: &Path,
@@ -36,9 +37,30 @@ pub fn run_rhai_script(
         .compile_file_with_scope(&scope, script_path.clone())
         .map_err(|e| Error::Rhai(e.to_string()))?;
 
-    engine
-        .run_ast_with_scope(&mut scope, &ast)
-        .map_err(|e| Error::Rhai(e.to_string()))?;
+    let label = script_path.display().to_string();
+
+    session.emit(|id, e| Event::ScriptStarted {
+        session_id: id,
+        elapsed: e,
+        script: label.clone(),
+    });
+
+    let run_result = engine.run_ast_with_scope(&mut scope, &ast);
+
+    let err_str = match &run_result {
+        Ok(()) => None,
+        Err(e) => Some(e.to_string()),
+    };
+
+    session.emit(|id, e| Event::ScriptFinished {
+        session_id: id,
+        elapsed: e,
+        script: label,
+        success: run_result.is_ok(),
+        error: err_str,
+    });
+
+    run_result.map_err(|e| Error::Rhai(e.to_string()))?;
 
     debug!(path = %script_path.display(), "Rhai script finished");
     return Ok(());
