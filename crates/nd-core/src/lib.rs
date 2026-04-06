@@ -7,4 +7,5 @@ pub mod error;
 pub mod execute;
 pub mod model;
 pub mod rhai;
+pub mod stream;
 pub mod utils;

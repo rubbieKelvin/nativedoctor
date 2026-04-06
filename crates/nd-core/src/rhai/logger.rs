@@ -50,8 +50,6 @@ pub struct Log {
     pub message: String,
     /// Source script label (file name when the path was supplied).
     pub script: String,
-    /// Caller context (e.g. `"post_script"`).
-    pub initiator: String,
 }
 
 /// Thread-safe collector; cheap to [`Clone`] (shares the same backing storage via [`Arc`]).
@@ -70,19 +68,12 @@ impl Logger {
     }
 
     /// Record a message with a known level.
-    pub fn log(
-        &self,
-        level: LogLevel,
-        message: impl Into<String>,
-        script: impl Into<String>,
-        initiator: impl Into<String>,
-    ) {
+    pub fn log(&self, level: LogLevel, message: impl Into<String>, script: impl Into<String>) {
         let entry = Log {
             elapsed: self.start.elapsed(),
             level,
             message: message.into(),
             script: script.into(),
-            initiator: initiator.into(),
         };
 
         if let Ok(mut guard) = self.logs.lock() {
@@ -96,13 +87,12 @@ impl Logger {
         level: &str,
         message: impl Into<String>,
         script: impl Into<String>,
-        initiator: impl Into<String>,
     ) {
         let msg = message.into();
         let src = script_file_name(&script.into());
         let parsed = LogLevel::parse_or_info(level);
 
-        self.log(parsed, msg.clone(), src.clone(), initiator);
+        self.log(parsed, msg.clone(), src.clone());
 
         let level_colored = match parsed {
             LogLevel::Trace => level.cyan(),

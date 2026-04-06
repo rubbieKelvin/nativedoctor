@@ -1,7 +1,0 @@
-[package]
-name = "nd-stream"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-
-[dependencies]

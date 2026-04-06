@@ -4,7 +4,6 @@ members = [
     "crates/nd-cli",
     "crates/nd-generate",
     "crates/nd-web",
-    "crates/nd-stream",
 ]
 default-members = ["crates/nd-cli"]
 resolver = "2"

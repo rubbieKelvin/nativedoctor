@@ -130,14 +130,10 @@ function onValueInput(index: number, v: string | number) {
 
 <template>
     <div :class="cn('flex flex-col gap-0.5', props.class)">
-        <div
-            v-for="(row, index) in localRows"
-            :key="index"
-            class="grid grid-cols-[minmax(0,0.5fr)_minmax(0.5,1fr)] gap-2"
-        >
+        <div v-for="(row, index) in localRows" :key="index" class="flex gap-2">
             <Input
                 :model-value="row.key"
-                class="font-mono text-[11px] h-8"
+                class="font-mono text-[11px] h-8 flex-[40%]"
                 :disabled="disabled"
                 placeholder="Key"
                 spellcheck="false"

@@ -38,9 +38,7 @@ fn register_env_fns(engine: &mut Engine, env: &RuntimeEnv) {
 fn register_assert(engine: &mut Engine) {
     FuncRegistration::new("assert")
         .in_global_namespace()
-        .with_comments([
-            "/// Fail evaluation with a runtime error if `condition` is false.",
-        ])
+        .with_comments(["/// Fail evaluation with a runtime error if `condition` is false."])
         .register_into_engine(engine, |condition: bool, message: &str| {
             if condition {
                 Ok(())
@@ -59,14 +57,12 @@ fn register_log(engine: &mut Engine, logger: Option<Arc<Logger>>, script_label: 
     FuncRegistration::new("log")
         .in_global_namespace()
         .with_volatility(true)
-        .with_comments([
-            "/// Log a message at the given level (e.g. `\"info\"`, `\"debug\"`).",
-        ])
+        .with_comments(["/// Log a message at the given level (e.g. `\"info\"`, `\"debug\"`)."])
         .register_into_engine(engine, move |level: &str, message: &str| {
             let lvl = LogLevel::parse_or_info(level);
             emit_script_log_to_tracing(lvl, &script_label, message);
             if let Some(ref s) = sink {
-                s.log_parsed_level(level, message, script_label.clone(), "");
+                s.log_parsed_level(level, message, script_label.clone());
             }
         });
 }
