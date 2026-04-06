@@ -1,13 +1,4 @@
-//! Legacy in-memory log sink for Rhai scripts (deprecated). Prefer [`crate::stream::Session::log`]
-//! and [`crate::stream::events::Event::Log`]; the `log(level, message)` host function records there
-//! and to [`tracing`] when a subscriber is configured.
-//!
-//! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
-//! [`Logger::drain`] after the script run when a logger was passed in.
-
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
 
 use colored::Colorize;
 use nd_constants::TRACING_TARGET_RHAI;
@@ -39,109 +30,35 @@ impl LogLevel {
     pub fn parse_or_info(s: &str) -> Self {
         Self::parse(s).unwrap_or(Self::Info)
     }
-}
 
-/// One line recorded from a script (or host code using [`Logger::log`]).
-#[derive(Debug, Clone)]
-pub struct Log {
-    /// Time since the parent [`Logger`] was created.
-    pub elapsed: Duration,
-    pub level: LogLevel,
-    pub message: String,
-    /// Source script label (file name when the path was supplied).
-    pub script: String,
-}
-
-/// Thread-safe collector; cheap to [`Clone`] (shares the same backing storage via [`Arc`]).
-#[deprecated = "Use [`Session::log`] and [`crate::stream::events::Event::Log`]; handlers decide how to display or persist."]
-#[derive(Debug, Clone)]
-pub struct Logger {
-    start: Instant,
-    logs: Arc<Mutex<Vec<Log>>>,
-}
-
-#[allow(deprecated)]
-impl Logger {
-    pub fn new() -> Self {
-        Self {
-            start: Instant::now(),
-            logs: Arc::new(Mutex::new(Vec::new())),
-        }
-    }
-
-    /// Record a message with a known level.
-    pub fn log(&self, level: LogLevel, message: impl Into<String>, script: impl Into<String>) {
-        let entry = Log {
-            elapsed: self.start.elapsed(),
-            level,
-            message: message.into(),
-            script: script.into(),
+    pub fn as_str(&self) -> &str {
+        return match self {
+            LogLevel::Debug => "debug",
+            LogLevel::Error => "error",
+            LogLevel::Info => "info",
+            LogLevel::Trace => "trace",
+            LogLevel::Warn => "warn",
         };
-
-        if let Ok(mut guard) = self.logs.lock() {
-            guard.push(entry);
-        }
-    }
-
-    /// Parse `level` (case-insensitive); unknown values become [`LogLevel::Info`].
-    pub fn log_parsed_level(
-        &self,
-        level: &str,
-        message: impl Into<String>,
-        script: impl Into<String>,
-    ) {
-        let msg = message.into();
-        let src = script_file_name(&script.into());
-        let parsed = LogLevel::parse_or_info(level);
-
-        self.log(parsed, msg.clone(), src.clone());
-
-        let level_colored = match parsed {
-            LogLevel::Trace => level.cyan(),
-            LogLevel::Debug => level.blue(),
-            LogLevel::Info => level.green(),
-            LogLevel::Warn => level.yellow(),
-            LogLevel::Error => level.red(),
-        };
-
-        let src_colored = src.color("#444444");
-
-        println!("[{level_colored}・{src_colored}] {msg}");
-    }
-
-    /// Clone of all entries, oldest first.
-    pub fn snapshot(&self) -> Vec<Log> {
-        self.logs.lock().map(|g| g.clone()).unwrap_or_default()
-    }
-
-    /// Remove and return all entries, oldest first.
-    pub fn drain(&self) -> Vec<Log> {
-        self.logs
-            .lock()
-            .map(|mut g| std::mem::take(&mut *g))
-            .unwrap_or_default()
-    }
-
-    pub fn clear(&self) {
-        if let Ok(mut g) = self.logs.lock() {
-            g.clear();
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.logs.lock().map(|g| g.len()).unwrap_or(0)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 }
 
-#[allow(deprecated)]
-impl Default for Logger {
-    fn default() -> Self {
-        Self::new()
-    }
+/// Parse `level` (case-insensitive); unknown values become [`LogLevel::Info`].
+pub fn log_parsed_level(level: &str, message: impl Into<String>, script: impl Into<String>) {
+    let msg = message.into();
+    let src = script_file_name(&script.into());
+    let parsed = LogLevel::parse_or_info(level);
+
+    let level_colored = match parsed {
+        LogLevel::Trace => level.cyan(),
+        LogLevel::Debug => level.blue(),
+        LogLevel::Info => level.green(),
+        LogLevel::Warn => level.yellow(),
+        LogLevel::Error => level.red(),
+    };
+
+    let src_colored = src.color("#444444");
+
+    println!("[{level_colored}・{src_colored}] {msg}");
 }
 
 fn script_file_name(script: &str) -> String {
@@ -158,19 +75,19 @@ pub fn emit_script_log_to_tracing(level: LogLevel, script: &str, message: &str) 
 
     match level {
         LogLevel::Trace => {
-            tracing::trace!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
+            tracing::trace!(target: TRACING_TARGET_RHAI, %script, %message);
         }
         LogLevel::Debug => {
-            tracing::debug!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
+            tracing::debug!(target: TRACING_TARGET_RHAI, %script, %message);
         }
         LogLevel::Info => {
-            tracing::info!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
+            tracing::info!(target: TRACING_TARGET_RHAI, %script, %message);
         }
         LogLevel::Warn => {
-            tracing::warn!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
+            tracing::warn!(target: TRACING_TARGET_RHAI, %script, %message);
         }
         LogLevel::Error => {
-            tracing::error!(target: TRACING_TARGET_RHAI, %script, %message, "initiator");
+            tracing::error!(target: TRACING_TARGET_RHAI, %script, %message);
         }
     }
 }

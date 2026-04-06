@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use nd_core::execute::types::PrintOptions;
+use nd_core::rhai::logger::log_parsed_level;
 use nd_core::stream::events::Event;
 use nd_core::stream::{MutexSession, Session};
 use nd_core::{
@@ -67,6 +68,20 @@ impl RunOptions {
     }
 }
 
+fn handle_session_events_for_cli(event: Event) {
+    match event {
+        Event::Log {
+            level,
+            message,
+            script,
+            ..
+        } => {
+            log_parsed_level(level.as_str(), message, script);
+        }
+        _ => {}
+    };
+}
+
 pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
     // create runtime session
     let session = Arc::new(Mutex::new(Session::new(
@@ -77,7 +92,9 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
                 .with_persistence(&opts.persistence_file)
                 .map_err(|e| e.to_string())
         },
-        None,
+        Some(Box::new(|event: Event| {
+            handle_session_events_for_cli(event);
+        })),
     )?));
 
     for path in opts.paths.iter() {
