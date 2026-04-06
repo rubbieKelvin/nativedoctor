@@ -1,24 +1,28 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
-use nd_core::env::RuntimeEnv;
 use nd_web::{api_router, app_router, AppState};
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tower::ServiceExt;
 
 fn test_state(roots: Vec<PathBuf>) -> AppState {
     AppState {
         roots: Arc::new(roots),
-        env: Arc::new(RuntimeEnv::new()),
         no_network_io: true,
+        env_files: Arc::new(vec![]),
+        persistence_file: None,
+        sessions: Arc::new(Mutex::new(HashMap::new())),
     }
 }
 
-fn test_state_with_env(roots: Vec<PathBuf>, env: Arc<RuntimeEnv>) -> AppState {
+fn test_state_with_env_file(roots: Vec<PathBuf>, env_file: PathBuf) -> AppState {
     AppState {
         roots: Arc::new(roots),
-        env,
         no_network_io: true,
+        env_files: Arc::new(vec![env_file]),
+        persistence_file: None,
+        sessions: Arc::new(Mutex::new(HashMap::new())),
     }
 }
 
@@ -88,12 +92,7 @@ async fn runtime_env_empty_without_loaded_files() {
 async fn runtime_env_reflects_merged_env_file() {
     let tmp = tempfile::NamedTempFile::new().unwrap();
     std::fs::write(tmp.path(), "ZZ=last\nAA=first\n").unwrap();
-    let env = Arc::new(
-        RuntimeEnv::new()
-            .with_env_files(&vec![tmp.path().to_path_buf()])
-            .unwrap(),
-    );
-    let app = api_router(test_state_with_env(vec![], env));
+    let app = api_router(test_state_with_env_file(vec![], tmp.path().to_path_buf()));
     let res = app
         .oneshot(
             Request::builder()

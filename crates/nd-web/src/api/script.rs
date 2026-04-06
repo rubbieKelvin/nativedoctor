@@ -2,6 +2,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::Json;
+use nd_core::env::RuntimeEnv;
 use nd_core::rhai::{resolver::RhaiScriptRunOptions, run::run_rhai_script};
 use nd_core::stream::events::Event;
 use nd_core::stream::Session;
@@ -49,19 +50,36 @@ pub async fn post_script_run(
         json_err(e, code)
     })?;
 
-    let env = state.env.clone();
+    let options = state.clone();
     let no_network_io = state.no_network_io;
 
     let session = Arc::new(Mutex::new(
         Session::new(
-            {
-                let e = (*env).clone();
-                move || Ok(e)
+            || {
+                RuntimeEnv::new()
+                    .with_env_files(options.env_files.as_ref())
+                    .map_err(|e| e.to_string())?
+                    .with_persistence(&options.persistence_file)
+                    .map_err(|e| e.to_string())
             },
             None,
         )
         .map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?,
     ));
+
+    {
+        let sid = session
+            .lock()
+            .map_err(|e| json_err(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?
+            .session_id()
+            .to_string();
+
+        state
+            .sessions
+            .lock()
+            .map_err(|e| json_err(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?
+            .insert(sid, session.clone());
+    }
 
     let session_for_thread = session.clone();
     let res = tokio::task::spawn_blocking(move || {

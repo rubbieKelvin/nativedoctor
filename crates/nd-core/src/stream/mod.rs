@@ -106,12 +106,17 @@ impl Session {
 
 /// [`Session::emit`] and related helpers for a shared session (e.g. Rhai host functions, HTTP runner).
 pub trait MutexSession {
+    fn id(&self) -> String;
     fn emit(&self, f: impl FnOnce(Duration) -> events::Event);
     fn reload_runtime(&self);
     fn runtime(&self) -> RuntimeEnv;
 }
 
 impl MutexSession for Arc<Mutex<Session>> {
+    fn id(&self) -> String {
+        let session = self.lock().expect("session mutex poisoned");
+        return session.id.clone();
+    }
     fn emit(&self, f: impl FnOnce(Duration) -> events::Event) {
         let mut session = self.lock().expect("session mutex poisoned");
         session.emit(f);
@@ -129,6 +134,10 @@ impl MutexSession for Arc<Mutex<Session>> {
 }
 
 impl MutexSession for &Arc<Mutex<Session>> {
+    fn id(&self) -> String {
+        return Arc::clone(self).id();
+    }
+
     fn emit(&self, f: impl FnOnce(Duration) -> events::Event) {
         Arc::clone(self).emit(f);
     }

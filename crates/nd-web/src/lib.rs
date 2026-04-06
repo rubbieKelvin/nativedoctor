@@ -16,12 +16,12 @@ mod workspace;
 #[cfg(debug_assertions)]
 mod vite;
 
-use std::net::SocketAddr;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::{net::SocketAddr, sync::Mutex};
 
 use axum::Router;
-use nd_core::env::RuntimeEnv;
 use tracing::info;
 
 pub use api::{api_router, app_router, AppState};
@@ -73,17 +73,12 @@ pub async fn run_web(opts: WebServerOptions) -> anyhow::Result<()> {
     let roots_vec = path_sandbox::canonicalize_roots(&opts.roots).map_err(anyhow::Error::msg)?;
     let roots = Arc::new(roots_vec);
 
-    // TODO: runtime env is run specific, so we should only have this when we're running a request or script
-    let env = RuntimeEnv::new()
-        .with_env_files(&opts.env_files)
-        .map_err(anyhow::Error::from)?
-        .with_persistence(&opts.persistence_file)
-        .map_err(anyhow::Error::from)?;
-
     let state = AppState {
         roots: roots.clone(),
-        env: Arc::new(env),
         no_network_io: opts.no_network_io,
+        sessions: Arc::new(Mutex::new(HashMap::new())),
+        persistence_file: opts.persistence_file.clone(),
+        env_files: Arc::new(opts.env_files.clone()),
     };
 
     let app: Router = api::app_router(state);

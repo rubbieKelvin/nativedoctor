@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::response::Response;
 use axum::Json;
 use base64::Engine as _;
+use nd_core::env::RuntimeEnv;
 use nd_core::execute::types::ExecutionResult;
 use nd_core::model::request::RequestFile;
 use nd_core::stream::Session;
@@ -11,8 +12,16 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use crate::path_sandbox::resolve_allowed_file;
 use super::{json_err, AppState};
+use crate::path_sandbox::resolve_allowed_file;
+
+fn runtime_env_for_state(state: &AppState) -> Result<RuntimeEnv, String> {
+    RuntimeEnv::new()
+        .with_env_files(state.env_files.as_ref())
+        .map_err(|e| e.to_string())?
+        .with_persistence(&state.persistence_file)
+        .map_err(|e| e.to_string())
+}
 
 /// Body for [`post_send`]: execute either the file at `source_path` or an edited `document`.
 #[derive(Deserialize)]
@@ -89,9 +98,10 @@ pub async fn post_send(
     };
 
     if state.no_network_io {
+        let runtime = runtime_env_for_state(&state).map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?;
         let prep = doc
             .request
-            .expand_with_overrides(state.env.as_ref(), overrides)
+            .expand_with_overrides(&runtime, overrides)
             .map_err(|e| json_err(e.to_string(), StatusCode::BAD_REQUEST))?;
         return Ok(Json(HttpSendResponse {
             ok: true,
@@ -114,7 +124,7 @@ pub async fn post_send(
         }));
     }
 
-    let runtime = (*state.env).clone();
+    let runtime = runtime_env_for_state(&state).map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?;
     let session = Arc::new(Mutex::new(
         Session::new(
             {

@@ -12,20 +12,20 @@
 //!
 //! Non-API paths are served from [`crate::embed`] (SPA fallback to `index.html`).
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use axum::http::{StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use nd_core::env::RuntimeEnv;
+use nd_core::stream::Session;
 use serde::Serialize;
 use tower_http::cors::CorsLayer;
 
 use crate::embed::embedded_static_response;
 
-pub mod env;
 pub mod file;
 pub mod script;
 pub mod send;
@@ -36,9 +36,11 @@ pub mod workspace;
 pub struct AppState {
     /// Canonical absolute directories the user allowed; all file access is constrained here.
     pub roots: Arc<Vec<PathBuf>>,
-    // TODO: no shared env across the board; remove later
-    pub env: Arc<RuntimeEnv>,
     pub no_network_io: bool,
+    pub env_files: Arc<Vec<PathBuf>>,
+    pub persistence_file: Option<PathBuf>,
+    /// Keep track of all runs and sessions
+    pub sessions: Arc<Mutex<HashMap<String, Arc<Mutex<Session>>>>>,
 }
 
 #[derive(Serialize)]
@@ -57,7 +59,6 @@ pub fn api_router(state: AppState) -> Router {
     Router::new()
         .route("/workspace", get(workspace::get_workspace))
         .route("/file", get(file::get_file))
-        .route("/runtime-env", get(env::get_runtime_env))
         .route("/requests/send", post(send::post_send))
         .route("/scripts/run", post(script::post_script_run))
         .with_state(state)
@@ -67,10 +68,10 @@ pub fn api_router(state: AppState) -> Router {
 pub fn app_router(state: AppState) -> Router {
     let api = api_router(state);
 
-    Router::new()
+    return Router::new()
         .nest("/api", api)
         .fallback(get(|uri: Uri| async move {
             embedded_static_response(uri.path())
         }))
-        .layer(CorsLayer::permissive())
+        .layer(CorsLayer::permissive());
 }
