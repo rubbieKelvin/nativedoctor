@@ -1,6 +1,6 @@
-//! In-memory log sink for Rhai post-scripts. The `log(level, message)` host function **always**
-//! emits [`tracing`] output (when a subscriber is configured); when you pass a [`Logger`] into
-//! [`crate::rhai::run_post_script`], entries are also stored here.
+//! Legacy in-memory log sink for Rhai scripts (deprecated). Prefer [`crate::stream::Session::log`]
+//! and [`crate::stream::events::Event::Log`]; the `log(level, message)` host function records there
+//! and to [`tracing`] when a subscriber is configured.
 //!
 //! [`Log::elapsed`] is measured from when the [`Logger`] was created. Use [`Logger::snapshot`] or
 //! [`Logger::drain`] after the script run when a logger was passed in.
@@ -53,12 +53,14 @@ pub struct Log {
 }
 
 /// Thread-safe collector; cheap to [`Clone`] (shares the same backing storage via [`Arc`]).
+#[deprecated = "Use [`Session::log`] and [`crate::stream::events::Event::Log`]; handlers decide how to display or persist."]
 #[derive(Debug, Clone)]
 pub struct Logger {
     start: Instant,
     logs: Arc<Mutex<Vec<Log>>>,
 }
 
+#[allow(deprecated)]
 impl Logger {
     pub fn new() -> Self {
         Self {
@@ -135,6 +137,7 @@ impl Logger {
     }
 }
 
+#[allow(deprecated)]
 impl Default for Logger {
     fn default() -> Self {
         Self::new()

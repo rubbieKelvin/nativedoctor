@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use nd_core::env::RuntimeEnv;
 use nd_core::model::request::{HttpRequestSpec, RequestBody, RequestFile};
@@ -43,8 +44,10 @@ async fn request_file_execute_sends_request_and_returns_response_details() {
         _path: None,
     };
 
-    let mut session = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
-    let result = document.execute(&mut session, false).await.unwrap();
+    let session = Arc::new(Mutex::new(
+        Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+    ));
+    let result = document.execute(session, false).await.unwrap();
 
     assert_eq!(result.method.as_str(), "POST");
     assert_eq!(result.request_name.as_deref(), Some("Echo"));
@@ -96,14 +99,17 @@ async fn request_file_execute_stream_collects_body_and_emits_stream_events() {
         _path: None,
     };
 
-    let mut session = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
-    let result = document.execute(&mut session, true).await.unwrap();
+    let session = Arc::new(Mutex::new(
+        Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+    ));
+    let result = document.execute(session.clone(), true).await.unwrap();
 
     assert!(result.streamed);
     assert_eq!(String::from_utf8(result.body).unwrap(), body_str);
     assert!(result.duration.as_nanos() > 0);
 
-    let evs = session.events();
+    let guard = session.lock().unwrap();
+    let evs = guard.events();
     assert!(evs.iter().any(|e| matches!(
         e,
         events::Event::HttpResponseStreamStarted {

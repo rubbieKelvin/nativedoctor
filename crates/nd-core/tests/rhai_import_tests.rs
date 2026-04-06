@@ -1,20 +1,17 @@
 //! Integration tests for Rhai `import` (`.rhai` + request files) and `call()`.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use nd_core::env::RuntimeEnv;
-use nd_core::rhai::{run_rhai_script, Logger, RhaiScriptRunOptions};
+use nd_core::rhai::{resolver::RhaiScriptRunOptions, run::run_rhai_script};
+use nd_core::stream::Session;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[test]
 fn rhai_imports_sibling_rhai_module() {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(
-        dir.path().join("utils.rhai"),
-        "fn double(x) { x * 2 }\n",
-    )
-    .unwrap();
+    std::fs::write(dir.path().join("utils.rhai"), "fn double(x) { x * 2 }\n").unwrap();
     std::fs::write(
         dir.path().join("main.rhai"),
         r#"import "utils.rhai" as u;
@@ -26,8 +23,9 @@ assert(u::double(21) == 42, "double");
     let main = dir.path().join("main.rhai");
     run_rhai_script(
         &main,
-        &RuntimeEnv::new(),
-        None,
+        Arc::new(Mutex::new(
+            Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+        )),
         RhaiScriptRunOptions::default(),
     )
     .unwrap();
@@ -75,8 +73,7 @@ assert(r.status == 200, "status");
     let main = dir.path().join("main.rhai");
     run_rhai_script(
         &main,
-        &env,
-        Some(Arc::new(Logger::new())),
+        Arc::new(Mutex::new(Session::new(|| Ok(env.clone()), None).unwrap())),
         RhaiScriptRunOptions {
             no_network_io: false,
         },
@@ -115,8 +112,9 @@ assert(r.final_url == "https://example.invalid/no-network", "url");
     let main = dir.path().join("main.rhai");
     run_rhai_script(
         &main,
-        &RuntimeEnv::new(),
-        None,
+        Arc::new(Mutex::new(
+            Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+        )),
         RhaiScriptRunOptions {
             no_network_io: true,
         },

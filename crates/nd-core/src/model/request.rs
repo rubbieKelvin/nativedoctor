@@ -12,13 +12,14 @@ use crate::execute::client::{build_client, send_request};
 use crate::execute::prepare::expand_http_request_with_overrides;
 use crate::execute::types::{ExecutionResult, PreparedRequest};
 use crate::stream::events::Event;
-use crate::stream::Session;
+use crate::stream::{MutexSession, Session};
 use nanoid::nanoid;
 use nd_constants::REQUEST_FILE_DEFAULT_VERSION;
 use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use reqwest::Response;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tracing::debug;
 
@@ -115,7 +116,11 @@ impl RequestFile {
         return Ok(file);
     }
 
-    pub async fn execute(&self, session: &mut Session, stream: bool) -> Result<ExecutionResult> {
+    pub async fn execute(
+        &self,
+        session: Arc<Mutex<Session>>,
+        stream: bool,
+    ) -> Result<ExecutionResult> {
         return self.execute_with_overrides(session, None, stream).await;
     }
 
@@ -123,7 +128,7 @@ impl RequestFile {
     /// [`RuntimeEnv`] for `${VAR}` placeholders (not `${!name}` dynamics).
     pub async fn execute_with_overrides(
         &self,
-        session: &mut Session,
+        session: Arc<Mutex<Session>>,
         var_overrides: Option<&HashMap<String, String>>,
         stream: bool,
     ) -> Result<ExecutionResult> {
@@ -146,12 +151,19 @@ impl RequestFile {
         );
 
         // build client and start timer
+        let runtime = session
+            .lock()
+            .expect("session mutex poisoned")
+            .runtime
+            .clone();
+
         let prep = self
             .request
-            .expand_with_overrides(&session.runtime, var_overrides)?;
+            .expand_with_overrides(&runtime, var_overrides)?;
         let client = build_client(&self.request)?;
 
         let start = Instant::now();
+
         session.emit(|e| Event::HttpRequestStarted {
             request_name: self.name.clone(),
             method: prep.method.to_string(),
@@ -177,7 +189,7 @@ impl RequestFile {
 
         let body = if stream {
             consume_request_stream(
-                session,
+                &session,
                 self.name.clone(),
                 status,
                 final_url.clone(),
@@ -238,7 +250,7 @@ fn header_content_length(headers: &reqwest::header::HeaderMap) -> Option<u64> {
 }
 
 async fn consume_request_stream(
-    session: &mut Session,
+    session: &Arc<Mutex<Session>>,
     request_name: Option<String>,
     status: u16,
     final_url: String,

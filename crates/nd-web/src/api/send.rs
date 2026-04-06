@@ -9,6 +9,7 @@ use nd_core::stream::Session;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use crate::path_sandbox::resolve_allowed_file;
 use super::{json_err, AppState};
@@ -114,16 +115,18 @@ pub async fn post_send(
     }
 
     let runtime = (*state.env).clone();
-    let mut session = Session::new(
-        {
-            let r = runtime;
-            move || Ok(r.clone())
-        },
-        None,
-    )
-    .map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?;
+    let session = Arc::new(Mutex::new(
+        Session::new(
+            {
+                let r = runtime;
+                move || Ok(r.clone())
+            },
+            None,
+        )
+        .map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?,
+    ));
     let exec = doc
-        .execute_with_overrides(&mut session, overrides, false)
+        .execute_with_overrides(session, overrides, false)
         .await
         .map_err(|e| json_err(e.to_string(), StatusCode::BAD_REQUEST))?;
 

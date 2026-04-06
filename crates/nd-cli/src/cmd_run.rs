@@ -1,16 +1,16 @@
 //! `nativedoctor run <FILE>` and top-level `FILE` shorthand: request files or Rhai scripts.
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use nd_core::execute::types::PrintOptions;
 use nd_core::stream::events::Event;
-use nd_core::stream::Session;
+use nd_core::stream::{MutexSession, Session};
 use nd_core::{
     env::RuntimeEnv,
     execute::format::format_prepared_request,
     model::request::RequestFile,
-    rhai::{run_rhai_script, Logger, RhaiScriptRunOptions},
+    rhai::{resolver::RhaiScriptRunOptions, run::run_rhai_script},
 };
 
 use crate::{Cli, Command};
@@ -69,7 +69,7 @@ impl RunOptions {
 
 pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
     // create runtime session
-    let mut session = Session::new(
+    let session = Arc::new(Mutex::new(Session::new(
         || {
             RuntimeEnv::new()
                 .with_env_files(&opts.env_files)
@@ -78,12 +78,10 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
                 .map_err(|e| e.to_string())
         },
         None,
-    )?;
-
-    let logger = Arc::new(Logger::new());
+    )?));
 
     for path in opts.paths.iter() {
-        let mut session = &mut session;
+        let session = session.clone();
 
         if !path.try_exists().map_err(|e| e.to_string())? {
             tracing::error!(path = %path.display(), "File does not exist");
@@ -107,8 +105,8 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
             .unwrap_or_default();
 
         match ext.as_str() {
-            "json" | "yaml" | "yml" => run_request(path, &opts, &mut session).await?,
-            "rhai" => run_script(path, &opts, &mut session, logger.clone()).await?,
+            "json" | "yaml" | "yml" => run_request(path, &opts, session.clone()).await?,
+            "rhai" => run_script(path, &opts, session.clone()).await?,
             _ => {
                 return Err(String::from(
                     "Invalid file type. only json, yaml, yml, rhai files accepted",
@@ -128,7 +126,7 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
 pub async fn run_request(
     path: &Path,
     opts: &RunOptions,
-    session: &mut Session,
+    session: Arc<Mutex<Session>>,
 ) -> Result<(), String> {
     let document = RequestFile::from_file(path).map_err(|e| e.to_string())?;
 
@@ -140,7 +138,7 @@ pub async fn run_request(
     if opts.no_network_io || opts.verbose {
         let request = document
             .request
-            .expand(&session.runtime)
+            .expand(&session.runtime())
             .map_err(|e| e.to_string())?;
         let summary = format_prepared_request(&request).map_err(|e| e.to_string())?;
         println!("{summary}");
@@ -171,8 +169,7 @@ pub async fn run_request(
 pub async fn run_script(
     path: &Path,
     opts: &RunOptions,
-    session: &mut Session,
-    logger: Arc<Logger>,
+    session: Arc<Mutex<Session>>,
 ) -> Result<(), String> {
     if opts.verbose {
         println!("--- script/{} ---", path.display());
@@ -187,8 +184,7 @@ pub async fn run_script(
 
     return run_rhai_script(
         path,
-        &session.runtime,
-        Some(logger),
+        session,
         RhaiScriptRunOptions {
             no_network_io: opts.no_network_io,
         },

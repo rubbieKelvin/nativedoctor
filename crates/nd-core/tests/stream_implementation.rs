@@ -25,8 +25,8 @@ fn session_starts_with_id_and_zero_elapsed() {
 fn emit_stamps_elapsed_finish_appends_ended() {
     let mut s = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
     let sid = s.session_id().to_string();
-    s.emit(|e| events::Event::RuntimeLog {
-        level: rhai::LogLevel::Info,
+    s.emit(|e| events::Event::Log {
+        level: rhai::logger::LogLevel::Info,
         message: "hi".into(),
         script: "x.rhai".into(),
         elapsed: e,
@@ -37,7 +37,7 @@ fn emit_stamps_elapsed_finish_appends_ended() {
         &out[1],
         events::Event::RuntimeVariablesInitialized { .. }
     ));
-    assert!(matches!(&out[2], events::Event::RuntimeLog { .. }));
+    assert!(matches!(&out[2], events::Event::Log { .. }));
     match &out[3] {
         events::Event::SessionEnded {
             session_id,

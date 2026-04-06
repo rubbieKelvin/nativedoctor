@@ -3,11 +3,14 @@
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crate::env::RuntimeEnv;
+use crate::stream::Session;
 
 use super::engine::create_engine;
-use super::RhaiScriptRunOptions;
+use super::resolver::RhaiScriptRunOptions;
 
 static REQUEST_IMPORT_SUPPLEMENT: &str =
     include_str!("../../definitions/nativedoctor-request.d.rhai");
@@ -28,9 +31,15 @@ static REQUEST_IMPORT_SUPPLEMENT: &str =
 ///   nativedoctor-request.d.rhai
 /// ```
 pub fn write_rhai_definition_files(out_dir: &Path) -> io::Result<()> {
-    let env = RuntimeEnv::new();
     let stub = Path::new(".nativedoctor/stub.rhai");
-    let engine = create_engine(&env, stub, None, RhaiScriptRunOptions::default());
+    let engine = create_engine(
+        Arc::new(Mutex::new(
+            Session::new(|| Ok(RuntimeEnv::new()), None)
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?,
+        )),
+        stub,
+        RhaiScriptRunOptions::default(),
+    );
     engine.definitions().write_to_dir(out_dir)?;
 
     fs::write(
@@ -44,10 +53,14 @@ pub fn write_rhai_definition_files(out_dir: &Path) -> io::Result<()> {
 ///
 /// Equivalent to [`Definitions::single_file`] with extra content appended.
 pub fn rhai_definitions_single_file() -> String {
-    let env = RuntimeEnv::new();
-
     let stub = Path::new(".nativedoctor/stub.rhai");
-    let engine = create_engine(&env, stub, None, RhaiScriptRunOptions::default());
+    let engine = create_engine(
+        Arc::new(Mutex::new(
+            Session::new(|| Ok(RuntimeEnv::new()), None).expect("runtime session"),
+        )),
+        stub,
+        RhaiScriptRunOptions::default(),
+    );
 
     let mut s = engine.definitions().single_file();
     s.push_str("\n\n");

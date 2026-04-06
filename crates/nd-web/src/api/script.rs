@@ -2,13 +2,15 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::Json;
-use nd_core::rhai::{run_rhai_script, Logger, RhaiScriptRunOptions};
+use nd_core::rhai::{resolver::RhaiScriptRunOptions, run::run_rhai_script};
+use nd_core::stream::events::Event;
+use nd_core::stream::Session;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::path_sandbox::resolve_allowed_file;
 use super::{json_err, AppState};
+use crate::path_sandbox::resolve_allowed_file;
 
 /// Body for [`post_script_run`]: path to a `.rhai` file under the workspace roots.
 #[derive(Deserialize)]
@@ -16,7 +18,7 @@ pub struct RunScriptBody {
     pub path: String,
 }
 
-/// Result of running a Rhai script, including captured log lines from the Rhai `Logger`.
+/// Result of running a Rhai script, including log lines from [`Event::Log`] on the run [`Session`].
 #[derive(Serialize)]
 pub struct ScriptRunResponse {
     pub ok: bool,
@@ -25,7 +27,7 @@ pub struct ScriptRunResponse {
     pub logs: Vec<ScriptLogLine>,
 }
 
-/// One line from the in-memory Rhai log sink.
+/// One line from script `log()` mapped from [`Event::Log`].
 #[derive(Serialize)]
 pub struct ScriptLogLine {
     pub level: String,
@@ -49,27 +51,50 @@ pub async fn post_script_run(
 
     let env = state.env.clone();
     let no_network_io = state.no_network_io;
-    let logger = Arc::new(Logger::new());
 
-    let logger_clone = logger.clone();
+    let session = Arc::new(Mutex::new(
+        Session::new(
+            {
+                let e = (*env).clone();
+                move || Ok(e)
+            },
+            None,
+        )
+        .map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?,
+    ));
+
+    let session_for_thread = session.clone();
     let res = tokio::task::spawn_blocking(move || {
         run_rhai_script(
             &allowed,
-            env.as_ref(),
-            Some(logger_clone),
+            session_for_thread,
             RhaiScriptRunOptions { no_network_io },
         )
     })
     .await
     .map_err(|e| json_err(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?;
 
-    let logs: Vec<ScriptLogLine> = logger
-        .drain()
-        .into_iter()
-        .map(|l| ScriptLogLine {
-            level: l.level.to_string(),
-            message: l.message,
-            elapsed_ms: l.elapsed.as_millis(),
+    let logs: Vec<ScriptLogLine> = session
+        .lock()
+        .map_err(|e| json_err(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR))?
+        .events()
+        .iter()
+        .filter_map(|e| {
+            if let Event::Log {
+                level,
+                message,
+                elapsed,
+                ..
+            } = e
+            {
+                Some(ScriptLogLine {
+                    level: level.to_string(),
+                    message: message.clone(),
+                    elapsed_ms: elapsed.as_millis(),
+                })
+            } else {
+                None
+            }
         })
         .collect();
 

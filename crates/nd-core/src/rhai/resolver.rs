@@ -270,17 +270,19 @@ fn execute_request_call(
 
     let result = tokio::task::block_in_place(|| {
         tokio::runtime::Handle::current().block_on(async move {
-            let mut session = crate::stream::Session::new(
-                // use already existing runtime that was created when script was loaded
-                // TODO: we might need to sync this back into the parent runtime
-                {
-                    let r = runtime;
-                    move || Ok(r.clone())
-                },
-                None,
-            )
-            .map_err(|e| NdError::InvalidRequest(format!("session: {e}")))?;
-            doc.execute_with_overrides(&mut session, overrides.as_ref(), stream)
+            let session = Arc::new(Mutex::new(
+                crate::stream::Session::new(
+                    // use already existing runtime that was created when script was loaded
+                    // TODO: we might need to sync this back into the parent runtime
+                    {
+                        let r = runtime;
+                        move || Ok(r.clone())
+                    },
+                    None,
+                )
+                .map_err(|e| NdError::InvalidRequest(format!("session: {e}")))?,
+            ));
+            doc.execute_with_overrides(session, overrides.as_ref(), stream)
                 .await
         })
     })

@@ -1,21 +1,19 @@
 //! Orchestrate compiling a Rhai script from disk (so `import` sees a real file source) and running it.
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tracing::debug;
 
 use super::engine::create_engine;
-use super::logger::Logger;
 use super::resolver::RhaiScriptRunOptions;
 
-use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
+use crate::stream::Session;
 
 pub fn run_rhai_script(
     path: &Path,
-    env: &RuntimeEnv,
-    logger: Option<Arc<Logger>>,
+    session: Arc<Mutex<Session>>,
     script_options: RhaiScriptRunOptions,
 ) -> Result<()> {
     if !path.is_file() {
@@ -32,7 +30,7 @@ pub fn run_rhai_script(
     );
 
     let mut scope = rhai::Scope::new();
-    let engine = create_engine(env, &script_path, logger, script_options);
+    let engine = create_engine(session.clone(), &script_path, script_options);
 
     let ast = engine
         .compile_file_with_scope(&scope, script_path.clone())

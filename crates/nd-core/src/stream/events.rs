@@ -1,4 +1,4 @@
-use crate::rhai::LogLevel;
+use crate::rhai::logger::LogLevel;
 use serde_json::Value;
 use std::{path::PathBuf, time::Duration};
 
@@ -86,9 +86,10 @@ pub enum Event {
         elapsed: Duration,
         key: String,
         value: Value,
+        persisted: bool,
     },
     /// One line from `log(level, msg)` (and the same shape as [`crate::rhai::Log`]).
-    RuntimeLog {
+    Log {
         level: LogLevel,
         message: String,
         script: String,
@@ -100,7 +101,7 @@ pub enum Event {
     CheckpointWaiting {
         /// Correlate with the “continue” / unblock action (session-scoped or global, depending on host).
         checkpoint_id: String,
-        /// Script label (same convention as [`Event::RuntimeLog::script`]).
+        /// Script label (same convention as [`Event::Log::script`]).
         script: String,
         message: String,
         observe: Value,
