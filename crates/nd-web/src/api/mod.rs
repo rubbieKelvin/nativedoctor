@@ -36,6 +36,7 @@ pub mod workspace;
 pub struct AppState {
     /// Canonical absolute directories the user allowed; all file access is constrained here.
     pub roots: Arc<Vec<PathBuf>>,
+    // TODO: no shared env across the board; remove later
     pub env: Arc<RuntimeEnv>,
     pub no_network_io: bool,
 }

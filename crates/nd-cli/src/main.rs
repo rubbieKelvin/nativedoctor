@@ -74,6 +74,8 @@ enum Command {
         /// The path pointing to the file(s) to run
         #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1..)]
         paths: Vec<PathBuf>,
+        #[arg(long)]
+        stream_content: bool,
     },
     /// Serve web UI for one or more workspace directories (non-recursive listing).
     Web {

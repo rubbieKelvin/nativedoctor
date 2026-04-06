@@ -18,3 +18,9 @@ fn invoke(kwargs: Map) -> Map;
 
 /// Same as `invoke(#{})` — run the request with no per-call variable overrides.
 fn invoke() -> Map;
+
+/// Stream the request, unlike invoke this one fetces bit by bit
+fn stream(kwargs: Map) -> Map;
+
+/// Same as `stream(#{})` — run the request with no per-call variable overrides.
+fn stream() -> Map;

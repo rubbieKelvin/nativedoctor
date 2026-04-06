@@ -27,26 +27,40 @@ pub enum Event {
     /// Use this path when the downstream server uses chunked transfer, SSE, NDJSON, or any body streamed over the wire.
     /// Buffered responses can skip these and go straight to [`Event::HttpResponseCompleted`].
     HttpResponseStreamStarted {
+        id: String,
         elapsed: Duration,
         request_name: Option<String>,
         status: u16,
         final_url: String,
-        /// `Content-Type` from the response, when present (helps the UI choose decoding).
+        /// `Content-Type` from the response, when present. helps the UI choose decoding.
         content_type: Option<String>,
+        /// `Content-Length` when present and valid; `None` means indeterminate progress
+        content_length: Option<u64>,
     },
     /// One chunk of the response body as received from the wire (order matches `sequence`).
     HttpResponseStreamChunk {
+        id: String,
         request_name: Option<String>,
         sequence: u64,
         data: Vec<u8>,
+        /// Size of this chunk.
+        chunk_len: u64,
+        /// Cumulative bytes received after this chunk.
+        bytes_received: u64,
+        /// `Some` in `0.0..=1.0` when `content_length` was known at stream start; `None` if indeterminate.
+        progress: Option<f32>,
         elapsed: Duration,
     },
     /// No more body octets for this response; `total_bytes` is the sum of all chunk payloads.
     HttpResponseStreamEnded {
+        id: String,
         request_name: Option<String>,
         total_bytes: u64,
-        /// Wall time from first byte (or stream start) through end of body.
         elapsed: Duration,
+        /// Same as `content_length` from [`Event::HttpResponseStreamStarted`], for convenience.
+        expected_total: Option<u64>,
+        /// `true` when `expected_total` is `None`, or equals `total_bytes`.
+        length_matched: bool,
     },
     /// Response received (or dry-run row: `status == 0`, see [`crate::execute::ExecutionResult`]).
     HttpResponseCompleted {

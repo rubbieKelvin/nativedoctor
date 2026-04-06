@@ -27,6 +27,7 @@ pub struct RunOptions {
     pub paths: Vec<PathBuf>,
     pub persistence_file: Option<PathBuf>,
     pub env_files: Vec<PathBuf>,
+    pub stream: bool,
 }
 
 impl RunOptions {
@@ -34,8 +35,10 @@ impl RunOptions {
         return Ok(match &cli.command {
             Some(Command::Run {
                 retain_runtime,
+                stream_content,
                 paths,
             }) => RunOptions {
+                stream: stream_content.clone(),
                 verbose: cli.verbose,
                 no_network_io: cli.no_network_io,
                 retain_runtime: *retain_runtime,
@@ -50,6 +53,7 @@ impl RunOptions {
                     .ok_or_else(|| "expected a subcommand or a request file path".to_string())?;
 
                 RunOptions {
+                    stream: false,
                     verbose: cli.verbose,
                     no_network_io: cli.no_network_io,
                     retain_runtime: true,
@@ -151,7 +155,7 @@ pub async fn run_request(
     }
 
     let output = document
-        .execute(&session.runtime)
+        .execute(session, opts.stream.clone())
         .await
         .map_err(|e| e.to_string())?;
 

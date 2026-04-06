@@ -5,6 +5,7 @@ use axum::Json;
 use base64::Engine as _;
 use nd_core::execute::types::ExecutionResult;
 use nd_core::model::request::RequestFile;
+use nd_core::stream::Session;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -112,8 +113,17 @@ pub async fn post_send(
         }));
     }
 
+    let runtime = (*state.env).clone();
+    let mut session = Session::new(
+        {
+            let r = runtime;
+            move || Ok(r.clone())
+        },
+        None,
+    )
+    .map_err(|e| json_err(e, StatusCode::BAD_REQUEST))?;
     let exec = doc
-        .execute_with_overrides(state.env.as_ref(), overrides)
+        .execute_with_overrides(&mut session, overrides, false)
         .await
         .map_err(|e| json_err(e.to_string(), StatusCode::BAD_REQUEST))?;
 

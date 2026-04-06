@@ -55,6 +55,7 @@ pub struct ExecutionResult {
     /// Response headers from the wire, or request headers for dry-run.
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
+    pub streamed: bool,
     /// Time to receive the full response; zero for dry-run.
     pub duration: Duration,
     pub doc: RequestFile,
@@ -71,10 +72,7 @@ impl ExecutionResult {
 
         match style {
             PrintOptions::Compact => {
-                println!(
-                    "[{}・{}] {} ({})",
-                    method, status, self.final_url, duration
-                );
+                println!("[{}・{}] {} ({})", method, status, self.final_url, duration);
             }
             PrintOptions::Normal | PrintOptions::Verbose => {
                 println!(
