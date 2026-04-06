@@ -34,12 +34,13 @@ impl Session {
         };
 
         instance.record(events::Event::SessionStarted {
-            session_id: instance.id.clone(),
+            id: instance.id.clone(),
             elapsed: Duration::ZERO,
         });
 
         let entries = instance.runtime.entries();
-        instance.emit(|e| events::Event::RuntimeVariablesInitialized {
+        instance.emit(|id, e| events::Event::RuntimeVariablesInitialized {
+            session_id: id,
             elapsed: e,
             entries,
         });
@@ -60,8 +61,8 @@ impl Session {
     }
 
     /// Build an event with the current session-relative [`Duration`] (preferred over [`Self::push`]).
-    pub fn emit(&mut self, f: impl FnOnce(Duration) -> events::Event) {
-        let event = f(self.start.elapsed());
+    pub fn emit(&mut self, f: impl FnOnce(String, Duration) -> events::Event) {
+        let event = f(self.id.clone(), self.start.elapsed());
         self.record(event);
     }
 
@@ -97,7 +98,8 @@ impl Session {
         self.runtime.clear();
         let entries = self.runtime.entries();
 
-        self.emit(|e| events::Event::RuntimeVariablesInitialized {
+        self.emit(|id, e| events::Event::RuntimeVariablesInitialized {
+            session_id: id,
             elapsed: e,
             entries,
         });
@@ -107,7 +109,7 @@ impl Session {
 /// [`Session::emit`] and related helpers for a shared session (e.g. Rhai host functions, HTTP runner).
 pub trait MutexSession {
     fn id(&self) -> String;
-    fn emit(&self, f: impl FnOnce(Duration) -> events::Event);
+    fn emit(&self, f: impl FnOnce(String, Duration) -> events::Event);
     fn reload_runtime(&self);
     fn runtime(&self) -> RuntimeEnv;
 }
@@ -117,7 +119,7 @@ impl MutexSession for Arc<Mutex<Session>> {
         let session = self.lock().expect("session mutex poisoned");
         return session.id.clone();
     }
-    fn emit(&self, f: impl FnOnce(Duration) -> events::Event) {
+    fn emit(&self, f: impl FnOnce(String, Duration) -> events::Event) {
         let mut session = self.lock().expect("session mutex poisoned");
         session.emit(f);
     }
@@ -138,7 +140,7 @@ impl MutexSession for &Arc<Mutex<Session>> {
         return Arc::clone(self).id();
     }
 
-    fn emit(&self, f: impl FnOnce(Duration) -> events::Event) {
+    fn emit(&self, f: impl FnOnce(String, Duration) -> events::Event) {
         Arc::clone(self).emit(f);
     }
 

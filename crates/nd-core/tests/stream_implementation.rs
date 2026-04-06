@@ -10,11 +10,8 @@ fn session_starts_with_id_and_zero_elapsed() {
 
     assert!(!s.session_id().is_empty());
     match &s.events()[0] {
-        events::Event::SessionStarted {
-            session_id,
-            elapsed,
-        } => {
-            assert_eq!(session_id, s.session_id());
+        events::Event::SessionStarted { id, elapsed } => {
+            assert_eq!(id, s.session_id());
             assert!(elapsed.is_zero());
         }
         e => panic!("expected SessionStarted, got {e:?}"),
@@ -25,7 +22,8 @@ fn session_starts_with_id_and_zero_elapsed() {
 fn emit_stamps_elapsed_finish_appends_ended() {
     let mut s = Session::new(|| Ok(RuntimeEnv::new()), None).unwrap();
     let sid = s.session_id().to_string();
-    s.emit(|e| events::Event::Log {
+    s.emit(|id, e| events::Event::Log {
+        session_id: id,
         level: rhai::logger::LogLevel::Info,
         message: "hi".into(),
         script: "x.rhai".into(),
@@ -64,7 +62,8 @@ fn live_sink_sees_every_event() {
     )
     .unwrap();
 
-    s.emit(|e| events::Event::NewStepEncountered {
+    s.emit(|id, e| events::Event::NewStepEncountered {
+        session_id: id,
         name: "a".into(),
         elapsed: e,
     });

@@ -102,7 +102,8 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
 
         if !path.try_exists().map_err(|e| e.to_string())? {
             tracing::error!(path = %path.display(), "File does not exist");
-            session.emit(|e| Event::Error {
+            session.emit(|id, e| Event::Error {
+                session_id: id,
                 elapsed: e,
                 message: format!("File does not exist: {}", path.display()),
             });
@@ -110,7 +111,8 @@ pub(crate) async fn run_run(opts: RunOptions) -> Result<(), String> {
             continue;
         }
 
-        session.emit(|e| Event::FileLoaded {
+        session.emit(|id, e| Event::FileLoaded {
+            session_id: id,
             elapsed: e,
             path: path.clone(),
         });

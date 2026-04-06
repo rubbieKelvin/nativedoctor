@@ -164,7 +164,8 @@ impl RequestFile {
 
         let start = Instant::now();
 
-        session.emit(|e| Event::HttpRequestStarted {
+        session.emit(|id, e| Event::HttpRequestStarted {
+            session_id: id,
             request_name: self.name.clone(),
             method: prep.method.to_string(),
             url: prep.url.clone(),
@@ -204,7 +205,8 @@ impl RequestFile {
 
         let duration = start.elapsed();
 
-        session.emit(|e| Event::HttpResponseCompleted {
+        session.emit(|id, e| Event::HttpResponseCompleted {
+            session_id: id,
             request_name: self.name.clone(),
             status,
             final_url: final_url.clone(),
@@ -260,7 +262,8 @@ async fn consume_request_stream(
 ) -> Result<Vec<u8>> {
     let stream_id = nanoid!();
 
-    session.emit(|e| Event::HttpResponseStreamStarted {
+    session.emit(|id, e| Event::HttpResponseStreamStarted {
+        session_id: id,
         id: stream_id.clone(),
         elapsed: e,
         request_name: request_name.clone(),
@@ -293,7 +296,8 @@ async fn consume_request_stream(
             Some((cumulative as f32 / total as f32).min(1.0))
         });
 
-        session.emit(|e| Event::HttpResponseStreamChunk {
+        session.emit(|id, e| Event::HttpResponseStreamChunk {
+            session_id: id,
             id: stream_id.clone(),
             request_name: request_name.clone(),
             sequence,
@@ -315,7 +319,8 @@ async fn consume_request_stream(
         None => true,
     };
 
-    session.emit(|e| Event::HttpResponseStreamEnded {
+    session.emit(|id, e| Event::HttpResponseStreamEnded {
+        session_id: id,
         id: stream_id.clone(),
         request_name: request_name.clone(),
         total_bytes,

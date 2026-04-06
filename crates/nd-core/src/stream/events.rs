@@ -6,10 +6,7 @@ use std::{path::PathBuf, time::Duration};
 #[derive(Debug, Clone)]
 pub enum Event {
     /// A new client run was accepted; correlate later events with `session_id`.
-    SessionStarted {
-        session_id: String,
-        elapsed: Duration,
-    },
+    SessionStarted { id: String, elapsed: Duration },
     /// Normal completion (HTTP and script finished, or the run ended without a fatal error).
     SessionEnded {
         session_id: String,
@@ -17,6 +14,7 @@ pub enum Event {
     },
     /// Expanded request is about to be sent (or simulated in dry-run).
     HttpRequestStarted {
+        session_id: String,
         request_name: Option<String>,
         method: String,
         url: String,
@@ -27,6 +25,7 @@ pub enum Event {
     /// Use this path when the downstream server uses chunked transfer, SSE, NDJSON, or any body streamed over the wire.
     /// Buffered responses can skip these and go straight to [`Event::HttpResponseCompleted`].
     HttpResponseStreamStarted {
+        session_id: String,
         id: String,
         elapsed: Duration,
         request_name: Option<String>,
@@ -39,6 +38,7 @@ pub enum Event {
     },
     /// One chunk of the response body as received from the wire (order matches `sequence`).
     HttpResponseStreamChunk {
+        session_id: String,
         id: String,
         request_name: Option<String>,
         sequence: u64,
@@ -53,6 +53,7 @@ pub enum Event {
     },
     /// No more body octets for this response; `total_bytes` is the sum of all chunk payloads.
     HttpResponseStreamEnded {
+        session_id: String,
         id: String,
         request_name: Option<String>,
         total_bytes: u64,
@@ -64,25 +65,33 @@ pub enum Event {
     },
     /// Response received (or dry-run row: `status == 0`, see [`crate::execute::ExecutionResult`]).
     HttpResponseCompleted {
+        session_id: String,
         request_name: Option<String>,
         status: u16,
         final_url: String,
         elapsed: Duration,
     },
     /// Rhai script evaluation began for this label (usually the script path).
-    ScriptStarted { elapsed: Duration, script: String },
+    ScriptStarted {
+        session_id: String,
+        elapsed: Duration,
+        script: String,
+    },
     /// Rhai script finished; `error` is set when evaluation failed.
     ScriptFinished {
+        session_id: String,
         elapsed: Duration,
         script: String,
         success: bool,
         error: Option<String>,
     },
     RuntimeVariablesInitialized {
+        session_id: String,
         elapsed: Duration,
         entries: Vec<(String, String)>,
     },
     RuntimeVariablePushed {
+        session_id: String,
         elapsed: Duration,
         key: String,
         value: Value,
@@ -90,6 +99,7 @@ pub enum Event {
     },
     /// One line from `log(level, msg)` (and the same shape as [`crate::rhai::Log`]).
     Log {
+        session_id: String,
         level: LogLevel,
         message: String,
         script: String,
@@ -99,6 +109,7 @@ pub enum Event {
     ///
     /// `observe` is the Rhai map converted to JSON for clients (CLI may print it; web can render or inspect it).
     CheckpointWaiting {
+        session_id: String,
         /// Correlate with the “continue” / unblock action (session-scoped or global, depending on host).
         checkpoint_id: String,
         /// Script label (same convention as [`Event::Log::script`]).
@@ -109,18 +120,32 @@ pub enum Event {
     },
     /// Fired after the checkpoint has been acknowledged and the script is running again.
     CheckpointResumed {
+        session_id: String,
         elapsed: Duration,
         checkpoint_id: String,
     },
     /// Fatal error for the session (network, invalid request, unexpected failure).
-    Error { elapsed: Duration, message: String },
+    Error {
+        session_id: String,
+        elapsed: Duration,
+        message: String,
+    },
     AssertCalled {
+        session_id: String,
         passed: bool,
         elapsed: Duration,
         message: String,
     },
     /// we'd add a new rhai function step(string) that just shoots this events. basically does nothing else
-    NewStepEncountered { name: String, elapsed: Duration },
+    NewStepEncountered {
+        session_id: String,
+        name: String,
+        elapsed: Duration,
+    },
     /// Called when we load a file, request or session
-    FileLoaded { elapsed: Duration, path: PathBuf },
+    FileLoaded {
+        session_id: String,
+        elapsed: Duration,
+        path: PathBuf,
+    },
 }

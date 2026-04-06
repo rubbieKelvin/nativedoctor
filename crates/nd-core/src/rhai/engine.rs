@@ -41,7 +41,8 @@ fn register_env_fns(engine: &mut Engine, session: Arc<Mutex<Session>>) {
             let key_owned = key.to_string();
 
             session_for_set
-                .emit(|elapsed| Event::RuntimeVariablePushed {
+                .emit(|id, elapsed| Event::RuntimeVariablePushed {
+                    session_id: id,
                     elapsed,
                     key: key_owned,
                     value: json,
@@ -58,7 +59,8 @@ fn register_assert(engine: &mut Engine, session: Arc<Mutex<Session>>) {
         .register_into_engine(engine, move |condition: bool, message: &str| {
             let msg = message.to_string();
 
-            session.emit(|elapsed| Event::AssertCalled {
+            session.emit(|id, elapsed| Event::AssertCalled {
+                session_id: id,
                 passed: condition,
                 elapsed,
                 message: msg,
@@ -88,7 +90,8 @@ fn register_log(engine: &mut Engine, session: Arc<Mutex<Session>>, script_label:
             let msg = message.to_string();
             let label = script_label.clone();
 
-            session.emit(|elapsed| Event::Log {
+            session.emit(|id, elapsed| Event::Log {
+                session_id: id,
                 level: lvl,
                 message: msg,
                 script: label,
@@ -113,7 +116,8 @@ fn register_persist(engine: &mut Engine, session: Arc<Mutex<Session>>) {
             let key_owned = key.to_string();
             let json = dynamic_to_json(&value);
 
-            session_e.emit(|elapsed| Event::RuntimeVariablePushed {
+            session_e.emit(|id, elapsed| Event::RuntimeVariablePushed {
+                session_id: id,
                 elapsed,
                 key: key_owned,
                 value: json,
