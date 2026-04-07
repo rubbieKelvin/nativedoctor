@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
-import type { EditorTab } from "@/types/editor";
+import { useEditorStore } from "@/stores/editor";
+import { storeToRefs } from "pinia";
 import { X } from "lucide-vue-next";
 
-defineProps<{
-    tabs: EditorTab[];
-    activeId: string | null;
-}>();
-
-const emit = defineEmits<{
-    select: [id: string];
-    close: [id: string, ev: MouseEvent];
-}>();
+const editor = useEditorStore();
+const { tabs, activeId } = storeToRefs(editor);
 </script>
 
 <template>
@@ -30,7 +24,7 @@ const emit = defineEmits<{
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground'
             "
-            @click="emit('select', t.id)"
+            @click="editor.activeId = t.id"
         >
             <span class="min-w-0 truncate text-xs font-medium">{{
                 t.title
@@ -38,7 +32,7 @@ const emit = defineEmits<{
             <span
                 class="inline-flex shrink-0 rounded-sm p-0.5 hover:bg-background/80 hover:text-foreground"
                 title="Close tab"
-                @click.stop="emit('close', t.id, $event)"
+                @click.stop="editor.closeTab(t.id, $event)"
             >
                 <X class="h-3 w-3" aria-hidden="true" />
             </span>

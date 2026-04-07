@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { AppModel } from "@/composables/useAppModel";
+import { storeToRefs } from "pinia";
+import { useExecutionStore } from "@/stores/execution";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import ScriptLogViewer from "@/components/script/ScriptLogViewer.vue";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const props = defineProps<{
-    app: AppModel;
-}>();
+const execution = useExecutionStore();
+const { scriptLogs, scriptRunError } = storeToRefs(execution);
 
 const section = ref<"logs" | "env">("logs");
 </script>
@@ -33,15 +33,15 @@ const section = ref<"logs" | "env">("logs");
                 class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             >
                 <ScriptLogViewer
-                    :logs="app.scriptLogs"
-                    :error="app.scriptRunError"
+                    :logs="scriptLogs"
+                    :error="scriptRunError"
                 />
             </TabsContent>
             <TabsContent
                 value="env"
                 class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             >
-                <RuntimeEnvTable :app="app" />
+                <RuntimeEnvTable />
             </TabsContent>
         </Tabs>
     </div>

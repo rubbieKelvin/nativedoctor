@@ -1,32 +1,31 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { useAppModel } from "@/composables/useAppModel";
+import { storeToRefs } from "pinia";
+import { useEditorStore } from "@/stores/editor";
+import { useWorkspaceStore } from "@/stores/workspace";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import AppSideBar from "@/components/sidebar/AppSideBar.vue";
 import EditorTabBar from "@/components/editor/EditorTabBar.vue";
 import RequestWorkspace from "@/components/request/RequestWorkspace.vue";
 import ScriptWorkspace from "@/components/script/ScriptWorkspace.vue";
 
-const app = useAppModel();
+const workspace = useWorkspaceStore();
+const editor = useEditorStore();
+const { activeTab } = storeToRefs(editor);
 
 onMounted(() => {
-    void app.loadWorkspace();
+    void workspace.loadWorkspace();
 });
 </script>
 
 <template>
     <AppLayout>
         <template #sidebar>
-            <AppSideBar
-                :workspace="app.workspace"
-                :load-err="app.loadErr"
-                :active-id="app.activeId"
-                @open-file="app.openFile"
-            />
+            <AppSideBar />
         </template>
 
         <div
-            v-if="!app.activeTab"
+            v-if="!activeTab"
             class="text-muted-foreground flex min-h-0 flex-1 items-center justify-center p-8 text-sm"
         >
             Select a request or script from the sidebar
@@ -36,17 +35,9 @@ onMounted(() => {
             v-else
             class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         >
-            <EditorTabBar
-                :tabs="app.tabs"
-                :active-id="app.activeId"
-                @select="(id: string) => (app.activeId = id)"
-                @close="app.closeTab"
-            />
-            <RequestWorkspace
-                v-if="app.activeTab.kind === 'request'"
-                :app="app"
-            />
-            <ScriptWorkspace v-else :app="app" />
+            <EditorTabBar />
+            <RequestWorkspace v-if="activeTab.kind === 'request'" />
+            <ScriptWorkspace v-else />
         </div>
     </AppLayout>
 </template>

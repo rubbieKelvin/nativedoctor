@@ -1,73 +1,10 @@
-import { computed, reactive, ref } from "vue";
-import type { Ref } from "vue";
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 import YAML from "yaml";
-import {
-    fetchFile,
-    fetchWorkspace,
-    runSessionCommand,
-    type ExecutionResultDto,
-    type RuntimeEnvEntry,
-    type WorkspaceSnapshot,
-} from "@/api";
+import { fetchFile } from "@/api";
 import type { EditorTab, ReqSubTab } from "@/types/editor";
 
-/** Matches serde JSON for `std::time::Duration`. */
-type SerdeDuration = { secs: number; nanos: number };
-
-function durationToMs(d: SerdeDuration | undefined): number {
-    if (!d || typeof d.secs !== "number") return 0;
-    return d.secs * 1000 + Math.floor((d.nanos ?? 0) / 1_000_000);
-}
-
-/** Updates env rows from streamed `Event` JSON (serde externally-tagged enum). */
-function applyRuntimeEnvFromStreamEvent(
-    target: Ref<RuntimeEnvEntry[]>,
-    data: unknown,
-): void {
-    if (!data || typeof data !== "object") return;
-    const o = data as Record<string, unknown>;
-    const init = o.RuntimeVariablesInitialized as
-        | { entries?: [string, string][] }
-        | undefined;
-    if (init?.entries) {
-        target.value = init.entries.map(([key, value]) => ({ key, value }));
-        return;
-    }
-    const pushed = o.RuntimeVariablePushed as
-        | { key?: string; value?: unknown }
-        | undefined;
-    if (pushed?.key != null) {
-        const val =
-            typeof pushed.value === "string"
-                ? pushed.value
-                : JSON.stringify(pushed.value);
-        const list = [...target.value];
-        const i = list.findIndex((e) => e.key === pushed.key);
-        if (i >= 0) list[i] = { key: pushed.key, value: val };
-        else list.push({ key: pushed.key, value: val });
-        list.sort((a, b) => a.key.localeCompare(b.key));
-        target.value = list;
-    }
-}
-
-function appendLogFromStreamEvent(
-    logs: { level: string; message: string; elapsed_ms: number }[],
-    data: unknown,
-): void {
-    if (!data || typeof data !== "object") return;
-    const o = data as Record<string, unknown>;
-    const inner = o.Log as
-        | { level?: string; message?: string; elapsed?: SerdeDuration }
-        | undefined;
-    if (inner?.message == null) return;
-    logs.push({
-        level: String(inner.level ?? "info"),
-        message: inner.message,
-        elapsed_ms: durationToMs(inner.elapsed),
-    });
-}
-
-const HTTP_METHODS = [
+export const HTTP_METHODS = [
     "GET",
     "POST",
     "PUT",
@@ -77,57 +14,37 @@ const HTTP_METHODS = [
     "OPTIONS",
 ] as const;
 
-export function useAppModel() {
-    const workspace = ref<WorkspaceSnapshot | null>(null);
-    const loadErr = ref<string | null>(null);
+function extFromPath(p: string): string {
+    const m = p.match(/\.([^.]+)$/);
+    return m ? m[1].toLowerCase() : "json";
+}
+
+function parseRaw(
+    raw: string,
+    ext: string,
+): Record<string, unknown> | null {
+    try {
+        if (ext === "yaml" || ext === "yml") {
+            return YAML.parse(raw) as Record<string, unknown>;
+        }
+        return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+        return null;
+    }
+}
+
+export const useEditorStore = defineStore("editor", () => {
     const tabs = ref<EditorTab[]>([]);
     const activeId = ref<string | null>(null);
     const reqSubTab = ref<ReqSubTab>("params");
-    const response = ref<ExecutionResultDto | null>(null);
-    const sendErr = ref<string | null>(null);
-    const sending = ref(false);
-    const scriptLogs = ref<
-        { level: string; message: string; elapsed_ms: number }[]
-    >([]);
-    const scriptRunError = ref<string | null>(null);
-    const bodyView = ref<"pretty" | "raw">("pretty");
-    const runtimeEnvEntries = ref<RuntimeEnvEntry[]>([]);
 
     const activeTab = computed(
         () => tabs.value.find((t) => t.id === activeId.value) ?? null,
     );
 
-    function extFromPath(p: string): string {
-        const m = p.match(/\.([^.]+)$/);
-        return m ? m[1].toLowerCase() : "json";
-    }
-
-    function parseRaw(
-        raw: string,
-        ext: string,
-    ): Record<string, unknown> | null {
-        try {
-            if (ext === "yaml" || ext === "yml") {
-                return YAML.parse(raw) as Record<string, unknown>;
-            }
-            return JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-            return null;
-        }
-    }
-
     function syncDoc(tab: EditorTab): void {
         tab.doc = parseRaw(tab.raw, tab.ext);
         tab.parseError = tab.doc ? null : "Invalid JSON/YAML";
-    }
-
-    async function loadWorkspace() {
-        loadErr.value = null;
-        try {
-            workspace.value = await fetchWorkspace();
-        } catch (e) {
-            loadErr.value = e instanceof Error ? e.message : String(e);
-        }
     }
 
     async function openFile(
@@ -156,11 +73,8 @@ export function useAppModel() {
         syncDoc(tab);
         tabs.value.push(tab);
         activeId.value = tab.id;
-        response.value = null;
-        sendErr.value = null;
-        scriptLogs.value = [];
-        scriptRunError.value = null;
-        runtimeEnvEntries.value = [];
+        const { useExecutionStore } = await import("./execution");
+        useExecutionStore().resetAfterOpenFile();
     }
 
     function closeTab(id: string, ev: MouseEvent) {
@@ -210,7 +124,6 @@ export function useAppModel() {
         t.raw = serializeDoc(t);
     }
 
-/** Flatten overrides JSON to a string map for the KeyValue editor; invalid → {}. */
     function parseOverridesToRecord(raw: string): Record<string, string> {
         const s = raw.trim();
         if (s === "" || s === "{}") {
@@ -243,7 +156,9 @@ export function useAppModel() {
 
     function parseOverridesForSend(
         raw: string,
-    ): { ok: true; overrides: Record<string, string> } | { ok: false; message: string } {
+    ):
+        | { ok: true; overrides: Record<string, string> }
+        | { ok: false; message: string } {
         const s = raw.trim();
         if (s === "" || s === "{}") {
             return { ok: true, overrides: {} };
@@ -253,7 +168,8 @@ export function useAppModel() {
             if (o === null || typeof o !== "object" || Array.isArray(o)) {
                 return {
                     ok: false,
-                    message: "Overrides must be a JSON object (e.g. {\"ID\": \"42\"})",
+                    message:
+                        'Overrides must be a JSON object (e.g. {"ID": "42"})',
                 };
             }
             const out: Record<string, string> = {};
@@ -276,86 +192,6 @@ export function useAppModel() {
             return { ok: true, overrides: out };
         } catch {
             return { ok: false, message: "Invalid JSON in overrides" };
-        }
-    }
-
-    async function doSend() {
-        const t = activeTab.value;
-        if (!t || t.kind !== "request") return;
-        syncDoc(t);
-        if (!t.doc) {
-            sendErr.value = t.parseError ?? "Cannot parse document";
-            return;
-        }
-        const parsed = parseOverridesForSend(t.overridesJson);
-        if (!parsed.ok) {
-            sendErr.value = parsed.message;
-            return;
-        }
-        const payloadOverrides =
-            Object.keys(parsed.overrides).length > 0
-                ? parsed.overrides
-                : undefined;
-
-        sending.value = true;
-        sendErr.value = null;
-        response.value = null;
-        try {
-            const res = await runSessionCommand(
-                {
-                    type: "run_request",
-                    source_path: t.path,
-                    document: t.doc,
-                    overrides: payloadOverrides ?? {},
-                    stream: false,
-                },
-                {
-                    onEvent: (ev) => {
-                        applyRuntimeEnvFromStreamEvent(runtimeEnvEntries, ev);
-                    },
-                },
-            );
-            if (!res.ok) sendErr.value = res.error ?? "Request failed";
-            else sendErr.value = null;
-            response.value = res.result ?? null;
-        } catch (e) {
-            sendErr.value = e instanceof Error ? e.message : String(e);
-        } finally {
-            sending.value = false;
-        }
-    }
-
-    async function doRunScript() {
-        const t = activeTab.value;
-        if (!t || t.kind !== "script") return;
-        sending.value = true;
-        scriptLogs.value = [];
-        scriptRunError.value = null;
-        sendErr.value = null;
-        try {
-            const logs: {
-                level: string;
-                message: string;
-                elapsed_ms: number;
-            }[] = [];
-            const res = await runSessionCommand(
-                {
-                    type: "run_script",
-                    path: t.path,
-                },
-                {
-                    onEvent: (ev) => {
-                        applyRuntimeEnvFromStreamEvent(runtimeEnvEntries, ev);
-                        appendLogFromStreamEvent(logs, ev);
-                    },
-                },
-            );
-            scriptLogs.value = logs;
-            scriptRunError.value = res.ok ? null : (res.error ?? "Script failed");
-        } catch (e) {
-            sendErr.value = e instanceof Error ? e.message : String(e);
-        } finally {
-            sending.value = false;
         }
     }
 
@@ -428,16 +264,6 @@ export function useAppModel() {
         return parsed.ok ? null : parsed.message;
     });
 
-    const prettyResponse = computed(() => {
-        const res = response.value;
-        if (!res?.body_text) return "";
-        try {
-            return JSON.stringify(JSON.parse(res.body_text), null, 2);
-        } catch {
-            return res.body_text;
-        }
-    });
-
     function setScriptRaw(v: string) {
         const t = activeTab.value;
         if (t && t.kind === "script") t.raw = v;
@@ -465,38 +291,25 @@ export function useAppModel() {
         }
     }
 
-    return reactive({
-        workspace,
-        loadErr,
-        loadWorkspace,
+    return {
         tabs,
         activeId,
-        activeTab,
         reqSubTab,
-        response,
-        sendErr,
-        sending,
-        scriptLogs,
-        scriptRunError,
-        bodyView,
-        runtimeEnvEntries,
+        activeTab,
         openFile,
         closeTab,
         requestSpec,
         ensureRequestDoc,
         applyRequestField,
-        doSend,
-        doRunScript,
+        syncDoc,
+        parseOverridesForSend,
         queryRecord,
         headersRecord,
         overridesRecord,
         overridesJsonError,
-        prettyResponse,
         scriptRaw,
         HTTP_METHODS,
         setMethod,
         setUrl,
-    });
-}
-
-export type AppModel = ReturnType<typeof useAppModel>;
+    };
+});

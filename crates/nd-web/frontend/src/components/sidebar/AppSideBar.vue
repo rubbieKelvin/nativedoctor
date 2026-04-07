@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { GroupedFiles, WorkspaceSnapshot } from "@/api";
+import type { GroupedFiles } from "@/api";
+import { useEditorStore } from "@/stores/editor";
+import { useWorkspaceStore } from "@/stores/workspace";
 import {
     Sidebar,
     SidebarContent,
@@ -15,21 +17,17 @@ import {
 } from "@/components/ui/sidebar";
 import { IconInnerShadowTop } from "@tabler/icons-vue";
 import { Search } from "lucide-vue-next";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 const VITE_NATIVEDOCTOR_VERSION = import.meta.env.VITE_NATIVEDOCTOR_VERSION;
 
-const props = defineProps<{
-    workspace: WorkspaceSnapshot | null;
-    loadErr: string | null;
-    activeId: string | null;
-}>();
+const workspaceStore = useWorkspaceStore();
+const editor = useEditorStore();
+const { workspace, loadErr } = storeToRefs(workspaceStore);
+const { activeId } = storeToRefs(editor);
 
-const emit = defineEmits<{
-    openFile: [path: string, kind: "request" | "script", title: string];
-}>();
-
-const multiRoot = computed(() => (props.workspace?.roots.length ?? 0) > 1);
+const multiRoot = computed(() => (workspace.value?.roots.length ?? 0) > 1);
 
 const searchQuery = ref("");
 
@@ -49,11 +47,11 @@ function filterGrouped(groups: GroupedFiles[], qRaw: string): GroupedFiles[] {
 }
 
 const filteredRequests = computed(() =>
-    filterGrouped(props.workspace?.requests ?? [], searchQuery.value),
+    filterGrouped(workspace.value?.requests ?? [], searchQuery.value),
 );
 
 const filteredScripts = computed(() =>
-    filterGrouped(props.workspace?.scripts ?? [], searchQuery.value),
+    filterGrouped(workspace.value?.scripts ?? [], searchQuery.value),
 );
 </script>
 
@@ -112,7 +110,7 @@ const filteredScripts = computed(() =>
                                 :tooltip="e.path"
                                 class="h-8 text-xs font-normal"
                                 @click="
-                                    emit('openFile', e.path, 'request', e.name)
+                                    editor.openFile(e.path, 'request', e.name)
                                 "
                             >
                                 <span class="truncate">{{ e.name }}</span>
@@ -146,7 +144,7 @@ const filteredScripts = computed(() =>
                                 :tooltip="e.path"
                                 class="h-8 text-xs font-normal"
                                 @click="
-                                    emit('openFile', e.path, 'script', e.name)
+                                    editor.openFile(e.path, 'script', e.name)
                                 "
                             >
                                 <span class="truncate">{{ e.name }}</span>

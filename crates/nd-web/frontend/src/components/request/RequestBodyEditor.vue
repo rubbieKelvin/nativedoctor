@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { watchDebounced } from "@vueuse/core";
-import type { AppModel } from "@/composables/useAppModel";
+import { useEditorStore } from "@/stores/editor";
+import { storeToRefs } from "pinia";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Select,
@@ -11,9 +12,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-const props = defineProps<{
-    app: AppModel;
-}>();
+const editor = useEditorStore();
+const { requestSpec, activeTab } = storeToRefs(editor);
 
 /** Values on `request.body.type` for structured bodies; matches nd-core `RequestBodyKind`. */
 type BodyKindUi =
@@ -154,21 +154,21 @@ const localJson = ref("");
 const localString = ref("");
 const jsonError = ref<string | null>(null);
 
-const inferredKind = computed(() => inferKind(props.app.requestSpec?.body));
+const inferredKind = computed(() => inferKind(requestSpec.value?.body));
 
 function applyBody(body: unknown) {
-    const req = props.app.ensureRequestDoc();
+    const req = editor.ensureRequestDoc();
     if (!req) return;
     if (body === undefined) {
         req.body = undefined;
     } else {
         (req as { body?: unknown }).body = body;
     }
-    props.app.applyRequestField();
+    editor.applyRequestField();
 }
 
 function syncEditorsFromBody() {
-    const body = props.app.requestSpec?.body;
+    const body = requestSpec.value?.body;
     const kind = inferKind(body);
     jsonError.value = null;
     if (kind === "none") {
@@ -188,7 +188,7 @@ function syncEditorsFromBody() {
 }
 
 watch(
-    () => [props.app.activeTab?.id, props.app.requestSpec?.body] as const,
+    () => [activeTab.value?.id, requestSpec.value?.body] as const,
     () => syncEditorsFromBody(),
     { deep: true, immediate: true },
 );
@@ -197,7 +197,7 @@ function onKindChange(value: unknown) {
     if (value === undefined || value === null) return;
     const kind = value as BodyKindUi;
     if (!ALL_KINDS.has(kind)) return;
-    if (kind === inferKind(props.app.requestSpec?.body)) {
+    if (kind === inferKind(requestSpec.value?.body)) {
         return;
     }
     if (kind === "none") {

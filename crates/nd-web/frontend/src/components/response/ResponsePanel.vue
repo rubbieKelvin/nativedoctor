@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { AppModel } from "@/composables/useAppModel";
+import { storeToRefs } from "pinia";
+import { useExecutionStore } from "@/stores/execution";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
-const props = defineProps<{
-    app: AppModel;
-}>();
+const execution = useExecutionStore();
+const { response, sendErr, bodyView, prettyResponse } =
+    storeToRefs(execution);
 
-const outputSection = ref<"response" | "runtime-env">("response");
+const outputSection = ref<"response" | "headers" | "runtime-env">("response");
 </script>
 
 <template>
@@ -34,23 +37,27 @@ const outputSection = ref<"response" | "runtime-env">("response");
                     <TabsTrigger value="response" class="text-xs"
                         >Response</TabsTrigger
                     >
+                    <TabsTrigger value="headers" class="text-xs"
+                        >Headers</TabsTrigger
+                    >
                     <TabsTrigger value="runtime-env" class="text-xs"
                         >Runtime env</TabsTrigger
                     >
                 </TabsList>
-                <template v-if="outputSection === 'response'">
+                <template
+                    v-if="outputSection === 'response' || outputSection === 'headers'"
+                >
                     <Badge
-                        v-if="app.response"
+                        v-if="response"
                         variant="secondary"
                         class="font-mono text-[11px]"
                     >
-                        {{ app.response.status }} ·
-                        {{ app.response.duration_ms }}ms
+                        {{ response.status }} · {{ response.duration_ms }}ms
                     </Badge>
                     <span
-                        v-if="app.sendErr"
+                        v-if="sendErr"
                         class="text-xs text-destructive"
-                        >{{ app.sendErr }}</span
+                        >{{ sendErr }}</span
                     >
                 </template>
             </div>
@@ -60,14 +67,14 @@ const outputSection = ref<"response" | "runtime-env">("response");
                 class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col"
             >
                 <div
-                    v-if="!app.response"
+                    v-if="!response"
                     class="text-muted-foreground flex flex-1 items-center justify-center p-4 text-xs"
                 >
                     Send a request to see the response body here.
                 </div>
                 <Tabs
                     v-else
-                    v-model="app.bodyView"
+                    v-model="bodyView"
                     class="flex min-h-0 flex-1 flex-col"
                 >
                     <TabsList
@@ -86,56 +93,70 @@ const outputSection = ref<"response" | "runtime-env">("response");
                             <TabsContent value="pretty" class="mt-0">
                                 <pre
                                     class="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed"
-                                    >{{ app.prettyResponse }}</pre
+                                    >{{ prettyResponse }}</pre
                                 >
                             </TabsContent>
                             <TabsContent value="raw" class="mt-0">
                                 <pre
                                     class="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed"
                                     >{{
-                                        app.response.body_text ??
-                                        (app.response.body_base64
+                                        response.body_text ??
+                                        (response.body_base64
                                             ? "[binary base64]"
                                             : "")
                                     }}</pre
                                 >
                             </TabsContent>
-
-                            <Collapsible class="mt-3">
-                                <CollapsibleTrigger as-child>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        class="h-7 text-xs"
-                                    >
-                                        Headers ({{
-                                            app.response.headers.length
-                                        }})
-                                    </Button>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <pre
-                                        class="mt-1 max-h-40 overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-[11px]"
-                                        >{{
-                                            JSON.stringify(
-                                                app.response.headers,
-                                                null,
-                                                2,
-                                            )
-                                        }}</pre
-                                    >
-                                </CollapsibleContent>
-                            </Collapsible>
                         </div>
                     </ScrollArea>
                 </Tabs>
             </TabsContent>
 
             <TabsContent
+                value="headers"
+                class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+            >
+                <div
+                    v-if="!response"
+                    class="text-muted-foreground flex flex-1 items-center justify-center p-4 text-xs"
+                >
+                    Send a request to see response headers here.
+                </div>
+                <ScrollArea v-else class="min-h-0 flex-1 rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead class="w-[28%] font-mono text-xs"
+                                    >Name</TableHead
+                                >
+                                <TableHead class="font-mono text-xs"
+                                    >Value</TableHead
+                                >
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow
+                                v-for="(pair, i) in response.headers"
+                                :key="i"
+                                class="font-mono text-[11px]"
+                            >
+                                <TableCell class="align-top break-all">{{
+                                    pair[0]
+                                }}</TableCell>
+                                <TableCell class="align-top break-all">{{
+                                    pair[1]
+                                }}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+            </TabsContent>
+
+            <TabsContent
                 value="runtime-env"
                 class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             >
-                <RuntimeEnvTable :app="app" />
+                <RuntimeEnvTable />
             </TabsContent>
         </Tabs>
     </div>

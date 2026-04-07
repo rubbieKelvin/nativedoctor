@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import type { AppModel } from "@/composables/useAppModel";
+import { useEditorStore } from "@/stores/editor";
 import KeyValueEditor from "@/components/request/KeyValueEditor.vue";
 import RequestBodyEditor from "@/components/request/RequestBodyEditor.vue";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { storeToRefs } from "pinia";
 
-defineProps<{
-    app: AppModel;
-}>();
+const editor = useEditorStore();
+const {
+    reqSubTab,
+    activeTab,
+    queryRecord,
+    headersRecord,
+    overridesRecord,
+    overridesJsonError,
+} = storeToRefs(editor);
 </script>
 
 <template>
     <Tabs
-        v-model="app.reqSubTab"
+        v-model="reqSubTab"
         class="flex min-h-0 min-w-0 flex-1 flex-col gap-0"
     >
         <TabsList
@@ -27,32 +33,32 @@ defineProps<{
 
         <div class="min-h-0 min-w-0 flex-1 overflow-auto p-2">
             <p
-                v-if="app.activeTab?.parseError"
+                v-if="activeTab?.parseError"
                 class="mb-2 text-sm text-destructive"
             >
-                {{ app.activeTab.parseError }} — fix document
+                {{ activeTab.parseError }} — fix document
             </p>
 
             <TabsContent value="params" class="mt-0 h-full">
-                <KeyValueEditor v-model="app.queryRecord" />
+                <KeyValueEditor v-model="queryRecord" />
             </TabsContent>
 
             <TabsContent value="headers" class="mt-0 h-full">
-                <KeyValueEditor v-model="app.headersRecord" />
+                <KeyValueEditor v-model="headersRecord" />
             </TabsContent>
 
             <TabsContent value="body" class="mt-0 h-full">
-                <RequestBodyEditor :app="app" />
+                <RequestBodyEditor />
             </TabsContent>
 
             <TabsContent value="input" class="mt-0 h-full">
                 <p
-                    v-if="app.overridesJsonError"
+                    v-if="overridesJsonError"
                     class="text-sm text-destructive"
                 >
-                    {{ app.overridesJsonError }}
+                    {{ overridesJsonError }}
                 </p>
-                <KeyValueEditor v-model="app.overridesRecord" />
+                <KeyValueEditor v-model="overridesRecord" />
             </TabsContent>
 
             <TabsContent value="auth" class="mt-0 h-full">

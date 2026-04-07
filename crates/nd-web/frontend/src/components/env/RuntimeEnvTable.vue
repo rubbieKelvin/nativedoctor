@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { RuntimeEnvEntry } from "@/api";
-import type { AppModel } from "@/composables/useAppModel";
+import { useExecutionStore } from "@/stores/execution";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,16 +13,16 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { storeToRefs } from "pinia";
 
-const props = defineProps<{
-    app: AppModel;
-}>();
+const execution = useExecutionStore();
+const { runtimeEnvEntries } = storeToRefs(execution);
 
 const filter = ref("");
 
 const filtered = computed(() => {
     const q = filter.value.trim().toLowerCase();
-    const rows = props.app.runtimeEnvEntries;
+    const rows = runtimeEnvEntries.value;
     if (!q) return rows;
     return rows.filter(
         (e) =>
@@ -107,7 +107,7 @@ function copyAll() {
             </Table>
         </ScrollArea>
         <p class="text-muted-foreground text-[11px]">
-            {{ filtered.length }} / {{ app.runtimeEnvEntries.length }} shown
+            {{ filtered.length }} / {{ runtimeEnvEntries.length }} shown
         </p>
     </div>
 </template>
