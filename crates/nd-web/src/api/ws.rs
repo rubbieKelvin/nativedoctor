@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::send::{execution_to_dto, runtime_env_for_state, ExecutionResultDto};
-use super::wire_event;
 use super::AppState;
 use crate::path_sandbox::resolve_allowed_file;
 
@@ -106,13 +105,13 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     let tx_holder: Arc<Mutex<Option<tokio::sync::mpsc::UnboundedSender<Event>>>> =
         Arc::new(Mutex::new(Some(tx)));
 
-    let tx = tx_holder.clone();
+    let tx_for_cb = tx_holder.clone();
 
     let session = match Session::new(
         move || Ok(runtime),
         Some(Box::new(move |ev| {
-            if let Ok(gaurd) = tx.lock() {
-                if let Some(t) = gaurd.as_ref() {
+            if let Ok(g) = tx_for_cb.lock() {
+                if let Some(t) = g.as_ref() {
                     let _ = t.send(ev);
                 }
             }
@@ -139,9 +138,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 
     let run_handle = tokio::spawn(run_command(cmd, state, arc_session.clone(), tx_holder));
 
-    // mpsc listens fo events in the session from the sink, that event is consumed here and sent via ws to the fe
     while let Some(ev) = rx.recv().await {
-        let payload = match serde_json::to_string(&wire_event::event_to_json(&ev)) {
+        let payload = match serde_json::to_string(&ev) {
             Ok(s) => s,
             Err(_) => continue,
         };

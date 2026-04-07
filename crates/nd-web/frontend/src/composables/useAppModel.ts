@@ -1,8 +1,8 @@
 import { computed, reactive, ref } from "vue";
+import type { Ref } from "vue";
 import YAML from "yaml";
 import {
     fetchFile,
-    fetchRuntimeEnv,
     fetchWorkspace,
     runSessionCommand,
     type ExecutionResultDto,
@@ -10,6 +10,62 @@ import {
     type WorkspaceSnapshot,
 } from "@/api";
 import type { EditorTab, ReqSubTab } from "@/types/editor";
+
+/** Matches serde JSON for `std::time::Duration`. */
+type SerdeDuration = { secs: number; nanos: number };
+
+function durationToMs(d: SerdeDuration | undefined): number {
+    if (!d || typeof d.secs !== "number") return 0;
+    return d.secs * 1000 + Math.floor((d.nanos ?? 0) / 1_000_000);
+}
+
+/** Updates env rows from streamed `Event` JSON (serde externally-tagged enum). */
+function applyRuntimeEnvFromStreamEvent(
+    target: Ref<RuntimeEnvEntry[]>,
+    data: unknown,
+): void {
+    if (!data || typeof data !== "object") return;
+    const o = data as Record<string, unknown>;
+    const init = o.RuntimeVariablesInitialized as
+        | { entries?: [string, string][] }
+        | undefined;
+    if (init?.entries) {
+        target.value = init.entries.map(([key, value]) => ({ key, value }));
+        return;
+    }
+    const pushed = o.RuntimeVariablePushed as
+        | { key?: string; value?: unknown }
+        | undefined;
+    if (pushed?.key != null) {
+        const val =
+            typeof pushed.value === "string"
+                ? pushed.value
+                : JSON.stringify(pushed.value);
+        const list = [...target.value];
+        const i = list.findIndex((e) => e.key === pushed.key);
+        if (i >= 0) list[i] = { key: pushed.key, value: val };
+        else list.push({ key: pushed.key, value: val });
+        list.sort((a, b) => a.key.localeCompare(b.key));
+        target.value = list;
+    }
+}
+
+function appendLogFromStreamEvent(
+    logs: { level: string; message: string; elapsed_ms: number }[],
+    data: unknown,
+): void {
+    if (!data || typeof data !== "object") return;
+    const o = data as Record<string, unknown>;
+    const inner = o.Log as
+        | { level?: string; message?: string; elapsed?: SerdeDuration }
+        | undefined;
+    if (inner?.message == null) return;
+    logs.push({
+        level: String(inner.level ?? "info"),
+        message: inner.message,
+        elapsed_ms: durationToMs(inner.elapsed),
+    });
+}
 
 const HTTP_METHODS = [
     "GET",
@@ -36,8 +92,6 @@ export function useAppModel() {
     const scriptRunError = ref<string | null>(null);
     const bodyView = ref<"pretty" | "raw">("pretty");
     const runtimeEnvEntries = ref<RuntimeEnvEntry[]>([]);
-    const runtimeEnvErr = ref<string | null>(null);
-    const runtimeEnvLoading = ref(false);
 
     const activeTab = computed(
         () => tabs.value.find((t) => t.id === activeId.value) ?? null,
@@ -65,20 +119,6 @@ export function useAppModel() {
     function syncDoc(tab: EditorTab): void {
         tab.doc = parseRaw(tab.raw, tab.ext);
         tab.parseError = tab.doc ? null : "Invalid JSON/YAML";
-    }
-
-    async function refreshRuntimeEnv() {
-        runtimeEnvLoading.value = true;
-        runtimeEnvErr.value = null;
-        try {
-            const r = await fetchRuntimeEnv();
-            runtimeEnvEntries.value = r.entries;
-        } catch (e) {
-            runtimeEnvErr.value = e instanceof Error ? e.message : String(e);
-            runtimeEnvEntries.value = [];
-        } finally {
-            runtimeEnvLoading.value = false;
-        }
     }
 
     async function loadWorkspace() {
@@ -120,6 +160,7 @@ export function useAppModel() {
         sendErr.value = null;
         scriptLogs.value = [];
         scriptRunError.value = null;
+        runtimeEnvEntries.value = [];
     }
 
     function closeTab(id: string, ev: MouseEvent) {
@@ -268,6 +309,11 @@ export function useAppModel() {
                     overrides: payloadOverrides ?? {},
                     stream: false,
                 },
+                {
+                    onEvent: (ev) => {
+                        applyRuntimeEnvFromStreamEvent(runtimeEnvEntries, ev);
+                    },
+                },
             );
             if (!res.ok) sendErr.value = res.error ?? "Request failed";
             else sendErr.value = null;
@@ -276,7 +322,6 @@ export function useAppModel() {
             sendErr.value = e instanceof Error ? e.message : String(e);
         } finally {
             sending.value = false;
-            void refreshRuntimeEnv();
         }
     }
 
@@ -300,19 +345,8 @@ export function useAppModel() {
                 },
                 {
                     onEvent: (ev) => {
-                        const o = ev as {
-                            kind?: string;
-                            level?: string;
-                            message?: string;
-                            elapsed_ms?: number;
-                        };
-                        if (o.kind === "Log" && o.message != null) {
-                            logs.push({
-                                level: String(o.level ?? "info"),
-                                message: o.message,
-                                elapsed_ms: Number(o.elapsed_ms ?? 0),
-                            });
-                        }
+                        applyRuntimeEnvFromStreamEvent(runtimeEnvEntries, ev);
+                        appendLogFromStreamEvent(logs, ev);
                     },
                 },
             );
@@ -322,7 +356,6 @@ export function useAppModel() {
             sendErr.value = e instanceof Error ? e.message : String(e);
         } finally {
             sending.value = false;
-            void refreshRuntimeEnv();
         }
     }
 
@@ -447,9 +480,6 @@ export function useAppModel() {
         scriptRunError,
         bodyView,
         runtimeEnvEntries,
-        runtimeEnvErr,
-        runtimeEnvLoading,
-        refreshRuntimeEnv,
         openFile,
         closeTab,
         requestSpec,

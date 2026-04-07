@@ -16,16 +16,6 @@ fn test_state(roots: Vec<PathBuf>) -> AppState {
     }
 }
 
-fn test_state_with_env_file(roots: Vec<PathBuf>, env_file: PathBuf) -> AppState {
-    AppState {
-        roots: Arc::new(roots),
-        no_network_io: true,
-        env_files: Arc::new(vec![env_file]),
-        persistence_file: None,
-        sessions: Arc::new(Mutex::new(HashMap::new())),
-    }
-}
-
 #[tokio::test]
 async fn file_outside_roots_is_forbidden() {
     let allowed = tempfile::tempdir().unwrap();
@@ -68,49 +58,6 @@ async fn workspace_lists_valid_request_skips_bad_json() {
     let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(v["requests"][0]["entries"].as_array().unwrap().len(), 1);
     assert_eq!(v["skipped_requests"].as_array().unwrap().len(), 1);
-}
-
-#[tokio::test]
-async fn runtime_env_empty_without_loaded_files() {
-    let app = api_router(test_state(vec![]));
-    let res = app
-        .oneshot(
-            Request::builder()
-                .uri("/runtime-env")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(res.status(), StatusCode::OK);
-    let body = to_bytes(res.into_body(), usize::MAX).await.unwrap();
-    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(v["entries"].as_array().unwrap().len(), 0);
-}
-
-#[tokio::test]
-async fn runtime_env_reflects_merged_env_file() {
-    let tmp = tempfile::NamedTempFile::new().unwrap();
-    std::fs::write(tmp.path(), "ZZ=last\nAA=first\n").unwrap();
-    let app = api_router(test_state_with_env_file(vec![], tmp.path().to_path_buf()));
-    let res = app
-        .oneshot(
-            Request::builder()
-                .uri("/runtime-env")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(res.status(), StatusCode::OK);
-    let body = to_bytes(res.into_body(), usize::MAX).await.unwrap();
-    let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    let arr = v["entries"].as_array().unwrap();
-    assert_eq!(arr.len(), 2);
-    assert_eq!(arr[0]["key"], "AA");
-    assert_eq!(arr[0]["value"], "first");
-    assert_eq!(arr[1]["key"], "ZZ");
-    assert_eq!(arr[1]["value"], "last");
 }
 
 #[tokio::test]

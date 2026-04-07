@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import type { AppModel } from "@/composables/useAppModel";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import ScriptLogViewer from "@/components/script/ScriptLogViewer.vue";
@@ -10,12 +10,6 @@ const props = defineProps<{
 }>();
 
 const section = ref<"logs" | "env">("logs");
-
-watch(section, (v) => {
-    if (v === "env") {
-        void props.app.refreshRuntimeEnv();
-    }
-});
 </script>
 
 <template>

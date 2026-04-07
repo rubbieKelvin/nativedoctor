@@ -24,14 +24,6 @@ export interface RuntimeEnvEntry {
   value: string;
 }
 
-export async function fetchRuntimeEnv(): Promise<{
-  entries: RuntimeEnvEntry[];
-}> {
-  const r = await fetch(`${API}/runtime-env`);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-
 export async function fetchFile(path: string): Promise<string> {
   const q = new URLSearchParams({ path });
   const r = await fetch(`${API}/file?${q}`);

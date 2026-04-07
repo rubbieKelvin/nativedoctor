@@ -64,11 +64,10 @@ async fn websocket_run_request_dry_run_streams_events_and_run_complete() {
             continue;
         };
         let v: serde_json::Value = serde_json::from_str(t.as_str()).expect("json");
-        let kind = v["kind"].as_str().unwrap_or("");
-        if kind == "SessionStarted" || kind == "RuntimeVariablesInitialized" {
+        if v.get("SessionStarted").is_some() || v.get("RuntimeVariablesInitialized").is_some() {
             saw_event = true;
         }
-        if kind == "run_complete" {
+        if v.get("kind").and_then(|k| k.as_str()) == Some("run_complete") {
             complete_ok = v["ok"].as_bool() == Some(true);
             break;
         }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import type { AppModel } from "@/composables/useAppModel";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +17,6 @@ const props = defineProps<{
 }>();
 
 const outputSection = ref<"response" | "runtime-env">("response");
-
-watch(outputSection, (v) => {
-    if (v === "runtime-env") {
-        void props.app.refreshRuntimeEnv();
-    }
-});
 </script>
 
 <template>

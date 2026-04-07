@@ -44,9 +44,13 @@ function copyAll() {
 <template>
     <div class="flex min-h-0 flex-1 flex-col gap-2 p-2">
         <p class="text-muted-foreground text-[11px] leading-snug">
-            Snapshot after the last run: in-memory map for URL/header templates
-            and Rhai <code class="rounded bg-muted px-1">env()</code>. Values may
-            be sensitive.
+            Built from the last run’s streamed events (<code class="rounded bg-muted px-1"
+                >RuntimeVariablesInitialized</code
+            >
+            /
+            <code class="rounded bg-muted px-1">RuntimeVariablePushed</code>). Used
+            for URL/header templates and Rhai
+            <code class="rounded bg-muted px-1">env()</code>. Values may be sensitive.
         </p>
         <div class="flex shrink-0 flex-wrap gap-2">
             <Input
@@ -64,25 +68,7 @@ function copyAll() {
             >
                 Copy all
             </Button>
-            <Button
-                size="sm"
-                variant="outline"
-                class="shrink-0"
-                :disabled="app.runtimeEnvLoading"
-                @click="app.refreshRuntimeEnv()"
-            >
-                Refresh
-            </Button>
         </div>
-        <p v-if="app.runtimeEnvErr" class="text-sm text-destructive">
-            {{ app.runtimeEnvErr }}
-        </p>
-        <p
-            v-else-if="app.runtimeEnvLoading"
-            class="text-muted-foreground text-xs"
-        >
-            Loading…
-        </p>
         <ScrollArea class="min-h-0 flex-1 rounded-md border border-border">
             <Table>
                 <TableHeader>
