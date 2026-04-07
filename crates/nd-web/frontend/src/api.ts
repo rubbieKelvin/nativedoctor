@@ -85,69 +85,30 @@ export async function runScript(path: string): Promise<ScriptRunResponse> {
   return r.json() as Promise<ScriptRunResponse>;
 }
 
-function wsUrl(): string {
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${window.location.host}${API}/ws`;
-}
+import {
+  startSessionRun,
+  type RunCompleteMessage as RunCompleteMessageBase,
+  type SessionRun,
+  type SessionEventListener,
+} from "@/session/sessionRun";
 
-/** Final message after streamed session events (matches server `RunComplete`). */
-export interface RunCompleteMessage {
-  kind: "run_complete";
-  ok: boolean;
-  error?: string;
+export type { SessionRun, SessionEventListener };
+export { startSessionRun };
+
+/** WebSocket completion payload; `result` is an [`ExecutionResultDto`] when present. */
+export type RunCompleteMessage = RunCompleteMessageBase & {
   result?: ExecutionResultDto;
-}
+};
 
 /**
  * Opens `/api/ws`, sends one JSON command (`type`: `run_request` | `run_script`), streams event JSON until `run_complete`.
+ * Prefer `startSessionRun` from `@/session/sessionRun` when you need multiple subscribers.
  */
 export function runSessionCommand(
   cmd: Record<string, unknown>,
   options?: { onEvent?: (data: unknown) => void },
 ): Promise<RunCompleteMessage> {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl());
-    let settled = false;
-
-    const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      fn();
-      ws.close();
-    };
-
-    ws.onopen = () => {
-      ws.send(JSON.stringify(cmd));
-    };
-
-    ws.onmessage = (ev) => {
-      let data: unknown;
-      try {
-        data = JSON.parse(ev.data as string);
-      } catch {
-        finish(() => reject(new Error("Invalid JSON from server")));
-        return;
-      }
-      const o = data as { kind?: string; message?: string };
-      if (o.kind === "error") {
-        finish(() => reject(new Error(o.message ?? "error")));
-        return;
-      }
-      if (o.kind === "run_complete") {
-        finish(() => resolve(data as RunCompleteMessage));
-        return;
-      }
-      options?.onEvent?.(data);
-    };
-
-    ws.onerror = () => {
-      finish(() => reject(new Error("WebSocket connection failed")));
-    };
-
-    ws.onclose = () => {
-      if (!settled) {
-        finish(() => reject(new Error("WebSocket closed before run_complete")));
-      }
-    };
-  });
+  const run = startSessionRun(cmd);
+  const off = options?.onEvent ? run.subscribe(options.onEvent) : () => {};
+  return run.completed.finally(off) as Promise<RunCompleteMessage>;
 }

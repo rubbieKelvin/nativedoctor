@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
+import { useEditorStore } from "@/stores/editor";
 import { useExecutionStore } from "@/stores/execution";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import ScriptLogViewer from "@/components/script/ScriptLogViewer.vue";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const editor = useEditorStore();
 const execution = useExecutionStore();
-const { scriptLogs, scriptRunError } = storeToRefs(execution);
+
+const activePath = computed(() => editor.activeTab?.path);
+
+const scriptLogs = computed(() => {
+    const p = activePath.value;
+    if (!p) return [];
+    return execution.scriptLogsByPath[p] ?? [];
+});
+
+const scriptRunError = computed(() => {
+    const p = activePath.value;
+    if (!p) return null;
+    return execution.scriptRunErrorByPath[p] ?? null;
+});
 
 const section = ref<"logs" | "env">("logs");
 </script>

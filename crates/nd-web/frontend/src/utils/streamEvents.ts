@@ -1,5 +1,12 @@
 import type { RuntimeEnvEntry } from "@/api";
 
+/** One line from a streamed `Log` event (Rhai `log(...)`). */
+export type ScriptLogLine = {
+    level: string;
+    message: string;
+    elapsed_ms: number;
+};
+
 /** Matches serde JSON for `std::time::Duration`. */
 type SerdeDuration = { secs: number; nanos: number };
 
@@ -8,12 +15,27 @@ function durationToMs(d: SerdeDuration | undefined): number {
     return d.secs * 1000 + Math.floor((d.nanos ?? 0) / 1_000_000);
 }
 
+/** Externally tagged `Event::Log` from the server (`{ "Log": { ... } }`). */
+export function isLogEventData(data: unknown): data is { Log: Record<string, unknown> } {
+    if (!data || typeof data !== "object") return false;
+    return "Log" in (data as object);
+}
+
+/** `RuntimeVariablesInitialized` or `RuntimeVariablePushed` payload keys on the event envelope. */
+export function isRuntimeEnvEventData(data: unknown): boolean {
+    if (!data || typeof data !== "object") return false;
+    const o = data as Record<string, unknown>;
+    return (
+        "RuntimeVariablesInitialized" in o || "RuntimeVariablePushed" in o
+    );
+}
+
 /** Returns a new env list when the event updates runtime variables; otherwise `null`. */
 export function patchRuntimeEnvFromEvent(
     current: RuntimeEnvEntry[],
     data: unknown,
 ): RuntimeEnvEntry[] | null {
-    if (!data || typeof data !== "object") return null;
+    if (!isRuntimeEnvEventData(data)) return null;
     const o = data as Record<string, unknown>;
     const init = o.RuntimeVariablesInitialized as
         | { entries?: [string, string][] }
@@ -40,12 +62,11 @@ export function patchRuntimeEnvFromEvent(
 }
 
 export function appendLogFromStreamEvent(
-    logs: { level: string; message: string; elapsed_ms: number }[],
+    logs: ScriptLogLine[],
     data: unknown,
 ): void {
-    if (!data || typeof data !== "object") return;
-    const o = data as Record<string, unknown>;
-    const inner = o.Log as
+    if (!isLogEventData(data)) return;
+    const inner = data.Log as
         | { level?: string; message?: string; elapsed?: SerdeDuration }
         | undefined;
     if (inner?.message == null) return;

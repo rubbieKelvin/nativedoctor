@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useEditorStore } from "@/stores/editor";
 import { useExecutionStore } from "@/stores/execution";
 import ScriptOutputPanel from "@/components/script/ScriptOutputPanel.vue";
@@ -13,7 +14,15 @@ import { storeToRefs } from "pinia";
 const editor = useEditorStore();
 const execution = useExecutionStore();
 const { scriptRaw } = storeToRefs(editor);
-const { sending, sendErr } = storeToRefs(execution);
+const { sending } = storeToRefs(execution);
+
+const activePath = computed(() => editor.activeTab?.path);
+
+const sendErr = computed(() => {
+    const p = activePath.value;
+    if (!p) return null;
+    return execution.sendErrByPath[p] ?? null;
+});
 </script>
 
 <template>

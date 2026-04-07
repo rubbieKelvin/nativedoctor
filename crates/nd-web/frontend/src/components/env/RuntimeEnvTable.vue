@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { RuntimeEnvEntry } from "@/api";
+import { useEditorStore } from "@/stores/editor";
 import { useExecutionStore } from "@/stores/execution";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,17 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { storeToRefs } from "pinia";
 
+const editor = useEditorStore();
 const execution = useExecutionStore();
-const { runtimeEnvEntries } = storeToRefs(execution);
+
+const activePath = computed(() => editor.activeTab?.path);
+
+const runtimeEnvEntries = computed(() => {
+    const p = activePath.value;
+    if (!p) return [];
+    return execution.runtimeEnvByPath[p] ?? [];
+});
 
 const filter = ref("");
 

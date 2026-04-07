@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useEditorStore } from "@/stores/editor";
 import { useExecutionStore } from "@/stores/execution";
 import RuntimeEnvTable from "@/components/env/RuntimeEnvTable.vue";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +16,17 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
+const editor = useEditorStore();
 const execution = useExecutionStore();
-const { response, sendErr, bodyView, prettyResponse } =
-    storeToRefs(execution);
+const { response, bodyView, prettyResponse } = storeToRefs(execution);
+
+const activePath = computed(() => editor.activeTab?.path);
+
+const sendErr = computed(() => {
+    const p = activePath.value;
+    if (!p) return null;
+    return execution.sendErrByPath[p] ?? null;
+});
 
 const outputSection = ref<"response" | "headers" | "runtime-env">("response");
 </script>

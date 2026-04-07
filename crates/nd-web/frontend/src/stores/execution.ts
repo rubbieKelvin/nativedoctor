@@ -1,25 +1,22 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
-import {
-    runSessionCommand,
-    type ExecutionResultDto,
-    type RuntimeEnvEntry,
-} from "@/api";
+import { computed, reactive, ref } from "vue";
+import type { ExecutionResultDto, RuntimeEnvEntry } from "@/api";
+import { startSessionRun } from "@/session/sessionRun";
 import {
     appendLogFromStreamEvent,
     patchRuntimeEnvFromEvent,
+    type ScriptLogLine,
 } from "@/utils/streamEvents";
 
 export const useExecutionStore = defineStore("execution", () => {
     const response = ref<ExecutionResultDto | null>(null);
-    const sendErr = ref<string | null>(null);
+    /** Transport / validation errors keyed by source file path. */
+    const sendErrByPath = reactive<Record<string, string | null>>({});
     const sending = ref(false);
-    const scriptLogs = ref<
-        { level: string; message: string; elapsed_ms: number }[]
-    >([]);
-    const scriptRunError = ref<string | null>(null);
+    const scriptLogsByPath = reactive<Record<string, ScriptLogLine[]>>({});
+    const scriptRunErrorByPath = reactive<Record<string, string | null>>({});
     const bodyView = ref<"pretty" | "raw">("pretty");
-    const runtimeEnvEntries = ref<RuntimeEnvEntry[]>([]);
+    const runtimeEnvByPath = reactive<Record<string, RuntimeEnvEntry[]>>({});
 
     const prettyResponse = computed(() => {
         const res = response.value;
@@ -31,12 +28,31 @@ export const useExecutionStore = defineStore("execution", () => {
         }
     });
 
+    function clearKeyedExecutionState() {
+        for (const k of Object.keys(scriptLogsByPath)) {
+            delete scriptLogsByPath[k];
+        }
+        for (const k of Object.keys(runtimeEnvByPath)) {
+            delete runtimeEnvByPath[k];
+        }
+        for (const k of Object.keys(sendErrByPath)) {
+            delete sendErrByPath[k];
+        }
+        for (const k of Object.keys(scriptRunErrorByPath)) {
+            delete scriptRunErrorByPath[k];
+        }
+    }
+
+    /** Full reset when opening a new editor tab from the workspace (matches prior global wipe). */
     function resetAfterOpenFile() {
         response.value = null;
-        sendErr.value = null;
-        scriptLogs.value = [];
-        scriptRunError.value = null;
-        runtimeEnvEntries.value = [];
+        sending.value = false;
+        clearKeyedExecutionState();
+    }
+
+    function ensureLogs(path: string): ScriptLogLine[] {
+        if (!scriptLogsByPath[path]) scriptLogsByPath[path] = [];
+        return scriptLogsByPath[path];
     }
 
     async function doSend() {
@@ -44,14 +60,15 @@ export const useExecutionStore = defineStore("execution", () => {
         const editor = useEditorStore();
         const t = editor.activeTab;
         if (!t || t.kind !== "request") return;
+        const path = t.path;
         editor.syncDoc(t);
         if (!t.doc) {
-            sendErr.value = t.parseError ?? "Cannot parse document";
+            sendErrByPath[path] = t.parseError ?? "Cannot parse document";
             return;
         }
         const parsed = editor.parseOverridesForSend(t.overridesJson);
         if (!parsed.ok) {
-            sendErr.value = parsed.message;
+            sendErrByPath[path] = parsed.message;
             return;
         }
         const payloadOverrides =
@@ -60,33 +77,38 @@ export const useExecutionStore = defineStore("execution", () => {
                 : undefined;
 
         sending.value = true;
-        sendErr.value = null;
+        sendErrByPath[path] = null;
         response.value = null;
+        runtimeEnvByPath[path] = [];
+
+        const run = startSessionRun({
+            type: "run_request",
+            source_path: path,
+            document: t.doc,
+            overrides: payloadOverrides ?? {},
+            stream: false,
+        });
+
+        const unsubs: (() => void)[] = [];
+
+        unsubs.push(
+            run.subscribe((ev) => {
+                const cur = runtimeEnvByPath[path] ?? [];
+                const next = patchRuntimeEnvFromEvent(cur, ev);
+                if (next) runtimeEnvByPath[path] = next;
+            }),
+        );
+        // More handlers (e.g. streamed body chunks): add further `run.subscribe(...)` calls here.
+
         try {
-            const res = await runSessionCommand(
-                {
-                    type: "run_request",
-                    source_path: t.path,
-                    document: t.doc,
-                    overrides: payloadOverrides ?? {},
-                    stream: false,
-                },
-                {
-                    onEvent: (ev) => {
-                        const next = patchRuntimeEnvFromEvent(
-                            runtimeEnvEntries.value,
-                            ev,
-                        );
-                        if (next) runtimeEnvEntries.value = next;
-                    },
-                },
-            );
-            if (!res.ok) sendErr.value = res.error ?? "Request failed";
-            else sendErr.value = null;
-            response.value = res.result ?? null;
+            const res = await run.completed;
+            if (!res.ok) sendErrByPath[path] = res.error ?? "Request failed";
+            else sendErrByPath[path] = null;
+            response.value = (res.result ?? null) as ExecutionResultDto | null;
         } catch (e) {
-            sendErr.value = e instanceof Error ? e.message : String(e);
+            sendErrByPath[path] = e instanceof Error ? e.message : String(e);
         } finally {
+            unsubs.forEach((u) => u());
             sending.value = false;
         }
     }
@@ -96,51 +118,57 @@ export const useExecutionStore = defineStore("execution", () => {
         const editor = useEditorStore();
         const t = editor.activeTab;
         if (!t || t.kind !== "script") return;
+        const path = t.path;
+
         sending.value = true;
-        scriptLogs.value = [];
-        scriptRunError.value = null;
-        sendErr.value = null;
+        scriptLogsByPath[path] = [];
+        runtimeEnvByPath[path] = [];
+        scriptRunErrorByPath[path] = null;
+        sendErrByPath[path] = null;
+
+        const run = startSessionRun({
+            type: "run_script",
+            path,
+        });
+
+        const unsubs: (() => void)[] = [];
+
+        unsubs.push(
+            run.subscribe((ev) => {
+                const cur = runtimeEnvByPath[path] ?? [];
+                const next = patchRuntimeEnvFromEvent(cur, ev);
+                if (next) runtimeEnvByPath[path] = next;
+            }),
+        );
+
+        unsubs.push(
+            run.subscribe((ev) => {
+                appendLogFromStreamEvent(ensureLogs(path), ev);
+            }),
+        );
+        // More handlers (timeline, checkpoints): add further `run.subscribe(...)` calls here.
+
         try {
-            const logs: {
-                level: string;
-                message: string;
-                elapsed_ms: number;
-            }[] = [];
-            const res = await runSessionCommand(
-                {
-                    type: "run_script",
-                    path: t.path,
-                },
-                {
-                    onEvent: (ev) => {
-                        const next = patchRuntimeEnvFromEvent(
-                            runtimeEnvEntries.value,
-                            ev,
-                        );
-                        if (next) runtimeEnvEntries.value = next;
-                        appendLogFromStreamEvent(logs, ev);
-                    },
-                },
-            );
-            scriptLogs.value = logs;
-            scriptRunError.value = res.ok
+            const res = await run.completed;
+            scriptRunErrorByPath[path] = res.ok
                 ? null
                 : (res.error ?? "Script failed");
         } catch (e) {
-            sendErr.value = e instanceof Error ? e.message : String(e);
+            sendErrByPath[path] = e instanceof Error ? e.message : String(e);
         } finally {
+            unsubs.forEach((u) => u());
             sending.value = false;
         }
     }
 
     return {
         response,
-        sendErr,
+        sendErrByPath,
         sending,
-        scriptLogs,
-        scriptRunError,
+        scriptLogsByPath,
+        scriptRunErrorByPath,
         bodyView,
-        runtimeEnvEntries,
+        runtimeEnvByPath,
         prettyResponse,
         resetAfterOpenFile,
         doSend,
