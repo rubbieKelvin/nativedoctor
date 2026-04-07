@@ -8,7 +8,6 @@ import { defineConfig } from "vite";
 let VITE_NATIVEDOCTOR_API_ENDPOINT =
   process.env.VITE_NATIVEDOCTOR_API_ENDPOINT ?? "http://127.0.0.1:8080";
 
-// Monaco Editor: web workers are registered in src/main.ts via `MonacoEnvironment` (Vite `?worker` import).
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   resolve: {
