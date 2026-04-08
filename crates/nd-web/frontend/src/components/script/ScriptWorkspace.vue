@@ -10,6 +10,7 @@ import {
     ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { storeToRefs } from "pinia";
+import CodeMirrorEditor from "@/components/editor/CodeMirrorEditor.vue";
 
 const editor = useEditorStore();
 const execution = useExecutionStore();
@@ -34,10 +35,11 @@ const sendErr = computed(() => {
     >
         <ResizablePanel :default-size="60" :min-size="25">
             <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-                <textarea
+                <CodeMirrorEditor
+                    :key="activePath ?? ''"
                     v-model="scriptRaw"
-                    class="border-input bg-background focus-visible:ring-ring min-h-0 w-full flex-1 resize-none border-0 p-3 font-mono text-xs focus-visible:outline-none focus-visible:ring-1"
-                    spellcheck="false"
+                    language="rhai"
+                    class="min-h-0 flex-1"
                 />
                 <div
                     class="flex shrink-0 flex-wrap items-center gap-2 border-t border-border bg-background px-2 py-1.5"

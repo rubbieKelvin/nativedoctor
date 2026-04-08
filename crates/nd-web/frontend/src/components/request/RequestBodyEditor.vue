@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import CodeMirrorEditor from "@/components/editor/CodeMirrorEditor.vue";
 
 const editor = useEditorStore();
 const { requestSpec, activeTab } = storeToRefs(editor);
@@ -303,10 +304,10 @@ const hint = computed(() => {
             </p>
 
             <template v-if="JSON_KINDS.has(inferredKind)">
-                <textarea
+                <CodeMirrorEditor
                     v-model="localJson"
-                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1 grow"
-                    spellcheck="false"
+                    language="json"
+                    input-class="min-h-52 w-full grow rounded-md border border-input focus-within:ring-ring focus-within:ring-1"
                     @blur="commitJson"
                 />
                 <p v-if="jsonError" class="text-sm text-destructive">
@@ -321,10 +322,10 @@ const hint = computed(() => {
             </template>
 
             <template v-else-if="STRING_KINDS.has(inferredKind)">
-                <textarea
+                <CodeMirrorEditor
                     v-model="localString"
-                    class="border-input bg-background focus-visible:ring-ring min-h-52 w-full resize-y rounded-md border p-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-1 h-full"
-                    spellcheck="false"
+                    language="plaintext"
+                    input-class="min-h-52 h-full w-full rounded-md border border-input focus-within:ring-ring focus-within:ring-1"
                 />
             </template>
         </CardContent>
