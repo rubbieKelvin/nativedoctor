@@ -17,7 +17,7 @@ The CLI binary is **`nativedoctor`**. Core logic lives in **`nd-core`**; **`nd-g
 ## Requirements
 
 - **Rust** stable toolchain, to build from source.
-- **pnpm** on `PATH` when building **`nd-web`**: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so assets can be embedded. CI with a prebuilt `frontend/dist/`).
+- **Node.js** and **pnpm** when building **`nd-web`** in **release** mode: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so the SPA can be embedded (see **`ND_WEB_SKIP_FRONTEND_BUILD`** in [`crates/nd-web/build.rs`](crates/nd-web/build.rs) if you must skip that step).
 - Network access for real HTTP calls (optional: **`--no-network-io`** expands and prints only).
 
 ---
@@ -37,6 +37,14 @@ Building **`nd-web`** as a dependency pulls in the frontend build via `build.rs`
 ### Prebuilt archives
 
 If this repository publishes **GitHub Releases**, attaching archives is automated (see [Release binaries (CI)](#release-binaries-ci)). Download the archive for your OS and place the `nativedoctor` binary on your `PATH`.
+
+---
+
+## Release binaries (CI)
+
+Publishing a **GitHub Release** (not draft-only) runs [`.github/workflows/release.yml`](.github/workflows/release.yml): it checks out the release tag, installs **pnpm** (pinned to match `crates/nd-web/frontend/package.json`), **Node 20**, and the **stable Rust** toolchain, then runs **`cargo build --release -p nd-cli`**. That compile triggers `nd-web`’s `build.rs`, which builds the Vue app so the SPA is embedded in the binary. Archives (**`.tar.gz`** on Linux/macOS, **`.zip`** on Windows) are uploaded back to the same release.
+
+Matrix targets: **linux-x86_64**, **windows-x86_64**, **darwin-aarch64** (Apple Silicon), **darwin-x86_64** (Intel macOS via `macos-13`).
 
 ---
 

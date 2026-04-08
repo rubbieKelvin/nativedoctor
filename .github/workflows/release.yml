@@ -32,6 +32,17 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
+      # nd-web build.rs runs pnpm install + pnpm build in release mode to embed the SPA.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: crates/nd-web/frontend/pnpm-lock.yaml
+
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build release binary
