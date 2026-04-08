@@ -31,6 +31,26 @@ export async function fetchFile(path: string): Promise<string> {
   return r.text();
 }
 
+async function readApiErrorMessage(r: Response): Promise<string> {
+  const t = await r.text();
+  try {
+    const j = JSON.parse(t) as { error?: string };
+    return j.error ?? t;
+  } catch {
+    return t;
+  }
+}
+
+/** Writes UTF-8 text to an existing file under workspace roots. */
+export async function saveFile(path: string, content: string): Promise<void> {
+  const r = await fetch(`${API}/file`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, content }),
+  });
+  if (!r.ok) throw new Error(await readApiErrorMessage(r));
+}
+
 export interface SendRequestPayload {
   source_path: string;
   document?: unknown;

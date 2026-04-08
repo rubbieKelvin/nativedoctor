@@ -6,6 +6,7 @@
 //! |--------|------|---------|
 //! | GET | `/workspace` | Discovery: valid requests, scripts, skipped invalid files |
 //! | GET | `/file?path=` | Raw file text for the editor (sandboxed to roots) |
+//! | PUT | `/file` | JSON body `{ path, content }` writes UTF-8 text to an existing file under roots |
 //! | POST | `/requests/send` | Run a request (from disk or inline JSON document) |
 //! | POST | `/scripts/run` | Run a Rhai script under `nd-core` semantics |
 //! | GET | `/ws` | WebSocket: send one run command, receive [`nd_core::stream::events::Event`] JSON then `run_complete` |
@@ -59,7 +60,7 @@ pub(crate) fn json_err(msg: impl Into<String>, code: StatusCode) -> Response {
 pub fn api_router(state: AppState) -> Router {
     Router::new()
         .route("/workspace", get(workspace::get_workspace))
-        .route("/file", get(file::get_file))
+        .route("/file", get(file::get_file).put(file::put_file))
         .route("/requests/send", post(send::post_send))
         .route("/scripts/run", post(script::post_script_run))
         .route("/ws", get(ws::session_ws))

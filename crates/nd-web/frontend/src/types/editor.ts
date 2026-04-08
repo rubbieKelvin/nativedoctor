@@ -6,6 +6,8 @@ export interface EditorTab {
     path: string;
     title: string;
     raw: string;
+    /** Last content loaded from disk or saved successfully (for dirty detection). */
+    diskRaw: string;
     ext: string;
     doc: Record<string, unknown> | null;
     parseError: string | null;

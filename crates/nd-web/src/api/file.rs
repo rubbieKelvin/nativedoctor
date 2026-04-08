@@ -1,6 +1,7 @@
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::Response;
+use axum::Json;
 use serde::Deserialize;
 use std::path::PathBuf;
 
@@ -37,4 +38,31 @@ pub async fn get_file(
         )],
         text,
     ));
+}
+
+#[derive(Deserialize)]
+pub struct PutFileBody {
+    pub path: String,
+    pub content: String,
+}
+
+pub async fn put_file(
+    State(state): State<AppState>,
+    Json(body): Json<PutFileBody>,
+) -> Result<StatusCode, Response> {
+    let p = PathBuf::from(&body.path);
+    let allowed = resolve_allowed_file(&p, state.roots.as_ref()).map_err(|e| {
+        let code = if e.contains("outside") {
+            StatusCode::FORBIDDEN
+        } else {
+            StatusCode::NOT_FOUND
+        };
+        json_err(e, code)
+    })?;
+
+    std::fs::write(&allowed, body.content.as_bytes()).map_err(|e| {
+        json_err(e.to_string(), StatusCode::INTERNAL_SERVER_ERROR)
+    })?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import YAML from "yaml";
-import { fetchFile } from "@/api";
+import { fetchFile, saveFile } from "@/api";
 import type { EditorTab, ReqSubTab } from "@/types/editor";
 
 export const HTTP_METHODS = [
@@ -37,6 +37,12 @@ export const useEditorStore = defineStore("editor", () => {
     const tabs = ref<EditorTab[]>([]);
     const activeId = ref<string | null>(null);
     const reqSubTab = ref<ReqSubTab>("params");
+    const scriptSaveError = ref<string | null>(null);
+    const savingScript = ref(false);
+
+    watch(activeId, () => {
+        scriptSaveError.value = null;
+    });
 
     const activeTab = computed(
         () => tabs.value.find((t) => t.id === activeId.value) ?? null,
@@ -65,6 +71,7 @@ export const useEditorStore = defineStore("editor", () => {
             path,
             title,
             raw,
+            diskRaw: raw,
             ext,
             doc: null,
             parseError: null,
@@ -275,6 +282,28 @@ export const useEditorStore = defineStore("editor", () => {
         set: setScriptRaw,
     });
 
+    const scriptDirty = computed(() => {
+        const t = activeTab.value;
+        if (!t || t.kind !== "script") return false;
+        return t.raw !== t.diskRaw;
+    });
+
+    async function saveActiveScript(): Promise<void> {
+        const t = activeTab.value;
+        if (!t || t.kind !== "script") return;
+        scriptSaveError.value = null;
+        savingScript.value = true;
+        try {
+            await saveFile(t.path, t.raw);
+            t.diskRaw = t.raw;
+        } catch (e) {
+            scriptSaveError.value =
+                e instanceof Error ? e.message : String(e);
+        } finally {
+            savingScript.value = false;
+        }
+    }
+
     function setMethod(m: string) {
         const req = ensureRequestDoc();
         if (req) {
@@ -308,6 +337,10 @@ export const useEditorStore = defineStore("editor", () => {
         overridesRecord,
         overridesJsonError,
         scriptRaw,
+        scriptDirty,
+        scriptSaveError,
+        savingScript,
+        saveActiveScript,
         HTTP_METHODS,
         setMethod,
         setUrl,

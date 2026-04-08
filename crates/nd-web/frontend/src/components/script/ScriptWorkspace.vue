@@ -14,7 +14,8 @@ import CodeMirrorEditor from "@/components/editor/CodeMirrorEditor.vue";
 
 const editor = useEditorStore();
 const execution = useExecutionStore();
-const { scriptRaw } = storeToRefs(editor);
+const { scriptRaw, scriptDirty, scriptSaveError, savingScript } =
+    storeToRefs(editor);
 const { sending } = storeToRefs(execution);
 
 const activePath = computed(() => editor.activeTab?.path);
@@ -46,11 +47,34 @@ const sendErr = computed(() => {
                 >
                     <Button
                         size="sm"
-                        :disabled="sending"
+                        variant="secondary"
+                        :disabled="
+                            !scriptDirty ||
+                            sending ||
+                            savingScript
+                        "
+                        @click="editor.saveActiveScript"
+                    >
+                        {{
+                            savingScript
+                                ? "Saving…"
+                                : scriptDirty
+                                  ? "Save"
+                                  : "Saved"
+                        }}
+                    </Button>
+                    <Button
+                        size="sm"
+                        :disabled="sending || savingScript"
                         @click="execution.doRunScript"
                     >
                         {{ sending ? "Running…" : "Run script" }}
                     </Button>
+                    <span
+                        v-if="scriptSaveError"
+                        class="text-destructive text-xs"
+                        >{{ scriptSaveError }}</span
+                    >
                     <span v-if="sendErr" class="text-xs text-destructive">{{
                         sendErr
                     }}</span>

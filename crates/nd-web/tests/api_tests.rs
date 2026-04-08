@@ -1,5 +1,5 @@
 use axum::body::{to_bytes, Body};
-use axum::http::{Request, StatusCode};
+use axum::http::{header::CONTENT_TYPE, Request, StatusCode};
 use nd_web::{api_router, app_router, AppState};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -31,6 +31,32 @@ async fn file_outside_roots_is_forbidden() {
         .await
         .unwrap();
     assert_eq!(res.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn put_file_writes_under_roots() {
+    let dir = tempfile::tempdir().unwrap();
+    let f = dir.path().join("script.rhai");
+    std::fs::write(&f, "old").unwrap();
+    let roots = vec![dir.path().canonicalize().unwrap()];
+    let app = api_router(test_state(roots));
+    let body = serde_json::json!({
+        "path": f.to_string_lossy(),
+        "content": "new content\n",
+    });
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri("/file")
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    assert_eq!(std::fs::read_to_string(&f).unwrap(), "new content\n");
 }
 
 #[tokio::test]
