@@ -147,14 +147,7 @@ pub(crate) fn create_engine(
     register_log(&mut engine, session.clone(), script_label);
     register_persist(&mut engine, session.clone());
 
-    let env_arc = Arc::new(
-        session
-            .lock()
-            .expect("session mutex poisoned")
-            .runtime
-            .clone(),
-    );
-    let resolver = NativeImportResolver::new(script_path, env_arc, script_options);
+    let resolver = NativeImportResolver::new(script_path, session.clone(), script_options);
     engine.set_module_resolver(resolver);
 
     return engine;

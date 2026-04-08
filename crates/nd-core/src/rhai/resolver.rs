@@ -10,10 +10,10 @@ use std::sync::{Arc, Mutex};
 use rhai::{EvalAltResult, Module, ModuleResolver, Position, Scope, Shared};
 
 use super::utils::json_to_dynamic;
-use crate::env::RuntimeEnv;
 use crate::error::Error as NdError;
 use crate::execute::types::{ExecutionResult, PrintOptions};
 use crate::model::request::RequestFile;
+use crate::stream::{MutexSession, Session};
 use crate::utils::path::resolve_file_path;
 
 /// CLI-aligned options for HTTP invoked from Rhai `import` request modules.
@@ -26,13 +26,17 @@ pub struct RhaiScriptRunOptions {
 /// Resolves `import "path"` relative to the importing script (or the main script directory).
 pub struct NativeImportResolver {
     main_script_dir: PathBuf,
-    env: Arc<RuntimeEnv>,
+    session: Arc<Mutex<Session>>,
     options: RhaiScriptRunOptions,
     cache: Mutex<HashMap<PathBuf, Shared<Module>>>,
 }
 
 impl NativeImportResolver {
-    pub fn new(main_script: &Path, env: Arc<RuntimeEnv>, options: RhaiScriptRunOptions) -> Self {
+    pub fn new(
+        main_script: &Path,
+        session: Arc<Mutex<Session>>,
+        options: RhaiScriptRunOptions,
+    ) -> Self {
         let main_script_dir = main_script
             .parent()
             .map(Path::to_path_buf)
@@ -40,7 +44,7 @@ impl NativeImportResolver {
 
         Self {
             main_script_dir,
-            env,
+            session,
             options,
             cache: Mutex::new(HashMap::new()),
         }
@@ -122,54 +126,61 @@ impl NativeImportResolver {
         let doc: Arc<RequestFile> =
             Arc::new(RequestFile::from_file(&file_path).map_err(|e| nd_error(path, pos, e))?);
 
-        let env = self.env.clone();
         let options = self.options.clone();
 
         let mut module = Module::new();
 
         // SETUP MODULE METHOD: 'invoke'
-        let doc0 = doc.clone();
-        let env0 = env.clone();
-        let options0 = options.clone();
-        let p0 = path_owned.clone();
-
         // So we can call the request (Without kwards)
-        module.set_native_fn("invoke", move || {
-            execute_request_call(&doc0, &env0, &options0, None, &p0, pos, false)
-        });
+        {
+            let doc = doc.clone();
+            let options = options.clone();
+            let path = path_owned.clone();
+            let session = self.session.clone();
 
-        let doc1 = doc.clone();
-        let env1 = env.clone();
-        let options1 = options.clone();
-        let p1 = path_owned.clone();
+            module.set_native_fn("invoke", move || {
+                execute_request_call(&doc, &session, &options, None, &path, pos, false)
+            });
+        }
 
         // Call the request with kwargs
-        module.set_native_fn("invoke", move |kwargs: rhai::Map| {
-            let overrides = map_to_overrides(&kwargs);
-            execute_request_call(&doc1, &env1, &options1, Some(overrides), &p1, pos, false)
-        });
+        {
+            let doc = doc.clone();
+            let options = options.clone();
+            let path = path_owned.clone();
+            let session = self.session.clone();
+
+            module.set_native_fn("invoke", move |kwargs: rhai::Map| {
+                let overrides = map_to_overrides(&kwargs);
+                execute_request_call(&doc, &session, &options, Some(overrides), &path, pos, false)
+            });
+        }
 
         // SETUP MODULE METHOD: 'stream'
-        let doc0 = doc.clone();
-        let env0 = env.clone();
-        let options0 = options.clone();
-        let p0 = path_owned.clone();
-
         // So we can call the request (Without kwards)
-        module.set_native_fn("stream", move || {
-            execute_request_call(&doc0, &env0, &options0, None, &p0, pos, true)
-        });
+        {
+            let doc = doc.clone();
+            let options = options.clone();
+            let path = path_owned.clone();
+            let session = self.session.clone();
 
-        let doc1 = doc.clone();
-        let env1 = env.clone();
-        let options1 = options.clone();
-        let p1 = path_owned.clone();
+            module.set_native_fn("stream", move || {
+                execute_request_call(&doc, &session, &options, None, &path, pos, true)
+            });
+        }
 
         // Call the request with kwargs
-        module.set_native_fn("stream", move |kwargs: rhai::Map| {
-            let overrides = map_to_overrides(&kwargs);
-            execute_request_call(&doc1, &env1, &options1, Some(overrides), &p1, pos, true)
-        });
+        {
+            let doc = doc.clone();
+            let options = options.clone();
+            let path = path_owned.clone();
+            let session = self.session.clone();
+
+            module.set_native_fn("stream", move |kwargs: rhai::Map| {
+                let overrides = map_to_overrides(&kwargs);
+                execute_request_call(&doc, &session, &options, Some(overrides), &path, pos, true)
+            });
+        }
 
         return Ok(Shared::new(module));
     }
@@ -237,7 +248,7 @@ fn execution_result_to_dynamic(result: &ExecutionResult) -> rhai::Dynamic {
 #[allow(clippy::too_many_arguments)]
 fn execute_request_call(
     doc: &Arc<RequestFile>,
-    env: &Arc<RuntimeEnv>,
+    session: &Arc<Mutex<Session>>,
     options: &RhaiScriptRunOptions,
     overrides: Option<HashMap<String, String>>,
     _import_path: &str,
@@ -245,11 +256,12 @@ fn execute_request_call(
     stream: bool,
 ) -> Result<rhai::Dynamic, Box<EvalAltResult>> {
     let overrides_ref = overrides.as_ref();
+    let env = session.runtime();
 
     if options.no_network_io {
         let prep = doc
             .request
-            .expand_with_overrides(env, overrides_ref)
+            .expand_with_overrides(&env, overrides_ref)
             .map_err(|e| Box::new(EvalAltResult::ErrorRuntime(e.to_string().into(), pos)))?;
 
         let mut map = rhai::Map::new();
@@ -265,24 +277,10 @@ fn execute_request_call(
     }
 
     let doc = doc.clone();
-    let env = env.clone();
-    let runtime = (*env).clone();
 
     let result = tokio::task::block_in_place(|| {
         tokio::runtime::Handle::current().block_on(async move {
-            let session = Arc::new(Mutex::new(
-                crate::stream::Session::new(
-                    // use already existing runtime that was created when script was loaded
-                    // TODO: we might need to sync this back into the parent runtime
-                    {
-                        let r = runtime;
-                        move || Ok(r.clone())
-                    },
-                    None,
-                )
-                .map_err(|e| NdError::InvalidRequest(format!("session: {e}")))?,
-            ));
-            doc.execute_with_overrides(session, overrides.as_ref(), stream)
+            doc.execute_with_overrides(session.clone(), overrides.as_ref(), stream)
                 .await
         })
     })
