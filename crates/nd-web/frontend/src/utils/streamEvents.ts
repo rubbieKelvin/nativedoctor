@@ -8,11 +8,15 @@ export type ScriptLogLine = {
 };
 
 /** Matches serde JSON for `std::time::Duration`. */
-type SerdeDuration = { secs: number; nanos: number };
+export type SerdeDuration = { secs: number; nanos: number };
 
-function durationToMs(d: SerdeDuration | undefined): number {
-    if (!d || typeof d.secs !== "number") return 0;
-    return d.secs * 1000 + Math.floor((d.nanos ?? 0) / 1_000_000);
+export function serdeDurationToMs(
+    d: SerdeDuration | undefined | null,
+): number {
+    if (!d || typeof d !== "object") return 0;
+    const o = d as SerdeDuration;
+    if (typeof o.secs !== "number") return 0;
+    return o.secs * 1000 + Math.floor((o.nanos ?? 0) / 1_000_000);
 }
 
 /** Externally tagged `Event::Log` from the server (`{ "Log": { ... } }`). */
@@ -73,6 +77,6 @@ export function appendLogFromStreamEvent(
     logs.push({
         level: String(inner.level ?? "info"),
         message: inner.message,
-        elapsed_ms: durationToMs(inner.elapsed),
+        elapsed_ms: serdeDurationToMs(inner.elapsed),
     });
 }

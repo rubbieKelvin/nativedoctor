@@ -11,6 +11,7 @@ path = "src/main.rs"
 clap = { version = "4", features = ["derive"] }
 nd-generate = { path = "../nd-generate" }
 nd-web = { path = "../nd-web" }
+nd-tui = { path = "../nd-tui" }
 nd-core = { path = "../nd-core" }
 nd-constants = { path = "../nd-constants" }
 serde_json = "1"

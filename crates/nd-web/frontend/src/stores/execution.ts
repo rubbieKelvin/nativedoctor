@@ -7,6 +7,12 @@ import {
     patchRuntimeEnvFromEvent,
     type ScriptLogLine,
 } from "@/utils/streamEvents";
+import {
+    applyStreamEventToTimeline,
+    createEmptyTimelineState,
+    flushOpenTimelineSpans,
+    type TimelineReducerState,
+} from "@/utils/streamTimeline";
 
 export const useExecutionStore = defineStore("execution", () => {
     const response = ref<ExecutionResultDto | null>(null);
@@ -17,6 +23,9 @@ export const useExecutionStore = defineStore("execution", () => {
     const scriptRunErrorByPath = reactive<Record<string, string | null>>({});
     const bodyView = ref<"pretty" | "raw">("pretty");
     const runtimeEnvByPath = reactive<Record<string, RuntimeEnvEntry[]>>({});
+    const scriptTimelineByPath = reactive<Record<string, TimelineReducerState>>(
+        {},
+    );
 
     const prettyResponse = computed(() => {
         const res = response.value;
@@ -41,6 +50,9 @@ export const useExecutionStore = defineStore("execution", () => {
         for (const k of Object.keys(scriptRunErrorByPath)) {
             delete scriptRunErrorByPath[k];
         }
+        for (const k of Object.keys(scriptTimelineByPath)) {
+            delete scriptTimelineByPath[k];
+        }
     }
 
     /** Full reset when opening a new editor tab from the workspace (matches prior global wipe). */
@@ -53,6 +65,13 @@ export const useExecutionStore = defineStore("execution", () => {
     function ensureLogs(path: string): ScriptLogLine[] {
         if (!scriptLogsByPath[path]) scriptLogsByPath[path] = [];
         return scriptLogsByPath[path];
+    }
+
+    function ensureTimeline(path: string): TimelineReducerState {
+        if (!scriptTimelineByPath[path]) {
+            scriptTimelineByPath[path] = createEmptyTimelineState();
+        }
+        return scriptTimelineByPath[path]!;
     }
 
     async function doSend() {
@@ -123,8 +142,11 @@ export const useExecutionStore = defineStore("execution", () => {
         sending.value = true;
         scriptLogsByPath[path] = [];
         runtimeEnvByPath[path] = [];
+        scriptTimelineByPath[path] = createEmptyTimelineState();
         scriptRunErrorByPath[path] = null;
         sendErrByPath[path] = null;
+
+        const timeline = ensureTimeline(path);
 
         const run = startSessionRun({
             type: "run_script",
@@ -146,10 +168,17 @@ export const useExecutionStore = defineStore("execution", () => {
                 appendLogFromStreamEvent(ensureLogs(path), ev);
             }),
         );
-        // More handlers (timeline, checkpoints): add further `run.subscribe(...)` calls here.
 
+        unsubs.push(
+            run.subscribe((ev) => {
+                applyStreamEventToTimeline(timeline, ev);
+            }),
+        );
+
+        let completedOk = false;
         try {
             const res = await run.completed;
+            completedOk = res.ok;
             scriptRunErrorByPath[path] = res.ok
                 ? null
                 : (res.error ?? "Script failed");
@@ -157,6 +186,9 @@ export const useExecutionStore = defineStore("execution", () => {
             sendErrByPath[path] = e instanceof Error ? e.message : String(e);
         } finally {
             unsubs.forEach((u) => u());
+            const benignEnd =
+                completedOk && sendErrByPath[path] == null;
+            flushOpenTimelineSpans(timeline, benignEnd);
             sending.value = false;
         }
     }
@@ -169,6 +201,7 @@ export const useExecutionStore = defineStore("execution", () => {
         scriptRunErrorByPath,
         bodyView,
         runtimeEnvByPath,
+        scriptTimelineByPath,
         prettyResponse,
         resetAfterOpenFile,
         doSend,

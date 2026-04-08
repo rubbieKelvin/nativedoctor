@@ -4,6 +4,7 @@ mod cmd_generate;
 mod cmd_new;
 mod cmd_rhai_definitions;
 mod cmd_run;
+mod cmd_tui;
 mod cmd_web;
 mod logging;
 
@@ -76,6 +77,17 @@ enum Command {
         paths: Vec<PathBuf>,
         #[arg(long)]
         stream_content: bool,
+    },
+    /// Run request files or Rhai scripts in an interactive terminal UI (ratatui).
+    Tui {
+        /// Build the runtime environment once and reuse it across all files.
+        #[arg(long)]
+        retain_runtime: bool,
+        #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath, num_args = 1.., required = true)]
+        paths: Vec<PathBuf>,
+        /// Disable streaming HTTP response chunks (buffer full body before display).
+        #[arg(long = "no-stream", action = ArgAction::SetTrue)]
+        no_stream: bool,
     },
     /// Serve web UI for one or more workspace directories (non-recursive listing).
     Web {
@@ -156,6 +168,13 @@ async fn run(cli: Cli) -> std::result::Result<(), String> {
         Some(Command::Run { .. }) => {
             let opts = RunOptions::from_cli(&cli)?;
             cmd_run::run_run(opts).await?;
+        }
+        Some(Command::Tui {
+            retain_runtime,
+            paths,
+            no_stream,
+        }) => {
+            cmd_tui::run(&cli, paths.clone(), *retain_runtime, !no_stream).await?;
         }
         Some(Command::Web { bind, dirs }) => {
             let mut roots = dirs.clone();

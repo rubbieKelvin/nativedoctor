@@ -29,11 +29,11 @@ const sendErr = computed(() => {
 <template>
     <ResizablePanelGroup
         id="nd-script-workspace"
-        direction="vertical"
+        direction="horizontal"
         auto-save-id="nd-script-workspace"
         class="h-full min-h-0 min-w-0 flex-1"
     >
-        <ResizablePanel :default-size="60" :min-size="25">
+        <ResizablePanel :default-size="30" :min-size="25">
             <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
                 <CodeMirrorEditor
                     :key="activePath ?? ''"
@@ -51,16 +51,14 @@ const sendErr = computed(() => {
                     >
                         {{ sending ? "Running…" : "Run script" }}
                     </Button>
-                    <span
-                        v-if="sendErr"
-                        class="text-xs text-destructive"
-                        >{{ sendErr }}</span
-                    >
+                    <span v-if="sendErr" class="text-xs text-destructive">{{
+                        sendErr
+                    }}</span>
                 </div>
             </div>
         </ResizablePanel>
         <ResizableHandle with-handle />
-        <ResizablePanel :default-size="40" :min-size="18">
+        <ResizablePanel :default-size="70" :min-size="18">
             <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
                 <ScriptOutputPanel />
             </div>
