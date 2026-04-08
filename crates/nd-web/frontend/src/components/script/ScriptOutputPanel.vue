@@ -30,7 +30,7 @@ const scriptTimeline = computed(() => {
     return execution.scriptTimelineByPath[p];
 });
 
-const section = ref<"logs" | "timeline" | "env">("logs");
+const section = ref<"logs" | "timeline" | "env">("timeline");
 </script>
 
 <template>
@@ -42,20 +42,14 @@ const section = ref<"logs" | "timeline" | "env">("logs");
             <TabsList
                 class="h-9 w-full shrink-0 justify-start rounded-none border-b border-border bg-background px-2"
             >
+                <TabsTrigger value="timeline" class="text-xs">
+                    Timeline
+                </TabsTrigger>
                 <TabsTrigger value="logs" class="text-xs">Logs</TabsTrigger>
-                <TabsTrigger value="timeline" class="text-xs"
-                    >Timeline</TabsTrigger
-                >
-                <TabsTrigger value="env" class="text-xs"
-                    >Runtime env</TabsTrigger
-                >
+                <TabsTrigger value="env" class="text-xs">
+                    Runtime env
+                </TabsTrigger>
             </TabsList>
-            <TabsContent
-                value="logs"
-                class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-            >
-                <ScriptLogViewer :logs="scriptLogs" :error="scriptRunError" />
-            </TabsContent>
             <TabsContent
                 value="timeline"
                 class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
@@ -66,6 +60,12 @@ const section = ref<"logs" | "timeline" | "env">("logs");
                     :run-error="scriptRunError"
                     :script-path="activePath"
                 />
+            </TabsContent>
+            <TabsContent
+                value="logs"
+                class="mt-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+            >
+                <ScriptLogViewer :logs="scriptLogs" :error="scriptRunError" />
             </TabsContent>
             <TabsContent
                 value="env"
