@@ -121,16 +121,16 @@ function goLibrary() {
                         "
                     >
                         <div
-                            class="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-semibold"
+                            class="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md  font-semibold"
                         >
                             N
                         </div>
                         <div class="min-w-0 flex-1">
-                            <div class="truncate text-sm font-medium">
+                            <div class="truncate  font-medium">
                                 NativeDoctor
                             </div>
                             <div
-                                class="text-sidebar-foreground/60 truncate text-[10px]"
+                                class="text-sidebar-foreground/60 truncate "
                             >
                                 {{ workspaceSubtitle }}
                             </div>
@@ -142,12 +142,12 @@ function goLibrary() {
                     </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" class="w-64" side="bottom">
-                    <DropdownMenuLabel class="text-xs font-normal">
+                    <DropdownMenuLabel class=" font-normal">
                         Workspace roots
                     </DropdownMenuLabel>
                     <template v-if="roots.length === 0">
                         <DropdownMenuItem
-                            class="text-sidebar-foreground/60 text-xs"
+                            class="text-sidebar-foreground/60 "
                             disabled
                         >
                             No roots loaded yet
@@ -159,9 +159,9 @@ function goLibrary() {
                         class="hover:bg-accent/50 cursor-default flex-col items-start gap-0.5 py-2"
                         @select.prevent
                     >
-                        <span class="text-xs font-medium">{{ r.label }}</span>
+                        <span class=" font-medium">{{ r.label }}</span>
                         <span
-                            class="text-sidebar-foreground/55 w-full truncate font-mono text-[10px]"
+                            class="text-sidebar-foreground/55 w-full truncate font-mono "
                             :title="r.path"
                             >{{ r.path }}</span
                         >
@@ -178,7 +178,7 @@ function goLibrary() {
                 />
                 <SidebarInput
                     v-model="searchQuery"
-                    class="placeholder:text-sidebar-foreground/40 min-w-0 flex-1 border-0 bg-transparent font-sans text-xs shadow-none focus-visible:ring-0"
+                    class="placeholder:text-sidebar-foreground/40 min-w-0 flex-1 border-0 bg-transparent font-sans  shadow-none focus-visible:ring-0"
                     placeholder="Search requests & scripts…"
                     type="search"
                     autocomplete="off"
@@ -190,7 +190,7 @@ function goLibrary() {
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         :is-active="activeId === null"
-                        class="h-9 rounded-md text-xs font-normal"
+                        class="h-9 rounded-md  font-normal"
                         tooltip="Browse without a file open"
                         @click="goLibrary"
                     >
@@ -202,13 +202,13 @@ function goLibrary() {
         </SidebarHeader>
 
         <SidebarContent class="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-2">
-            <div v-if="loadErr" class="text-destructive px-2 text-xs">
+            <div v-if="loadErr" class="text-destructive px-2 ">
                 {{ loadErr }}
             </div>
 
             <div
                 v-else-if="skippedCount > 0"
-                class="text-sidebar-foreground/80 mx-2 mb-2 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1.5 text-[10px] leading-snug"
+                class="text-sidebar-foreground/80 mx-2 mb-2 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1.5  leading-snug"
                 :title="
                     workspace?.skipped_requests
                         ?.map((s) => s.path)
@@ -245,11 +245,11 @@ function goLibrary() {
                                     aria-hidden="true"
                                 />
                                 <span
-                                    class="text-sidebar-foreground min-w-0 flex-1 text-xs font-medium"
+                                    class="text-sidebar-foreground min-w-0 flex-1  font-medium"
                                     >Requests</span
                                 >
                                 <span
-                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono text-[10px] tabular-nums"
+                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono  tabular-nums"
                                     >{{ requestTotal }}</span
                                 >
                             </CollapsibleTrigger>
@@ -291,7 +291,7 @@ function goLibrary() {
                                             class="pointer-events-none"
                                         >
                                             <span
-                                                class="text-sidebar-foreground/60 px-1 py-0.5 text-[10px] tracking-wide uppercase"
+                                                class="text-sidebar-foreground/60 px-1 py-0.5  tracking-wide uppercase"
                                                 >{{ g.root_label }}</span
                                             >
                                         </SidebarMenuItem>
@@ -302,7 +302,7 @@ function goLibrary() {
                                             <SidebarMenuButton
                                                 :is-active="activeId === e.path"
                                                 :tooltip="e.path"
-                                                class="h-8 text-xs font-normal"
+                                                class="h-8  font-normal"
                                                 @click="
                                                     editor.openFile(
                                                         e.path,
@@ -346,11 +346,11 @@ function goLibrary() {
                                     aria-hidden="true"
                                 />
                                 <span
-                                    class="text-sidebar-foreground min-w-0 flex-1 text-xs font-medium"
+                                    class="text-sidebar-foreground min-w-0 flex-1  font-medium"
                                     >Scripts</span
                                 >
                                 <span
-                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono text-[10px] tabular-nums"
+                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono  tabular-nums"
                                     >{{ scriptTotal }}</span
                                 >
                             </CollapsibleTrigger>
@@ -392,7 +392,7 @@ function goLibrary() {
                                             class="pointer-events-none"
                                         >
                                             <span
-                                                class="text-sidebar-foreground/60 px-1 py-0.5 text-[10px] tracking-wide uppercase"
+                                                class="text-sidebar-foreground/60 px-1 py-0.5  tracking-wide uppercase"
                                                 >{{ g.root_label }}</span
                                             >
                                         </SidebarMenuItem>
@@ -403,7 +403,7 @@ function goLibrary() {
                                             <SidebarMenuButton
                                                 :is-active="activeId === e.path"
                                                 :tooltip="e.path"
-                                                class="h-8 text-xs font-normal"
+                                                class="h-8  font-normal"
                                                 @click="
                                                     editor.openFile(
                                                         e.path,
@@ -430,7 +430,7 @@ function goLibrary() {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton
-                        class="text-sidebar-foreground/80 h-8 text-xs font-normal"
+                        class="text-sidebar-foreground/80 h-8  font-normal"
                         tooltip="Reload workspace from disk"
                         @click="workspaceStore.loadWorkspace()"
                     >
@@ -441,7 +441,7 @@ function goLibrary() {
             </SidebarMenu>
             <SidebarSeparator class="bg-sidebar-border/60" />
             <p
-                class="text-sidebar-foreground/45 px-2 pb-1 font-mono text-[10px]"
+                class="text-sidebar-foreground/45 px-2 pb-1 font-mono "
             >
                 v{{ VITE_NATIVEDOCTOR_VERSION }}
             </p>
