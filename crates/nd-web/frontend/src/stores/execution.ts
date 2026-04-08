@@ -26,6 +26,10 @@ export const useExecutionStore = defineStore("execution", () => {
     const scriptTimelineByPath = reactive<Record<string, TimelineReducerState>>(
         {},
     );
+    /** Wall clock sync for extrapolating session time between WebSocket events. */
+    const scriptTimelineWallSyncByPath = reactive<
+        Record<string, { lastWallMs: number }>
+    >({});
 
     const prettyResponse = computed(() => {
         const res = response.value;
@@ -52,6 +56,9 @@ export const useExecutionStore = defineStore("execution", () => {
         }
         for (const k of Object.keys(scriptTimelineByPath)) {
             delete scriptTimelineByPath[k];
+        }
+        for (const k of Object.keys(scriptTimelineWallSyncByPath)) {
+            delete scriptTimelineWallSyncByPath[k];
         }
     }
 
@@ -143,6 +150,7 @@ export const useExecutionStore = defineStore("execution", () => {
         scriptLogsByPath[path] = [];
         runtimeEnvByPath[path] = [];
         scriptTimelineByPath[path] = createEmptyTimelineState();
+        scriptTimelineWallSyncByPath[path] = { lastWallMs: performance.now() };
         scriptRunErrorByPath[path] = null;
         sendErrByPath[path] = null;
 
@@ -172,6 +180,9 @@ export const useExecutionStore = defineStore("execution", () => {
         unsubs.push(
             run.subscribe((ev) => {
                 applyStreamEventToTimeline(timeline, ev);
+                scriptTimelineWallSyncByPath[path] = {
+                    lastWallMs: performance.now(),
+                };
             }),
         );
 
@@ -202,6 +213,7 @@ export const useExecutionStore = defineStore("execution", () => {
         bodyView,
         runtimeEnvByPath,
         scriptTimelineByPath,
+        scriptTimelineWallSyncByPath,
         prettyResponse,
         resetAfterOpenFile,
         doSend,

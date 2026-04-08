@@ -6,7 +6,8 @@ const props = defineProps<{
     row: TimelineRow;
     tMaxMs: number;
     sending: boolean;
-    lastElapsedMs: number;
+    /** Server elapsed plus client extrapolation while the run is active. */
+    liveElapsedMs: number;
 }>();
 
 const emit = defineEmits<{
@@ -26,7 +27,7 @@ const spanEndMs = computed(() => {
     if (props.row.kind !== "span") return 0;
     if (props.row.endMs != null) return props.row.endMs;
     if (props.sending) return tMax.value;
-    return Math.max(props.row.startMs, props.lastElapsedMs);
+    return Math.max(props.row.startMs, props.liveElapsedMs);
 });
 
 const endPct = computed(() => {

@@ -64,6 +64,7 @@ const section = ref<"logs" | "timeline" | "env">("logs");
                     :timeline="scriptTimeline"
                     :sending="execution.sending"
                     :run-error="scriptRunError"
+                    :script-path="activePath"
                 />
             </TabsContent>
             <TabsContent

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import {
+    computed,
+    onBeforeUnmount,
+    ref,
+    watch,
+} from "vue";
 import type { TimelineReducerState, TimelineRow } from "@/utils/streamTimeline";
+import { useExecutionStore } from "@/stores/execution";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ScriptTimelineAxis from "./ScriptTimelineAxis.vue";
@@ -16,9 +22,36 @@ const props = defineProps<{
     timeline: TimelineReducerState | undefined;
     sending: boolean;
     runError: string | null;
+    scriptPath: string | undefined;
 }>();
 
+const execution = useExecutionStore();
+
 const selectedId = ref<string | null>(null);
+
+/** Bumps every animation frame while `sending` so `liveElapsedMs` recomputes. */
+const rafTick = ref(0);
+let rafId = 0;
+
+function rafLoop() {
+    rafTick.value++;
+    rafId = requestAnimationFrame(rafLoop);
+}
+
+watch(
+    () => props.sending,
+    (sending) => {
+        cancelAnimationFrame(rafId);
+        if (sending) {
+            rafId = requestAnimationFrame(rafLoop);
+        }
+    },
+    { immediate: true },
+);
+
+onBeforeUnmount(() => {
+    cancelAnimationFrame(rafId);
+});
 
 watch(
     () => props.timeline?.rows.length,
@@ -32,7 +65,20 @@ watch(
     },
 );
 
-const tMaxMs = computed(() => {
+const liveElapsedMs = computed(() => {
+    rafTick.value;
+    const tl = props.timeline;
+    if (!tl) return 0;
+    if (!props.sending) return tl.lastElapsedMs;
+    const path = props.scriptPath;
+    const sync = path
+        ? execution.scriptTimelineWallSyncByPath[path]
+        : undefined;
+    const wall = sync?.lastWallMs ?? performance.now();
+    return tl.lastElapsedMs + (performance.now() - wall);
+});
+
+const structuralTMaxMs = computed(() => {
     const tl = props.timeline;
     let m = Math.max(tl?.lastElapsedMs ?? 0, 1);
     if (!tl?.rows.length) return m;
@@ -44,6 +90,11 @@ const tMaxMs = computed(() => {
         }
     }
     return m;
+});
+
+const tMaxMs = computed(() => {
+    if (!props.sending) return structuralTMaxMs.value;
+    return Math.max(structuralTMaxMs.value, liveElapsedMs.value, 1);
 });
 
 const ticks = computed(() => computeTimelineTicks(tMaxMs.value));
@@ -68,7 +119,7 @@ const showPlayhead = computed(
     () =>
         props.sending &&
         (props.timeline?.rows.length ?? 0) > 0 &&
-        (props.timeline?.lastElapsedMs ?? 0) >= 0,
+        liveElapsedMs.value >= 0,
 );
 </script>
 
@@ -115,7 +166,7 @@ const showPlayhead = computed(
                         <div class="relative h-full w-full">
                             <ScriptTimelineGrid :ticks="ticks" />
                             <ScriptTimelinePlayhead
-                                :t-ms="timeline.lastElapsedMs"
+                                :t-ms="liveElapsedMs"
                                 :t-max-ms="tMaxMs"
                                 :visible="showPlayhead"
                             />
@@ -166,7 +217,7 @@ const showPlayhead = computed(
                                     :row="r"
                                     :t-max-ms="tMaxMs"
                                     :sending="sending"
-                                    :last-elapsed-ms="timeline.lastElapsedMs"
+                                    :live-elapsed-ms="liveElapsedMs"
                                     @select="onSelectRow"
                                 />
                             </div>
