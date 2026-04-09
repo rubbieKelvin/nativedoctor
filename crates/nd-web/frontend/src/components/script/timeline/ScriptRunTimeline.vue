@@ -168,7 +168,7 @@ const showPlayhead = computed(
                         </div>
                     </div>
                     <div
-                        class="relative z-[1] grid min-w-0"
+                        class="relative z-1 grid min-w-0"
                         :style="{
                             gridTemplateColumns: `${LABEL_COL} minmax(12rem,1fr)`,
                         }"
@@ -189,7 +189,8 @@ const showPlayhead = computed(
                                 <span
                                     class="text-foreground min-w-0 truncate text-[11px] leading-tight whitespace-nowrap"
                                     :title="
-                                        r.variant === 'Log'
+                                        r.variant === 'Log' ||
+                                        r.variant === 'AssertCalled'
                                             ? r.variant
                                             : `${r.variant} · ${r.label}`
                                     "
@@ -198,7 +199,11 @@ const showPlayhead = computed(
                                         r.variant
                                     }}</span>
                                     <template
-                                        v-if="r.variant !== 'Log' && r.label"
+                                        v-if="
+                                            r.variant !== 'Log' &&
+                                            r.variant !== 'AssertCalled' &&
+                                            r.label
+                                        "
                                     >
                                         <span
                                             class="text-muted-foreground font-normal"
@@ -215,7 +220,7 @@ const showPlayhead = computed(
                             <div
                                 :class="
                                     cn(
-                                        'border-border flex min-h-7 items-stretch border-b border-l border-border/40',
+                                        'flex min-h-7 items-stretch border-b border-l border-border/40',
                                         idx % 2 === 1 && 'bg-muted/5',
                                         selectedId === r.id && 'bg-primary/5',
                                     )

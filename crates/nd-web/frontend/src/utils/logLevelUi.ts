@@ -27,3 +27,25 @@ export function logLevelChipClass(level: string): string {
     }
     return "bg-primary/12 text-primary ring-primary/20 ring-1";
 }
+
+/** Parse `{ AssertCalled: { passed?, message? } }` from a timeline instant row's `raw`. */
+export function parseAssertFromTimelineInstant(
+    raw: unknown,
+): { passed: boolean; message: string } | null {
+    if (!raw || typeof raw !== "object") return null;
+    const inner = (raw as Record<string, unknown>).AssertCalled;
+    if (!inner || typeof inner !== "object") return null;
+    const rec = inner as Record<string, unknown>;
+    return {
+        passed: Boolean(rec.passed),
+        message: String(rec.message ?? ""),
+    };
+}
+
+/** Chip next to the timeline marker for assertion pass (green) or fail (red). */
+export function assertPassFailChipClass(passed: boolean): string {
+    if (passed) {
+        return "bg-emerald-600/15 text-emerald-800 ring-emerald-600/30 ring-1 dark:text-emerald-300";
+    }
+    return "bg-destructive/15 text-destructive ring-destructive/25 ring-1";
+}

@@ -2,7 +2,9 @@
 import { computed } from "vue";
 import type { TimelineRow } from "@/utils/streamTimeline";
 import {
+    assertPassFailChipClass,
     logLevelChipClass,
+    parseAssertFromTimelineInstant,
     parseLogFromTimelineInstant,
 } from "@/utils/logLevelUi";
 
@@ -59,6 +61,25 @@ const barClass = computed(() => {
     }
 });
 
+type InlineInstant =
+    | { kind: "log"; level: string; message: string }
+    | { kind: "assert"; passed: boolean; message: string };
+
+const inlineInstant = computed((): InlineInstant | null => {
+    if (props.row.kind !== "instant") return null;
+    if (props.row.variant === "Log") {
+        const p = parseLogFromTimelineInstant(props.row.raw);
+        if (!p) return null;
+        return { kind: "log", level: p.level, message: p.message };
+    }
+    if (props.row.variant === "AssertCalled") {
+        const p = parseAssertFromTimelineInstant(props.row.raw);
+        if (!p) return null;
+        return { kind: "assert", passed: p.passed, message: p.message };
+    }
+    return null;
+});
+
 const markerClass = computed(() => {
     if (props.row.kind === "span") {
         if (props.row.status === "error")
@@ -67,39 +88,33 @@ const markerClass = computed(() => {
             return "border-primary bg-primary ring-background ring-2";
         return "border-emerald-700 bg-emerald-500 ring-background ring-2 dark:border-emerald-300 dark:bg-emerald-400";
     }
+    if (props.row.kind === "instant" && props.row.variant === "AssertCalled") {
+        const a = parseAssertFromTimelineInstant(props.row.raw);
+        if (a) {
+            if (!a.passed) {
+                return "border-destructive bg-destructive ring-background ring-2";
+            }
+            return "border-emerald-700 bg-emerald-500 ring-background ring-2 dark:border-emerald-300 dark:bg-emerald-400";
+        }
+    }
     return "border-muted-foreground/70 bg-background ring-border ring-2";
 });
 
-const isLogInstant = computed(
-    () => props.row.kind === "instant" && props.row.variant === "Log",
+/** When the instant is late on the axis, keep inline text in the left band (before the node). */
+const INLINE_LEFT_THRESHOLD_PCT = 45;
+
+const inlineTextOnLeft = computed(
+    () => startPct.value >= INLINE_LEFT_THRESHOLD_PCT,
 );
 
-const logParts = computed(() => {
-    if (props.row.kind !== "instant") return null;
-    return parseLogFromTimelineInstant(props.row.raw);
-});
-
-const logChipClass = computed(() => {
-    const p = logParts.value;
-    if (!p) return "";
-    return logLevelChipClass(p.level);
-});
-
-/** When the instant is late on the axis, keep logs in the left band (before the node). */
-const LOG_INLINE_LEFT_THRESHOLD_PCT = 45;
-
-const logInlineOnLeft = computed(
-    () => startPct.value >= LOG_INLINE_LEFT_THRESHOLD_PCT,
-);
-
-const logInlineBoxClass = computed(() => [
+const inlineBoxClass = computed(() => [
     "pointer-events-none absolute top-1 bottom-1 z-[1] flex min-w-0 flex-wrap items-start gap-x-1.5 gap-y-0.5",
-    logInlineOnLeft.value ? "justify-end pr-1" : "pl-1",
+    inlineTextOnLeft.value ? "justify-end pr-1" : "pl-1",
 ]);
 
-const logInlineBoxStyle = computed(() => {
+const inlineBoxStyle = computed(() => {
     const p = startPct.value;
-    if (logInlineOnLeft.value) {
+    if (inlineTextOnLeft.value) {
         return {
             left: "4px",
             width: `max(0px, calc(${p}% - 18px))`,
@@ -111,8 +126,15 @@ const logInlineBoxStyle = computed(() => {
     };
 });
 
+const inlineTickClass = computed(() => {
+    const inline = inlineInstant.value;
+    if (!inline) return "bg-primary/35";
+    if (inline.kind === "log") return "bg-primary/35";
+    return inline.passed ? "bg-emerald-500/40" : "bg-destructive/45";
+});
+
 const shellClass = computed(() => {
-    if (isLogInstant.value) {
+    if (inlineInstant.value) {
         return "relative min-h-7 w-full min-w-[12rem] cursor-pointer py-0.5";
     }
     return "relative h-8 w-full min-w-[12rem] cursor-pointer";
@@ -128,9 +150,10 @@ const shellClass = computed(() => {
         @keydown.enter.prevent="emit('select', row.id)"
         @keydown.space.prevent="emit('select', row.id)"
     >
-        <template v-if="isLogInstant && logParts">
+        <template v-if="inlineInstant">
             <div
-                class="bg-primary/35 pointer-events-none absolute top-0 bottom-0 w-px -translate-x-1/2"
+                class="pointer-events-none absolute top-0 bottom-0 w-px -translate-x-1/2"
+                :class="inlineTickClass"
                 :style="{ left: `${startPct}%` }"
             />
             <div
@@ -138,16 +161,29 @@ const shellClass = computed(() => {
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />
-            <div :class="logInlineBoxClass" :style="logInlineBoxStyle">
-                <span
-                    class="shrink-0 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide"
-                    :class="logChipClass"
-                    >{{ logParts.level }}</span
-                >
-                <span
-                    class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug break-words whitespace-pre-wrap"
-                    >{{ logParts.message }}</span
-                >
+            <div :class="inlineBoxClass" :style="inlineBoxStyle">
+                <template v-if="inlineInstant.kind === 'log'">
+                    <span
+                        class="shrink-0 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide"
+                        :class="logLevelChipClass(inlineInstant.level)"
+                        >{{ inlineInstant.level }}</span
+                    >
+                    <span
+                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug break-words whitespace-pre-wrap"
+                        >{{ inlineInstant.message }}</span
+                    >
+                </template>
+                <template v-else>
+                    <span
+                        class="shrink-0 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide"
+                        :class="assertPassFailChipClass(inlineInstant.passed)"
+                        >{{ inlineInstant.passed ? "PASS" : "FAIL" }}</span
+                    >
+                    <span
+                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug break-words whitespace-pre-wrap"
+                        >{{ inlineInstant.message }}</span
+                    >
+                </template>
             </div>
         </template>
         <template v-else-if="row.kind === 'instant'">
