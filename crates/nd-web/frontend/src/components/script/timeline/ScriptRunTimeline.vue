@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-    computed,
-    onBeforeUnmount,
-    ref,
-    watch,
-} from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import type { TimelineReducerState, TimelineRow } from "@/utils/streamTimeline";
 import { useExecutionStore } from "@/stores/execution";
 import { cn } from "@/lib/utils";
@@ -144,9 +139,9 @@ const showPlayhead = computed(
                     gridTemplateColumns: `${LABEL_COL} minmax(12rem,1fr)`,
                 }"
             >
-                <div class="flex items-center px-2 py-1.5 font-sans">Event</div>
+                <div class="flex items-center px-2 py-1 font-sans">Event</div>
                 <div
-                    class="border-border flex items-center border-l px-2 py-1.5 font-sans"
+                    class="border-border flex items-center border-l px-2 py-1 font-sans"
                 >
                     Time
                     <span class="text-muted-foreground/60 ml-1 font-normal"
@@ -178,15 +173,12 @@ const showPlayhead = computed(
                             gridTemplateColumns: `${LABEL_COL} minmax(12rem,1fr)`,
                         }"
                     >
-                        <template
-                            v-for="(r, idx) in timeline.rows"
-                            :key="r.id"
-                        >
+                        <template v-for="(r, idx) in timeline.rows" :key="r.id">
                             <button
                                 type="button"
                                 :class="
                                     cn(
-                                        'hover:bg-muted/35 flex min-w-0 flex-col justify-center border-b border-border/40 px-2 py-1.5 text-left transition-colors',
+                                        'hover:bg-muted/35 flex min-h-7 min-w-0 items-center border-b border-border/40 px-2 py-1 text-left transition-colors',
                                         idx % 2 === 1 && 'bg-muted/10',
                                         selectedId === r.id &&
                                             'bg-primary/8 ring-primary/25 ring-1 ring-inset',
@@ -195,19 +187,35 @@ const showPlayhead = computed(
                                 @click="onSelectRow(r.id)"
                             >
                                 <span
-                                    class="text-foreground text-[11px] font-semibold leading-tight"
-                                    >{{ r.variant }}</span
+                                    class="text-foreground min-w-0 truncate text-[11px] leading-tight whitespace-nowrap"
+                                    :title="
+                                        r.variant === 'Log'
+                                            ? r.variant
+                                            : `${r.variant} · ${r.label}`
+                                    "
                                 >
-                                <span
-                                    class="text-muted-foreground truncate text-[10px] leading-tight"
-                                    :title="r.label"
-                                    >{{ r.label }}</span
-                                >
+                                    <span class="font-semibold">{{
+                                        r.variant
+                                    }}</span>
+                                    <template
+                                        v-if="r.variant !== 'Log' && r.label"
+                                    >
+                                        <span
+                                            class="text-muted-foreground font-normal"
+                                        >
+                                            ·
+                                        </span>
+                                        <span
+                                            class="text-muted-foreground font-normal"
+                                            >{{ r.label }}</span
+                                        >
+                                    </template>
+                                </span>
                             </button>
                             <div
                                 :class="
                                     cn(
-                                        'border-border flex min-h-10 items-stretch border-b border-l border-border/40',
+                                        'border-border flex min-h-7 items-stretch border-b border-l border-border/40',
                                         idx % 2 === 1 && 'bg-muted/5',
                                         selectedId === r.id && 'bg-primary/5',
                                     )
@@ -232,7 +240,7 @@ const showPlayhead = computed(
                 }"
             >
                 <div class="border-border bg-muted/15 border-t" />
-                <div class="border-border border-l border-t">
+                <div class="border-border border-l">
                     <ScriptTimelineAxis :ticks="ticks" />
                 </div>
             </div>

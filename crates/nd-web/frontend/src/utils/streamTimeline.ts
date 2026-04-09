@@ -302,10 +302,7 @@ export function applyStreamEventToTimeline(
         }
         case "Log": {
             const msg = String(inner.message ?? "");
-            const level = String((inner as { level?: string }).level ?? "info");
-            const label =
-                msg.length > 64 ? `[${level}] ${msg.slice(0, 60)}…` : `[${level}] ${msg}`;
-            pushInstant(state, variant, label, tMs, data);
+            pushInstant(state, variant, msg, tMs, data);
             break;
         }
         case "RuntimeVariablesInitialized": {

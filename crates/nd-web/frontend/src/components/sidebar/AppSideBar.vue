@@ -148,7 +148,9 @@ const skippedCount = computed(
 );
 
 /** Single-root flat list (after search). */
-const singleRootEntries = computed(() => filteredFolders.value[0]?.entries ?? []);
+const singleRootEntries = computed(
+    () => filteredFolders.value[0]?.entries ?? [],
+);
 
 function goLibrary() {
     editor.activeId = null;
@@ -304,12 +306,14 @@ function goLibrary() {
                                     <span
                                         class="text-sidebar-foreground min-w-0 flex-1 truncate font-medium"
                                         :title="folder.root_label"
-                                        >{{ folder.root_label }}</span
                                     >
+                                        {{ folder.root_label }}
+                                    </span>
                                     <span
                                         class="text-sidebar-foreground/45 bg-sidebar-accent/40 shrink-0 rounded px-1.5 py-0 font-mono tabular-nums"
-                                        >{{ folder.entries.length }}</span
                                     >
+                                        {{ folder.entries.length }}
+                                    </span>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <SidebarMenu
@@ -341,9 +345,9 @@ function goLibrary() {
                                                     class="text-sidebar-foreground/60 size-3.5 shrink-0"
                                                     aria-hidden="true"
                                                 />
-                                                <span class="truncate">{{
-                                                    e.name
-                                                }}</span>
+                                                <span class="truncate">
+                                                    {{ e.name }}
+                                                </span>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
                                     </SidebarMenu>
@@ -356,9 +360,7 @@ function goLibrary() {
                     <template v-else>
                         <SidebarMenu class="ml-0">
                             <template
-                                v-if="
-                                    totalWorkspaceFiles === 0 && !loadErr
-                                "
+                                v-if="totalWorkspaceFiles === 0 && !loadErr"
                             >
                                 <div
                                     class="text-sidebar-foreground/45 flex flex-col items-center gap-2 py-6 text-center"
@@ -390,11 +392,7 @@ function goLibrary() {
                                     :tooltip="e.path"
                                     class="h-8 gap-2 font-normal"
                                     @click="
-                                        editor.openFile(
-                                            e.path,
-                                            e.kind,
-                                            e.name,
-                                        )
+                                        editor.openFile(e.path, e.kind, e.name)
                                     "
                                 >
                                     <FileText
