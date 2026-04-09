@@ -107,7 +107,7 @@ impl NativeImportResolver {
             .compile_file_with_scope(&Scope::new(), file_path.clone())
             .map_err(|err| Box::new(EvalAltResult::ErrorInModule(path.to_string(), err, pos)))?;
         let mut ast = ast;
-        ast.set_source(path);
+        ast.set_source(file_path.to_string_lossy().as_ref());
 
         let module = Module::eval_ast_as_new(Scope::new(), &ast, engine)
             .map_err(|err| Box::new(EvalAltResult::ErrorInModule(path.to_string(), err, pos)))?;

@@ -33,46 +33,73 @@ assert(u::double(21) == 42, "double");
 
 #[test]
 fn rhai_relative_imports() {
-    // tests that a script's imports is relative to the script importing it.
-    // utils/a.rahi
-    // script/b.rhai
-    // ext/c.rhai
-    // req/a.yaml
-    //
-    // b.rhai:
-    // import "../utils/a" as a;
-    //
-    // a.rhai:
-    // import "../ext/c" as c;
-    // import "../req/a.yaml" as a;
+    // Imports resolve relative to the importing script's file (not the import string).
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    let utils_dir = root.join("utils");
+    let script_dir = root.join("script");
+    let ext_dir = root.join("ext");
+    let req_dir = root.join("req");
 
-    // ...
+    std::fs::create_dir_all(&utils_dir).unwrap();
+    std::fs::create_dir_all(&script_dir).unwrap();
+    std::fs::create_dir_all(&ext_dir).unwrap();
+    std::fs::create_dir_all(&req_dir).unwrap();
 
-    // let tmp = tempfile::tempdir().unwrap();
-    // let util_dir = tmp.path().join("utils");
-    // let request_dir = tmp.path().join("requests");
-    // let scripts_dir = tmp.path().join("scripts");
+    std::fs::write(
+        ext_dir.join("c.rhai"),
+        "fn triple(x) { x * 3 }\n",
+    )
+    .unwrap();
 
-    // std::fs::create_dir(request_dir.clone()).unwrap();
-    // std::fs::create_dir(util_dir.clone()).unwrap();
-    // std::fs::create_dir(scripts_dir.clone()).unwrap();
+    std::fs::write(
+        req_dir.join("a.yaml"),
+        r#"{
+  "version": "0.1.1",
+  "name": "nested-req",
+  "request": {
+    "method": "GET",
+    "url": "https://example.invalid/relative-import",
+    "headers": {},
+    "follow_redirects": true,
+    "verify_tls": true
+  }
+}"#,
+    )
+    .unwrap();
 
-    // std::fs::write(
-    //     util_dir.join("helper.rhai"),
-    //     r#"
-    //     "#,
-    // )
-    // .unwrap();
-    // std::fs::write(scripts_dir.join("main.rhai"), r#""#).unwrap();
+    std::fs::write(
+        utils_dir.join("a.rhai"),
+        r#"import "../ext/c" as c;
+import "../req/a.yaml" as api;
+fn check() {
+    assert(c::triple(2) == 6, "triple");
+    let r = api::invoke(#{});
+    assert(r.dry_run == true, "dry_run");
+    assert(r.final_url == "https://example.invalid/relative-import", "url");
+}
+"#,
+    )
+    .unwrap();
 
-    // run_rhai_script(
-    //     &scripts_dir.join("main.rhai"),
-    //     Arc::new(Mutex::new(
-    //         Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
-    //     )),
-    //     RhaiScriptRunOptions::default(),
-    // )
-    // .unwrap();
+    std::fs::write(
+        script_dir.join("b.rhai"),
+        r#"import "../utils/a" as u;
+u::check();
+"#,
+    )
+    .unwrap();
+
+    run_rhai_script(
+        &script_dir.join("b.rhai"),
+        Arc::new(Mutex::new(
+            Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+        )),
+        RhaiScriptRunOptions {
+            no_network_io: true,
+        },
+    )
+    .unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
