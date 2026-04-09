@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "nd-cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "colored",
@@ -1229,11 +1229,11 @@ dependencies = [
 
 [[package]]
 name = "nd-constants"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "nd-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64",
  "chrono",
@@ -1262,7 +1262,7 @@ dependencies = [
 
 [[package]]
 name = "nd-generate"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "nd-constants",
  "nd-core",
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "nd-tui"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "crossterm",
@@ -1291,7 +1291,7 @@ dependencies = [
 
 [[package]]
 name = "nd-web"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "axum",
