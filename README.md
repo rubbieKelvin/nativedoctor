@@ -1,6 +1,9 @@
 # NativeDoctor
 
 [![Made in Nigeria](https://img.shields.io/badge/made%20in-nigeria-008751.svg?style=flat-square)](https://github.com/acekyd/made-in-nigeria)
+[![License](https://img.shields.io/github/license/rubbieKelvin/nativedoctor?style=flat-square)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/rubbieKelvin/nativedoctor?style=flat-square)](https://github.com/rubbieKelvin/nativedoctor/releases)
+[![Release workflow](https://github.com/rubbieKelvin/nativedoctor/actions/workflows/release.yml/badge.svg)](https://github.com/rubbieKelvin/nativedoctor/actions/workflows/release.yml)
 
 **nativedoctor** is a file-driven HTTP client: you describe requests in **JSON** or **YAML**, run **Rhai** scripts that can import other scripts and request files, and execute everything from the command line or embed **`nd-core`** in your own Rust code. It fits API exploration, smoke tests, and light automation without ad-hoc shell `curl` scripts.
 
