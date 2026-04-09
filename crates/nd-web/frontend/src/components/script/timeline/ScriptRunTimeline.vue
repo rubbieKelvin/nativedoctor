@@ -195,9 +195,7 @@ const showPlayhead = computed(
                                             : `${r.variant} · ${r.label}`
                                     "
                                 >
-                                    <span class="font-semibold">{{
-                                        r.variant
-                                    }}</span>
+                                    <span class="">{{ r.variant }}</span>
                                     <template
                                         v-if="
                                             r.variant !== 'Log' &&

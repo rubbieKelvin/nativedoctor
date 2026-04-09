@@ -157,7 +157,7 @@ const shellClass = computed(() => {
                 :style="{ left: `${startPct}%` }"
             />
             <div
-                class="border-border bg-background hover:bg-muted/60 absolute top-[0.65rem] z-[2] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
+                class="border-border bg-background hover:bg-muted/60 absolute top-[0.65rem] z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />
@@ -169,7 +169,7 @@ const shellClass = computed(() => {
                         >{{ inlineInstant.level }}</span
                     >
                     <span
-                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug break-words whitespace-pre-wrap"
+                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug wrap-break-words whitespace-pre-wrap"
                         >{{ inlineInstant.message }}</span
                     >
                 </template>
@@ -180,7 +180,7 @@ const shellClass = computed(() => {
                         >{{ inlineInstant.passed ? "PASS" : "FAIL" }}</span
                     >
                     <span
-                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug break-words whitespace-pre-wrap"
+                        class="text-foreground min-w-0 max-w-full flex-1 text-[10px] leading-snug wrap-break-words whitespace-pre-wrap"
                         >{{ inlineInstant.message }}</span
                     >
                 </template>
@@ -192,14 +192,14 @@ const shellClass = computed(() => {
                 :style="{ left: `${startPct}%` }"
             />
             <div
-                class="border-border bg-background hover:bg-muted/60 absolute top-1/2 z-[2] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
+                class="border-border bg-background hover:bg-muted/60 absolute top-1/2 z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />
         </template>
         <template v-else>
             <div
-                class="pointer-events-none absolute top-1/2 z-[1] size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+                class="pointer-events-none absolute top-1/2 z-1 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />
@@ -213,13 +213,13 @@ const shellClass = computed(() => {
             />
             <div
                 v-if="row.endMs != null || !sending"
-                class="pointer-events-none absolute top-1/2 z-[1] size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+                class="pointer-events-none absolute top-1/2 z-1 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
                 :class="markerClass"
                 :style="{ left: `${endPct}%` }"
             />
             <span
                 v-if="barWidthPct > 14"
-                class="text-background pointer-events-none absolute top-1/2 z-[2] max-w-[min(42%,10rem)] -translate-y-1/2 truncate px-2 text-[10px] font-medium leading-none drop-shadow-sm"
+                class="text-background pointer-events-none absolute top-1/2 z-2 max-w-[min(42%,10rem)] -translate-y-1/2 truncate px-2 text-[10px] font-medium leading-none drop-shadow-sm"
                 :style="{ left: `calc(${startPct}% + 8px)` }"
                 >{{ row.label }}</span
             >

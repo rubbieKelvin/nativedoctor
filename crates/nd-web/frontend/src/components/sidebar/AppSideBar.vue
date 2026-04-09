@@ -213,8 +213,9 @@ function goLibrary() {
                         <span
                             class="text-sidebar-foreground/55 w-full truncate font-mono text-xs"
                             :title="r.path"
-                            >{{ r.path }}</span
                         >
+                            {{ r.path }}
+                        </span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
