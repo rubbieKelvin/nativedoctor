@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GroupedFiles } from "@/api";
+import type { WorkspaceSnapshot } from "@/api";
 import { useEditorStore } from "@/stores/editor";
 import { useWorkspaceStore } from "@/stores/workspace";
 import {
@@ -31,6 +31,7 @@ import {
     ChevronRight,
     ChevronsUpDown,
     FileText,
+    Folder,
     FolderOpen,
     LayoutDashboard,
     RefreshCw,
@@ -41,6 +42,74 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 const VITE_NATIVEDOCTOR_VERSION = import.meta.env.VITE_NATIVEDOCTOR_VERSION;
+
+type WorkspaceFileKind = "request" | "script";
+
+type MergedFolderGroup = {
+    root_index: number;
+    root_label: string;
+    entries: { path: string; name: string; kind: WorkspaceFileKind }[];
+};
+
+function mergeWorkspaceByRoot(ws: WorkspaceSnapshot): MergedFolderGroup[] {
+    const map = new Map<number, MergedFolderGroup>();
+    for (const g of ws.requests) {
+        map.set(g.root_index, {
+            root_index: g.root_index,
+            root_label: g.root_label,
+            entries: g.entries.map((e) => ({ ...e, kind: "request" as const })),
+        });
+    }
+    for (const g of ws.scripts) {
+        const scriptEntries = g.entries.map((e) => ({
+            ...e,
+            kind: "script" as const,
+        }));
+        const existing = map.get(g.root_index);
+        if (existing) {
+            existing.entries.push(...scriptEntries);
+        } else {
+            map.set(g.root_index, {
+                root_index: g.root_index,
+                root_label: g.root_label,
+                entries: scriptEntries,
+            });
+        }
+    }
+    return ws.roots
+        .map((r) => map.get(r.index))
+        .filter((g): g is MergedFolderGroup => g != null);
+}
+
+function sortEntries(
+    entries: MergedFolderGroup["entries"],
+): MergedFolderGroup["entries"] {
+    return [...entries].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+}
+
+function filterMergedFolders(
+    folders: MergedFolderGroup[],
+    qRaw: string,
+): MergedFolderGroup[] {
+    const q = qRaw.trim().toLowerCase();
+    const withSorted = folders.map((f) => ({
+        ...f,
+        entries: sortEntries(f.entries),
+    }));
+    if (!q) return withSorted.filter((f) => f.entries.length > 0);
+    return withSorted
+        .map((f) => ({
+            ...f,
+            entries: f.entries.filter(
+                (e) =>
+                    e.name.toLowerCase().includes(q) ||
+                    e.path.toLowerCase().includes(q),
+            ),
+        }))
+        .filter((f) => f.entries.length > 0);
+}
 
 const workspaceStore = useWorkspaceStore();
 const editor = useEditorStore();
@@ -60,40 +129,26 @@ const workspaceSubtitle = computed(() => {
 
 const searchQuery = ref("");
 
-function filterGrouped(groups: GroupedFiles[], qRaw: string): GroupedFiles[] {
-    const q = qRaw.trim().toLowerCase();
-    if (!q) return groups;
-    return groups
-        .map((g) => ({
-            ...g,
-            entries: g.entries.filter(
-                (e) =>
-                    e.name.toLowerCase().includes(q) ||
-                    e.path.toLowerCase().includes(q),
-            ),
-        }))
-        .filter((g) => g.entries.length > 0);
-}
+const mergedFolders = computed((): MergedFolderGroup[] => {
+    const ws = workspace.value;
+    if (!ws) return [];
+    return mergeWorkspaceByRoot(ws);
+});
 
-const filteredRequests = computed(() =>
-    filterGrouped(workspace.value?.requests ?? [], searchQuery.value),
+const filteredFolders = computed(() =>
+    filterMergedFolders(mergedFolders.value, searchQuery.value),
 );
 
-const filteredScripts = computed(() =>
-    filterGrouped(workspace.value?.scripts ?? [], searchQuery.value),
-);
-
-const requestTotal = computed(() =>
-    (workspace.value?.requests ?? []).reduce((n, g) => n + g.entries.length, 0),
-);
-
-const scriptTotal = computed(() =>
-    (workspace.value?.scripts ?? []).reduce((n, g) => n + g.entries.length, 0),
+const totalWorkspaceFiles = computed(() =>
+    mergedFolders.value.reduce((n, f) => n + f.entries.length, 0),
 );
 
 const skippedCount = computed(
     () => workspace.value?.skipped_requests?.length ?? 0,
 );
+
+/** Single-root flat list (after search). */
+const singleRootEntries = computed(() => filteredFolders.value[0]?.entries ?? []);
 
 function goLibrary() {
     editor.activeId = null;
@@ -172,7 +227,7 @@ function goLibrary() {
                 <SidebarInput
                     v-model="searchQuery"
                     class="placeholder:text-sidebar-foreground/40 min-w-0 flex-1 border-0 bg-transparent font-sans shadow-none focus-visible:ring-0"
-                    placeholder="Search requests & scripts…"
+                    placeholder="Search workspace…"
                     type="search"
                     autocomplete="off"
                     spellcheck="false"
@@ -216,213 +271,169 @@ function goLibrary() {
 
             <ScrollArea class="min-h-0 flex-1">
                 <div class="space-y-1 px-2 pb-2">
-                    <Collapsible v-slot="{ open }" :default-open="true">
-                        <div class="flex flex-col gap-0.5">
-                            <CollapsibleTrigger
-                                :class="
-                                    cn(
-                                        'hover:bg-sidebar-accent/80 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none',
-                                        'focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                                    )
-                                "
-                            >
-                                <ChevronRight
+                    <!-- Multiple roots: one collapsible per folder -->
+                    <template v-if="multiRoot">
+                        <Collapsible
+                            v-for="folder in filteredFolders"
+                            :key="'folder-' + folder.root_index"
+                            v-slot="{ open }"
+                            :default-open="true"
+                        >
+                            <div class="flex flex-col gap-0.5">
+                                <CollapsibleTrigger
                                     :class="
                                         cn(
-                                            'text-sidebar-foreground/60 size-3.5 shrink-0 transition-transform duration-200',
-                                            open && 'rotate-90',
+                                            'hover:bg-sidebar-accent/80 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none',
+                                            'focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                                         )
                                     "
-                                    aria-hidden="true"
-                                />
-                                <FileText
-                                    class="text-sidebar-foreground/70 size-3.5 shrink-0"
-                                    aria-hidden="true"
-                                />
-                                <span
-                                    class="text-sidebar-foreground min-w-0 flex-1 font-medium"
-                                    >Requests</span
                                 >
-                                <span
-                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono tabular-nums"
-                                    >{{ requestTotal }}</span
-                                >
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenu
-                                    class="ml-1 border-sidebar-border border-l pl-2"
-                                >
-                                    <template
-                                        v-if="
-                                            filteredRequests.length === 0 &&
-                                            requestTotal === 0
+                                    <ChevronRight
+                                        :class="
+                                            cn(
+                                                'text-sidebar-foreground/60 size-3.5 shrink-0 transition-transform duration-200',
+                                                open && 'rotate-90',
+                                            )
                                         "
+                                        aria-hidden="true"
+                                    />
+                                    <Folder
+                                        class="text-sidebar-foreground/70 size-3.5 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <span
+                                        class="text-sidebar-foreground min-w-0 flex-1 truncate font-medium"
+                                        :title="folder.root_label"
+                                        >{{ folder.root_label }}</span
                                     >
-                                        <div
-                                            class="text-sidebar-foreground/45 flex flex-col items-center gap-2 py-6 text-center"
-                                        >
-                                            <FolderOpen
-                                                class="size-8 opacity-40"
-                                                aria-hidden="true"
-                                            />
-                                            <p class="text-[11px]">
-                                                No request files found
-                                            </p>
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="
-                                            filteredRequests.length === 0
-                                        "
+                                    <span
+                                        class="text-sidebar-foreground/45 bg-sidebar-accent/40 shrink-0 rounded px-1.5 py-0 font-mono tabular-nums"
+                                        >{{ folder.entries.length }}</span
                                     >
-                                        <p
-                                            class="text-sidebar-foreground/45 px-2 py-3 text-center text-[11px]"
-                                        >
-                                            No matches
-                                        </p>
-                                    </template>
-                                    <template
-                                        v-for="g in filteredRequests"
-                                        :key="'rq-' + g.root_index"
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <SidebarMenu
+                                        class="ml-1 border-sidebar-border border-l pl-2"
                                     >
                                         <SidebarMenuItem
-                                            v-if="multiRoot"
-                                            class="pointer-events-none"
-                                        >
-                                            <span
-                                                class="text-sidebar-foreground/60 px-1 py-0.5 tracking-wide uppercase"
-                                                >{{ g.root_label }}</span
-                                            >
-                                        </SidebarMenuItem>
-                                        <SidebarMenuItem
-                                            v-for="e in g.entries"
+                                            v-for="e in folder.entries"
                                             :key="e.path"
                                         >
                                             <SidebarMenuButton
                                                 :is-active="activeId === e.path"
                                                 :tooltip="e.path"
-                                                class="h-8 font-normal"
+                                                class="h-8 gap-2 font-normal"
                                                 @click="
                                                     editor.openFile(
                                                         e.path,
-                                                        'request',
+                                                        e.kind,
                                                         e.name,
                                                     )
                                                 "
                                             >
+                                                <FileText
+                                                    v-if="e.kind === 'request'"
+                                                    class="text-sidebar-foreground/60 size-3.5 shrink-0"
+                                                    aria-hidden="true"
+                                                />
+                                                <Terminal
+                                                    v-else
+                                                    class="text-sidebar-foreground/60 size-3.5 shrink-0"
+                                                    aria-hidden="true"
+                                                />
                                                 <span class="truncate">{{
                                                     e.name
                                                 }}</span>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
-                                    </template>
-                                </SidebarMenu>
-                            </CollapsibleContent>
-                        </div>
-                    </Collapsible>
+                                    </SidebarMenu>
+                                </CollapsibleContent>
+                            </div>
+                        </Collapsible>
+                    </template>
 
-                    <Collapsible v-slot="{ open }" :default-open="true">
-                        <div class="flex flex-col gap-0.5">
-                            <CollapsibleTrigger
-                                :class="
-                                    cn(
-                                        'hover:bg-sidebar-accent/80 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none',
-                                        'focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                                    )
+                    <!-- Single root: flat list -->
+                    <template v-else>
+                        <SidebarMenu class="ml-0">
+                            <template
+                                v-if="
+                                    totalWorkspaceFiles === 0 && !loadErr
                                 "
                             >
-                                <ChevronRight
-                                    :class="
-                                        cn(
-                                            'text-sidebar-foreground/60 size-3.5 shrink-0 transition-transform duration-200',
-                                            open && 'rotate-90',
+                                <div
+                                    class="text-sidebar-foreground/45 flex flex-col items-center gap-2 py-6 text-center"
+                                >
+                                    <FolderOpen
+                                        class="size-8 opacity-40"
+                                        aria-hidden="true"
+                                    />
+                                    <p class="text-[11px]">
+                                        No request or script files in workspace
+                                    </p>
+                                </div>
+                            </template>
+                            <template
+                                v-else-if="singleRootEntries.length === 0"
+                            >
+                                <p
+                                    class="text-sidebar-foreground/45 px-2 py-3 text-center text-[11px]"
+                                >
+                                    No matches
+                                </p>
+                            </template>
+                            <SidebarMenuItem
+                                v-for="e in singleRootEntries"
+                                :key="e.path"
+                            >
+                                <SidebarMenuButton
+                                    :is-active="activeId === e.path"
+                                    :tooltip="e.path"
+                                    class="h-8 gap-2 font-normal"
+                                    @click="
+                                        editor.openFile(
+                                            e.path,
+                                            e.kind,
+                                            e.name,
                                         )
                                     "
-                                    aria-hidden="true"
-                                />
-                                <Terminal
-                                    class="text-sidebar-foreground/70 size-3.5 shrink-0"
-                                    aria-hidden="true"
-                                />
-                                <span
-                                    class="text-sidebar-foreground min-w-0 flex-1 font-medium"
-                                    >Scripts</span
                                 >
-                                <span
-                                    class="text-sidebar-foreground/45 bg-sidebar-accent/40 rounded px-1.5 py-0 font-mono tabular-nums"
-                                    >{{ scriptTotal }}</span
-                                >
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenu
-                                    class="ml-1 border-sidebar-border border-l pl-2"
-                                >
-                                    <template
-                                        v-if="
-                                            filteredScripts.length === 0 &&
-                                            scriptTotal === 0
-                                        "
-                                    >
-                                        <div
-                                            class="text-sidebar-foreground/45 flex flex-col items-center gap-2 py-6 text-center"
-                                        >
-                                            <Terminal
-                                                class="size-8 opacity-40"
-                                                aria-hidden="true"
-                                            />
-                                            <p class="text-[11px]">
-                                                No scripts found
-                                            </p>
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="filteredScripts.length === 0"
-                                    >
-                                        <p
-                                            class="text-sidebar-foreground/45 px-2 py-3 text-center text-[11px]"
-                                        >
-                                            No matches
-                                        </p>
-                                    </template>
-                                    <template
-                                        v-for="g in filteredScripts"
-                                        :key="'sc-' + g.root_index"
-                                    >
-                                        <SidebarMenuItem
-                                            v-if="multiRoot"
-                                            class="pointer-events-none"
-                                        >
-                                            <span
-                                                class="text-sidebar-foreground/60 px-1 py-0.5 tracking-wide uppercase"
-                                                >{{ g.root_label }}</span
-                                            >
-                                        </SidebarMenuItem>
-                                        <SidebarMenuItem
-                                            v-for="e in g.entries"
-                                            :key="e.path"
-                                        >
-                                            <SidebarMenuButton
-                                                :is-active="activeId === e.path"
-                                                :tooltip="e.path"
-                                                class="h-8 font-normal"
-                                                @click="
-                                                    editor.openFile(
-                                                        e.path,
-                                                        'script',
-                                                        e.name,
-                                                    )
-                                                "
-                                            >
-                                                <span class="truncate">{{
-                                                    e.name
-                                                }}</span>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    </template>
-                                </SidebarMenu>
-                            </CollapsibleContent>
+                                    <FileText
+                                        v-if="e.kind === 'request'"
+                                        class="text-sidebar-foreground/60 size-3.5 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <Terminal
+                                        v-else
+                                        class="text-sidebar-foreground/60 size-3.5 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="truncate">{{ e.name }}</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </template>
+
+                    <!-- Multi-root: nothing to show -->
+                    <template v-if="multiRoot && filteredFolders.length === 0">
+                        <div
+                            v-if="totalWorkspaceFiles === 0 && !loadErr"
+                            class="text-sidebar-foreground/45 flex flex-col items-center gap-2 py-6 text-center"
+                        >
+                            <FolderOpen
+                                class="size-8 opacity-40"
+                                aria-hidden="true"
+                            />
+                            <p class="text-[11px]">
+                                No request or script files in workspace
+                            </p>
                         </div>
-                    </Collapsible>
+                        <p
+                            v-else-if="totalWorkspaceFiles > 0"
+                            class="text-sidebar-foreground/45 px-2 py-3 text-center text-[11px]"
+                        >
+                            No matches
+                        </p>
+                    </template>
                 </div>
             </ScrollArea>
         </SidebarContent>

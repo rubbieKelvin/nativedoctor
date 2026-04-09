@@ -31,6 +31,50 @@ assert(u::double(21) == 42, "double");
     .unwrap();
 }
 
+#[test]
+fn rhai_relative_imports() {
+    // tests that a script's imports is relative to the script importing it.
+    // utils/a.rahi
+    // script/b.rhai
+    // ext/c.rhai
+    // req/a.yaml
+    //
+    // b.rhai:
+    // import "../utils/a" as a;
+    //
+    // a.rhai:
+    // import "../ext/c" as c;
+    // import "../req/a.yaml" as a;
+
+    // ...
+
+    // let tmp = tempfile::tempdir().unwrap();
+    // let util_dir = tmp.path().join("utils");
+    // let request_dir = tmp.path().join("requests");
+    // let scripts_dir = tmp.path().join("scripts");
+
+    // std::fs::create_dir(request_dir.clone()).unwrap();
+    // std::fs::create_dir(util_dir.clone()).unwrap();
+    // std::fs::create_dir(scripts_dir.clone()).unwrap();
+
+    // std::fs::write(
+    //     util_dir.join("helper.rhai"),
+    //     r#"
+    //     "#,
+    // )
+    // .unwrap();
+    // std::fs::write(scripts_dir.join("main.rhai"), r#""#).unwrap();
+
+    // run_rhai_script(
+    //     &scripts_dir.join("main.rhai"),
+    //     Arc::new(Mutex::new(
+    //         Session::new(|| Ok(RuntimeEnv::new()), None).unwrap(),
+    //     )),
+    //     RhaiScriptRunOptions::default(),
+    // )
+    // .unwrap();
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rhai_import_request_call_overrides_runtime_env() {
     let dir = tempfile::tempdir().unwrap();
