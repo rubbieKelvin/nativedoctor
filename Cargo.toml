@@ -5,6 +5,7 @@ members = [
     "crates/nd-generate",
     "crates/nd-web",
     "crates/nd-tui",
+    "crates/nd-qt",
 ]
 default-members = ["crates/nd-cli"]
 resolver = "2"
@@ -13,3 +14,11 @@ resolver = "2"
 version = "0.2.1"
 edition = "2021"
 authors = ["rubbie kelvin <dev@gmail.com>"]
+
+# cxx-qt stack (see https://github.com/KDAB/cxx-qt) — used by `nd-qt` desktop shell.
+[workspace.dependencies]
+cxx = "1.0.176"
+cxx-qt = "0.8.1"
+cxx-qt-build = { version = "0.8.1", features = ["link_qt_object_files"] }
+cxx-qt-lib = { version = "0.8.1", features = ["full"] }
+qt-build-utils = "0.8.1"

@@ -1,0 +1,16 @@
+[package]
+name = "nd-qt"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "NativeDoctor desktop UI (Qt / QML via cxx-qt), complementing nd-web."
+rust-version = "1.85"
+
+[dependencies]
+cxx.workspace = true
+cxx-qt.workspace = true
+cxx-qt-lib.workspace = true
+
+[build-dependencies]
+cxx-qt-build.workspace = true
+qt-build-utils.workspace = true
