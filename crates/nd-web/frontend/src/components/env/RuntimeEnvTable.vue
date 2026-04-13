@@ -50,20 +50,23 @@ function copyAll() {
 </script>
 
 <template>
-    <div class="flex min-h-0 flex-1 flex-col gap-2 p-2">
-        <p class="text-muted-foreground text-[11px] leading-snug">
-            Built from the last run’s streamed events (<code class="rounded bg-muted px-1"
+    <div class="flex min-h-0 flex-1 flex-col gap-3 p-3">
+        <p class="text-muted-foreground text-sm leading-relaxed">
+            Built from the last run’s streamed events (<code
+                class="rounded bg-muted px-1 font-mono text-xs"
                 >RuntimeVariablesInitialized</code
             >
             /
-            <code class="rounded bg-muted px-1">RuntimeVariablePushed</code>). Used
-            for URL/header templates and Rhai
-            <code class="rounded bg-muted px-1">env()</code>. Values may be sensitive.
+            <code class="rounded bg-muted px-1 font-mono text-xs"
+                >RuntimeVariablePushed</code
+            >). Used for URL/header templates and Rhai
+            <code class="rounded bg-muted px-1 font-mono text-xs">env()</code>.
+            Values may be sensitive.
         </p>
         <div class="flex shrink-0 flex-wrap gap-2">
             <Input
                 v-model="filter"
-                class="h-8 min-w-0 flex-1 font-mono text-xs"
+                class="h-8 min-w-0 flex-1 text-sm tabular-nums"
                 placeholder="Filter keys or values…"
                 spellcheck="false"
             />
@@ -81,10 +84,14 @@ function copyAll() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead class="w-[28%] font-mono text-xs"
-                            >Key</TableHead
+                        <TableHead
+                            class="text-muted-foreground w-[28%] text-xs font-medium"
                         >
-                        <TableHead class="font-mono text-xs">Value</TableHead>
+                            Key
+                        </TableHead>
+                        <TableHead class="text-muted-foreground text-xs font-medium">
+                            Value
+                        </TableHead>
                         <TableHead class="w-14 text-xs" />
                     </TableRow>
                 </TableHeader>

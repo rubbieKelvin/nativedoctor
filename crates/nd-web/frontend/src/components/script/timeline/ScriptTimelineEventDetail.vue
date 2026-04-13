@@ -1,11 +1,31 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { TimelineRow } from "@/utils/streamTimeline";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { X } from "lucide-vue-next";
 
 const props = defineProps<{
     row: TimelineRow | null;
 }>();
+
+const emit = defineEmits<{
+    close: [];
+}>();
+
+const rootRef = ref<HTMLElement | null>(null);
+
+watch(
+    () => props.row,
+    (r) => {
+        if (r) {
+            void nextTick(() => {
+                rootRef.value?.focus({ preventScroll: true });
+            });
+        }
+    },
+    { immediate: true },
+);
 
 const jsonText = computed(() => {
     const r = props.row;
@@ -40,16 +60,33 @@ const jsonText = computed(() => {
 <template>
     <div
         v-if="row"
-        class="border-border flex min-h-0 flex-col border-t bg-muted/15"
+        ref="rootRef"
+        class="border-border flex h-full min-h-0 min-w-0 flex-col border-t bg-muted/10 outline-none"
+        tabindex="-1"
+        @keydown.escape.prevent="emit('close')"
     >
         <div
-            class="text-muted-foreground shrink-0 px-2 py-1.5 text-[10px] font-medium tracking-wide uppercase"
+            class="border-border flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5"
         >
-            Event detail
+            <div
+                class="text-muted-foreground min-w-0 truncate text-xs font-semibold tracking-wide uppercase"
+            >
+                Event detail
+            </div>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                class="shrink-0 text-muted-foreground hover:text-foreground"
+                aria-label="Close event detail"
+                @click="emit('close')"
+            >
+                <X class="size-4" />
+            </Button>
         </div>
-        <ScrollArea class="max-h-48 min-h-0">
+        <ScrollArea class="min-h-0 flex-1">
             <pre
-                class="text-muted-foreground font-mono p-2 text-[11px] leading-relaxed whitespace-pre-wrap break-all"
+                class="text-muted-foreground font-mono p-3 text-sm leading-relaxed whitespace-pre-wrap break-all"
                 >{{ jsonText }}</pre
             >
         </ScrollArea>

@@ -82,7 +82,7 @@ function copyAll() {
         >
             <Input
                 v-model="filterText"
-                class="h-7 max-w-xs font-mono text-xs"
+                class="h-7 max-w-xs text-sm tabular-nums"
                 placeholder="Filter messages…"
             />
             <DropdownMenu>
@@ -135,15 +135,19 @@ function copyAll() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead class="w-16 font-mono text-[10px]"
-                            >ms</TableHead
+                        <TableHead
+                            class="text-muted-foreground w-16 text-xs font-medium"
                         >
-                        <TableHead class="w-24 font-mono text-[10px]"
-                            >Level</TableHead
+                            ms
+                        </TableHead>
+                        <TableHead
+                            class="text-muted-foreground w-24 text-xs font-medium"
                         >
-                        <TableHead class="font-mono text-[10px]"
-                            >Message</TableHead
-                        >
+                            Level
+                        </TableHead>
+                        <TableHead class="text-muted-foreground text-xs font-medium">
+                            Message
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -49,15 +49,15 @@ const barClass = computed(() => {
     if (props.row.kind !== "span") return "";
     switch (props.row.status) {
         case "ok":
-            return "bg-emerald-600/90 shadow-sm dark:bg-emerald-500/85";
+            return "bg-foreground/78 shadow-none dark:bg-foreground/68";
         case "error":
-            return "bg-destructive/95 shadow-sm";
+            return "bg-destructive/90 shadow-none";
         case "running":
-            return "animate-pulse bg-primary/85 shadow-sm";
+            return "animate-pulse bg-primary/80 shadow-none";
         case "interrupted":
-            return "bg-amber-600/80 dark:bg-amber-500/75";
+            return "bg-muted-foreground/55 shadow-none dark:bg-muted-foreground/50";
         default:
-            return "bg-muted-foreground/45";
+            return "bg-muted-foreground/40 shadow-none";
     }
 });
 
@@ -86,7 +86,7 @@ const markerClass = computed(() => {
             return "border-destructive bg-destructive ring-background ring-2";
         if (props.row.endMs == null && props.sending)
             return "border-primary bg-primary ring-background ring-2";
-        return "border-emerald-700 bg-emerald-500 ring-background ring-2 dark:border-emerald-300 dark:bg-emerald-400";
+        return "border-foreground bg-foreground ring-background ring-2";
     }
     if (props.row.kind === "instant" && props.row.variant === "AssertCalled") {
         const a = parseAssertFromTimelineInstant(props.row.raw);
@@ -94,7 +94,7 @@ const markerClass = computed(() => {
             if (!a.passed) {
                 return "border-destructive bg-destructive ring-background ring-2";
             }
-            return "border-emerald-700 bg-emerald-500 ring-background ring-2 dark:border-emerald-300 dark:bg-emerald-400";
+            return "border-foreground bg-foreground ring-background ring-2";
         }
     }
     return "border-muted-foreground/70 bg-background ring-border ring-2";
@@ -128,9 +128,9 @@ const inlineBoxStyle = computed(() => {
 
 const inlineTickClass = computed(() => {
     const inline = inlineInstant.value;
-    if (!inline) return "bg-primary/35";
-    if (inline.kind === "log") return "bg-primary/35";
-    return inline.passed ? "bg-emerald-500/40" : "bg-destructive/45";
+    if (!inline) return "bg-border";
+    if (inline.kind === "log") return "bg-border";
+    return inline.passed ? "bg-muted-foreground/35" : "bg-destructive/50";
 });
 
 const shellClass = computed(() => {
@@ -157,7 +157,7 @@ const shellClass = computed(() => {
                 :style="{ left: `${startPct}%` }"
             />
             <div
-                class="border-border bg-background hover:bg-muted/60 absolute top-[0.65rem] z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
+                class="border-border bg-background hover:bg-muted/60 absolute top-[0.65rem] z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors duration-150 ease-out"
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />
@@ -188,11 +188,11 @@ const shellClass = computed(() => {
         </template>
         <template v-else-if="row.kind === 'instant'">
             <div
-                class="bg-primary/35 pointer-events-none absolute top-0.5 bottom-0.5 w-px -translate-x-1/2"
+                class="bg-border pointer-events-none absolute top-0.5 bottom-0.5 w-px -translate-x-1/2"
                 :style="{ left: `${startPct}%` }"
             />
             <div
-                class="border-border bg-background hover:bg-muted/60 absolute top-1/2 z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors"
+                class="border-border bg-background hover:bg-muted/60 absolute top-1/2 z-2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-colors duration-150 ease-out"
                 :class="markerClass"
                 :style="{ left: `${startPct}%` }"
             />

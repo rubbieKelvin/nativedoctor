@@ -16,7 +16,7 @@ const leftPct = computed(() => {
 <template>
     <div
         v-if="visible"
-        class="bg-primary pointer-events-none absolute inset-y-0 z-[5] w-px opacity-80"
+        class="bg-foreground/55 pointer-events-none absolute inset-y-0 z-[5] w-px opacity-90 dark:bg-foreground/45"
         :style="{ left: `${leftPct}%` }"
     />
 </template>

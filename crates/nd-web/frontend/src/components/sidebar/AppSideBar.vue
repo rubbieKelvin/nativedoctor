@@ -211,7 +211,7 @@ function goLibrary() {
                     >
                         <span class="font-medium">{{ r.label }}</span>
                         <span
-                            class="text-sidebar-foreground/55 w-full truncate font-mono text-xs"
+                            class="text-sidebar-foreground/55 w-full truncate text-xs tabular-nums"
                             :title="r.path"
                         >
                             {{ r.path }}
@@ -311,7 +311,7 @@ function goLibrary() {
                                         {{ folder.root_label }}
                                     </span>
                                     <span
-                                        class="text-sidebar-foreground/45 bg-sidebar-accent/40 shrink-0 rounded px-1.5 py-0 font-mono tabular-nums"
+                                        class="text-sidebar-foreground/45 bg-sidebar-accent/40 shrink-0 rounded px-1.5 py-0 text-xs tabular-nums"
                                     >
                                         {{ folder.entries.length }}
                                     </span>
@@ -451,7 +451,9 @@ function goLibrary() {
                 </SidebarMenuItem>
             </SidebarMenu>
             <SidebarSeparator class="bg-sidebar-border/60" />
-            <p class="text-sidebar-foreground/45 px-2 pb-1 font-mono">
+            <p
+                class="text-sidebar-foreground/45 px-2 pb-1 text-xs tabular-nums"
+            >
                 v{{ VITE_NATIVEDOCTOR_VERSION }}
             </p>
         </SidebarFooter>
