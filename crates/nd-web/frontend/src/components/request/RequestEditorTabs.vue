@@ -22,16 +22,26 @@ const {
         class="flex min-h-0 min-w-0 flex-1 flex-col gap-0"
     >
         <TabsList
-            class="h-9 w-full shrink-0 justify-start rounded-none border-b border-border bg-background px-2"
+            class="h-9 w-full shrink-0 justify-start rounded-none border-b border-border bg-background px-3"
         >
-            <TabsTrigger value="params" class="text-xs">Params</TabsTrigger>
-            <TabsTrigger value="headers" class="text-xs">Headers</TabsTrigger>
-            <TabsTrigger value="body" class="text-xs">Body</TabsTrigger>
-            <TabsTrigger value="input" class="text-xs">Input</TabsTrigger>
-            <TabsTrigger value="auth" class="text-xs">Auth</TabsTrigger>
+            <TabsTrigger value="params" class="text-sm font-medium">
+                Params
+            </TabsTrigger>
+            <TabsTrigger value="headers" class="text-sm font-medium">
+                Headers
+            </TabsTrigger>
+            <TabsTrigger value="body" class="text-sm font-medium">
+                Body
+            </TabsTrigger>
+            <TabsTrigger value="input" class="text-sm font-medium">
+                Input
+            </TabsTrigger>
+            <TabsTrigger value="auth" class="text-sm font-medium">
+                Auth
+            </TabsTrigger>
         </TabsList>
 
-        <div class="min-h-0 min-w-0 flex-1 overflow-auto p-2">
+        <div class="min-h-0 min-w-0 flex-1 overflow-auto p-3">
             <p
                 v-if="activeTab?.parseError"
                 class="mb-2 text-sm text-destructive"
@@ -62,10 +72,11 @@ const {
             </TabsContent>
 
             <TabsContent value="auth" class="mt-0 h-full">
-                <p class="text-muted-foreground text-xs">
-                    Use <strong>Headers</strong> for
-                    <code class="rounded bg-muted px-1">Authorization</code>, or
-                    reference runtime variables in the URL/body.
+                <p class="text-muted-foreground text-sm leading-relaxed">
+                    Use <strong class="text-foreground">Headers</strong> for
+                    <code class="rounded bg-muted px-1 font-mono text-xs"
+                        >Authorization</code
+                    >, or reference runtime variables in the URL/body.
                 </p>
             </TabsContent>
         </div>

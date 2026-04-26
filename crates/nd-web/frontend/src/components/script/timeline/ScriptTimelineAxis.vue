@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
     <div
-        class="border-border text-muted-foreground relative h-8 shrink-0 border-t bg-muted/10 font-mono text-[10px]"
+        class="border-border text-muted-foreground relative h-8 shrink-0 border-t bg-background text-xs tabular-nums"
     >
         <div class="absolute inset-x-0 top-0 pt-1.5">
             <template v-for="(tk, i) in ticks" :key="i">

@@ -72,10 +72,10 @@ const sendErr = computed(() => {
                     </Button>
                     <span
                         v-if="scriptSaveError"
-                        class="text-destructive text-xs"
+                        class="text-destructive text-sm"
                         >{{ scriptSaveError }}</span
                     >
-                    <span v-if="sendErr" class="text-xs text-destructive">{{
+                    <span v-if="sendErr" class="text-sm text-destructive">{{
                         sendErr
                     }}</span>
                 </div>

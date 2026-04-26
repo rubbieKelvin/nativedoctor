@@ -40,18 +40,18 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
             class="flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden"
         >
             <div
-                class="flex flex-wrap items-center gap-2 border-b border-border px-2 py-1.5"
+                class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
             >
                 <TabsList class="h-8 bg-transparent p-0">
-                    <TabsTrigger value="response" class="text-xs"
-                        >Response</TabsTrigger
-                    >
-                    <TabsTrigger value="headers" class="text-xs"
-                        >Headers</TabsTrigger
-                    >
-                    <TabsTrigger value="runtime-env" class="text-xs"
-                        >Runtime env</TabsTrigger
-                    >
+                    <TabsTrigger value="response" class="text-sm font-medium">
+                        Response
+                    </TabsTrigger>
+                    <TabsTrigger value="headers" class="text-sm font-medium">
+                        Headers
+                    </TabsTrigger>
+                    <TabsTrigger value="runtime-env" class="text-sm font-medium">
+                        Runtime env
+                    </TabsTrigger>
                 </TabsList>
                 <template
                     v-if="outputSection === 'response' || outputSection === 'headers'"
@@ -59,13 +59,13 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
                     <Badge
                         v-if="response"
                         variant="secondary"
-                        class="font-mono text-[11px]"
+                        class="text-xs font-medium tabular-nums"
                     >
                         {{ response.status }} · {{ response.duration_ms }}ms
                     </Badge>
                     <span
                         v-if="sendErr"
-                        class="text-xs text-destructive"
+                        class="text-sm text-destructive"
                         >{{ sendErr }}</span
                     >
                 </template>
@@ -77,7 +77,7 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
             >
                 <div
                     v-if="!response"
-                    class="text-muted-foreground flex flex-1 items-center justify-center p-4 text-xs"
+                    class="text-muted-foreground flex flex-1 items-center justify-center p-6 text-sm"
                 >
                     Send a request to see the response body here.
                 </div>
@@ -87,18 +87,18 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
                     class="flex min-h-0 flex-1 flex-col"
                 >
                     <TabsList
-                        class="h-8 w-full shrink-0 justify-start rounded-none border-b border-border px-2"
+                        class="h-8 w-full shrink-0 justify-start rounded-none border-b border-border px-3"
                     >
-                        <TabsTrigger value="pretty" class="text-xs"
-                            >Pretty</TabsTrigger
-                        >
-                        <TabsTrigger value="raw" class="text-xs"
-                            >Raw</TabsTrigger
-                        >
+                        <TabsTrigger value="pretty" class="text-xs font-medium">
+                            Pretty
+                        </TabsTrigger>
+                        <TabsTrigger value="raw" class="text-xs font-medium">
+                            Raw
+                        </TabsTrigger>
                     </TabsList>
 
                     <ScrollArea class="min-h-0 flex-1">
-                        <div class="p-2">
+                        <div class="p-3">
                             <TabsContent value="pretty" class="mt-0">
                                 <pre
                                     class="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed"
@@ -127,7 +127,7 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
             >
                 <div
                     v-if="!response"
-                    class="text-muted-foreground flex flex-1 items-center justify-center p-4 text-xs"
+                    class="text-muted-foreground flex flex-1 items-center justify-center p-6 text-sm"
                 >
                     Send a request to see response headers here.
                 </div>
@@ -135,19 +135,23 @@ const outputSection = ref<"response" | "headers" | "runtime-env">("response");
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead class="w-[28%] font-mono text-xs"
-                                    >Name</TableHead
+                                <TableHead
+                                    class="text-muted-foreground w-[28%] text-xs font-medium"
                                 >
-                                <TableHead class="font-mono text-xs"
-                                    >Value</TableHead
+                                    Name
+                                </TableHead>
+                                <TableHead
+                                    class="text-muted-foreground text-xs font-medium"
                                 >
+                                    Value
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             <TableRow
                                 v-for="(pair, i) in response.headers"
                                 :key="i"
-                                class="font-mono text-[11px]"
+                                class="font-mono text-xs leading-relaxed"
                             >
                                 <TableCell class="align-top break-all">{{
                                     pair[0]

@@ -20,14 +20,14 @@ const { sending } = storeToRefs(execution);
 
 <template>
     <div
-        class="flex flex-wrap items-center gap-2 border-b border-border bg-background px-2 py-1.5"
+        class="flex flex-wrap items-center gap-2 border-b border-border bg-background px-3 py-2"
     >
         <DropdownMenu v-if="requestSpec">
             <DropdownMenuTrigger as-child>
                 <Button
                     variant="outline"
                     size="sm"
-                    class="h-9 min-w-[6rem] justify-between gap-1 font-mono text-xs"
+                    class="h-9 min-w-[6rem] justify-between gap-1 text-xs font-semibold tabular-nums"
                 >
                     {{ String(requestSpec.method ?? "GET") }}
                     <ChevronDown class="h-3.5 w-3.5 opacity-60" />
@@ -37,7 +37,7 @@ const { sending } = storeToRefs(execution);
                 <DropdownMenuItem
                     v-for="m in editor.HTTP_METHODS"
                     :key="m"
-                    class="cursor-pointer font-mono text-xs"
+                    class="cursor-pointer text-xs font-medium tabular-nums"
                     @click="editor.setMethod(m)"
                 >
                     {{ m }}
@@ -46,7 +46,7 @@ const { sending } = storeToRefs(execution);
         </DropdownMenu>
         <Input
             v-if="requestSpec"
-            class="min-w-0 flex-1 font-mono text-xs"
+            class="min-w-0 flex-1 text-sm tabular-nums"
             :model-value="String(requestSpec.url ?? '')"
             placeholder="URL"
             spellcheck="false"

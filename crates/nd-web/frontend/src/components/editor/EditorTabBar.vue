@@ -26,7 +26,7 @@ const { tabs, activeId } = storeToRefs(editor);
             "
             @click="editor.activeId = t.id"
         >
-            <span class="min-w-0 truncate text-xs font-medium">{{
+            <span class="min-w-0 truncate text-sm font-medium">{{
                 t.title
             }}</span>
             <span
