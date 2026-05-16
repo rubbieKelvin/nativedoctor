@@ -131,7 +131,7 @@ impl NativeImportResolver {
         let mut module = Module::new();
 
         // SETUP MODULE METHOD: 'invoke'
-        // So we can call the request (Without kwards)
+        // So we can call the request (Without kwargs)
         {
             let doc = doc.clone();
             let options = options.clone();
