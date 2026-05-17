@@ -78,8 +78,8 @@ pub fn create_project(root: PathBuf, name: String) -> Result<(), String> {
     };
 
     fs::write(
-        project_dir.join(".nativedoctor"),
-        serde_json::to_string_pretty(&project_files)
+        project_dir.join("nativedoctor.yaml"),
+        serde_yaml::to_string(&project_files)
             .map_err(|e| format!("Failed to serialize project file: {}", e))?,
     )
     .map_err(|e| format!("Failed to write .nativedoctor file: {}", e))?;

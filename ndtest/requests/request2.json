@@ -1,0 +1,16 @@
+{
+  "version": "0.2.1",
+  "name": "Test POST Request",
+  "request": {
+    "method": "POST",
+    "url": "https://httpbin.org/post",
+    "query": {},
+    "headers": {},
+    "body": {
+      "key": "value"
+    },
+    "timeout_secs": null,
+    "follow_redirects": true,
+    "verify_tls": true
+  }
+}

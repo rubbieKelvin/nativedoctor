@@ -1,0 +1,14 @@
+{
+  "version": "0.2.1",
+  "name": "Test GET Request",
+  "request": {
+    "method": "GET",
+    "url": "https://httpbin.org/anything",
+    "query": {},
+    "headers": {},
+    "body": null,
+    "timeout_secs": null,
+    "follow_redirects": true,
+    "verify_tls": true
+  }
+}

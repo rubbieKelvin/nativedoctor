@@ -3853,6 +3853,7 @@ dependencies = [
  "nd-core",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tracing",
  "tracing-subscriber",
 ]

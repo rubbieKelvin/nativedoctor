@@ -1,0 +1,10 @@
+title: ndtest
+doc: ./ndtest/README.md
+folders:
+- id: default
+  name: Default
+requests:
+- path: requests/request1.json
+  folder: null
+- path: requests/request2.json
+  folder: default
