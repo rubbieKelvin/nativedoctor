@@ -1,16 +1,17 @@
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct RecentProject {
-    name: String,
-    path: PathBuf,
+    pub id: i64,
+    pub name: String,
+    pub path: String,
+    pub last_opened_at: String,
 }
 
-pub struct NativedoctorProjectFile {
-    name: String,
-    // folders: (id, name)
-    folders: Vec<(String, String)>,
-    // requests: file path, folder id
-    requests: Vec<(PathBuf, Option<String>)>,
-    // path to the md file that holds the root docs
-    docs: Option<PathBuf>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NativedoctorProject {
+    pub name: String,
+    pub version: String,
+    pub requests: Vec<String>,
 }

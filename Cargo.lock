@@ -3984,6 +3984,7 @@ dependencies = [
  "rfd",
  "serde",
  "serde_json",
+ "serde_yaml",
  "sqlx",
  "tokio",
  "tracing",

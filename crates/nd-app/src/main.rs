@@ -1,6 +1,7 @@
 mod app;
 mod components;
 mod pages;
+mod project_tasks;
 mod state;
 mod store;
 mod theme;
