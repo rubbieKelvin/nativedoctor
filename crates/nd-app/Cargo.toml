@@ -6,7 +6,8 @@ authors.workspace = true
 
 [dependencies]
 gpui = { git = "https://github.com/zed-industries/zed", package = "gpui" }
-gpui_macos = { git = "https://github.com/zed-industries/zed", package = "gpui_macos" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
+gpui-component = { git = "https://github.com/longbridge/gpui-component" }
 nd-core = { path = "../nd-core" }
 nd-db = { path = "../nd-db" }
 nd-constants = { path = "../nd-constants" }
@@ -20,3 +21,4 @@ anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "5"
+rfd = "0.15"

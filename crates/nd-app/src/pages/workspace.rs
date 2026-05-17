@@ -1,302 +1,491 @@
-//! Workspace page — the main view when a project is open.
+//! Workspace chrome — navigator, duplex editor canvas, inspector, and bottom docks.
 
-use gpui::*;
+use gpui::{
+    AnyElement,
+    App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px,
+};
+use gpui_component::{
+    ActiveTheme as _,
+    Selectable as _,
+    StyledExt as _,
+    button::{Button, ButtonGroup, ButtonVariants as _},
+    group_box::{GroupBox, GroupBoxVariants as _},
+    h_flex, label::Label,
+    separator::Separator,
+    tab::{Tab, TabBar},
+    v_flex,
+};
 
-use crate::state::AppState;
+use crate::{
+    components::{request_editor, response_viewer, test_editor},
+    project_tasks,
+    state::{AppState, SidebarTab},
+};
 
-/// Render the workspace layout.
-pub fn render_workspace(
-    _window: &mut Window,
-    cx: &mut App,
-    state: Entity<AppState>,
-) -> impl IntoElement {
-    let (selected_tab, selected_request_id, selected_test_id) = {
-        let s = state.read(cx);
-        let proj = s.active_project.as_ref();
-        let tab = proj
-            .map(|p| p.selected_tab.clone())
-            .unwrap_or(crate::state::SidebarTab::Requests);
-        let req = proj.and_then(|p| p.selected_request_id.clone());
-        let test = proj.and_then(|p| p.selected_test_id.clone());
-        (tab, req, test)
+fn navigator_menu(
+    snapshot: &crate::state::ActiveProject,
+    relay: Entity<AppState>,
+    folder_tone: gpui::Hsla,
+) -> AnyElement {
+    return match snapshot.selected_tab {
+        SidebarTab::Requests => request_stack(snapshot, relay, folder_tone).into_any_element(),
+        SidebarTab::Tests => test_stack(snapshot, relay).into_any_element(),
     };
-
-    div()
-        .size_full()
-        .flex()
-        .bg(crate::theme::bg_darkest())
-        .text_color(crate::theme::text_primary())
-        .child(render_sidebar(cx, &state, &selected_tab))
-        .child(
-            div()
-                .flex_1()
-                .flex()
-                .flex_col()
-                .child(if selected_test_id.is_some() {
-                    crate::components::test_editor::render_test_editor(_window, cx, &state)
-                        .into_any_element()
-                } else if selected_request_id.is_some() {
-                    div()
-                        .flex_1()
-                        .flex()
-                        .flex_col()
-                        .child(div().flex_1().child(
-                            crate::components::request_editor::render_request_editor(
-                                _window, cx, &state,
-                            ),
-                        ))
-                        .child(div().h(px(2.)).bg(crate::theme::border()))
-                        .child(div().flex_1().child(
-                            crate::components::response_viewer::render_response_viewer(
-                                _window, cx, &state,
-                            ),
-                        ))
-                        .into_any_element()
-                } else {
-                    div()
-                        .size_full()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .flex_col()
-                        .gap_2()
-                        .child(
-                            div()
-                                .text_2xl()
-                                .text_color(crate::theme::text_muted())
-                                .child("Select a request or test from the sidebar"),
-                        )
-                        .child(
-                            div()
-                                .text_sm()
-                                .text_color(crate::theme::text_muted())
-                                .child("Or create a new one to get started."),
-                        )
-                        .into_any_element()
-                }),
-        )
 }
 
-fn render_sidebar(
-    cx: &mut App,
-    state: &Entity<AppState>,
-    active_tab: &crate::state::SidebarTab,
+fn request_stack(
+    snapshot: &crate::state::ActiveProject,
+    relay: Entity<AppState>,
+    folder_tone: gpui::Hsla,
 ) -> impl IntoElement {
-    let (folders, requests, tests, sel_req, sel_test) = {
-        let s = state.read(cx);
-        let proj = s.active_project.as_ref();
-        let f = proj.map(|p| p.folders.clone()).unwrap_or_default();
-        let r = proj.map(|p| p.requests.clone()).unwrap_or_default();
-        let t = proj.map(|p| p.tests.clone()).unwrap_or_default();
-        let sr = proj.and_then(|p| p.selected_request_id.clone());
-        let st = proj.and_then(|p| p.selected_test_id.clone());
-        (f, r, t, sr, st)
-    };
+    let mut rails: Vec<AnyElement> = Vec::new();
 
-    let is_req = *active_tab == crate::state::SidebarTab::Requests;
-    let is_test = *active_tab == crate::state::SidebarTab::Tests;
-
-    div()
-        .w(px(260.))
-        .h_full()
-        .bg(crate::theme::bg_dark())
-        .border_r_1()
-        .border_color(crate::theme::border())
-        .flex()
-        .flex_col()
-        .child(
-            div()
-                .flex()
-                .h(px(40.))
-                .border_b_1()
-                .border_color(crate::theme::border())
-                .child(
-                    div()
-                        .flex_1()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_sm()
-                        .font_weight(FontWeight::MEDIUM)
-                        .bg(if is_req {
-                            crate::theme::bg_mid()
-                        } else {
-                            crate::theme::bg_dark()
-                        })
-                        .text_color(if is_req {
-                            crate::theme::text_primary()
-                        } else {
-                            crate::theme::text_secondary()
-                        })
-                        .child("Requests"),
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .text_sm()
-                        .font_weight(FontWeight::MEDIUM)
-                        .bg(if is_test {
-                            crate::theme::bg_mid()
-                        } else {
-                            crate::theme::bg_dark()
-                        })
-                        .text_color(if is_test {
-                            crate::theme::text_primary()
-                        } else {
-                            crate::theme::text_secondary()
-                        })
-                        .child("Tests"),
-                ),
-        )
-        .child(
-            div()
-                .flex_1()
-                
-                .px_2()
-                .py_2()
-                .child(if is_req {
-                    render_requests_list(&folders, &requests, &sel_req).into_any_element()
-                } else {
-                    render_tests_list(&tests, &sel_test).into_any_element()
-                }),
-        )
-}
-
-fn render_requests_list(
-    folders: &[nd_db::models::Folder],
-    requests: &[nd_db::models::Request],
-    selected_id: &Option<String>,
-) -> impl IntoElement {
-    let mut children: Vec<AnyElement> = Vec::new();
-
-    children.push(
-        div()
-            .px_3()
-            .py_2()
-            .text_sm()
-            .text_color(crate::theme::green())
-            .child("+ New Request")
-            .into_any_element(),
-    );
-
-    for req in requests.iter().filter(|r| r.folder_id.is_none()) {
-        let is_sel = Some(&req.id) == selected_id.as_ref();
-        let color = crate::theme::method_color(&req.method);
-        children.push(
-            div()
-                .pl_6()
-                .pr_2()
-                .py_1()
-                .flex()
-                .items_center()
-                .gap_2()
-                .rounded_md()
-                .bg(if is_sel {
-                    crate::theme::bg_light()
-                } else {
-                    crate::theme::bg_dark()
+    for orphan in snapshot
+        .requests
+        .iter()
+        .filter(|needle| needle.folder_id.is_none())
+        .cloned()
+    {
+        let token = orphan.id.clone();
+        rails.push(
+            Button::new(SharedString::from(format!("navigator-req-{token}")))
+                .ghost()
+                .compact()
+                .selected(snapshot.selected_request_id.as_deref() == Some(token.as_str()))
+                .label(format!("{}  {}", orphan.method.to_uppercase(), orphan.name))
+                .on_click({
+                    let shuttle = relay.clone();
+                    move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                        let bridge = shuttle.clone();
+                        let _ignored = bridge.update(app, |canvas, ctx| {
+                            canvas.select_request(Some(token.clone()));
+                            canvas.set_sidebar_tab(SidebarTab::Requests);
+                            ctx.notify();
+                        });
+                    }
                 })
-                .child(
-                    div()
-                        .text_xs()
-                        .font_weight(FontWeight::BOLD)
-                        .text_color(color)
-                        .w(px(32.))
-                        .child(req.method.to_uppercase()),
-                )
-                .child(div().text_sm().child(req.name.clone()))
                 .into_any_element(),
         );
     }
 
-    for folder in folders {
-        children.push(
+    for vault in snapshot.folders.iter().cloned() {
+        rails.push(
             div()
-                .px_3()
-                .py_1()
-                .text_xs()
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(crate::theme::text_secondary())
-                .child(format!("📁 {}", folder.name))
+                .text_sm()
+                .font_semibold()
+                .text_color(folder_tone)
+                .mb_3()
+                .child(format!("📁 {}", vault.name))
                 .into_any_element(),
         );
 
-        for req in requests
+        for child in snapshot
+            .requests
             .iter()
-            .filter(|r| r.folder_id.as_deref() == Some(&folder.id))
+            .filter(|needle| needle.folder_id.as_deref() == Some(vault.id.as_str()))
+            .cloned()
         {
-            let is_sel = Some(&req.id) == selected_id.as_ref();
-            let color = crate::theme::method_color(&req.method);
-            children.push(
-                div()
-                    .pl_8()
-                    .pr_2()
-                    .py_1()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .rounded_md()
-                    .bg(if is_sel {
-                        crate::theme::bg_light()
-                    } else {
-                        crate::theme::bg_dark()
+            let pointer = child.id.clone();
+
+            rails.push(
+                Button::new(SharedString::from(format!("navigator-req-{pointer}")))
+                    .ghost()
+                    .compact()
+                    .ml(px(14.))
+                    .selected(snapshot.selected_request_id.as_deref() == Some(pointer.as_str()))
+                    .label(format!("{}  {}", child.method.to_uppercase(), child.name))
+                    .on_click({
+                        let shuttle = relay.clone();
+                        move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                            let bridge = shuttle.clone();
+                            let _ignored = bridge.update(app, |canvas, ctx| {
+                                canvas.select_request(Some(pointer.clone()));
+                                canvas.set_sidebar_tab(SidebarTab::Requests);
+                                ctx.notify();
+                            });
+                        }
                     })
-                    .child(
-                        div()
-                            .text_xs()
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(color)
-                            .w(px(32.))
-                            .child(req.method.to_uppercase()),
-                    )
-                    .child(div().text_sm().child(req.name.clone()))
                     .into_any_element(),
             );
         }
     }
 
-    div().flex().flex_col().children(children)
+    return v_flex().gap(px(10.)).children(rails);
 }
 
-fn render_tests_list(
-    tests: &[nd_db::models::Test],
-    selected_id: &Option<String>,
-) -> impl IntoElement {
-    let mut children: Vec<AnyElement> = Vec::new();
+fn test_stack(snapshot: &crate::state::ActiveProject, relay: Entity<AppState>) -> impl IntoElement {
+    let mut rails: Vec<AnyElement> = Vec::new();
 
-    children.push(
-        div()
-            .px_3()
-            .py_2()
-            .text_sm()
-            .text_color(crate::theme::green())
-            .child("+ New Test")
-            .into_any_element(),
-    );
+    for specimen in snapshot.tests.iter().cloned() {
+        let fingerprint = specimen.id.clone();
 
-    for test in tests {
-        let is_sel = Some(&test.id) == selected_id.as_ref();
-        children.push(
-            div()
-                .px_3()
-                .py_1()
-                .flex()
-                .items_center()
-                .gap_2()
-                .rounded_md()
-                .bg(if is_sel {
-                    crate::theme::bg_light()
-                } else {
-                    crate::theme::bg_dark()
+        rails.push(
+            Button::new(SharedString::from(format!("navigator-test-{fingerprint}")))
+                .ghost()
+                .compact()
+                .selected(snapshot.selected_test_id.as_deref() == Some(fingerprint.as_str()))
+                .label(specimen.name.clone())
+                .on_click({
+                    let shuttle = relay.clone();
+                    move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                        let bridge = shuttle.clone();
+                        let _ignored = bridge.update(app, |canvas, ctx| {
+                            canvas.select_test(Some(fingerprint.clone()));
+                            canvas.set_sidebar_tab(SidebarTab::Tests);
+                            ctx.notify();
+                        });
+                    }
                 })
-                .child(div().text_sm().child("🧪"))
-                .child(div().text_sm().child(test.name.clone()))
                 .into_any_element(),
         );
     }
 
-    div().flex().flex_col().children(children)
+    return v_flex().gap(px(10.)).children(rails);
+}
+
+fn inspector_column(cx: &mut App, relay: &Entity<AppState>) -> impl IntoElement {
+    let Some(snapshot) = relay.read(cx).active_project.clone() else {
+        return div().flex().items_center().justify_center();
+    };
+
+    let subject = snapshot
+        .selected_request_id
+        .as_deref()
+        .and_then(|needle| snapshot.requests.iter().find(|row| row.id == needle));
+
+    let headline_method =
+        SharedString::from(subject.map(|row| row.method.to_uppercase()).unwrap_or_else(|| "—".into()));
+
+    let address = SharedString::from(subject.map(|row| row.url.clone()).unwrap_or_else(|| "".into()));
+
+    let environment = SharedString::from(
+        snapshot
+            .active_environment_id
+            .as_deref()
+            .and_then(|needle| snapshot.environments.iter().find(|row| row.id == needle))
+            .map(|row| row.name.clone())
+            .unwrap_or_else(|| "Base variables".into()),
+    );
+
+    let summary_hint = subject
+        .map(|found| found.summary.clone())
+        .filter(|blur| !blur.is_empty())
+        .unwrap_or_else(|| "Attach a navigator request to hydrate field metadata.".into());
+
+    v_flex()
+        .w(px(296.))
+        .min_h_full()
+        .border_l_1()
+        .border_color(cx.theme().border)
+        .bg(cx.theme().group_box)
+        .px_8()
+        .py_10()
+        .gap_6()
+        .child(
+            div()
+                .text_sm()
+                .text_color(cx.theme().muted_foreground)
+                .child(SharedString::from("Inspector")),
+        )
+        .child(
+            GroupBox::new().title(headline_method.clone()).outline().child(
+                div()
+                    .text_sm()
+                    .text_color(cx.theme().muted_foreground)
+                    .child(summary_hint.clone()),
+            ),
+        )
+        .child(
+            GroupBox::new().title("Targets").outline().children([
+                metadata_pair(
+                    "METHOD",
+                    headline_method.clone(),
+                    cx.theme().muted_foreground,
+                    cx.theme().foreground,
+                ),
+                metadata_pair(
+                    "URL",
+                    address.clone(),
+                    cx.theme().muted_foreground,
+                    cx.theme().foreground,
+                ),
+                metadata_pair(
+                    "ENVIRONMENT",
+                    environment.clone(),
+                    cx.theme().muted_foreground,
+                    cx.theme().muted_foreground,
+                ),
+            ]),
+        )
+}
+
+fn metadata_pair(
+    caption: &str,
+    value: SharedString,
+    caption_colour: gpui::Hsla,
+    value_colour: gpui::Hsla,
+) -> AnyElement {
+    div()
+        .flex()
+        .justify_between()
+        .items_center()
+        .gap(px(24.))
+        .child(
+            div()
+                .text_sm()
+                .text_color(caption_colour)
+                .child(SharedString::from(caption.to_ascii_uppercase())),
+        )
+        .child(
+            Label::new(value.clone())
+                .text_sm()
+                .text_color(value_colour),
+        )
+        .into_any_element()
+}
+
+/// Render KYOSHI-like rails around the duplex editor canvases plus bottom dock stubs.
+pub fn render_workspace(window: &mut Window, cx: &mut App, relay: Entity<AppState>) -> impl IntoElement {
+    let snapshot = relay.read(cx).active_project.clone();
+    let Some(surface) = snapshot else {
+        return div()
+            .size_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(Label::new(SharedString::from("Navigator missing — reopen onboarding.")));
+    };
+
+    let palette = relay.clone();
+    let command_palette = relay.clone();
+
+    v_flex()
+        .size_full()
+        .bg(cx.theme().background)
+        .text_color(cx.theme().foreground)
+        .child(workspace_title_strip(cx, &surface, relay.clone()))
+        .child(
+            h_flex().flex_1().min_h(px(0.)).child(navigator_sidebar(
+                surface.clone(),
+                window,
+                cx,
+                palette.clone(),
+            )).child(
+                editor_stack(window, cx, &surface, relay.clone()),
+            ).child(inspector_column(cx, &relay.clone())),
+        )
+        .child(bottom_dock(cx, surface.bottom_panel_tab, command_palette.clone()))
+}
+
+fn workspace_title_strip(cx: &mut App, surface: &crate::state::ActiveProject, relay: Entity<AppState>) -> impl IntoElement {
+    h_flex()
+        .items_center()
+        .justify_between()
+        .w_full()
+        .px_8()
+        .py_5()
+        .border_b_1()
+        .border_color(cx.theme().border)
+        .child(
+            h_flex().items_center().gap_3().child(
+                Button::new("workspace-return")
+                    .ghost()
+                    .compact()
+                    .label("Back")
+                    .on_click({
+                        let shuttle = relay.clone();
+                        move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                            let bridge = shuttle.clone();
+                            let _ignored = bridge.update(app, |canvas, ctx| {
+                                canvas.navigate_to_landing();
+                                ctx.notify();
+                            });
+                        }
+                    }),
+            ),
+        )
+        .child(
+            h_flex().items_center().gap_4().justify_end().flex_wrap().child(
+                Label::new(SharedString::from(surface.project.name.clone()))
+                    .text_lg()
+                    .font_semibold(),
+            ).child(
+                Button::new("workspace-new-request-strip")
+                    .primary()
+                    .compact()
+                    .label("+ New request")
+                    .on_click({
+                        let shuttle = relay.clone();
+                        move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                            project_tasks::spawn_insert_skeleton_request(shuttle.clone(), app);
+                        }
+                    }),
+            ),
+        )
+}
+
+fn navigator_sidebar(
+    snapshot: crate::state::ActiveProject,
+    _window: &mut Window,
+    cx: &mut App,
+    relay: Entity<AppState>,
+) -> impl IntoElement {
+    v_flex()
+        .w(px(280.))
+        .min_h_full()
+        .border_r_1()
+        .border_color(cx.theme().border)
+        .bg(cx.theme().secondary)
+        .child(
+            v_flex()
+                .px_6()
+                .py_5()
+                .gap_6()
+                .child(
+                    Label::new(SharedString::from(snapshot.project.name.clone()))
+                        .text_lg()
+                        .font_semibold(),
+                )
+                .child(
+                    Label::new(SharedString::from(format!(
+                        "{}",
+                        snapshot.db_path.display()
+                    )))
+                    .text_sm()
+                    .text_color(cx.theme().muted_foreground),
+                ),
+        )
+        .child(
+            v_flex()
+                .px_4()
+                .gap_6()
+                .flex_1()
+                .child(
+                    ButtonGroup::new("navigator-switch")
+                        .outline()
+                        .compact()
+                        .child(
+                            Button::new("navigator-requests-switch")
+                                .label("Requests")
+                                .selected(snapshot.selected_tab == SidebarTab::Requests),
+                        )
+                        .child(
+                            Button::new("navigator-tests-switch")
+                                .label("Tests")
+                                .selected(snapshot.selected_tab == SidebarTab::Tests),
+                        )
+                        .on_click({
+                            let handle = relay.clone();
+                            move |indices: &Vec<usize>, _: &mut Window, launcher: &mut App| {
+                                let tab = indices.first().copied();
+                                match tab {
+                                    Some(0) => {
+                                        let shuttle = handle.clone();
+                                        let _ignored =
+                                            shuttle.update(launcher, |canvas, ctx| {
+                                                canvas.set_sidebar_tab(SidebarTab::Requests);
+                                                ctx.notify();
+                                            });
+                                    }
+                                    Some(1) => {
+                                        let shuttle = handle.clone();
+                                        let _ignored =
+                                            shuttle.update(launcher, |canvas, ctx| {
+                                                canvas.set_sidebar_tab(SidebarTab::Tests);
+                                                ctx.notify();
+                                            });
+                                    }
+                                    _ => (),
+                                }
+                            }
+                        }),
+                )
+                .child(
+                    Button::new("navigator-draft-button")
+                        .ghost()
+                        .compact()
+                        .label("+ New HTTP request")
+                        .on_click({
+                            let shuttle = relay.clone();
+                            move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                                project_tasks::spawn_insert_skeleton_request(shuttle.clone(), app);
+                            }
+                        }),
+                )
+                .child(navigator_menu(
+                    &snapshot,
+                    relay.clone(),
+                    cx.theme().muted_foreground,
+                )),
+        )
+}
+
+fn editor_stack(
+    window: &mut Window,
+    cx: &mut App,
+    surface: &crate::state::ActiveProject,
+    relay: Entity<AppState>,
+) -> impl IntoElement {
+    if surface.selected_test_id.is_some() {
+        div()
+            .flex_1()
+            .flex()
+            .min_h(px(480.))
+            .child(test_editor::render_test_editor(window, cx, &relay))
+            .into_any_element()
+    } else {
+        v_flex()
+            .flex_1()
+            .min_w(px(560.))
+            .min_h_full()
+            .overflow_hidden()
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .min_h(px(340.))
+                    .child(request_editor::render_request_editor(window, cx, &relay)),
+            )
+            .child(Separator::horizontal())
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .min_h(px(320.))
+                    .child(response_viewer::render_response_viewer(window, cx, &relay)),
+            )
+            .into_any_element()
+    }
+}
+
+fn bottom_dock(cx: &mut App, selected_ix: usize, relay: Entity<AppState>) -> impl IntoElement {
+    v_flex()
+        .border_t_1()
+        .border_color(cx.theme().border)
+        .bg(cx.theme().background)
+        .child(
+            TabBar::new("bottom-shell-tabs")
+                .underline()
+                .selected_index(selected_ix)
+                .on_click({
+                    let shuttle = relay.clone();
+                    move |index: &usize, _: &mut Window, app: &mut App| {
+                        let bridge = shuttle.clone();
+                        let _ignored = bridge.update(app, |canvas, ctx| {
+                            canvas.set_workspace_bottom_tab(*index);
+                            ctx.notify();
+                        });
+                    }
+                })
+                .child(Tab::new().label("Logs"))
+                .child(Tab::new().label("Console"))
+                .child(Tab::new().label("Results")),
+        )
+        .child(
+            Label::new(SharedString::from("Ready."))
+                .text_sm()
+                .text_color(cx.theme().muted_foreground)
+                .px_12()
+                .py_10(),
+        )
 }

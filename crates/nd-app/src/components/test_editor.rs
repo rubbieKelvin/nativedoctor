@@ -2,37 +2,42 @@
 
 use gpui::*;
 
+use gpui_component::ActiveTheme as _;
+
 use crate::state::AppState;
 
-/// Render the test editor.
+/// Render the Rhai workspace with gpui-component colour tokens only.
 pub fn render_test_editor(
     _window: &mut Window,
     cx: &mut App,
     state: &Entity<AppState>,
 ) -> impl IntoElement {
-    let test = {
-        let s = state.read(cx);
-        let proj = s.active_project.as_ref();
-        let test_id = proj.and_then(|p| p.selected_test_id.as_deref());
-        match (test_id, proj) {
-            (Some(id), Some(proj)) => proj.tests.iter().find(|t| t.id == id).cloned(),
+    let chrome = cx.theme();
+
+    let active = {
+        let shell = state.read(cx);
+        let project = shell.active_project.as_ref();
+        let fingerprint = project.and_then(|layer| layer.selected_test_id.as_deref());
+
+        match (fingerprint, project) {
+            (Some(tag), Some(project)) => project.tests.iter().find(|specimen| specimen.id == tag).cloned(),
             _ => None,
         }
     };
 
-    match test {
+    return match active {
         None => div()
             .size_full()
             .flex()
             .items_center()
             .justify_center()
-            .text_color(crate::theme::text_muted())
-            .child("No test selected"),
-        Some(test) => div()
+            .text_color(chrome.muted_foreground)
+            .child("No Rhai test selected."),
+        Some(specimen) => div()
             .size_full()
             .flex()
             .flex_col()
-            .bg(crate::theme::bg_dark())
+            .bg(chrome.background)
             .child(
                 div()
                     .flex()
@@ -41,7 +46,7 @@ pub fn render_test_editor(
                     .px_3()
                     .py_2()
                     .border_b_1()
-                    .border_color(crate::theme::border())
+                    .border_color(chrome.border)
                     .child(
                         div()
                             .flex()
@@ -52,7 +57,7 @@ pub fn render_test_editor(
                                 div()
                                     .text_sm()
                                     .font_weight(FontWeight::MEDIUM)
-                                    .child(test.name.clone()),
+                                    .child(specimen.name.clone()),
                             ),
                     )
                     .child(
@@ -64,8 +69,8 @@ pub fn render_test_editor(
                                     .px_4()
                                     .py_1()
                                     .rounded_md()
-                                    .bg(crate::theme::green())
-                                    .text_color(gpui::white())
+                                    .bg(chrome.primary)
+                                    .text_color(chrome.primary_foreground)
                                     .text_sm()
                                     .font_weight(FontWeight::MEDIUM)
                                     .child("▶ Run"),
@@ -75,10 +80,10 @@ pub fn render_test_editor(
                                     .px_4()
                                     .py_1()
                                     .rounded_md()
-                                    .bg(crate::theme::bg_mid())
-                                    .text_color(crate::theme::text_primary())
+                                    .bg(chrome.secondary)
+                                    .text_color(chrome.foreground)
                                     .border_1()
-                                    .border_color(crate::theme::border())
+                                    .border_color(chrome.border)
                                     .text_sm()
                                     .child("Save"),
                             ),
@@ -89,15 +94,12 @@ pub fn render_test_editor(
                     div()
                         .size_full()
                         .rounded_md()
-                        .bg(crate::theme::bg_darkest())
+                        .bg(chrome.input_background())
                         .border_1()
-                        .border_color(crate::theme::border())
+                        .border_color(chrome.border)
                         .p_3()
                         .child(
-                            div()
-                                .text_sm()
-                                .font_family("Menlo, monospace")
-                                .child(test.script.clone()),
+                            div().text_sm().font_family(chrome.mono_font_family.clone()).child(specimen.script.clone()),
                         ),
                 ),
             )
@@ -105,15 +107,14 @@ pub fn render_test_editor(
                 div()
                     .h(px(120.))
                     .border_t_1()
-                    .border_color(crate::theme::border())
-                    .bg(crate::theme::bg_darkest())
+                    .border_color(chrome.border)
+                    .bg(chrome.input_background())
                     .p_3()
                     .child(
-                        div()
-                            .text_xs()
-                            .text_color(crate::theme::text_muted())
-                            .child("Output will appear here after running the test..."),
+                        div().text_sm().text_color(chrome.muted_foreground).child(
+                            "Rhai evaluations will mirror nd-core runtime once bridged.",
+                        ),
                     ),
             ),
-    }
+    };
 }

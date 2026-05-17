@@ -2,52 +2,58 @@
 
 use gpui::*;
 
+use gpui_component::ActiveTheme as _;
+
 use crate::state::AppState;
 
-/// Render the request editor.
+/// Render the request composer while synchronising pigments with gpui-component’s palette.
 pub fn render_request_editor(
     _window: &mut Window,
     cx: &mut App,
     state: &Entity<AppState>,
 ) -> impl IntoElement {
+    let chrome = cx.theme();
+
     let request = {
-        let s = state.read(cx);
-        let proj = s.active_project.as_ref();
-        let req_id = proj.and_then(|p| p.selected_request_id.as_deref());
-        match (req_id, proj) {
-            (Some(id), Some(proj)) => proj.requests.iter().find(|r| r.id == id).cloned(),
+        let app_state = state.read(cx);
+        let project_snapshot = app_state.active_project.as_ref();
+        let request_key = project_snapshot.and_then(|project| project.selected_request_id.as_deref());
+
+        match (request_key, project_snapshot) {
+            (Some(id), Some(project)) => project.requests.iter().find(|needle| needle.id == id).cloned(),
             _ => None,
         }
     };
 
-    match request {
+    return match request {
         None => div()
             .size_full()
             .flex()
             .items_center()
             .justify_center()
-            .text_color(crate::theme::text_muted())
+            .text_color(chrome.muted_foreground)
             .child("No request selected"),
-        Some(req) => {
-            let method_color = crate::theme::method_color(&req.method);
-            let headers_display = match serde_json::from_str::<serde_json::Value>(&req.headers) {
-                Ok(serde_json::Value::Object(map)) => map
+        Some(snapshot) => {
+            let ribbon = crate::theme::method_color(&snapshot.method);
+            let headers_display = match serde_json::from_str::<serde_json::Value>(&snapshot.headers) {
+                Ok(serde_json::Value::Object(entries)) => entries
                     .into_iter()
-                    .map(|(k, v)| format!("{k}: {}", v.as_str().unwrap_or("")))
+                    .map(|(key, payload)| format!("{key}: {}", payload.as_str().unwrap_or("")))
                     .collect::<Vec<_>>()
                     .join("\n"),
                 _ => String::new(),
             };
-            let body_display = req
+
+            let body_canvas = snapshot
                 .body_content
                 .clone()
-                .unwrap_or_else(|| "No body".to_string());
+                .unwrap_or_else(|| "No body configured".into());
 
             div()
                 .size_full()
                 .flex()
                 .flex_col()
-                .bg(crate::theme::bg_dark())
+                .bg(chrome.background)
                 .child(
                     div()
                         .flex()
@@ -56,17 +62,17 @@ pub fn render_request_editor(
                         .px_3()
                         .py_2()
                         .border_b_1()
-                        .border_color(crate::theme::border())
+                        .border_color(chrome.border)
                         .child(
                             div()
                                 .px_3()
                                 .py_1()
                                 .rounded_md()
-                                .bg(crate::theme::bg_mid())
-                                .text_color(method_color)
+                                .bg(chrome.secondary)
+                                .text_color(ribbon)
                                 .text_sm()
                                 .font_weight(FontWeight::BOLD)
-                                .child(req.method.to_uppercase()),
+                                .child(snapshot.method.to_uppercase()),
                         )
                         .child(
                             div()
@@ -74,19 +80,19 @@ pub fn render_request_editor(
                                 .px_3()
                                 .py_1()
                                 .rounded_md()
-                                .bg(crate::theme::bg_darkest())
+                                .bg(chrome.input_background())
                                 .border_1()
-                                .border_color(crate::theme::border())
+                                .border_color(chrome.border)
                                 .text_sm()
-                                .child(req.url.clone()),
+                                .child(snapshot.url.clone()),
                         )
                         .child(
                             div()
                                 .px_4()
                                 .py_1()
                                 .rounded_md()
-                                .bg(crate::theme::green())
-                                .text_color(gpui::white())
+                                .bg(chrome.primary)
+                                .text_color(chrome.primary_foreground)
                                 .text_sm()
                                 .font_weight(FontWeight::MEDIUM)
                                 .child("Send"),
@@ -96,10 +102,10 @@ pub fn render_request_editor(
                                 .px_4()
                                 .py_1()
                                 .rounded_md()
-                                .bg(crate::theme::bg_mid())
-                                .text_color(crate::theme::text_primary())
+                                .bg(chrome.secondary)
+                                .text_color(chrome.foreground)
                                 .border_1()
-                                .border_color(crate::theme::border())
+                                .border_color(chrome.border)
                                 .text_sm()
                                 .child("Save"),
                         ),
@@ -109,38 +115,30 @@ pub fn render_request_editor(
                         div()
                             .text_xs()
                             .font_weight(FontWeight::SEMIBOLD)
-                            .text_color(crate::theme::text_secondary())
+                            .text_color(chrome.muted_foreground)
                             .mb_2()
                             .child("Headers"),
                     ),
                 )
                 .child(
-                    div()
-                        .px_3()
-                        .text_xs()
-                        .mb_3()
-                        .child(if headers_display.is_empty() {
-                            "No headers configured".to_string()
-                        } else {
-                            headers_display
-                        }),
+                    div().px_3().text_sm().mb_3().text_color(chrome.foreground).child(if headers_display.is_empty() {
+                        "No headers configured".into()
+                    } else {
+                        headers_display
+                    }),
                 )
                 .child(
                     div()
                         .text_xs()
                         .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(crate::theme::text_secondary())
+                        .text_color(chrome.muted_foreground)
                         .px_3()
                         .mb_2()
                         .child("Body"),
                 )
                 .child(
-                    div()
-                        .px_3()
-                        .text_xs()
-                        .font_family("Menlo, monospace")
-                        .child(body_display.clone()),
+                    div().px_3().text_sm().font_family(chrome.mono_font_family.clone()).child(body_canvas.clone()),
                 )
         }
-    }
+    };
 }
