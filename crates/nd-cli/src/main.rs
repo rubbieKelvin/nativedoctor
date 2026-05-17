@@ -55,7 +55,7 @@ enum GenerateFormat {
     Json,
 }
 
-impl From<GenerateFormat> for nd_generate::OutputFormat {
+impl From<GenerateFormat> for nd_core::generate::OutputFormat {
     fn from(f: GenerateFormat) -> Self {
         match f {
             GenerateFormat::Yaml => Self::Yaml,
