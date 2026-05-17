@@ -2,14 +2,14 @@
 
 use std::collections::{HashMap, HashSet};
 
-use nd_core::model::request::{
+use crate::model::request::{
     HttpRequestSpec, RequestBody, RequestBodyKind, RequestBodyStructured, RequestFile,
 };
 use openapiv3::{
     OpenAPI, Operation, Parameter, PathItem, ReferenceOr, RequestBody as OasRequestBody,
 };
 
-use crate::error::{Error, Result};
+use super::error::Error;
 
 /// Convert `{param}` path segments to nativedoctor `${param}` template syntax.
 pub fn path_to_url_template(path: &str) -> String {
@@ -28,7 +28,7 @@ fn base_url(api: &OpenAPI) -> String {
         .unwrap_or_else(|| nd_constants::OPENAPI_GENERATE_BASE_URL_PLACEHOLDER.to_string())
 }
 
-fn merge_parameters(path_item: &PathItem, operation: &Operation) -> Result<Vec<Parameter>> {
+fn merge_parameters(path_item: &PathItem, operation: &Operation) -> Result<Vec<Parameter>, Error> {
     let mut out = Vec::new();
     for p in &path_item.parameters {
         match p {
@@ -79,7 +79,7 @@ fn apply_parameters(
     }
 }
 
-fn json_request_body(op: &Operation) -> Result<Option<RequestBody>> {
+fn json_request_body(op: &Operation) -> Result<Option<RequestBody>, Error> {
     let Some(rb_ref) = &op.request_body else {
         return Ok(None);
     };
@@ -106,7 +106,7 @@ pub fn operation_to_request_file(
     method: &str,
     operation: &Operation,
     path_item: &PathItem,
-) -> Result<RequestFile> {
+) -> Result<RequestFile, Error> {
     let base = base_url(api);
     let path_part = path_to_url_template(path_template);
     let url = if path_part.starts_with('/') {

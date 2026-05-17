@@ -1,8 +1,8 @@
 //! Read OpenAPI 3.0.x specs from `.json`, `.yaml`, or `.yml`.
 
-use std::path::Path;
-
+use super::error::Error;
 use openapiv3::OpenAPI;
+use std::path::Path;
 
 /// Read and deserialize OpenAPI 3.0.x from `.json`, `.yaml`, or `.yml` (extension-based).
 pub fn load_openapi(path: &Path) -> Result<OpenAPI, Error> {
@@ -26,7 +26,7 @@ pub fn load_openapi(path: &Path) -> Result<OpenAPI, Error> {
     return Ok(api);
 }
 
-fn check_openapi_version(api: &OpenAPI) -> Result<()> {
+fn check_openapi_version(api: &OpenAPI) -> Result<(), Error> {
     let v = api.openapi.trim();
     if v == "3.0" || v.starts_with("3.0.") {
         return Ok(());

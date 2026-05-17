@@ -8,10 +8,8 @@
 //! YAML output quotes `request.url` when it contains `${…}` so YAML 1.1 does not treat `$` as an
 //! alias. JSON output is unaffected.
 
-mod error;
 pub mod openapi3;
 
-pub use error::{Error, Result};
 pub use openapi3::OutputFormat;
 
 use std::path::Path;
@@ -39,7 +37,7 @@ pub fn generate_from_openapi_path(
     input: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
     options: GenerateOptions,
-) -> Result<GenerateReport> {
+) -> Result<GenerateReport, openapi3::error::Error> {
     openapi3::generate_from_path(input.as_ref(), out_dir.as_ref(), options.format)
 }
 

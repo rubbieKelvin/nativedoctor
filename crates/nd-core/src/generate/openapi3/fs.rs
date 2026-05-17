@@ -3,13 +3,13 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use crate::model::request::RequestFile;
+use crate::model::with_root_schema_url;
 use nd_constants::urls::{PUBLIC_REQUEST_JSON_SCHEMA_URL, PUBLIC_REQUEST_YAML_SCHEMA_URL};
-use nd_core::model::request::RequestFile;
-use nd_core::model::with_root_schema_url;
 use openapiv3::{OpenAPI, ReferenceOr};
 
 use super::build::{file_stem, operation_to_request_file, unique_stem};
-use crate::error::{Error, Result};
+use super::error::Error;
 
 /// Serialization format for generated request definitions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -65,7 +65,11 @@ fn quote_yaml_urls_containing_dollar(text: &str) -> String {
 }
 
 /// Serializes `file` and writes it to `path`, creating parent directories when needed.
-pub fn write_request_file(path: &Path, file: &RequestFile, format: OutputFormat) -> Result<()> {
+pub fn write_request_file(
+    path: &Path,
+    file: &RequestFile,
+    format: OutputFormat,
+) -> Result<(), Error> {
     let schema_url = match format {
         OutputFormat::Yaml => PUBLIC_REQUEST_YAML_SCHEMA_URL,
         OutputFormat::Json => PUBLIC_REQUEST_JSON_SCHEMA_URL,
@@ -97,7 +101,7 @@ pub fn write_all_operations(
     api: &OpenAPI,
     out_dir: &Path,
     format: OutputFormat,
-) -> Result<Vec<PathBuf>> {
+) -> Result<Vec<PathBuf>, Error> {
     std::fs::create_dir_all(out_dir).map_err(|source| Error::Io {
         path: out_dir.to_path_buf(),
         source,
