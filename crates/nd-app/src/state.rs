@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 /// The top-level view the user is currently seeing.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum View {
+pub enum PageView {
     /// Landing page with recent projects plus create/open actions.
     Landing,
     /// Main workspace for an open project.
@@ -200,7 +200,7 @@ pub struct ExecutionResultState {
 /// Root application state.
 pub struct AppState {
     /// Which coarse page is rendered.
-    pub current_view: View,
+    pub current_view: PageView,
     /// Recently opened projects surfaced on the landing page.
     pub recent_projects: Vec<RecentProject>,
     /// When [`Some`] a project DB is mounted and workspace chrome is usable.
@@ -208,7 +208,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Create the initial shell state — lands on [`View::Landing`].
+    /// Create the initial shell state — lands on [`PageView::Landing`].
     pub fn new() -> Self {
         let recent_projects = Self::load_recent_projects().unwrap_or_else(|err| {
             tracing::warn!("Could not load recent projects: {err}");
@@ -216,7 +216,7 @@ impl AppState {
         });
 
         return Self {
-            current_view: View::Landing,
+            current_view: PageView::Landing,
             recent_projects,
             active_project: None,
         };
@@ -225,7 +225,7 @@ impl AppState {
     /// Return to landing and drop the mounted database handle.
     pub fn navigate_to_landing(&mut self) -> () {
         self.active_project = None;
-        self.current_view = View::Landing;
+        self.current_view = PageView::Landing;
 
         return;
     }
@@ -234,7 +234,7 @@ impl AppState {
     pub fn attach_open_project(&mut self, active: ActiveProject) -> () {
         self.touch_recent_project(&active.project.name, &active.db_path.to_string_lossy());
         self.active_project = Some(active);
-        self.current_view = View::Workspace;
+        self.current_view = PageView::Workspace;
 
         return;
     }
