@@ -3981,7 +3981,6 @@ dependencies = [
  "gpui_platform",
  "nd-constants",
  "nd-core",
- "nd-db",
  "rfd",
  "serde",
  "serde_json",
@@ -4040,21 +4039,6 @@ dependencies = [
  "tracing",
  "uuid",
  "wiremock",
-]
-
-[[package]]
-name = "nd-db"
-version = "0.2.1"
-dependencies = [
- "anyhow",
- "chrono",
- "dirs 5.0.1",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tracing",
- "uuid",
 ]
 
 [[package]]

@@ -5,7 +5,6 @@ members = [
     "crates/nd-generate",
     "crates/nd-web",
     "crates/nd-app",
-    "crates/nd-db",
 ]
 resolver = "2"
 

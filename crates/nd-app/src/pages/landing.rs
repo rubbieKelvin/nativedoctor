@@ -1,89 +1,80 @@
-//! Landing page rendered before a database is mounted.
-
-use std::path::PathBuf;
+// use std::path::PathBuf;
 
 use gpui::{
-    App, AnyElement, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled, Window,
-    px,
+    px, AnyElement, App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled,
+    Window,
 };
+
 use gpui_component::{
+    button::{Button, ButtonVariants as _},
+    h_flex,
+    label::Label,
+    // sidebar::SidebarHeader,
+    v_flex,
     ActiveTheme as _,
     StyledExt as _,
-    button::{Button, ButtonVariants as _},
-    h_flex, label::Label,
-    sidebar::SidebarHeader,
-    v_flex,
 };
 
 use crate::state::AppState;
 
-fn pick_database_path() -> Option<PathBuf> {
-    return rfd::FileDialog::new()
-        .add_filter("NativeDoctor SQLite", &["db"])
-        .pick_file();
-}
+// fn recent_rail(
+//     cx: &mut App,
+//     state: Entity<AppState>,
+//     recent_rows: Vec<nd_db::models::RecentProject>,
+// ) -> impl IntoElement {
+//     let baseline = cx.theme();
 
-fn recent_rail(
-    cx: &mut App,
-    state: Entity<AppState>,
-    recent_rows: Vec<nd_db::models::RecentProject>,
-) -> impl IntoElement {
-    let baseline = cx.theme();
+//     let body: Vec<AnyElement> = if recent_rows.is_empty() {
+//         vec![Label::new(SharedString::from(
+//             "Nothing synced yet — create a SQLite workspace to populate this rail.",
+//         ))
+//         .text_sm()
+//         .text_color(baseline.muted_foreground)
+//         .into_any_element()]
+//     } else {
+//         recent_rows
+//             .into_iter()
+//             .enumerate()
+//             .map(|(ix, rp)| {
+//                 let disk_path = rp.db_path.clone();
+//                 let navigator = state.clone();
 
-    let body: Vec<AnyElement> = if recent_rows.is_empty() {
-        vec![Label::new(SharedString::from(
-            "Nothing synced yet — create a SQLite workspace to populate this rail.",
-        ))
-        .text_sm()
-        .text_color(baseline.muted_foreground)
-        .into_any_element()]
-    } else {
-        recent_rows
-            .into_iter()
-            .enumerate()
-            .map(|(ix, rp)| {
-                let disk_path = rp.db_path.clone();
-                let navigator = state.clone();
+//                 Button::new(SharedString::from(format!("recent-project-{ix}")))
+//                     .outline()
+//                     .compact()
+//                     .label(rp.name)
+//                     .child(
+//                         Label::new(disk_path.clone())
+//                             .text_xs()
+//                             .text_color(baseline.muted_foreground),
+//                     )
+//                     .on_click(move |_event: &ClickEvent, _: &mut Window, app| {
+//                         crate::project_tasks::spawn_open_database(
+//                             navigator.clone(),
+//                             PathBuf::from(disk_path.clone()),
+//                             app,
+//                         );
+//                     })
+//                     .into_any_element()
+//             })
+//             .collect()
+//     };
 
-                Button::new(SharedString::from(format!("recent-project-{ix}")))
-                    .outline()
-                    .compact()
-                    .label(rp.name)
-                    .child(
-                        Label::new(disk_path.clone())
-                            .text_xs()
-                            .text_color(baseline.muted_foreground),
-                    )
-                    .on_click(move |_event: &ClickEvent, _: &mut Window, app| {
-                        crate::project_tasks::spawn_open_database(
-                            navigator.clone(),
-                            PathBuf::from(disk_path.clone()),
-                            app,
-                        );
-                    })
-                    .into_any_element()
-            })
-            .collect()
-    };
+//     return v_flex()
+//         .w(px(416.))
+//         .min_h_full()
+//         .border_l_1()
+//         .border_color(cx.theme().border)
+//         .p_12()
+//         .gap_8()
+//         .child(
+//             SidebarHeader::new()
+//                 .justify_between()
+//                 .child(Label::new(SharedString::from("RECENT PROJECTS")).text_xs()),
+//         )
+//         .child(v_flex().gap_6().children(body));
+// }
 
-    return v_flex()
-        .w(px(416.))
-        .min_h_full()
-        .border_l_1()
-        .border_color(cx.theme().border)
-        .p_12()
-        .gap_8()
-        .child(
-            SidebarHeader::new().justify_between().child(
-                Label::new(SharedString::from("RECENT PROJECTS")).text_xs(),
-            ),
-        )
-        .child(v_flex().gap_6().children(body));
-}
-
-/// Splash content with onboarding affordances tuned for Kyoshi-level density cues.
-///
-/// Recent database entries hydrate from `~/.nativedoctor/recent.json`; clicking replays SQLite mounting.
 pub fn render_landing(
     _window: &mut Window,
     cx: &mut App,
@@ -143,13 +134,13 @@ pub fn render_landing(
                     .outline()
                     .label("Open SQLite project…")
                     .on_click(move |_event: &ClickEvent, _: &mut Window, launcher| {
-                        let maybe_path = pick_database_path();
+                        // let maybe_path = pick_database_path();
 
-                        let Some(selection) = maybe_path else {
-                            return;
-                        };
+                        // let Some(selection) = maybe_path else {
+                        //     return;
+                        // };
 
-                        crate::project_tasks::spawn_open_database(open_handle.clone(), selection, launcher);
+                        // crate::project_tasks::spawn_open_database(open_handle.clone(), selection, launcher);
                     }),
             ),
         );
@@ -158,6 +149,6 @@ pub fn render_landing(
         .size_full()
         .bg(palette.background)
         .text_color(palette.foreground)
-        .child(hero)
-        .child(recent_rail(cx, state.clone(), recent_rows));
+        .child(hero);
+    // .child(recent_rail(cx, state.clone(), recent_rows));
 }

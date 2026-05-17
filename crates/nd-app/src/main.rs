@@ -1,14 +1,8 @@
-//! Entry point for the **NativeDoctor** desktop application.
-//!
-//! Uses **GPUI** (GPU-accelerated UI framework from Zed) to render a
-//! Postman-like API testing & development tool backed by a local SQLite
-//! database (see `nd-db`).
-
 mod app;
 mod components;
 mod pages;
-mod project_tasks;
 mod state;
+mod store;
 mod theme;
 
 fn main() {

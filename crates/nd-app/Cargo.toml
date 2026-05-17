@@ -9,7 +9,6 @@ gpui = { git = "https://github.com/zed-industries/zed", package = "gpui" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
 gpui-component = { git = "https://github.com/longbridge/gpui-component" }
 nd-core = { path = "../nd-core" }
-nd-db = { path = "../nd-db" }
 nd-constants = { path = "../nd-constants" }
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
 uuid = { version = "1", features = ["v4", "serde"] }

@@ -1,19 +1,17 @@
 //! Workspace chrome — navigator, duplex editor canvas, inspector, and bottom docks.
 
 use gpui::{
-    AnyElement,
-    App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled, Window, div, px,
+    div, px, AnyElement, App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled,
+    Window,
 };
 use gpui_component::{
-    ActiveTheme as _,
-    Selectable as _,
-    StyledExt as _,
     button::{Button, ButtonGroup, ButtonVariants as _},
     group_box::{GroupBox, GroupBoxVariants as _},
-    h_flex, label::Label,
+    h_flex,
+    label::Label,
     separator::Separator,
     tab::{Tab, TabBar},
-    v_flex,
+    v_flex, ActiveTheme as _, Selectable as _, StyledExt as _,
 };
 
 use crate::{
@@ -153,10 +151,17 @@ fn inspector_column(cx: &mut App, relay: &Entity<AppState>) -> impl IntoElement 
         .as_deref()
         .and_then(|needle| snapshot.requests.iter().find(|row| row.id == needle));
 
-    let headline_method =
-        SharedString::from(subject.map(|row| row.method.to_uppercase()).unwrap_or_else(|| "—".into()));
+    let headline_method = SharedString::from(
+        subject
+            .map(|row| row.method.to_uppercase())
+            .unwrap_or_else(|| "—".into()),
+    );
 
-    let address = SharedString::from(subject.map(|row| row.url.clone()).unwrap_or_else(|| "".into()));
+    let address = SharedString::from(
+        subject
+            .map(|row| row.url.clone())
+            .unwrap_or_else(|| "".into()),
+    );
 
     let environment = SharedString::from(
         snapshot
@@ -169,7 +174,7 @@ fn inspector_column(cx: &mut App, relay: &Entity<AppState>) -> impl IntoElement 
 
     let summary_hint = subject
         .map(|found| found.summary.clone())
-        .filter(|blur| !blur.is_empty())
+        // .filter(|blur| !blur.is_empty())
         .unwrap_or_else(|| "Attach a navigator request to hydrate field metadata.".into());
 
     v_flex()
@@ -188,35 +193,36 @@ fn inspector_column(cx: &mut App, relay: &Entity<AppState>) -> impl IntoElement 
                 .child(SharedString::from("Inspector")),
         )
         .child(
-            GroupBox::new().title(headline_method.clone()).outline().child(
-                div()
-                    .text_sm()
-                    .text_color(cx.theme().muted_foreground)
-                    .child(summary_hint.clone()),
+            GroupBox::new()
+                .title(headline_method.clone())
+                .outline()
+                .child(
+                    div()
+                        .text_sm()
+                        .text_color(cx.theme().muted_foreground)
+                        .child(summary_hint.clone()),
+                ),
+        )
+        .child(GroupBox::new().title("Targets").outline().children([
+            metadata_pair(
+                "METHOD",
+                headline_method.clone(),
+                cx.theme().muted_foreground,
+                cx.theme().foreground,
             ),
-        )
-        .child(
-            GroupBox::new().title("Targets").outline().children([
-                metadata_pair(
-                    "METHOD",
-                    headline_method.clone(),
-                    cx.theme().muted_foreground,
-                    cx.theme().foreground,
-                ),
-                metadata_pair(
-                    "URL",
-                    address.clone(),
-                    cx.theme().muted_foreground,
-                    cx.theme().foreground,
-                ),
-                metadata_pair(
-                    "ENVIRONMENT",
-                    environment.clone(),
-                    cx.theme().muted_foreground,
-                    cx.theme().muted_foreground,
-                ),
-            ]),
-        )
+            metadata_pair(
+                "URL",
+                address.clone(),
+                cx.theme().muted_foreground,
+                cx.theme().foreground,
+            ),
+            metadata_pair(
+                "ENVIRONMENT",
+                environment.clone(),
+                cx.theme().muted_foreground,
+                cx.theme().muted_foreground,
+            ),
+        ]))
 }
 
 fn metadata_pair(
@@ -236,16 +242,16 @@ fn metadata_pair(
                 .text_color(caption_colour)
                 .child(SharedString::from(caption.to_ascii_uppercase())),
         )
-        .child(
-            Label::new(value.clone())
-                .text_sm()
-                .text_color(value_colour),
-        )
+        .child(Label::new(value.clone()).text_sm().text_color(value_colour))
         .into_any_element()
 }
 
 /// Render KYOSHI-like rails around the duplex editor canvases plus bottom dock stubs.
-pub fn render_workspace(window: &mut Window, cx: &mut App, relay: Entity<AppState>) -> impl IntoElement {
+pub fn render_workspace(
+    window: &mut Window,
+    cx: &mut App,
+    relay: Entity<AppState>,
+) -> impl IntoElement {
     let snapshot = relay.read(cx).active_project.clone();
     let Some(surface) = snapshot else {
         return div()
@@ -253,7 +259,9 @@ pub fn render_workspace(window: &mut Window, cx: &mut App, relay: Entity<AppStat
             .flex()
             .items_center()
             .justify_center()
-            .child(Label::new(SharedString::from("Navigator missing — reopen onboarding.")));
+            .child(Label::new(SharedString::from(
+                "Navigator missing — reopen onboarding.",
+            )));
     };
 
     let palette = relay.clone();
@@ -265,19 +273,30 @@ pub fn render_workspace(window: &mut Window, cx: &mut App, relay: Entity<AppStat
         .text_color(cx.theme().foreground)
         .child(workspace_title_strip(cx, &surface, relay.clone()))
         .child(
-            h_flex().flex_1().min_h(px(0.)).child(navigator_sidebar(
-                surface.clone(),
-                window,
-                cx,
-                palette.clone(),
-            )).child(
-                editor_stack(window, cx, &surface, relay.clone()),
-            ).child(inspector_column(cx, &relay.clone())),
+            h_flex()
+                .flex_1()
+                .min_h(px(0.))
+                .child(navigator_sidebar(
+                    surface.clone(),
+                    window,
+                    cx,
+                    palette.clone(),
+                ))
+                .child(editor_stack(window, cx, &surface, relay.clone()))
+                .child(inspector_column(cx, &relay.clone())),
         )
-        .child(bottom_dock(cx, surface.bottom_panel_tab, command_palette.clone()))
+        .child(bottom_dock(
+            cx,
+            surface.bottom_panel_tab,
+            command_palette.clone(),
+        ))
 }
 
-fn workspace_title_strip(cx: &mut App, surface: &crate::state::ActiveProject, relay: Entity<AppState>) -> impl IntoElement {
+fn workspace_title_strip(
+    cx: &mut App,
+    surface: &crate::state::ActiveProject,
+    relay: Entity<AppState>,
+) -> impl IntoElement {
     h_flex()
         .items_center()
         .justify_between()
@@ -305,22 +324,28 @@ fn workspace_title_strip(cx: &mut App, surface: &crate::state::ActiveProject, re
             ),
         )
         .child(
-            h_flex().items_center().gap_4().justify_end().flex_wrap().child(
-                Label::new(SharedString::from(surface.project.name.clone()))
-                    .text_lg()
-                    .font_semibold(),
-            ).child(
-                Button::new("workspace-new-request-strip")
-                    .primary()
-                    .compact()
-                    .label("+ New request")
-                    .on_click({
-                        let shuttle = relay.clone();
-                        move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
-                            project_tasks::spawn_insert_skeleton_request(shuttle.clone(), app);
-                        }
-                    }),
-            ),
+            h_flex()
+                .items_center()
+                .gap_4()
+                .justify_end()
+                .flex_wrap()
+                .child(
+                    Label::new(SharedString::from(surface.project.name.clone()))
+                        .text_lg()
+                        .font_semibold(),
+                )
+                .child(
+                    Button::new("workspace-new-request-strip")
+                        .primary()
+                        .compact()
+                        .label("+ New request")
+                        .on_click({
+                            let shuttle = relay.clone();
+                            move |_event: &ClickEvent, _: &mut Window, app: &mut App| {
+                                project_tasks::spawn_insert_skeleton_request(shuttle.clone(), app);
+                            }
+                        }),
+                ),
         )
 }
 
@@ -381,19 +406,17 @@ fn navigator_sidebar(
                                 match tab {
                                     Some(0) => {
                                         let shuttle = handle.clone();
-                                        let _ignored =
-                                            shuttle.update(launcher, |canvas, ctx| {
-                                                canvas.set_sidebar_tab(SidebarTab::Requests);
-                                                ctx.notify();
-                                            });
+                                        let _ignored = shuttle.update(launcher, |canvas, ctx| {
+                                            canvas.set_sidebar_tab(SidebarTab::Requests);
+                                            ctx.notify();
+                                        });
                                     }
                                     Some(1) => {
                                         let shuttle = handle.clone();
-                                        let _ignored =
-                                            shuttle.update(launcher, |canvas, ctx| {
-                                                canvas.set_sidebar_tab(SidebarTab::Tests);
-                                                ctx.notify();
-                                            });
+                                        let _ignored = shuttle.update(launcher, |canvas, ctx| {
+                                            canvas.set_sidebar_tab(SidebarTab::Tests);
+                                            ctx.notify();
+                                        });
                                     }
                                     _ => (),
                                 }
