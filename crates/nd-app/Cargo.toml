@@ -5,21 +5,11 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-gpui = { git = "https://github.com/zed-industries/zed", package = "gpui" }
+gpui = { git = "https://github.com/zed-industries/zed" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
 gpui-component = { git = "https://github.com/longbridge/gpui-component" }
 gpui-component-assets = { git = "https://github.com/longbridge/gpui-component" }
-nd-core = { path = "../nd-core" }
-nd-constants = { path = "../nd-constants" }
-sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
-uuid = { version = "1", features = ["v4", "serde"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-serde_yaml = "0.9"
-tokio = { version = "1", features = ["full"] }
-chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1.0"
+tracing-subscriber = {version="0.3.23", features=["env-filter"]}
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-dirs = "5"
-rfd = "0.15"
+serde = "1.0.228"
