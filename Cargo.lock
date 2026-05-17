@@ -3849,7 +3849,9 @@ dependencies = [
  "gpui-component",
  "gpui-component-assets",
  "gpui_platform",
+ "nd-core",
  "serde",
+ "serde_json",
  "tracing",
  "tracing-subscriber",
 ]

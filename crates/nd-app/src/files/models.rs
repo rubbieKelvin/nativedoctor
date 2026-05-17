@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct _RequestFileItem {
-    path: PathBuf,
-    folder: Option<String>,
+    pub path: PathBuf,
+    pub folder: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -17,8 +17,8 @@ pub struct _FolderItem {
 // The structure for nativedoctor project files
 #[derive(Serialize, Deserialize)]
 pub struct ProjectFiles {
-    title: String,
-    doc: PathBuf,
-    folders: Vec<_FolderItem>,
-    requests: Vec<_RequestFileItem>,
+    pub title: String,
+    pub doc: PathBuf,
+    pub folders: Vec<_FolderItem>,
+    pub requests: Vec<_RequestFileItem>,
 }
