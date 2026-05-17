@@ -5,6 +5,7 @@ pub mod discover;
 pub mod env;
 pub mod error;
 pub mod execute;
+pub mod generate;
 pub mod model;
 pub mod rhai;
 pub mod stream;

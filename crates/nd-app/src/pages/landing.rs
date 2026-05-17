@@ -1,7 +1,7 @@
 // use std::path::PathBuf;
 
 use gpui::{
-    px, AnyElement, App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled,
+    App, ClickEvent, Entity, IntoElement, ParentElement, SharedString, Styled,
     Window,
 };
 
@@ -81,10 +81,9 @@ pub fn render_landing(
     state: Entity<AppState>,
 ) -> impl IntoElement {
     let palette = cx.theme();
-    let recent_rows = state.read(cx).recent_projects.clone();
+    let _recent_rows = state.read(cx).recent_projects.clone();
 
     let create_handle = state.clone();
-    let open_handle = state.clone();
 
     let hero = v_flex()
         .justify_center()
@@ -133,7 +132,7 @@ pub fn render_landing(
                 Button::new("landing-open-db")
                     .outline()
                     .label("Open SQLite project…")
-                    .on_click(move |_event: &ClickEvent, _: &mut Window, launcher| {
+                    .on_click(move |_event: &ClickEvent, _: &mut Window, _launcher| {
                         // let maybe_path = pick_database_path();
 
                         // let Some(selection) = maybe_path else {

@@ -52,6 +52,7 @@ impl Store {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn list_recents(&self) -> anyhow::Result<Vec<RecentProject>> {
         sqlx::query_as::<_, RecentProject>(
             "SELECT id, name, path, last_opened_at FROM recent_projects ORDER BY last_opened_at DESC",
@@ -61,6 +62,7 @@ impl Store {
         .context("failed to list recent projects")
     }
 
+    #[allow(dead_code)]
     pub async fn remove_recent(&self, path: &str) -> anyhow::Result<()> {
         sqlx::query("DELETE FROM recent_projects WHERE path = ?")
             .bind(path)
@@ -99,6 +101,7 @@ impl Store {
         Ok(project)
     }
 
+    #[allow(dead_code)]
     pub fn load_project(path: &Path) -> anyhow::Result<NativedoctorProject> {
         let yaml_path = if path.is_dir() {
             path.join(".nativedoctor")
@@ -112,6 +115,7 @@ impl Store {
         serde_yaml::from_str(&yaml).context("failed to parse .nativedoctor")
     }
 
+    #[allow(dead_code)]
     pub fn save_project(path: &Path, project: &NativedoctorProject) -> anyhow::Result<()> {
         let yaml_path = if path.is_dir() {
             path.join(".nativedoctor")

@@ -2401,7 +2401,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 2.0.18",
- "windows 0.61.3",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -4000,7 +4000,6 @@ dependencies = [
  "colored",
  "nd-constants",
  "nd-core",
- "nd-generate",
  "nd-web",
  "serde_json",
  "serde_yaml",
@@ -4024,6 +4023,7 @@ dependencies = [
  "fake",
  "nanoid",
  "nd-constants",
+ "openapiv3",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -4040,21 +4040,6 @@ dependencies = [
  "tracing",
  "uuid",
  "wiremock",
-]
-
-[[package]]
-name = "nd-generate"
-version = "0.2.1"
-dependencies = [
- "nd-constants",
- "nd-core",
- "openapiv3",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "thiserror 2.0.18",
 ]
 
 [[package]]

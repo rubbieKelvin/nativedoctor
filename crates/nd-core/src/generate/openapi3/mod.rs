@@ -4,6 +4,7 @@
 //! `src/` later; this module keeps all OpenAPI-specific parsing, mapping, and file emission.
 
 mod build;
+mod error;
 mod fs;
 mod load;
 

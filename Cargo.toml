@@ -2,7 +2,6 @@
 members = [
     "crates/nd-core",
     "crates/nd-cli",
-    "crates/nd-generate",
     "crates/nd-web",
     "crates/nd-app",
 ]
