@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{button::*, *};
+use gpui_component::*;
 
 pub struct ND;
 
@@ -23,14 +23,28 @@ pub fn setup() {
         })
         .detach();
 
-        cx.spawn(async move |cx| {
-            cx.open_window(WindowOptions::default(), |window, cx| {
-                let view = cx.new(|_| ND);
-                // This first level on the window, should be a Root.
-                cx.new(|cx| Root::new(view, window, cx))
-            })
-            .expect("Failed to open window");
-        })
-        .detach();
+        // spawn window
+        spawn_window(cx);
     });
+}
+
+pub fn window_options(cx: &App) -> WindowOptions {
+    let bounds = WindowBounds::centered(size(px(1280.), px(800.)), cx);
+    return WindowOptions {
+        window_bounds: Some(bounds),
+        ..Default::default()
+    };
+}
+
+pub fn spawn_window(cx: &mut App) {
+    let options = window_options(cx);
+
+    cx.spawn(async move |cx| {
+        cx.open_window(options, |window, cx| {
+            let view = cx.new(|_| ND);
+            cx.new(|cx| Root::new(view, window, cx))
+        })
+        .expect("Failed to open window");
+    })
+    .detach();
 }
