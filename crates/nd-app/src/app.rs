@@ -14,6 +14,7 @@ pub fn setup() {
 
     app.run(move |cx| {
         gpui_component::init(cx);
+        crate::theme::init(cx);
 
         // close app on last window close
         cx.on_window_closed(|app, _window| {
