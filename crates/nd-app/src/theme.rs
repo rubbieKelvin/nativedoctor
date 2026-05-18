@@ -3,7 +3,7 @@ use gpui_component::{Theme, ThemeRegistry};
 use std::path::PathBuf;
 
 pub fn init(cx: &mut App) {
-    let theme_name = SharedString::from("Ayu Light");
+    let theme_name = SharedString::from("Default");
     if let Err(err) = ThemeRegistry::watch_dir(
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("themes"),
         cx,

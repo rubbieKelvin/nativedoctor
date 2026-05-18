@@ -6,8 +6,13 @@ use crate::ui;
 pub struct ND;
 
 impl Render for ND {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        return ui::workspace::workspace_view();
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        return div()
+            .size_full()
+            .child(ui::workspace::workspace_view(window, cx))
+            .children(Root::render_dialog_layer(window, cx))
+            .children(Root::render_sheet_layer(window, cx))
+            .children(Root::render_notification_layer(window, cx));
     }
 }
 
