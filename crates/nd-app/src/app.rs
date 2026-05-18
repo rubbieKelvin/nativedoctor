@@ -1,11 +1,13 @@
 use gpui::*;
 use gpui_component::*;
 
+use crate::ui;
+
 pub struct ND;
 
 impl Render for ND {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        return div();
+        return ui::workspace::workspace_view();
     }
 }
 
