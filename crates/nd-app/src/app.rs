@@ -1,15 +1,15 @@
 use gpui::*;
-use gpui_component::*;
+use gpui_component::{Root, TitleBar};
 
-use crate::ui;
+use crate::ui::{components, workspace};
 
 pub struct ND {
-    workspace: Entity<ui::workspace::WorkspaceView>,
+    workspace: Entity<workspace::WorkspaceView>,
 }
 
 impl ND {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let workspace = cx.new(|cx| ui::workspace::WorkspaceView::new(window, cx));
+        let workspace = cx.new(|cx| workspace::WorkspaceView::new(window, cx));
         Self { workspace }
     }
 }
@@ -17,8 +17,11 @@ impl ND {
 impl Render for ND {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         return div()
+            .flex()
+            .flex_col()
             .size_full()
-            .child(self.workspace.clone())
+            .child(components::title_bar::render("Project name", "env", cx))
+            .child(div().flex_1().min_h_0().child(self.workspace.clone()))
             .children(Root::render_dialog_layer(window, cx))
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_notification_layer(window, cx));
@@ -52,6 +55,7 @@ pub fn window_options(cx: &App) -> WindowOptions {
     let bounds = WindowBounds::centered(size(px(1280.), px(800.)), cx);
     return WindowOptions {
         window_bounds: Some(bounds),
+        titlebar: Some(TitleBar::title_bar_options()),
         focus: true,
         ..Default::default()
     };

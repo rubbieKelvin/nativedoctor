@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{button, input, list, ActiveTheme, Icon, IconName, Sizable, Theme};
+use gpui_component::{button, input, ActiveTheme, Icon, IconName, Sizable, Theme};
 
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
