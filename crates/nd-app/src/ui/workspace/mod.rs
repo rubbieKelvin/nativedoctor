@@ -1,13 +1,5 @@
 use gpui::*;
-use gpui_component::{input, ActiveTheme, Theme};
-
-mod sidebar_lists;
-
-// TODO: implement well
-struct SidebarItem {
-    method: String,
-    label: String,
-}
+use gpui_component::{button, input, list, ActiveTheme, Icon, IconName, Sizable, Theme};
 
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
@@ -18,41 +10,56 @@ impl WorkspaceView {
         let search_input_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search resources..."));
 
-        cx.subscribe(
-            &search_input_state,
-            move |_this, _entity, ev: &input::InputEvent, cx| {
-                if matches!(ev, input::InputEvent::Change) {
-                    cx.notify();
-                }
-            },
-        )
-        .detach();
-
         return Self { search_input_state };
     }
 
     fn sidebar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
-            .w_112()
+            .w_96()
             .flex()
-            .flex_col()
             .gap_2()
+            .flex_col()
             .border_r(px(1.))
             .border_color(theme.border)
             .child(self.sidebar_searchbar(theme))
-            .child(self.sidebar_items(
-                theme,
-                vec![
-                    SidebarItem {
-                        label: "Request One".into(),
-                        method: "GET".into(),
-                    },
-                    SidebarItem {
-                        label: "Request two".into(),
-                        method: "POST".into(),
-                    },
-                ],
-            ));
+            .child(
+                self.sidebar_header(
+                    "Requests".into(),
+                    button::Button::new("add-request")
+                        .small()
+                        .icon(Icon::new(IconName::Plus).small()),
+                ),
+            )
+            .child(self.sidebar_items(theme))
+            .child(
+                self.sidebar_header(
+                    "Tests".into(),
+                    button::Button::new("add-test")
+                        .small()
+                        .icon(Icon::new(IconName::Plus).small()),
+                ),
+            );
+    }
+
+    fn sidebar_header(&mut self, title: SharedString, right: impl IntoElement) -> impl IntoElement {
+        return div()
+            .px_3()
+            .py_1()
+            .flex()
+            .flex_row()
+            .gap_2()
+            .items_center()
+            .justify_between()
+            .child(
+                div()
+                    .items_center()
+                    .flex()
+                    .flex_row()
+                    .gap_2()
+                    .child(Icon::new(IconName::Network).small())
+                    .child(title),
+            )
+            .child(right);
     }
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
@@ -63,27 +70,8 @@ impl WorkspaceView {
             .child(input::Input::new(&self.search_input_state));
     }
 
-    fn sidebar_items(&mut self, theme: &Theme, items: Vec<SidebarItem>) -> impl Element {
-        return div().p_3().gap_2().flex().flex_col().children(
-            items
-                .iter()
-                .map(|item| {
-                    div()
-                        .flex()
-                        .flex_row()
-                        .gap_2()
-                        .child(
-                            div()
-                                .bg(theme.secondary)
-                                .p_1()
-                                .rounded_md()
-                                .text_xs()
-                                .child(item.method.clone()),
-                        )
-                        .child(item.label.clone())
-                })
-                .collect::<Vec<Div>>(),
-        );
+    fn sidebar_items(&mut self, _theme: &Theme) -> impl Element {
+        return div().p_3().gap_2().flex().flex_col();
     }
 
     fn mainpanel(&mut self) -> impl IntoElement {
