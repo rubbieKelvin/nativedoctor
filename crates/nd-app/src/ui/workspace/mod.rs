@@ -1,6 +1,8 @@
 use gpui::*;
 use gpui_component::{input, ActiveTheme, Theme};
 
+mod sidebar_lists;
+
 // TODO: implement well
 struct SidebarItem {
     method: String,
@@ -37,7 +39,20 @@ impl WorkspaceView {
             .gap_2()
             .border_r(px(1.))
             .border_color(theme.border)
-            .child(self.sidebar_searchbar(theme));
+            .child(self.sidebar_searchbar(theme))
+            .child(self.sidebar_items(
+                theme,
+                vec![
+                    SidebarItem {
+                        label: "Request One".into(),
+                        method: "GET".into(),
+                    },
+                    SidebarItem {
+                        label: "Request two".into(),
+                        method: "POST".into(),
+                    },
+                ],
+            ));
     }
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
@@ -48,11 +63,25 @@ impl WorkspaceView {
             .child(input::Input::new(&self.search_input_state));
     }
 
-    fn sidebar_items(&mut self, items: Vec<SidebarItem>) -> impl Element {
+    fn sidebar_items(&mut self, theme: &Theme, items: Vec<SidebarItem>) -> impl Element {
         return div().p_3().gap_2().flex().flex_col().children(
             items
                 .iter()
-                .map(|item| div().child(item.label.clone()))
+                .map(|item| {
+                    div()
+                        .flex()
+                        .flex_row()
+                        .gap_2()
+                        .child(
+                            div()
+                                .bg(theme.secondary)
+                                .p_1()
+                                .rounded_md()
+                                .text_xs()
+                                .child(item.method.clone()),
+                        )
+                        .child(item.label.clone())
+                })
                 .collect::<Vec<Div>>(),
         );
     }
