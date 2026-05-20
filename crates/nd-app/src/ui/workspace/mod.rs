@@ -2,10 +2,9 @@ mod sidebar_request_lists;
 
 use gpui::*;
 use gpui_component::{
-    button::{self, ButtonVariants},
-    h_flex, input,
+    button, input,
     tree::{tree, TreeState},
-    ActiveTheme, Icon, IconName, Sizable, StyledExt, Theme,
+    ActiveTheme, Icon, IconName, Theme,
 };
 
 pub struct WorkspaceView {
@@ -16,7 +15,7 @@ pub struct WorkspaceView {
 impl WorkspaceView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let search_input_state =
-            cx.new(|cx| input::InputState::new(window, cx).placeholder("Search resources..."));
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_request_lists::sample_tree_items()));
@@ -36,15 +35,27 @@ impl WorkspaceView {
             .border_r(px(1.))
             .border_color(theme.border)
             .child(self.sidebar_searchbar(theme))
+            .child(
+                div()
+                    .px_3()
+                    .py_2()
+                    .child("Requests")
+                    .text_sm()
+                    .text_color(theme.muted_foreground),
+            )
             .child(self.sidebar_request_tree(cx));
     }
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
             .p_3()
+            .gap_2()
+            .flex()
+            .flex_row()
             .border_b(px(1.))
             .border_color(theme.border)
-            .child(input::Input::new(&self.search_input_state));
+            .child(input::Input::new(&self.search_input_state).prefix(Icon::new(IconName::Search)))
+            .child(button::Button::new("tests").icon(Icon::new(IconName::Bot)));
     }
 
     fn sidebar_request_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
