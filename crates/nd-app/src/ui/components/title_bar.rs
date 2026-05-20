@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{h_flex, ActiveTheme, Icon, IconName, Sizable, TitleBar};
+use gpui_component::{ActiveTheme, Icon, IconName, Sizable, TitleBar};
 
 pub fn render(
     project_name: impl Into<SharedString>,
