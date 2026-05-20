@@ -7,9 +7,12 @@ use gpui_component::{
     ActiveTheme, Icon, IconName, Theme,
 };
 
+use crate::ui::components::request::RequestPanel;
+
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
     requests_tree_state: Entity<TreeState>,
+    _rp: Entity<RequestPanel>,
 }
 
 impl WorkspaceView {
@@ -23,6 +26,7 @@ impl WorkspaceView {
         Self {
             search_input_state,
             requests_tree_state,
+            _rp: cx.new(|cx| RequestPanel::new(window, cx)),
         }
     }
 
@@ -66,13 +70,13 @@ impl WorkspaceView {
         .min_h_0();
     }
 
-    fn mainpanel(&mut self) -> impl IntoElement {
-        return div().flex_1().p_4().child("Main panel");
+    fn mainpanel(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        return div().flex_1().p_4().child(self._rp.clone());
     }
 }
 
 impl Render for WorkspaceView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
 
         return div()
@@ -82,6 +86,6 @@ impl Render for WorkspaceView {
             .bg(theme.background)
             .text_color(theme.foreground)
             .child(self.sidebar(&theme, cx))
-            .child(self.mainpanel());
+            .child(self.mainpanel(window, cx));
     }
 }
