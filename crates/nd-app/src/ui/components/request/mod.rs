@@ -12,11 +12,14 @@ use gpui_component::{
     ActiveTheme, IndexPath, StyledExt, Theme,
 };
 
+use crate::ui::components::kvinput;
+
 pub struct RequestPanel {
     url_input_state: Entity<input::InputState>,
     body_text_state: Entity<input::InputState>,
     docs_input_state: Entity<input::InputState>,
     method_state: Entity<select::SelectState<Vec<SharedString>>>,
+    param_input_state: Entity<kvinput::KvInputState>,
     active_tab: usize,
     auth_type: usize,
     body_type: usize,
@@ -49,6 +52,7 @@ impl RequestPanel {
                 .placeholder("Documentation for this request")
                 .multi_line(true)
         });
+        let param_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
 
         let method_state = cx.new(|cx| {
             SelectState::new(
@@ -71,6 +75,7 @@ impl RequestPanel {
             url_input_state,
             body_text_state,
             docs_input_state,
+            param_input_state,
             method_state,
             active_tab: 0,
             auth_type: 0,
@@ -188,7 +193,7 @@ impl RequestPanel {
     fn render_tab_content(&mut self, theme: &Theme, cx: &mut Context<Self>) -> AnyElement {
         match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
-            1 => request_tab_params::render(theme).into_any_element(),
+            1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
             2 => request_tab_auth::render(self.auth_type, theme, cx).into_any_element(),
             3 => request_tab_headers::render(theme).into_any_element(),
             4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
@@ -312,7 +317,7 @@ impl RequestPanel {
 }
 
 impl Render for RequestPanel {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
 
         return div()
