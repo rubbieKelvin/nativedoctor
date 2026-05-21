@@ -1,9 +1,9 @@
-mod tab_auth;
-mod tab_body;
-mod tab_docs;
-mod tab_headers;
-mod tab_params;
-mod tab_settings;
+mod request_tab_auth;
+mod request_tab_body;
+mod request_tab_docs;
+mod request_tab_headers;
+mod request_tab_params;
+mod request_tab_settings;
 
 use gpui::*;
 use gpui_component::{
@@ -13,9 +13,9 @@ use gpui_component::{
 };
 
 pub struct RequestPanel {
-    method: String,
     url_input_state: Entity<input::InputState>,
     body_text_state: Entity<input::InputState>,
+    docs_input_state: Entity<input::InputState>,
     method_state: Entity<select::SelectState<Vec<SharedString>>>,
     active_tab: usize,
     auth_type: usize,
@@ -44,6 +44,12 @@ impl RequestPanel {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter request URL..."));
         let body_text_state = cx
             .new(|cx| input::InputState::new(window, cx).placeholder("{\n  \"key\": \"value\"\n}"));
+        let docs_input_state = cx.new(|cx| {
+            input::InputState::new(window, cx)
+                .placeholder("Documentation for this request")
+                .multi_line(true)
+        });
+
         let method_state = cx.new(|cx| {
             SelectState::new(
                 vec![
@@ -62,9 +68,9 @@ impl RequestPanel {
         });
 
         return Self {
-            method: "GET".to_string(),
             url_input_state,
             body_text_state,
+            docs_input_state,
             method_state,
             active_tab: 0,
             auth_type: 0,
@@ -143,10 +149,8 @@ impl RequestPanel {
             .px_4()
             .py_1p5()
             .bg(theme.blue)
-            .text_color(white())
             .rounded(px(4.))
             .text_sm()
-            .font_semibold()
             .cursor_pointer()
             .child("Send");
     }
@@ -157,7 +161,7 @@ impl RequestPanel {
             .flex_col()
             .flex_1()
             .min_w_0()
-            .border_r(px(1.))
+            .border_b(px(1.))
             .border_color(theme.border)
             .child(self.render_tab_bar(theme, cx))
             .child(self.render_tab_content(theme, cx));
@@ -183,13 +187,13 @@ impl RequestPanel {
 
     fn render_tab_content(&mut self, theme: &Theme, cx: &mut Context<Self>) -> AnyElement {
         match self.active_tab {
-            0 => tab_docs::render(theme).into_any_element(),
-            1 => tab_params::render(theme).into_any_element(),
-            2 => tab_auth::render(self.auth_type, theme, cx).into_any_element(),
-            3 => tab_headers::render(theme).into_any_element(),
-            4 => tab_body::render(self.body_type, &self.body_text_state, theme, cx)
+            0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
+            1 => request_tab_params::render(theme).into_any_element(),
+            2 => request_tab_auth::render(self.auth_type, theme, cx).into_any_element(),
+            3 => request_tab_headers::render(theme).into_any_element(),
+            4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
                 .into_any_element(),
-            5 => tab_settings::render(
+            5 => request_tab_settings::render(
                 self.ssl_verify,
                 self.follow_redirects,
                 self.http_version,
