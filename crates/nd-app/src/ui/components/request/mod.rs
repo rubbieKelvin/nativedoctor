@@ -6,12 +6,17 @@ mod tab_params;
 mod tab_settings;
 
 use gpui::*;
-use gpui_component::{input, ActiveTheme, StyledExt, Theme};
+use gpui_component::{
+    input,
+    select::{self, SelectState},
+    ActiveTheme, IndexPath, StyledExt, Theme,
+};
 
 pub struct RequestPanel {
     method: String,
     url_input_state: Entity<input::InputState>,
     body_text_state: Entity<input::InputState>,
+    method_state: Entity<select::SelectState<Vec<SharedString>>>,
     active_tab: usize,
     auth_type: usize,
     body_type: usize,
@@ -20,18 +25,18 @@ pub struct RequestPanel {
     http_version: usize,
 }
 
-fn method_colors(method: &str, theme: &Theme) -> (Hsla, Hsla) {
-    match method {
-        "GET" => (theme.blue.opacity(0.2), theme.blue),
-        "POST" => (theme.yellow.opacity(0.2), theme.yellow),
-        "PUT" => (theme.cyan.opacity(0.2), theme.cyan),
-        "PATCH" => (theme.magenta.opacity(0.2), theme.magenta),
-        "DELETE" => (theme.red.opacity(0.2), theme.red),
-        "HEAD" => (theme.muted.opacity(0.2), theme.muted_foreground),
-        "OPTIONS" => (theme.muted.opacity(0.2), theme.muted_foreground),
-        _ => (theme.muted.opacity(0.25), theme.muted_foreground),
-    }
-}
+// fn method_colors(method: &str, theme: &Theme) -> (Hsla, Hsla) {
+//     match method {
+//         "GET" => (theme.blue.opacity(0.2), theme.blue),
+//         "POST" => (theme.yellow.opacity(0.2), theme.yellow),
+//         "PUT" => (theme.cyan.opacity(0.2), theme.cyan),
+//         "PATCH" => (theme.magenta.opacity(0.2), theme.magenta),
+//         "DELETE" => (theme.red.opacity(0.2), theme.red),
+//         "HEAD" => (theme.muted.opacity(0.2), theme.muted_foreground),
+//         "OPTIONS" => (theme.muted.opacity(0.2), theme.muted_foreground),
+//         _ => (theme.muted.opacity(0.25), theme.muted_foreground),
+//     }
+// }
 
 impl RequestPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
@@ -39,48 +44,35 @@ impl RequestPanel {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter request URL..."));
         let body_text_state = cx
             .new(|cx| input::InputState::new(window, cx).placeholder("{\n  \"key\": \"value\"\n}"));
+        let method_state = cx.new(|cx| {
+            SelectState::new(
+                vec![
+                    SharedString::new("GET"),
+                    SharedString::new("POST"),
+                    SharedString::new("PUT"),
+                    SharedString::new("PATCH"),
+                    SharedString::new("DELETE"),
+                    SharedString::new("HEAD"),
+                    SharedString::new("OPTIONS"),
+                ],
+                Some(IndexPath::default()),
+                window,
+                cx,
+            )
+        });
 
-        Self {
+        return Self {
             method: "GET".to_string(),
             url_input_state,
             body_text_state,
+            method_state,
             active_tab: 0,
             auth_type: 0,
             body_type: 1,
             ssl_verify: true,
             follow_redirects: true,
             http_version: 0,
-        }
-    }
-
-    fn render_method_button(
-        method: &str,
-        selected: &str,
-        theme: &Theme,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let is_selected = method == selected;
-        let (bg, fg) = method_colors(method, theme);
-        let bg = if is_selected { fg } else { bg };
-        let fg = if is_selected { white() } else { fg };
-        let m = method.to_string();
-        let m_clone = m.clone();
-        let id = format!("method-{}", method.to_lowercase());
-
-        return div()
-            .id(ElementId::Name(id.into()))
-            .px_2()
-            .py_1()
-            .rounded(px(4.))
-            .bg(bg)
-            .text_xs()
-            .font_semibold()
-            .text_color(fg)
-            .cursor_pointer()
-            .on_click(cx.listener(move |this, _event, _window, _cx| {
-                this.method = m_clone.clone();
-            }))
-            .child(m);
+        };
     }
 
     fn render_tab_button(
@@ -119,9 +111,7 @@ impl RequestPanel {
             .child(label);
     }
 
-    fn render_top_bar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
-        let selected = self.method.clone();
-
+    fn render_top_bar(&mut self, theme: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {
         return div()
             .flex()
             .flex_row()
@@ -135,13 +125,7 @@ impl RequestPanel {
                     .flex()
                     .flex_row()
                     .gap_0p5()
-                    .child(Self::render_method_button("GET", &selected, theme, cx))
-                    .child(Self::render_method_button("POST", &selected, theme, cx))
-                    .child(Self::render_method_button("PUT", &selected, theme, cx))
-                    .child(Self::render_method_button("PATCH", &selected, theme, cx))
-                    .child(Self::render_method_button("DELETE", &selected, theme, cx))
-                    .child(Self::render_method_button("HEAD", &selected, theme, cx))
-                    .child(Self::render_method_button("OPTIONS", &selected, theme, cx)),
+                    .child(select::Select::new(&self.method_state).min_w(px(100.))),
             )
             .child(
                 div()

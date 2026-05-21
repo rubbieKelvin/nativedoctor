@@ -71,7 +71,7 @@ impl WorkspaceView {
     }
 
     fn mainpanel(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        return div().flex_1().p_4().child(self._rp.clone());
+        return div().flex_1().child(self._rp.clone());
     }
 }
 
