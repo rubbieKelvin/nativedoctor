@@ -117,7 +117,9 @@ impl RequestPanel {
             .flex_row()
             .items_center()
             .gap_2()
-            .p_3()
+            .justify_center()
+            .px_3()
+            .h_12()
             .border_b(px(1.))
             .border_color(theme.border)
             .child(
@@ -319,7 +321,7 @@ impl Render for RequestPanel {
             .child(
                 div()
                     .flex()
-                    .flex_row()
+                    .flex_col()
                     .flex_1()
                     .min_h_0()
                     .child(self.render_request_panel(&theme, cx))

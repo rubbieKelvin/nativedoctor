@@ -14,8 +14,8 @@ pub fn render(
         .flex_col()
         .size_full()
         .gap_1()
-        .child(body_type_bar(body_type, theme, cx))
-        .child(body_editor(body_type, body_text_state, theme));
+        .child(body_type_bar(body_type, theme, cx));
+    // .child(body_editor(body_type, body_text_state, theme));
 }
 
 fn body_type_bar(

@@ -10,7 +10,7 @@ pub struct ND {
 impl ND {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let workspace = cx.new(|cx| workspace::WorkspaceView::new(window, cx));
-        Self { workspace }
+        return Self { workspace };
     }
 }
 

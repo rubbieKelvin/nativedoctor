@@ -52,10 +52,13 @@ impl WorkspaceView {
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
-            .p_3()
+            .h_12()
+            .px_3()
             .gap_2()
             .flex()
             .flex_row()
+            .items_center()
+            .justify_center()
             .border_b(px(1.))
             .border_color(theme.border)
             .child(input::Input::new(&self.search_input_state).prefix(Icon::new(IconName::Search)))
