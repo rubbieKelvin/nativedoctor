@@ -23,6 +23,7 @@ pub struct KvRowState {
 pub enum KvRowEvent {
     KeyChanged(SharedString),
     Blur,
+    PressEnter,
 }
 
 impl EventEmitter<KvRowEvent> for KvRowState {}
@@ -66,6 +67,9 @@ impl KvRowState {
                 InputEvent::Blur => {
                     cx.emit(KvRowEvent::Blur);
                 }
+                InputEvent::PressEnter { .. } => {
+                    cx.emit(KvRowEvent::PressEnter);
+                }
                 _ => {}
             },
         );
@@ -82,6 +86,9 @@ impl KvRowState {
             |_this, _state, event: &InputEvent, _window, cx| match event {
                 InputEvent::Blur => {
                     cx.emit(KvRowEvent::Blur);
+                }
+                InputEvent::PressEnter { .. } => {
+                    cx.emit(KvRowEvent::PressEnter);
                 }
                 _ => {}
             },

@@ -187,7 +187,7 @@ impl RequestPanel {
         match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
-            2 => request_tab_auth::render(self.auth_type, theme, cx).into_any_element(),
+            2 => request_tab_auth::render(theme, cx).into_any_element(),
             3 => request_tab_headers::render(theme).into_any_element(),
             4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
                 .into_any_element(),

@@ -79,7 +79,8 @@ impl KvInputState {
         description: &str,
     ) {
         let row_state = Self::create_row_entity(cx, window, key, value, description);
-        let subscription = Self::create_regular_row_subscription(&row_state, cx, window);
+        let subscription =
+            Self::create_regular_row_subscription(&row_state, &self.empty_row, cx, window);
         self.items.push((row_state, subscription));
     }
 
@@ -108,17 +109,23 @@ impl KvInputState {
 
     fn create_regular_row_subscription(
         row_state: &Entity<row::KvRowState>,
+        empty_row: &Entity<row::KvRowState>,
         cx: &mut Context<Self>,
         window: &mut Window,
     ) -> Subscription {
+        let empty_row = empty_row.clone();
+
         return cx.subscribe_in(
             row_state,
             window,
-            |this, state, event, _window, cx| match event {
+            move |this, state, event, window, cx| match event {
                 row::KvRowEvent::Blur => {
                     if Self::is_row_empty(state, cx) {
                         this.items.retain(|(entity, _)| entity != state);
                     }
+                }
+                row::KvRowEvent::PressEnter => {
+                    empty_row.update(cx, |row, cx| row.focus(cx, window));
                 }
                 _ => {}
             },
