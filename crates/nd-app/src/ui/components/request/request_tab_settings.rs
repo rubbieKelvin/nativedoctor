@@ -2,11 +2,14 @@ use gpui::*;
 use gpui_component::{StyledExt, Theme};
 
 use super::RequestPanel;
+use crate::ui::components::number_input;
 
 pub fn render(
     ssl_verify: bool,
     follow_redirects: bool,
     http_version: usize,
+    timeout_state: &Entity<number_input::NumberInputState>,
+    max_redirects_state: &Entity<number_input::NumberInputState>,
     theme: &Theme,
     cx: &mut Context<RequestPanel>,
 ) -> impl IntoElement {
@@ -22,16 +25,7 @@ pub fn render(
         ))
         .child(settings_row(
             "Timeout (seconds)",
-            div()
-                .px_2()
-                .py_1()
-                .rounded(px(4.))
-                .bg(theme.muted.opacity(0.05))
-                .border(px(1.))
-                .border_color(theme.border)
-                .text_sm()
-                .text_color(theme.foreground)
-                .child("30"),
+            number_input::NumberInput::new("timeout", timeout_state, theme),
             theme,
         ))
         .child(settings_divider(theme))
@@ -54,16 +48,7 @@ pub fn render(
         ))
         .child(settings_row(
             "Max redirects",
-            div()
-                .px_2()
-                .py_1()
-                .rounded(px(4.))
-                .bg(theme.muted.opacity(0.05))
-                .border(px(1.))
-                .border_color(theme.border)
-                .text_sm()
-                .text_color(theme.foreground)
-                .child("10"),
+            number_input::NumberInput::new("max-redirects", max_redirects_state, theme),
             theme,
         ))
         .child(div().flex_1().min_h_0());
@@ -79,12 +64,16 @@ fn settings_title(label: &str, theme: &Theme) -> impl IntoElement {
         .pt_2()
         .pb_1()
         .text_xs()
-        .font_semibold()
+        .font_bold()
         .text_color(theme.muted_foreground)
         .child(label.to_string());
 }
 
-fn settings_row(label: &str, control: impl IntoElement, theme: &Theme) -> impl IntoElement {
+fn settings_row(
+    label: &str,
+    control: impl IntoElement,
+    theme: &Theme,
+) -> impl IntoElement {
     return div()
         .px_4()
         .flex()

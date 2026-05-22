@@ -7,13 +7,13 @@ mod request_tab_settings;
 
 use gpui::*;
 use gpui_component::{
-    input,
+    button, input,
     resizable::{resizable_panel, v_resizable},
     select::{self, SelectState},
-    ActiveTheme, IndexPath, StyledExt, Theme,
+    ActiveTheme, IconName, IndexPath, StyledExt, Theme,
 };
 
-use crate::ui::components::kvinput;
+use crate::ui::components::{kvinput, number_input};
 
 pub struct RequestPanel {
     url_input_state: Entity<input::InputState>,
@@ -37,6 +37,8 @@ pub struct RequestPanel {
     ssl_verify: bool,
     follow_redirects: bool,
     http_version: usize,
+    timeout_state: Entity<number_input::NumberInputState>,
+    max_redirects_state: Entity<number_input::NumberInputState>,
 }
 
 impl RequestPanel {
@@ -93,6 +95,9 @@ impl RequestPanel {
         let api_key_value_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Key value"));
 
+        let timeout_state = cx.new(|_cx| number_input::NumberInputState::new(30, 1, 300));
+        let max_redirects_state = cx.new(|_cx| number_input::NumberInputState::new(10, 0, 50));
+
         return Self {
             url_input_state,
             body_text_state,
@@ -115,6 +120,8 @@ impl RequestPanel {
             ssl_verify: true,
             follow_redirects: true,
             http_version: 0,
+            timeout_state,
+            max_redirects_state,
         };
     }
 
@@ -180,19 +187,7 @@ impl RequestPanel {
                     .flex_1()
                     .child(input::Input::new(&self.url_input_state)),
             )
-            .child(self.render_send_button(theme));
-    }
-
-    fn render_send_button(&self, theme: &Theme) -> impl IntoElement {
-        return div()
-            .id("send-button")
-            .px_4()
-            .py_1p5()
-            .bg(theme.accent)
-            .rounded(px(4.))
-            .text_sm()
-            .cursor_pointer()
-            .child("Send");
+            .child(button::Button::new("send-request-btn").label("Send"));
     }
 
     fn render_request_panel(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
@@ -254,6 +249,8 @@ impl RequestPanel {
                 self.ssl_verify,
                 self.follow_redirects,
                 self.http_version,
+                &self.timeout_state,
+                &self.max_redirects_state,
                 theme,
                 cx,
             )
