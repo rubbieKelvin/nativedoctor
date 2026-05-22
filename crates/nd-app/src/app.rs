@@ -1,32 +1,7 @@
 use gpui::*;
 use gpui_component::{Root, TitleBar};
 
-use crate::ui::{components, workspace};
-
-pub struct ND {
-    workspace: Entity<workspace::WorkspaceView>,
-}
-
-impl ND {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let workspace = cx.new(|cx| workspace::WorkspaceView::new(window, cx));
-        return Self { workspace };
-    }
-}
-
-impl Render for ND {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        return div()
-            .flex()
-            .flex_col()
-            .size_full()
-            .child(components::title_bar::render("Project name", "env", cx))
-            .child(div().flex_1().min_h_0().child(self.workspace.clone()))
-            .children(Root::render_dialog_layer(window, cx))
-            .children(Root::render_sheet_layer(window, cx))
-            .children(Root::render_notification_layer(window, cx));
-    }
-}
+use crate::windows::workspace;
 
 pub fn setup() {
     let app = gpui_platform::application().with_assets(gpui_component_assets::Assets);
@@ -47,7 +22,7 @@ pub fn setup() {
         .detach();
 
         // spawn window
-        spawn_window(cx);
+        spawn_workspace_window(cx);
     });
 }
 
@@ -61,12 +36,12 @@ pub fn window_options(cx: &App) -> WindowOptions {
     };
 }
 
-pub fn spawn_window(cx: &mut App) {
+pub fn spawn_workspace_window(cx: &mut App) {
     let options = window_options(cx);
 
     cx.spawn(async move |cx| {
         cx.open_window(options, |window, cx| {
-            let view = cx.new(|cx| ND::new(window, cx));
+            let view = cx.new(|cx| workspace::WorkspaceView::new(window, cx));
             cx.new(|cx| Root::new(view, window, cx))
         })
         .expect("Failed to open window");

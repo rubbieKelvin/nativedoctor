@@ -3,6 +3,7 @@ mod cli;
 mod files;
 mod theme;
 mod ui;
+mod windows;
 
 use std::path::PathBuf;
 
@@ -22,9 +23,8 @@ fn main() {
     match cli.command {
         // create a project with "init"
         Some(cli::Command::Init { name, path }) => {
-            let root = path.unwrap_or_else(|| {
-                std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-            });
+            let root = path
+                .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
             match files::create_project(root, name) {
                 Ok(()) => tracing::info!("Project created successfully"),

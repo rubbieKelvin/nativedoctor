@@ -9,7 +9,10 @@ use gpui_component::{
     ActiveTheme, Icon, IconName, Selectable, Sizable, Theme,
 };
 
-use crate::ui::components::request::RequestPanel;
+use crate::{
+    ui::components::{self, request::RequestPanel},
+    windows::app_wrapper,
+};
 
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
@@ -132,19 +135,25 @@ impl Render for WorkspaceView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
 
-        return div()
-            .size_full()
-            .bg(theme.background)
-            .text_color(theme.foreground)
+        return app_wrapper::<Self>(window, cx)
+            .child(components::title_bar::render("Project name", "env", cx))
             .child(
-                h_resizable("sidebar-workspace")
-                    .child(
-                        resizable_panel()
-                            .size(px(384.))
-                            .size_range(px(200.)..px(600.))
-                            .child(self.sidebar(&theme, cx)),
-                    )
-                    .child(resizable_panel().child(self.mainpanel(window, cx))),
+                div().flex_1().min_h_0().child(
+                    div()
+                        .size_full()
+                        .bg(theme.background)
+                        .text_color(theme.foreground)
+                        .child(
+                            h_resizable("sidebar-workspace")
+                                .child(
+                                    resizable_panel()
+                                        .size(px(384.))
+                                        .size_range(px(200.)..px(600.))
+                                        .child(self.sidebar(&theme, cx)),
+                                )
+                                .child(resizable_panel().child(self.mainpanel(window, cx))),
+                        ),
+                ),
             );
     }
 }
