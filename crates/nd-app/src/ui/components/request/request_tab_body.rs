@@ -5,7 +5,7 @@ use super::RequestPanel;
 
 pub fn render(
     body_type: usize,
-    body_text_state: &Entity<input::InputState>,
+    _body_text_state: &Entity<input::InputState>,
     theme: &Theme,
     cx: &mut Context<RequestPanel>,
 ) -> impl IntoElement {
@@ -72,50 +72,4 @@ fn body_type_option(
             this.body_type = index;
         }))
         .child(label);
-}
-
-fn body_editor(
-    body_type: usize,
-    body_text_state: &Entity<input::InputState>,
-    theme: &Theme,
-) -> impl IntoElement {
-    if body_type == 0 {
-        return div()
-            .flex_1()
-            .min_h_0()
-            .flex()
-            .items_center()
-            .justify_center()
-            .text_sm()
-            .text_color(theme.muted_foreground)
-            .child("This request does not have a body");
-    }
-
-    return div()
-        .flex()
-        .flex_col()
-        .flex_1()
-        .min_h_0()
-        .p_4()
-        .child(
-            div()
-                .text_xs()
-                .text_color(theme.muted_foreground)
-                .pb_2()
-                .child(match body_type {
-                    1 => "JSON",
-                    2 => "Form Data",
-                    3 => "Raw",
-                    _ => "",
-                }),
-        )
-        .child(
-            div()
-                .flex_1()
-                .min_h_0()
-                .rounded(px(4.))
-                .border(px(1.))
-                .border_color(theme.border)
-                .child(input::Input::new(body_text_state)),
-        );
 }

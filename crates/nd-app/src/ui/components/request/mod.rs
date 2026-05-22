@@ -47,10 +47,14 @@ impl RequestPanel {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter request URL..."));
         let body_text_state = cx
             .new(|cx| input::InputState::new(window, cx).placeholder("{\n  \"key\": \"value\"\n}"));
+
         let docs_input_state = cx.new(|cx| {
             input::InputState::new(window, cx)
                 .placeholder("Documentation for this request")
                 .multi_line(true)
+                .soft_wrap(true)
+                .code_editor("markdown")
+                .line_number(false)
         });
         let param_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
 
@@ -94,16 +98,19 @@ impl RequestPanel {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let is_active = index == active_tab;
+
         let fg = if is_active {
             theme.foreground
         } else {
             theme.muted_foreground
         };
+
         let border_color = if is_active {
             theme.blue
         } else {
             hsla(0., 0., 0., 0.)
         };
+
         let label = label.to_string();
         let id = format!("tab-{}", label.to_lowercase());
 
@@ -317,7 +324,7 @@ impl RequestPanel {
 }
 
 impl Render for RequestPanel {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
 
         return div()
