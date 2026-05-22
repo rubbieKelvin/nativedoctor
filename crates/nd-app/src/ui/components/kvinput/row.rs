@@ -7,14 +7,14 @@ use gpui_component::{
 
 #[derive(Debug)]
 pub struct KvRowState {
-    _disabled: bool,
+    _is_dummy_row: bool,
     pub enabled: Entity<bool>,
     pub key: Entity<InputState>,
     pub value: Entity<InputState>,
     #[allow(unused)]
     is_secret: bool,
     pub description: Entity<InputState>,
-    // sub
+    /// subscriptions kept alive for the lifetime of this row.
     #[allow(unused)]
     subscriptions: Vec<Subscription>,
 }
@@ -34,47 +34,13 @@ impl KvRowState {
         let description = cx.new(|cx| InputState::new(window, cx).placeholder("Description"));
 
         let subscriptions = vec![
-            // key input subscriptions
-            cx.subscribe_in(
-                &key,
-                window,
-                |_this, state, event: &InputEvent, _window, cx| match event {
-                    InputEvent::Change => {
-                        let content = state.read(cx).value();
-                        cx.emit(KvRowEvent::KeyChanged(content));
-                    }
-                    InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur);
-                    }
-                    _ => {}
-                },
-            ),
-            // value input subscriptin
-            cx.subscribe_in(
-                &value,
-                window,
-                |_this, _state, event: &InputEvent, _window, cx| match event {
-                    InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur);
-                    }
-                    _ => {}
-                },
-            ),
-            // description sub
-            cx.subscribe_in(
-                &value,
-                window,
-                |_this, _state, event: &InputEvent, _window, cx| match event {
-                    InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur);
-                    }
-                    _ => {}
-                },
-            ),
+            Self::subscribe_to_key_input(&key, cx, window),
+            Self::subscribe_to_blur(&value, cx, window),
+            Self::subscribe_to_blur(&description, cx, window),
         ];
 
         return Self {
-            _disabled: false,
+            _is_dummy_row: false,
             enabled: cx.new(|_cx| false),
             key,
             value,
@@ -84,51 +50,69 @@ impl KvRowState {
         };
     }
 
-    pub fn disabled(mut self) -> Self {
-        self._disabled = true;
-        return self;
+    fn subscribe_to_key_input(
+        key: &Entity<InputState>,
+        cx: &mut Context<Self>,
+        window: &mut Window,
+    ) -> Subscription {
+        return cx.subscribe_in(
+            key,
+            window,
+            |_this, state, event: &InputEvent, _window, cx| match event {
+                InputEvent::Change => {
+                    let content = state.read(cx).value();
+                    cx.emit(KvRowEvent::KeyChanged(content));
+                }
+                InputEvent::Blur => {
+                    cx.emit(KvRowEvent::Blur);
+                }
+                _ => {}
+            },
+        );
     }
 
-    pub fn with_key(
+    fn subscribe_to_blur(
+        input: &Entity<InputState>,
+        cx: &mut Context<Self>,
+        window: &mut Window,
+    ) -> Subscription {
+        return cx.subscribe_in(
+            input,
+            window,
+            |_this, _state, event: &InputEvent, _window, cx| match event {
+                InputEvent::Blur => {
+                    cx.emit(KvRowEvent::Blur);
+                }
+                _ => {}
+            },
+        );
+    }
+
+    pub fn as_dummy(mut self) -> Self {
+        self._is_dummy_row = true;
+        self
+    }
+
+    pub fn with_defaults(
         self,
         cx: &mut Context<Self>,
         window: &mut Window,
+        key: SharedString,
         value: SharedString,
+        description: SharedString,
     ) -> Self {
-        self.key.update(cx, |this, cx| {
-            this.set_value(value, window, cx);
-        });
+        self.key
+            .update(cx, |this, cx| this.set_value(key, window, cx));
+        self.value
+            .update(cx, |this, cx| this.set_value(value, window, cx));
+        self.description
+            .update(cx, |this, cx| this.set_value(description, window, cx));
         return self;
     }
 
-    pub fn with_value(
-        self,
-        cx: &mut Context<Self>,
-        window: &mut Window,
-        value: SharedString,
-    ) -> Self {
-        self.value.update(cx, |this, cx| {
-            this.set_value(value, window, cx);
-        });
-        return self;
-    }
-
-    pub fn with_description(
-        self,
-        cx: &mut Context<Self>,
-        window: &mut Window,
-        value: SharedString,
-    ) -> Self {
-        self.description.update(cx, |this, cx| {
-            this.set_value(value, window, cx);
-        });
-        return self;
-    }
-
+    // Put focus on the key input
     pub fn focus(&mut self, cx: &mut Context<Self>, window: &mut Window) {
-        self.key.update(cx, |this, cx| {
-            this.focus(window, cx);
-        });
+        self.key.update(cx, |this, cx| this.focus(window, cx));
     }
 }
 
@@ -143,49 +127,45 @@ impl KvRow {
             state: state.clone(),
         };
     }
+
+    fn render_checkbox(inner_state: &KvRowState, cx: &App) -> impl IntoElement {
+        return Checkbox::new(ElementId::Name("kv-row-enabled".into()))
+            .checked(*inner_state.enabled.read(cx))
+            .disabled(inner_state._is_dummy_row)
+            .pr_2()
+            .on_click({
+                let enabled = inner_state.enabled.clone();
+                move |checked, _, cx| {
+                    enabled.write(cx, *checked);
+                }
+            });
+    }
+
+    fn render_input(input: &Entity<InputState>, border_color: Hsla) -> Div {
+        return div().size_full().child(
+            Input::new(input)
+                .appearance(false)
+                .border_color(border_color)
+                .border_l(px(1.)),
+        );
+    }
 }
 
 impl RenderOnce for KvRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let inner_state = self.state.read(cx);
-        let theme = cx.theme();
+        let border_color = cx.theme().border;
 
         return div()
             .flex()
             .flex_row()
             .px_2()
             .border_b(px(1.))
-            .border_color(theme.border)
+            .border_color(border_color)
             .items_center()
-            .child(
-                Checkbox::new(ElementId::Name("kv-row-enabled".into()))
-                    .checked(*inner_state.enabled.read(cx))
-                    .disabled(inner_state._disabled)
-                    .pr_2()
-                    .on_click({
-                        let enabled = inner_state.enabled.clone();
-                        move |checked, _, cx| {
-                            enabled.write(cx, *checked);
-                        }
-                    }),
-            )
-            .child(
-                Input::new(&inner_state.key)
-                    .appearance(false)
-                    .border_color(theme.border)
-                    .border_l(px(1.)),
-            )
-            .child(
-                Input::new(&inner_state.value)
-                    .appearance(false)
-                    .border_color(theme.border)
-                    .border_l(px(1.)),
-            )
-            .child(
-                Input::new(&inner_state.description)
-                    .appearance(false)
-                    .border_color(theme.border)
-                    .border_l(px(1.)),
-            );
+            .child(Self::render_checkbox(&inner_state, cx))
+            .child(Self::render_input(&inner_state.key, border_color))
+            .child(Self::render_input(&inner_state.value, border_color))
+            .child(Self::render_input(&inner_state.description, border_color));
     }
 }
