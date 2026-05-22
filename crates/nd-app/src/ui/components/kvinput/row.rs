@@ -4,7 +4,6 @@ use gpui_component::{
     input::{Input, InputEvent, InputState},
     ActiveTheme, Disableable,
 };
-use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct KvRowState {
@@ -159,15 +158,14 @@ impl RenderOnce for KvRow {
             .border_color(theme.border)
             .items_center()
             .child(
-                Checkbox::new(ElementId::Uuid(Uuid::new_v4()))
+                Checkbox::new(ElementId::Name("kv-row-enabled".into()))
                     .checked(*inner_state.enabled.read(cx))
                     .disabled(inner_state._disabled)
                     .pr_2()
                     .on_click({
-                        let cx = cx.clo
-                        let inner_state = inner_state.clone();
-                        move |checked, _, _| {
-                            inner_state.enabled.write(cx, *checked);
+                        let enabled = inner_state.enabled.clone();
+                        move |checked, _, cx| {
+                            enabled.write(cx, *checked);
                         }
                     }),
             )
