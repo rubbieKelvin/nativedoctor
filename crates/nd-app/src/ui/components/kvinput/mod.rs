@@ -71,6 +71,7 @@ impl KvInputState {
                 .with_value(cx, window, SharedString::new(value))
                 .with_description(cx, window, SharedString::new(description));
 
+            new_row.enabled.write(cx, true);
             new_row.focus(cx, window);
             return new_row;
         });

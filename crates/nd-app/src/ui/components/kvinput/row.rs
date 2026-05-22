@@ -9,7 +9,7 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct KvRowState {
     _disabled: bool,
-    enabled: bool,
+    pub enabled: Entity<bool>,
     pub key: Entity<InputState>,
     pub value: Entity<InputState>,
     #[allow(unused)]
@@ -76,7 +76,7 @@ impl KvRowState {
 
         return Self {
             _disabled: false,
-            enabled: false,
+            enabled: cx.new(|_cx| false),
             key,
             value,
             description,
@@ -160,9 +160,16 @@ impl RenderOnce for KvRow {
             .items_center()
             .child(
                 Checkbox::new(ElementId::Uuid(Uuid::new_v4()))
-                    .checked(inner_state.enabled)
+                    .checked(*inner_state.enabled.read(cx))
                     .disabled(inner_state._disabled)
-                    .pr_2(),
+                    .pr_2()
+                    .on_click({
+                        let cx = cx.clo
+                        let inner_state = inner_state.clone();
+                        move |checked, _, _| {
+                            inner_state.enabled.write(cx, *checked);
+                        }
+                    }),
             )
             .child(
                 Input::new(&inner_state.key)
