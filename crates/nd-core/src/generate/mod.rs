@@ -8,10 +8,8 @@
 //! YAML output quotes `request.url` when it contains `${…}` so YAML 1.1 does not treat `$` as an
 //! alias. JSON output is unaffected.
 
-mod error;
 pub mod openapi3;
 
-pub use error::{Error, Result};
 pub use openapi3::OutputFormat;
 
 use std::path::Path;
@@ -31,17 +29,13 @@ pub struct GenerateReport {
 }
 
 /// Read OpenAPI 3.0.x from `input`, then write one nativedoctor request file per HTTP operation into `out_dir`.
-///
 /// File names derive from `operationId` or method + path. OpenAPI 3.1+ and unsupported `$ref` forms return [`Error`].
-///
-/// For lower-level access (load only, custom naming, etc.), see [`openapi3`].
 pub fn generate_from_openapi_path(
     input: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
     options: GenerateOptions,
-) -> Result<GenerateReport> {
+) -> Result<GenerateReport, openapi3::error::Error> {
     openapi3::generate_from_path(input.as_ref(), out_dir.as_ref(), options.format)
 }
 
-/// Convert `{param}` path segments to nativedoctor `${param}` template syntax (OpenAPI-style paths).
 pub use openapi3::path_to_url_template;

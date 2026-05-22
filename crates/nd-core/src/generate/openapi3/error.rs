@@ -22,5 +22,3 @@ pub enum Error {
     #[error("failed to parse OpenAPI as YAML: {0}")]
     Yaml(#[from] serde_yaml::Error),
 }
-
-pub type Result<T> = std::result::Result<T, Error>;

@@ -5,3 +5,16 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
+gpui = { git = "https://github.com/zed-industries/zed" }
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
+gpui-component = { git = "https://github.com/longbridge/gpui-component" }
+gpui-component-assets = { git = "https://github.com/longbridge/gpui-component" }
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+tracing-subscriber = {version="0.3.23", features=["env-filter"]}
+tracing = "0.1"
+serde = "1.0.228"
+serde_json = "1.0"
+serde_yaml = "0.9"
+nd-core = { path = "../nd-core" }
+uuid = { version = "1.23.1", features = ["v4"] }

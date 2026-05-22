@@ -1,4 +1,4 @@
-//! CLI entry for **nativedoctor**: `run`, `runall`, shorthand file path, `list`, `new`, and shared flags.
+//! CLI entry
 
 mod cmd_generate;
 mod cmd_new;
@@ -19,12 +19,12 @@ use crate::{
 
 #[derive(Parser)]
 #[command(name = "nativedoctor")]
-#[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts.")]
+#[command(about = "File-based API request runner (JSON/YAML) with optional Rhai post-scripts")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(author = "rubbie kelvin <dev.rubbie@gmail.com>")]
 #[command(args_conflicts_with_subcommands = false)]
 pub(crate) struct Cli {
-    /// Load `KEY=value` pairs from each dotenv-style file into the runtime (later files override earlier).
+    /// Load `KEY=value` pairs from each dotenv-style file into the runtime (later files override earlier)
     #[arg(long, value_name = "FILE", global = true, action = ArgAction::Append)]
     env: Vec<PathBuf>,
 
@@ -43,7 +43,7 @@ pub(crate) struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
 
-    /// If no subcommand is given, this file is executed as a single request (same as `run <FILE>`).
+    /// If no subcommand is given, this file is executed as a single request (same as `run <FILE>`)
     #[arg(value_name = "FILE", value_hint = clap::ValueHint::FilePath)]
     file: Option<PathBuf>,
 }
@@ -55,7 +55,7 @@ enum GenerateFormat {
     Json,
 }
 
-impl From<GenerateFormat> for nd_generate::OutputFormat {
+impl From<GenerateFormat> for nd_core::generate::OutputFormat {
     fn from(f: GenerateFormat) -> Self {
         match f {
             GenerateFormat::Yaml => Self::Yaml,
@@ -68,7 +68,7 @@ impl From<GenerateFormat> for nd_generate::OutputFormat {
 enum Command {
     /// Run one or more request-file or rhai scripts
     Run {
-        /// Build the runtime environment once and reuse it across all files (runtime variables persist between runs).
+        /// Build the runtime environment once and reuse it across all files (runtime variables persist between runs)
         #[arg(long)]
         retain_runtime: bool,
         /// The path pointing to the file(s) to run
@@ -82,7 +82,7 @@ enum Command {
         /// Address and port to bind (default: loopback only).
         #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
         bind: SocketAddr,
-        /// Directories whose top-level `*.json` / `*.yaml` / `*.yml` / `*.rhai` files are listed. Defaults to `.` when omitted.
+        /// Directories whose top-level `*.json` / `*.yaml` / `*.yml` / `*.rhai` files are listed. Defaults to `.` when omitted
         #[arg(value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
         dirs: Vec<PathBuf>,
     },
@@ -98,7 +98,7 @@ enum Command {
         #[arg(long, value_enum, default_value_t = GenerateFormat::Yaml)]
         format: GenerateFormat,
     },
-    /// Write Rhai definition files (`.d.rhai`) for IDE / language-server support (builtins + nativedoctor globals).
+    /// Write Rhai definition files (`.d.rhai`) for IDE / language-server support
     Definitions {
         /// Output directory for multiple definition files (see Rhai book: Engine definitions).
         #[arg(long, value_name = "DIR", value_hint = clap::ValueHint::DirPath)]

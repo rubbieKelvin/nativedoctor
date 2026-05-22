@@ -9,7 +9,6 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-nd-generate = { path = "../nd-generate" }
 nd-web = { path = "../nd-web" }
 nd-core = { path = "../nd-core" }
 nd-constants = { path = "../nd-constants" }

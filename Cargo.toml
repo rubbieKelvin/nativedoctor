@@ -2,10 +2,9 @@
 members = [
     "crates/nd-core",
     "crates/nd-cli",
-    "crates/nd-generate",
     "crates/nd-web",
+    "crates/nd-app",
 ]
-default-members = ["crates/nd-cli"]
 resolver = "2"
 
 [workspace.package]

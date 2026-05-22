@@ -4,6 +4,7 @@
 //! `src/` later; this module keeps all OpenAPI-specific parsing, mapping, and file emission.
 
 mod build;
+pub mod error;
 mod fs;
 mod load;
 
@@ -13,15 +14,15 @@ pub use load::load_openapi;
 
 use std::path::Path;
 
-use crate::error::Result;
-use crate::GenerateReport;
+use crate::generate::openapi3::error::Error;
+use crate::generate::GenerateReport;
 
 /// Read OpenAPI from `input` and write one request file per operation into `out_dir`.
 pub(crate) fn generate_from_path(
     input: &Path,
     out_dir: &Path,
     format: OutputFormat,
-) -> Result<GenerateReport> {
+) -> Result<GenerateReport, Error> {
     let api = load::load_openapi(input)?;
     let files_written = fs::write_all_operations(&api, out_dir, format)?;
     Ok(GenerateReport { files_written })

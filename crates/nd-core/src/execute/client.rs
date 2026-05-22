@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 use crate::model::request::{HttpRequestSpec, RequestFile};
 
 /// Builds a client from timeout, redirect, and TLS verification fields on the spec.
-pub(crate) fn build_client(spec: &HttpRequestSpec) -> Result<Client> {
+pub fn build_client(spec: &HttpRequestSpec) -> Result<Client> {
     let timeout_secs = spec
         .timeout_secs
         .unwrap_or(RequestFile::default_timeout_secs());
@@ -51,10 +51,7 @@ pub(crate) fn header_map(pairs: &[(String, String)]) -> Result<HeaderMap> {
     return Ok(map);
 }
 
-pub(crate) async fn send_request(
-    client: &Client,
-    prep: &PreparedRequest,
-) -> Result<reqwest::Response> {
+pub async fn send_request(client: &Client, prep: &PreparedRequest) -> Result<reqwest::Response> {
     let full_url = merge_url_query(&prep.url, &prep.query)?;
     debug!(
         method = %prep.method,
