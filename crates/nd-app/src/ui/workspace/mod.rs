@@ -5,7 +5,7 @@ use gpui_component::{
     button, input,
     resizable::{h_resizable, resizable_panel},
     tree::{tree, TreeState},
-    ActiveTheme, Icon, IconName, Theme,
+    ActiveTheme, Icon, IconName, Sizable, Theme,
 };
 
 use crate::ui::components::request::RequestPanel;
@@ -36,8 +36,6 @@ impl WorkspaceView {
             .flex()
             .flex_col()
             .size_full()
-            .border_r(px(1.))
-            .border_color(theme.border)
             .child(self.sidebar_searchbar(theme))
             .child(
                 div()
@@ -48,12 +46,13 @@ impl WorkspaceView {
                     .text_color(theme.muted_foreground),
             )
             .child(self.sidebar_request_tree(cx))
-            .child(self.bottom_pane(cx));
+            .child(self.bottom_pane(theme, cx));
     }
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
-            .h_12()
+            .min_h(px(50.))
+            .max_h(px(50.))
             .px_2()
             .gap_2()
             .flex()
@@ -74,12 +73,23 @@ impl WorkspaceView {
         .min_h_0();
     }
 
-    fn bottom_pane(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn bottom_pane(&mut self, theme: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {
         return div()
             .flex()
-            .gap(px(2.))
-            .child(button::Button::new("switch-to-request-pill").label("Request"))
-            .child(button::Button::new("switch-to-tests-pill").label("Request"));
+            .gap_2()
+            .p_2()
+            .border_t(px(1.))
+            .border_color(theme.border)
+            .child(
+                button::Button::new("switch-to-request-pill")
+                    .label("requests")
+                    .xsmall(),
+            )
+            .child(
+                button::Button::new("switch-to-tests-pill")
+                    .label("tests")
+                    .xsmall(),
+            );
     }
 
     fn mainpanel(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {

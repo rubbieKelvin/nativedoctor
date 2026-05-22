@@ -164,7 +164,8 @@ impl RequestPanel {
             .gap_2()
             .justify_center()
             .px_2()
-            .h_12()
+            .min_h(px(50.))
+            .max_h(px(50.))
             .border_b(px(1.))
             .border_color(theme.border)
             .child(
@@ -200,8 +201,6 @@ impl RequestPanel {
             .flex_col()
             .flex_1()
             .min_w_0()
-            .border_b(px(1.))
-            .border_color(theme.border)
             .child(self.render_tab_bar(theme, cx))
             .child(self.render_tab_content(theme, cx));
     }
@@ -382,14 +381,8 @@ impl Render for RequestPanel {
             .child(self.render_top_bar(&theme, cx))
             .child(
                 v_resizable("request-response")
-                    .child(
-                        resizable_panel()
-                            .child(self.render_request_panel(&theme, cx)),
-                    )
-                    .child(
-                        resizable_panel()
-                            .child(self.render_response_panel(&theme)),
-                    ),
+                    .child(resizable_panel().child(self.render_request_panel(&theme, cx)))
+                    .child(resizable_panel().child(self.render_response_panel(&theme))),
             );
     }
 }
