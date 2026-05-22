@@ -53,7 +53,7 @@ impl WorkspaceView {
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
             .h_12()
-            .px_3()
+            .px_2()
             .gap_2()
             .flex()
             .flex_row()

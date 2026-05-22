@@ -28,19 +28,6 @@ pub struct RequestPanel {
     http_version: usize,
 }
 
-// fn method_colors(method: &str, theme: &Theme) -> (Hsla, Hsla) {
-//     match method {
-//         "GET" => (theme.blue.opacity(0.2), theme.blue),
-//         "POST" => (theme.yellow.opacity(0.2), theme.yellow),
-//         "PUT" => (theme.cyan.opacity(0.2), theme.cyan),
-//         "PATCH" => (theme.magenta.opacity(0.2), theme.magenta),
-//         "DELETE" => (theme.red.opacity(0.2), theme.red),
-//         "HEAD" => (theme.muted.opacity(0.2), theme.muted_foreground),
-//         "OPTIONS" => (theme.muted.opacity(0.2), theme.muted_foreground),
-//         _ => (theme.muted.opacity(0.25), theme.muted_foreground),
-//     }
-// }
-
 impl RequestPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let url_input_state =
@@ -116,8 +103,7 @@ impl RequestPanel {
 
         return div()
             .id(ElementId::Name(id.into()))
-            .px_3()
-            .py_2()
+            .p_2()
             .text_sm()
             .text_color(fg)
             .cursor_pointer()
@@ -136,7 +122,7 @@ impl RequestPanel {
             .items_center()
             .gap_2()
             .justify_center()
-            .px_3()
+            .px_2()
             .h_12()
             .border_b(px(1.))
             .border_color(theme.border)
@@ -145,7 +131,7 @@ impl RequestPanel {
                     .flex()
                     .flex_row()
                     .gap_0p5()
-                    .child(select::Select::new(&self.method_state).min_w(px(100.))),
+                    .child(select::Select::new(&self.method_state)),
             )
             .child(
                 div()

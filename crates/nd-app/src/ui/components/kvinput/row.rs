@@ -142,7 +142,7 @@ impl KvRow {
     }
 
     fn render_input(input: &Entity<InputState>, border_color: Hsla) -> Div {
-        return div().size_full().child(
+        return div().child(
             Input::new(input)
                 .appearance(false)
                 .border_color(border_color)
@@ -164,8 +164,8 @@ impl RenderOnce for KvRow {
             .border_color(border_color)
             .items_center()
             .child(Self::render_checkbox(&inner_state, cx))
-            .child(Self::render_input(&inner_state.key, border_color))
-            .child(Self::render_input(&inner_state.value, border_color))
-            .child(Self::render_input(&inner_state.description, border_color));
+            .child(Self::render_input(&inner_state.key, border_color).w(relative(0.3)))
+            .child(Self::render_input(&inner_state.value, border_color).w(relative(0.3)))
+            .child(Self::render_input(&inner_state.description, border_color).flex_1());
     }
 }
