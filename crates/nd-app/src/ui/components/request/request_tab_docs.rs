@@ -4,7 +4,7 @@ use gpui_component::{
     Theme,
 };
 
-pub fn render(theme: &Theme, input_state: &Entity<InputState>) -> impl IntoElement {
+pub fn render(_theme: &Theme, input_state: &Entity<InputState>) -> impl IntoElement {
     return div()
         .flex()
         .flex_col()
