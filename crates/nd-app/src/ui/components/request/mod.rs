@@ -20,6 +20,7 @@ pub struct RequestPanel {
     docs_input_state: Entity<input::InputState>,
     method_state: Entity<select::SelectState<Vec<SharedString>>>,
     param_input_state: Entity<kvinput::KvInputState>,
+    headers_input_state: Entity<kvinput::KvInputState>,
     active_tab: usize,
     auth_type: usize,
     body_type: usize,
@@ -44,6 +45,7 @@ impl RequestPanel {
                 .line_number(false)
         });
         let param_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
+        let headers_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
 
         let method_state = cx.new(|cx| {
             SelectState::new(
@@ -67,6 +69,7 @@ impl RequestPanel {
             body_text_state,
             docs_input_state,
             param_input_state,
+            headers_input_state,
             method_state,
             active_tab: 0,
             auth_type: 0,
@@ -187,8 +190,8 @@ impl RequestPanel {
         match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
-            2 => request_tab_auth::render(theme, cx).into_any_element(),
-            3 => request_tab_headers::render(theme).into_any_element(),
+            2 => request_tab_auth::render(self.auth_type, theme, cx).into_any_element(),
+            3 => request_tab_headers::render(theme, &self.headers_input_state).into_any_element(),
             4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
                 .into_any_element(),
             5 => request_tab_settings::render(
