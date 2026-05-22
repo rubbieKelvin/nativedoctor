@@ -22,6 +22,11 @@ pub struct RequestPanel {
     param_input_state: Entity<kvinput::KvInputState>,
     headers_input_state: Entity<kvinput::KvInputState>,
     auth_type_state: Entity<select::SelectState<Vec<SharedString>>>,
+    bearer_token_state: Entity<input::InputState>,
+    basic_auth_username_state: Entity<input::InputState>,
+    basic_auth_password_state: Entity<input::InputState>,
+    api_key_name_state: Entity<input::InputState>,
+    api_key_value_state: Entity<input::InputState>,
     active_tab: usize,
     body_type: usize,
     ssl_verify: bool,
@@ -78,6 +83,17 @@ impl RequestPanel {
             )
         });
 
+        let bearer_token_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter bearer token..."));
+        let basic_auth_username_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Username"));
+        let basic_auth_password_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Password"));
+        let api_key_name_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Key name"));
+        let api_key_value_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Key value"));
+
         return Self {
             url_input_state,
             body_text_state,
@@ -86,6 +102,11 @@ impl RequestPanel {
             headers_input_state,
             method_state,
             auth_type_state,
+            bearer_token_state,
+            basic_auth_username_state,
+            basic_auth_password_state,
+            api_key_name_state,
+            api_key_value_state,
             active_tab: 0,
             body_type: 1,
             ssl_verify: true,
@@ -204,7 +225,17 @@ impl RequestPanel {
         match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
-            2 => request_tab_auth::render(&self.auth_type_state, theme, cx).into_any_element(),
+            2 => request_tab_auth::render(
+                &self.auth_type_state,
+                &self.bearer_token_state,
+                &self.basic_auth_username_state,
+                &self.basic_auth_password_state,
+                &self.api_key_name_state,
+                &self.api_key_value_state,
+                theme,
+                cx,
+            )
+            .into_any_element(),
             3 => request_tab_headers::render(theme, &self.headers_input_state).into_any_element(),
             4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
                 .into_any_element(),
