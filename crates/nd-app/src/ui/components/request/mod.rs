@@ -29,6 +29,10 @@ pub struct RequestPanel {
     api_key_value_state: Entity<input::InputState>,
     active_tab: usize,
     body_type: usize,
+    raw_sub_type: usize,
+    binary_path: SharedString,
+    form_data_state: Entity<kvinput::KvInputState>,
+    url_encoded_state: Entity<kvinput::KvInputState>,
     ssl_verify: bool,
     follow_redirects: bool,
     http_version: usize,
@@ -38,8 +42,14 @@ impl RequestPanel {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let url_input_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter request URL..."));
-        let body_text_state = cx
-            .new(|cx| input::InputState::new(window, cx).placeholder("{\n  \"key\": \"value\"\n}"));
+        let body_text_state = cx.new(|cx| {
+            input::InputState::new(window, cx)
+                .placeholder("{\n  \"key\": \"value\"\n}")
+                .code_editor("json")
+                .multi_line(true)
+                .soft_wrap(true)
+                .line_number(false)
+        });
 
         let docs_input_state = cx.new(|cx| {
             input::InputState::new(window, cx)
@@ -51,6 +61,8 @@ impl RequestPanel {
         });
         let param_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
         let headers_input_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
+        let form_data_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
+        let url_encoded_state = cx.new(|cx| kvinput::KvInputState::new(cx, window));
 
         let method_state = cx.new(|cx| {
             SelectState::new(
@@ -108,7 +120,11 @@ impl RequestPanel {
             api_key_name_state,
             api_key_value_state,
             active_tab: 0,
-            body_type: 1,
+            body_type: 0,
+            raw_sub_type: 0,
+            binary_path: SharedString::default(),
+            form_data_state,
+            url_encoded_state,
             ssl_verify: true,
             follow_redirects: true,
             http_version: 0,
@@ -237,8 +253,17 @@ impl RequestPanel {
             )
             .into_any_element(),
             3 => request_tab_headers::render(theme, &self.headers_input_state).into_any_element(),
-            4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
-                .into_any_element(),
+            4 => request_tab_body::render(
+                self.body_type,
+                &self.body_text_state,
+                &self.form_data_state,
+                &self.url_encoded_state,
+                self.raw_sub_type,
+                &self.binary_path,
+                theme,
+                cx,
+            )
+            .into_any_element(),
             5 => request_tab_settings::render(
                 self.ssl_verify,
                 self.follow_redirects,
