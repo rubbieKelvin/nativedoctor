@@ -10,7 +10,7 @@ use gpui_component::{
     button, input,
     resizable::{resizable_panel, v_resizable},
     select::{self, SelectState},
-    ActiveTheme, IconName, IndexPath, StyledExt, Theme,
+    ActiveTheme, IndexPath, StyledExt, Theme,
 };
 
 use crate::ui::components::{kvinput, number_input};
@@ -95,8 +95,11 @@ impl RequestPanel {
         let api_key_value_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Key value"));
 
-        let timeout_state = cx.new(|_cx| number_input::NumberInputState::new(30, 1, 300));
-        let max_redirects_state = cx.new(|_cx| number_input::NumberInputState::new(10, 0, 50));
+        let timeout_state = cx.new(|_cx| {
+            number_input::NumberInputState::new(30, 1, 300, Some(SharedString::new("s")))
+        });
+        let max_redirects_state =
+            cx.new(|_cx| number_input::NumberInputState::new(10, 0, 50, None));
 
         return Self {
             url_input_state,

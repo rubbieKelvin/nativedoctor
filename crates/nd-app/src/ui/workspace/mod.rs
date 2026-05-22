@@ -1,4 +1,4 @@
-mod sidebar_request_lists;
+mod sidebar_requests;
 
 use gpui::*;
 use gpui_component::{
@@ -22,7 +22,7 @@ impl WorkspaceView {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
 
         let requests_tree_state =
-            cx.new(|cx| TreeState::new(cx).items(sidebar_request_lists::sample_tree_items()));
+            cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
 
         Self {
             search_input_state,
@@ -67,7 +67,7 @@ impl WorkspaceView {
 
     fn sidebar_request_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
         return tree(&self.requests_tree_state, |ix, entry, selected, _, cx| {
-            sidebar_request_lists::render_tree_row(ix, entry, selected, cx)
+            sidebar_requests::render_tree_row(ix, entry, selected, cx)
         })
         .flex_1()
         .min_h_0();
