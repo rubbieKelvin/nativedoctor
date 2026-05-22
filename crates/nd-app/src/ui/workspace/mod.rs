@@ -1,11 +1,12 @@
 mod sidebar_requests;
+mod sidebar_sequences;
 
 use gpui::*;
 use gpui_component::{
     button, input,
     resizable::{h_resizable, resizable_panel},
     tree::{tree, TreeState},
-    ActiveTheme, Icon, IconName, Sizable, Theme,
+    ActiveTheme, Icon, IconName, Selectable, Sizable, Theme,
 };
 
 use crate::ui::components::request::RequestPanel;
@@ -13,6 +14,8 @@ use crate::ui::components::request::RequestPanel;
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
     requests_tree_state: Entity<TreeState>,
+    sequences_tree_state: Entity<TreeState>,
+    active_sidebar_pane: usize,
     _rp: Entity<RequestPanel>,
 }
 
@@ -23,15 +26,24 @@ impl WorkspaceView {
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
+        let sequences_tree_state =
+            cx.new(|cx| TreeState::new(cx).items(sidebar_sequences::sample_sequence_items()));
 
         Self {
             search_input_state,
             requests_tree_state,
+            sequences_tree_state,
+            active_sidebar_pane: 0,
             _rp: cx.new(|cx| RequestPanel::new(window, cx)),
         }
     }
 
     fn sidebar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let title = if self.active_sidebar_pane == 0 {
+            "Requests"
+        } else {
+            "Sequences"
+        };
         return div()
             .flex()
             .flex_col()
@@ -41,11 +53,11 @@ impl WorkspaceView {
                 div()
                     .px_3()
                     .py_2()
-                    .child("Requests")
+                    .child(title)
                     .text_sm()
                     .text_color(theme.muted_foreground),
             )
-            .child(self.sidebar_request_tree(cx))
+            .child(self.sidebar_tree(cx))
             .child(self.bottom_pane(theme, cx));
     }
 
@@ -65,15 +77,26 @@ impl WorkspaceView {
             .child(button::Button::new("tests").icon(Icon::new(IconName::Plus)));
     }
 
-    fn sidebar_request_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
-        return tree(&self.requests_tree_state, |ix, entry, selected, _, cx| {
-            sidebar_requests::render_tree_row(ix, entry, selected, cx)
+    fn sidebar_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let is_requests = self.active_sidebar_pane == 0;
+        let state = if is_requests {
+            &self.requests_tree_state
+        } else {
+            &self.sequences_tree_state
+        };
+        return tree(state, move |ix, entry, selected, _, cx| {
+            if is_requests {
+                sidebar_requests::render_tree_row(ix, entry, selected, cx)
+            } else {
+                sidebar_sequences::render_tree_row(ix, entry, selected, cx)
+            }
         })
         .flex_1()
         .min_h_0();
     }
 
-    fn bottom_pane(&mut self, theme: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn bottom_pane(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let active = self.active_sidebar_pane;
         return div()
             .flex()
             .gap_2()
@@ -83,12 +106,20 @@ impl WorkspaceView {
             .child(
                 button::Button::new("switch-to-request-pill")
                     .label("requests")
-                    .xsmall(),
+                    .selected(active == 0)
+                    .xsmall()
+                    .on_click(cx.listener(move |this, _event, _window, _cx| {
+                        this.active_sidebar_pane = 0;
+                    })),
             )
             .child(
-                button::Button::new("switch-to-tests-pill")
-                    .label("tests")
-                    .xsmall(),
+                button::Button::new("switch-to-sequences-pill")
+                    .label("sequences")
+                    .selected(active == 1)
+                    .xsmall()
+                    .on_click(cx.listener(move |this, _event, _window, _cx| {
+                        this.active_sidebar_pane = 1;
+                    })),
             );
     }
 
