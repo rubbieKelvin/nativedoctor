@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{StyledExt, Theme};
+use gpui_component::Theme;
 
 use crate::ui::components::kvinput;
 
