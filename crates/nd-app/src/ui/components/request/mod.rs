@@ -21,7 +21,7 @@ pub struct RequestPanel {
     method_state: Entity<select::SelectState<Vec<SharedString>>>,
     param_input_state: Entity<kvinput::KvInputState>,
     headers_input_state: Entity<kvinput::KvInputState>,
-    auth_type_state: Entity<select::SelectState<Vec<SharedString>>>,
+    auth_type: usize,
     bearer_token_state: Entity<input::InputState>,
     basic_auth_username_state: Entity<input::InputState>,
     basic_auth_password_state: Entity<input::InputState>,
@@ -81,20 +81,6 @@ impl RequestPanel {
             )
         });
 
-        let auth_type_state = cx.new(|cx| {
-            SelectState::new(
-                vec![
-                    SharedString::new("No Auth"),
-                    SharedString::new("Bearer Token"),
-                    SharedString::new("Basic Auth"),
-                    SharedString::new("API Key"),
-                ],
-                Some(IndexPath::default()),
-                window,
-                cx,
-            )
-        });
-
         let bearer_token_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Enter bearer token..."));
         let basic_auth_username_state =
@@ -113,7 +99,7 @@ impl RequestPanel {
             param_input_state,
             headers_input_state,
             method_state,
-            auth_type_state,
+            auth_type: 0,
             bearer_token_state,
             basic_auth_username_state,
             basic_auth_password_state,
@@ -242,7 +228,7 @@ impl RequestPanel {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
             2 => request_tab_auth::render(
-                &self.auth_type_state,
+                self.auth_type,
                 &self.bearer_token_state,
                 &self.basic_auth_username_state,
                 &self.basic_auth_password_state,

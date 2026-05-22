@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::Theme;
+use gpui_component::{scroll::ScrollableElement, Theme};
 
 use crate::ui::components::kvinput;
 
