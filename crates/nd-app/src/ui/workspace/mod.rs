@@ -3,6 +3,7 @@ mod sidebar_request_lists;
 use gpui::*;
 use gpui_component::{
     button, input,
+    resizable::{h_resizable, resizable_panel},
     tree::{tree, TreeState},
     ActiveTheme, Icon, IconName, Theme,
 };
@@ -32,10 +33,9 @@ impl WorkspaceView {
 
     fn sidebar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
         return div()
-            .w_96()
             .flex()
             .flex_col()
-            .flex_shrink_0()
+            .size_full()
             .border_r(px(1.))
             .border_color(theme.border)
             .child(self.sidebar_searchbar(theme))
@@ -47,7 +47,8 @@ impl WorkspaceView {
                     .text_sm()
                     .text_color(theme.muted_foreground),
             )
-            .child(self.sidebar_request_tree(cx));
+            .child(self.sidebar_request_tree(cx))
+            .child(self.bottom_pane(cx));
     }
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
@@ -62,7 +63,7 @@ impl WorkspaceView {
             .border_b(px(1.))
             .border_color(theme.border)
             .child(input::Input::new(&self.search_input_state).prefix(Icon::new(IconName::Search)))
-            .child(button::Button::new("tests").icon(Icon::new(IconName::Bot)));
+            .child(button::Button::new("tests").icon(Icon::new(IconName::Plus)));
     }
 
     fn sidebar_request_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -71,6 +72,14 @@ impl WorkspaceView {
         })
         .flex_1()
         .min_h_0();
+    }
+
+    fn bottom_pane(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
+        return div()
+            .flex()
+            .gap(px(2.))
+            .child(button::Button::new("switch-to-request-pill").label("Request"))
+            .child(button::Button::new("switch-to-tests-pill").label("Request"));
     }
 
     fn mainpanel(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -83,12 +92,18 @@ impl Render for WorkspaceView {
         let theme = cx.theme().clone();
 
         return div()
-            .flex()
-            .flex_row()
             .size_full()
             .bg(theme.background)
             .text_color(theme.foreground)
-            .child(self.sidebar(&theme, cx))
-            .child(self.mainpanel(window, cx));
+            .child(
+                h_resizable("sidebar-workspace")
+                    .child(
+                        resizable_panel()
+                            .size(px(384.))
+                            .size_range(px(200.)..px(600.))
+                            .child(self.sidebar(&theme, cx)),
+                    )
+                    .child(resizable_panel().child(self.mainpanel(window, cx))),
+            );
     }
 }

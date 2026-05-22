@@ -8,6 +8,7 @@ mod request_tab_settings;
 use gpui::*;
 use gpui_component::{
     input,
+    resizable::{resizable_panel, v_resizable},
     select::{self, SelectState},
     ActiveTheme, IndexPath, StyledExt, Theme,
 };
@@ -224,7 +225,7 @@ impl RequestPanel {
     }
 
     fn render_tab_content(&mut self, theme: &Theme, cx: &mut Context<Self>) -> AnyElement {
-        match self.active_tab {
+        return match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
             2 => request_tab_auth::render(
@@ -259,7 +260,7 @@ impl RequestPanel {
             )
             .into_any_element(),
             _ => div().into_any_element(),
-        }
+        };
     }
 
     fn render_response_panel(&self, theme: &Theme) -> impl IntoElement {
@@ -380,13 +381,15 @@ impl Render for RequestPanel {
             .text_color(theme.foreground)
             .child(self.render_top_bar(&theme, cx))
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .flex_1()
-                    .min_h_0()
-                    .child(self.render_request_panel(&theme, cx))
-                    .child(self.render_response_panel(&theme)),
+                v_resizable("request-response")
+                    .child(
+                        resizable_panel()
+                            .child(self.render_request_panel(&theme, cx)),
+                    )
+                    .child(
+                        resizable_panel()
+                            .child(self.render_response_panel(&theme)),
+                    ),
             );
     }
 }
