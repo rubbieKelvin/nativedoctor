@@ -21,8 +21,8 @@ pub struct RequestPanel {
     method_state: Entity<select::SelectState<Vec<SharedString>>>,
     param_input_state: Entity<kvinput::KvInputState>,
     headers_input_state: Entity<kvinput::KvInputState>,
+    auth_type_state: Entity<select::SelectState<Vec<SharedString>>>,
     active_tab: usize,
-    auth_type: usize,
     body_type: usize,
     ssl_verify: bool,
     follow_redirects: bool,
@@ -64,6 +64,20 @@ impl RequestPanel {
             )
         });
 
+        let auth_type_state = cx.new(|cx| {
+            SelectState::new(
+                vec![
+                    SharedString::new("No Auth"),
+                    SharedString::new("Bearer Token"),
+                    SharedString::new("Basic Auth"),
+                    SharedString::new("API Key"),
+                ],
+                Some(IndexPath::default()),
+                window,
+                cx,
+            )
+        });
+
         return Self {
             url_input_state,
             body_text_state,
@@ -71,8 +85,8 @@ impl RequestPanel {
             param_input_state,
             headers_input_state,
             method_state,
+            auth_type_state,
             active_tab: 0,
-            auth_type: 0,
             body_type: 1,
             ssl_verify: true,
             follow_redirects: true,
@@ -190,7 +204,7 @@ impl RequestPanel {
         match self.active_tab {
             0 => request_tab_docs::render(theme, &self.docs_input_state).into_any_element(),
             1 => request_tab_params::render(theme, &self.param_input_state).into_any_element(),
-            2 => request_tab_auth::render(self.auth_type, theme, cx).into_any_element(),
+            2 => request_tab_auth::render(&self.auth_type_state, theme, cx).into_any_element(),
             3 => request_tab_headers::render(theme, &self.headers_input_state).into_any_element(),
             4 => request_tab_body::render(self.body_type, &self.body_text_state, theme, cx)
                 .into_any_element(),
