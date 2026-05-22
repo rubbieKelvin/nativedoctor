@@ -188,7 +188,7 @@ impl RequestPanel {
             .id("send-button")
             .px_4()
             .py_1p5()
-            .bg(theme.blue)
+            .bg(theme.accent)
             .rounded(px(4.))
             .text_sm()
             .cursor_pointer()
@@ -381,8 +381,16 @@ impl Render for RequestPanel {
             .child(self.render_top_bar(&theme, cx))
             .child(
                 v_resizable("request-response")
-                    .child(resizable_panel().child(self.render_request_panel(&theme, cx)))
-                    .child(resizable_panel().child(self.render_response_panel(&theme))),
+                    .child(
+                        resizable_panel()
+                            .child(self.render_request_panel(&theme, cx))
+                            .bg(theme.background),
+                    )
+                    .child(
+                        resizable_panel()
+                            .child(self.render_response_panel(&theme))
+                            .bg(theme.background),
+                    ),
             );
     }
 }
