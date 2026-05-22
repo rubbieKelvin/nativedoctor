@@ -8,7 +8,6 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct KvRowState {
-    pub id: Uuid,
     _disabled: bool,
     enabled: bool,
     pub key: Entity<InputState>,
@@ -17,20 +16,14 @@ pub struct KvRowState {
     is_secret: bool,
     pub description: Entity<InputState>,
     // sub
+    #[allow(unused)]
     subscriptions: Vec<Subscription>,
-}
-
-#[derive(Debug, Clone)]
-pub enum KvColumn {
-    Key,
-    Value,
-    Description,
 }
 
 #[derive(Debug, Clone)]
 pub enum KvRowEvent {
     KeyChanged(SharedString),
-    Blur(KvColumn),
+    Blur,
 }
 
 impl EventEmitter<KvRowEvent> for KvRowState {}
@@ -52,7 +45,7 @@ impl KvRowState {
                         cx.emit(KvRowEvent::KeyChanged(content));
                     }
                     InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur(KvColumn::Key));
+                        cx.emit(KvRowEvent::Blur);
                     }
                     _ => {}
                 },
@@ -63,7 +56,7 @@ impl KvRowState {
                 window,
                 |_this, _state, event: &InputEvent, _window, cx| match event {
                     InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur(KvColumn::Value));
+                        cx.emit(KvRowEvent::Blur);
                     }
                     _ => {}
                 },
@@ -74,7 +67,7 @@ impl KvRowState {
                 window,
                 |_this, _state, event: &InputEvent, _window, cx| match event {
                     InputEvent::Blur => {
-                        cx.emit(KvRowEvent::Blur(KvColumn::Description));
+                        cx.emit(KvRowEvent::Blur);
                     }
                     _ => {}
                 },
@@ -82,7 +75,6 @@ impl KvRowState {
         ];
 
         return Self {
-            id: Uuid::new_v4(),
             _disabled: false,
             enabled: false,
             key,

@@ -6,6 +6,7 @@ pub struct KvInputState {
     // items with they subscripion that needs to stay alive with them
     items: Vec<(Entity<row::KvRowState>, Subscription)>,
     // sub
+    #[allow(unused)]
     subscriptions: Vec<Subscription>,
 }
 
@@ -74,9 +75,11 @@ impl KvInputState {
             return new_row;
         });
 
-        let subscription = cx.subscribe_in(&row_state, window, |this, state, event, window, cx| {
-            match event {
-                row::KvRowEvent::Blur(..) => {
+        let subscription = cx.subscribe_in(
+            &row_state,
+            window,
+            |this, state, event, _window, cx| match event {
+                row::KvRowEvent::Blur => {
                     let key = state.read(cx).key.read(cx).value();
                     let value = state.read(cx).value.read(cx).value();
                     let description = state.read(cx).description.read(cx).value();
@@ -85,12 +88,12 @@ impl KvInputState {
                         && description.trim().len() == 0
                         && value.trim().len() == 0
                     {
-                        // at this point, we should remove this row from self.items
+                        this.items.retain(|(entity, _)| entity != state);
                     }
                 }
                 _ => {}
-            }
-        });
+            },
+        );
 
         self.items.push((row_state, subscription));
     }
