@@ -1,13 +1,12 @@
 use gpui::*;
-use gpui_component::{button, ActiveTheme, IconName, Sizable, TitleBar};
+use gpui_component::{ActiveTheme, TitleBar};
 
 pub fn render(
     project_name: impl Into<SharedString>,
-    env: impl Into<SharedString>,
+    env_popup: impl IntoElement,
     cx: &App,
 ) -> impl IntoElement {
     let project_name = project_name.into();
-    let env = env.into();
     let theme = cx.theme();
 
     return TitleBar::new().child(
@@ -25,11 +24,6 @@ pub fn render(
                     .child("・")
                     .opacity(0.8),
             )
-            .child(
-                button::Button::new("env-button")
-                    .label(env)
-                    .small()
-                    .icon(IconName::ChevronsUpDown),
-            ),
+            .child(env_popup),
     );
 }

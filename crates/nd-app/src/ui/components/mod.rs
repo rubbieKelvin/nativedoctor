@@ -1,3 +1,4 @@
+pub mod env_popup;
 pub mod kvinput;
 pub mod number_input;
 pub mod request;

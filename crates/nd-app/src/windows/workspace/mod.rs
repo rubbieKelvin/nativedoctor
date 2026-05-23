@@ -10,7 +10,7 @@ use gpui_component::{
 };
 
 use crate::{
-    ui::components::{self, request::RequestPanel},
+    ui::components::{self, env_popup, request::RequestPanel},
     windows::app_wrapper,
 };
 
@@ -19,6 +19,7 @@ pub struct WorkspaceView {
     requests_tree_state: Entity<TreeState>,
     sequences_tree_state: Entity<TreeState>,
     active_sidebar_pane: usize,
+    env_popup_state: Entity<env_popup::EnvPopupState>,
     _rp: Entity<RequestPanel>,
 }
 
@@ -26,6 +27,9 @@ impl WorkspaceView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let search_input_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
+
+        let env_popup_state =
+            cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
@@ -37,6 +41,7 @@ impl WorkspaceView {
             requests_tree_state,
             sequences_tree_state,
             active_sidebar_pane: 0,
+            env_popup_state,
             _rp: cx.new(|cx| RequestPanel::new(window, cx)),
         }
     }
@@ -136,7 +141,11 @@ impl Render for WorkspaceView {
         let theme = cx.theme().clone();
 
         return app_wrapper::<Self>(window, cx)
-            .child(components::title_bar::render("Project name", "env", cx))
+            .child(components::title_bar::render(
+                "Project name",
+                env_popup::EnvPopup::new(self.env_popup_state.clone()),
+                cx,
+            ))
             .child(
                 div().flex_1().min_h_0().child(
                     div()
