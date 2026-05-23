@@ -54,10 +54,6 @@ pub fn render(
         .child(div().flex_1().min_h_0());
 }
 
-// ---------------------------------------------------------------------------
-// Compact row primitives
-// ---------------------------------------------------------------------------
-
 fn settings_title(label: &str, theme: &Theme) -> impl IntoElement {
     return div()
         .px_4()
@@ -117,10 +113,6 @@ fn settings_divider(theme: &Theme) -> impl IntoElement {
         .bg(theme.border.opacity(0.3));
 }
 
-// ---------------------------------------------------------------------------
-// Custom switch
-// ---------------------------------------------------------------------------
-
 fn toggle_switch(
     id: &str,
     on: bool,
@@ -151,10 +143,6 @@ fn toggle_switch(
         }))
         .child(div().w(px(14.)).h(px(14.)).rounded(px(7.)).bg(white()));
 }
-
-// ---------------------------------------------------------------------------
-// HTTP Version pill selector
-// ---------------------------------------------------------------------------
 
 fn http_version_control(
     http_version: usize,

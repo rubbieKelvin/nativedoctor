@@ -4,13 +4,18 @@ mod request_tab_docs;
 mod request_tab_headers;
 mod request_tab_params;
 mod request_tab_settings;
+mod response_tab_body;
+mod response_tab_headers;
+mod response_tab_logs;
+mod response_tab_timeline;
 
 use gpui::*;
 use gpui_component::{
     button, input,
     resizable::{resizable_panel, v_resizable},
     select::{self, SelectState},
-    ActiveTheme, IndexPath, StyledExt, Theme,
+    tab::{Tab, TabBar},
+    ActiveTheme, IndexPath, Sizable, StyledExt, Theme,
 };
 
 use crate::ui::components::{kvinput, number_input};
@@ -29,6 +34,7 @@ pub struct RequestPanel {
     api_key_name_state: Entity<input::InputState>,
     api_key_value_state: Entity<input::InputState>,
     active_tab: usize,
+    active_response_tab: usize,
     body_type: usize,
     raw_sub_type: usize,
     binary_path: SharedString,
@@ -115,6 +121,7 @@ impl RequestPanel {
             api_key_name_state,
             api_key_value_state,
             active_tab: 0,
+            active_response_tab: 0,
             body_type: 0,
             raw_sub_type: 0,
             binary_path: SharedString::default(),
@@ -126,44 +133,6 @@ impl RequestPanel {
             timeout_state,
             max_redirects_state,
         };
-    }
-
-    fn render_tab_button(
-        label: &str,
-        index: usize,
-        active_tab: usize,
-        theme: &Theme,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let is_active = index == active_tab;
-
-        let fg = if is_active {
-            theme.foreground
-        } else {
-            theme.muted_foreground
-        };
-
-        let border_color = if is_active {
-            theme.blue
-        } else {
-            hsla(0., 0., 0., 0.)
-        };
-
-        let label = label.to_string();
-        let id = format!("tab-{}", label.to_lowercase());
-
-        return div()
-            .id(ElementId::Name(id.into()))
-            .p_2()
-            .text_sm()
-            .text_color(fg)
-            .cursor_pointer()
-            .border_b_2()
-            .border_color(border_color)
-            .on_click(cx.listener(move |this, _event, _window, _cx| {
-                this.active_tab = index;
-            }))
-            .child(label);
     }
 
     fn render_top_bar(&mut self, theme: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -203,22 +172,22 @@ impl RequestPanel {
             .child(self.render_tab_content(theme, cx));
     }
 
-    fn render_tab_bar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_tab_bar(&mut self, _theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
         let active = self.active_tab;
 
-        return div()
-            .flex()
-            .flex_row()
-            .border_b(px(1.))
-            .border_color(theme.border)
-            .px_2()
-            .bg(theme.muted.opacity(0.04))
-            .child(Self::render_tab_button("Docs", 0, active, theme, cx))
-            .child(Self::render_tab_button("Params", 1, active, theme, cx))
-            .child(Self::render_tab_button("Auth", 2, active, theme, cx))
-            .child(Self::render_tab_button("Headers", 3, active, theme, cx))
-            .child(Self::render_tab_button("Body", 4, active, theme, cx))
-            .child(Self::render_tab_button("Settings", 5, active, theme, cx));
+        return TabBar::new("request-tabs")
+            .underline()
+            .selected_index(active)
+            .on_click(cx.listener(move |this, &index, _window, _cx| {
+                this.active_tab = index;
+            }))
+            .child(Tab::new().label("Docs").small())
+            .child(Tab::new().label("Params").small())
+            .child(Tab::new().label("Auth").small())
+            .child(Tab::new().label("Headers").small())
+            .child(Tab::new().label("Body").small())
+            .child(Tab::new().label("Settings").small())
+            .px_2();
     }
 
     fn render_tab_content(&mut self, theme: &Theme, cx: &mut Context<Self>) -> AnyElement {
@@ -262,15 +231,38 @@ impl RequestPanel {
         };
     }
 
-    fn render_response_panel(&self, theme: &Theme) -> impl IntoElement {
+    fn render_response_panel(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
         return div()
             .flex()
             .flex_col()
             .flex_1()
             .min_w_0()
-            .child(self.response_status_bar(theme))
-            .child(self.response_headers_section(theme))
-            .child(self.response_body_section(theme));
+            .child(
+                div()
+                    .px_2()
+                    .flex()
+                    .border_b(px(1.))
+                    .border_color(theme.border)
+                    .items_center()
+                    .justify_between()
+                    .child(self.response_tab_bar(theme, cx))
+                    .child(self.response_status_bar(theme)),
+            )
+            .child(response_tab_content(self.active_response_tab, theme));
+    }
+
+    fn response_tab_bar(&mut self, _theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let active = self.active_response_tab;
+
+        return TabBar::new("response-tabs")
+            .selected_index(active)
+            .underline()
+            .on_click(cx.listener(move |this, &index, _window, _cx| {
+                this.active_response_tab = index;
+            }))
+            .child(Tab::new().label("Body").small())
+            .child(Tab::new().label("Headers").small())
+            .child(Tab::new().label("Logs").small());
     }
 
     fn response_status_bar(&self, theme: &Theme) -> impl IntoElement {
@@ -279,10 +271,6 @@ impl RequestPanel {
             .flex_row()
             .items_center()
             .gap_3()
-            .px_4()
-            .py_2()
-            .border_b(px(1.))
-            .border_color(theme.border)
             .child(
                 div()
                     .px_2()
@@ -307,64 +295,15 @@ impl RequestPanel {
                     .child("342 B"),
             );
     }
+}
 
-    fn response_headers_section(&self, theme: &Theme) -> impl IntoElement {
-        return div()
-            .flex()
-            .flex_col()
-            .border_b(px(1.))
-            .border_color(theme.border)
-            .child(
-                div()
-                    .px_4()
-                    .py_2()
-                    .text_xs()
-                    .font_semibold()
-                    .text_color(theme.muted_foreground)
-                    .child("Headers"),
-            )
-            .child(
-                div()
-                    .px_4()
-                    .py_2()
-                    .flex()
-                    .flex_col()
-                    .gap_1()
-                    .child(response_header_row(
-                        "content-type",
-                        "application/json",
-                        theme,
-                    ))
-                    .child(response_header_row("server", "nginx/1.21", theme))
-                    .child(response_header_row("cache-control", "no-cache", theme)),
-            );
-    }
-
-    fn response_body_section(&self, theme: &Theme) -> impl IntoElement {
-        return div()
-            .flex()
-            .flex_col()
-            .flex_1()
-            .min_h_0()
-            .child(
-                div()
-                    .px_4()
-                    .py_2()
-                    .text_xs()
-                    .font_semibold()
-                    .text_color(theme.muted_foreground)
-                    .child("Body"),
-            )
-            .child(
-                div()
-                    .flex_1()
-                    .min_h_0()
-                    .px_4()
-                    .py_2()
-                    .text_sm()
-                    .text_color(theme.muted_foreground)
-                    .child("{\n  \"id\": 1,\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\"\n}"),
-            );
+fn response_tab_content(active_tab: usize, theme: &Theme) -> AnyElement {
+    match active_tab {
+        0 => response_tab_body::render(theme).into_any_element(),
+        1 => response_tab_headers::render(theme).into_any_element(),
+        2 => response_tab_logs::render(theme).into_any_element(),
+        3 => response_tab_timeline::render(theme).into_any_element(),
+        _ => div().into_any_element(),
     }
 }
 
@@ -388,28 +327,9 @@ impl Render for RequestPanel {
                     )
                     .child(
                         resizable_panel()
-                            .child(self.render_response_panel(&theme))
+                            .child(self.render_response_panel(&theme, cx))
                             .bg(theme.background),
                     ),
             );
     }
-}
-
-fn response_header_row(key: &str, value: &str, theme: &Theme) -> impl IntoElement {
-    return div()
-        .flex()
-        .flex_row()
-        .gap_2()
-        .text_xs()
-        .child(
-            div()
-                .text_color(theme.foreground)
-                .font_semibold()
-                .child(SharedString::from(key)),
-        )
-        .child(
-            div()
-                .text_color(theme.muted_foreground)
-                .child(SharedString::from(value)),
-        );
 }

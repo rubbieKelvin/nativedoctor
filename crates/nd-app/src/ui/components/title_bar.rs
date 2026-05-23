@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{ActiveTheme, Icon, IconName, Sizable, TitleBar};
+use gpui_component::{button, ActiveTheme, IconName, Sizable, TitleBar};
 
 pub fn render(
     project_name: impl Into<SharedString>,
@@ -15,20 +15,21 @@ pub fn render(
             .flex()
             .flex_row()
             .items_center()
+            .size_full()
             .gap_2()
             .text_sm()
             .child(div().text_color(theme.foreground).child(project_name))
-            .child(div().text_color(theme.muted_foreground).child("/"))
             .child(
                 div()
-                    .flex()
-                    .flex_row()
-                    .id("title-bar-env")
-                    .items_center()
-                    .gap_1()
                     .text_color(theme.muted_foreground)
-                    .child(Icon::new(IconName::ChevronsUpDown).xsmall())
-                    .child(env),
+                    .child("・")
+                    .opacity(0.8),
+            )
+            .child(
+                button::Button::new("env-button")
+                    .label(env)
+                    .small()
+                    .icon(IconName::ChevronsUpDown),
             ),
     );
 }

@@ -1,7 +1,6 @@
 use gpui::*;
 use gpui_component::{
     input::{Input, InputState},
-    tooltip::Tooltip,
     Icon, IconName, StyledExt, Theme,
 };
 
@@ -40,10 +39,6 @@ pub fn render(
         ))
         .child(auth_footer(auth_type, theme));
 }
-
-// ---------------------------------------------------------------------------
-// Auth type bar — pill selector
-// ---------------------------------------------------------------------------
 
 fn auth_type_bar(
     auth_type: usize,
@@ -101,10 +96,6 @@ fn auth_type_option(
         .child(label);
 }
 
-// ---------------------------------------------------------------------------
-// Auth form — dispatches to correct form based on auth_type
-// ---------------------------------------------------------------------------
-
 fn auth_form(
     auth_type: usize,
     bearer_token_state: &Entity<InputState>,
@@ -117,18 +108,12 @@ fn auth_form(
     return div().p_2().flex_1().child(match auth_type {
         0 => auth_no_auth_empty_state(theme).into_any_element(),
         1 => auth_bearer_token_form(bearer_token_state, theme).into_any_element(),
-        2 => {
-            auth_basic_auth_form(basic_auth_username_state, basic_auth_password_state, theme)
-                .into_any_element()
-        }
+        2 => auth_basic_auth_form(basic_auth_username_state, basic_auth_password_state, theme)
+            .into_any_element(),
         3 => auth_api_key_form(api_key_name_state, api_key_value_state, theme).into_any_element(),
         _ => div().into_any_element(),
     });
 }
-
-// ---------------------------------------------------------------------------
-// No Auth — empty state
-// ---------------------------------------------------------------------------
 
 fn auth_no_auth_empty_state(theme: &Theme) -> impl IntoElement {
     return div()
@@ -165,10 +150,6 @@ fn auth_no_auth_empty_state(theme: &Theme) -> impl IntoElement {
         );
 }
 
-// ---------------------------------------------------------------------------
-// Bearer Token
-// ---------------------------------------------------------------------------
-
 fn auth_bearer_token_form(token_state: &Entity<InputState>, theme: &Theme) -> impl IntoElement {
     return div()
         .flex()
@@ -177,10 +158,6 @@ fn auth_bearer_token_form(token_state: &Entity<InputState>, theme: &Theme) -> im
         .child(auth_field_label("Token", theme))
         .child(Input::new(token_state).w_full());
 }
-
-// ---------------------------------------------------------------------------
-// Basic Auth
-// ---------------------------------------------------------------------------
 
 fn auth_basic_auth_form(
     username_state: &Entity<InputState>,
@@ -209,10 +186,6 @@ fn auth_basic_auth_form(
         );
 }
 
-// ---------------------------------------------------------------------------
-// API Key
-// ---------------------------------------------------------------------------
-
 fn auth_api_key_form(
     key_name_state: &Entity<InputState>,
     key_value_state: &Entity<InputState>,
@@ -240,10 +213,6 @@ fn auth_api_key_form(
         );
 }
 
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
-
 fn auth_field_label(label: &str, theme: &Theme) -> impl IntoElement {
     return div()
         .text_xs()
@@ -252,16 +221,8 @@ fn auth_field_label(label: &str, theme: &Theme) -> impl IntoElement {
         .child(label.to_string());
 }
 
-// ---------------------------------------------------------------------------
-// Footer (description + info tooltip)
-// ---------------------------------------------------------------------------
-
 fn auth_footer(auth_type: usize, theme: &Theme) -> impl IntoElement {
-    let description = AUTH_DESCRIPTIONS
-        .get(auth_type)
-        .unwrap_or(&"")
-        .to_string();
-    let tooltip_description = description.clone();
+    let description = AUTH_DESCRIPTIONS.get(auth_type).unwrap_or(&"").to_string();
 
     return div()
         .flex()
@@ -278,23 +239,5 @@ fn auth_footer(auth_type: usize, theme: &Theme) -> impl IntoElement {
                 .text_xs()
                 .text_color(theme.muted_foreground.opacity(0.7))
                 .child(description),
-        )
-        .child(
-            div()
-                .id(ElementId::Name("auth-type-info".into()))
-                .size(px(18.))
-                .rounded(px(999.))
-                .flex()
-                .items_center()
-                .justify_center()
-                .bg(theme.muted.opacity(0.15))
-                .tooltip(move |window, cx| {
-                    Tooltip::new(tooltip_description.clone()).build(window, cx)
-                })
-                .child(
-                    Icon::new(IconName::Info)
-                        .size(px(12.))
-                        .text_color(theme.muted_foreground),
-                ),
         );
 }
