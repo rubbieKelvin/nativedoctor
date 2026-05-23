@@ -27,15 +27,14 @@ pub fn sample_sequence_items() -> Vec<TreeItem> {
         TreeItem::new("sequence:new-user-flow", "Create & verify user")
             .expanded(true)
             .children([
-                TreeItem::new("request:post-user", "Create user"),
-                TreeItem::new("request:get-customer", "Verify user"),
+                TreeItem::new("sequence:post-user", "Create user"),
+                TreeItem::new("sequence:get-customer", "Verify user"),
             ]),
-        TreeItem::new("sequence:order-flow", "Order processing pipeline")
-            .children([
-                TreeItem::new("request:post-customer", "Create customer"),
-                TreeItem::new("request:put-user", "Update order"),
-                TreeItem::new("request:del-users", "Cleanup"),
-            ]),
+        TreeItem::new("sequence:order-flow", "Order processing pipeline").children([
+            TreeItem::new("sequence:post-customer", "Create customer"),
+            TreeItem::new("sequence:put-user", "Update order"),
+            TreeItem::new("sequence:del-users", "Cleanup"),
+        ]),
     ];
 }
 
@@ -103,7 +102,7 @@ pub fn render_tree_row(
     }
 
     // Render child requests with a play icon and title
-    if item.id.starts_with("request:") {
+    if item.id.starts_with("sequence:") {
         let (_bg, fg) = sequence_colors(cx);
 
         return ListItem::new(ix)
@@ -115,11 +114,7 @@ pub fn render_tree_row(
                     .gap_2()
                     .items_center()
                     .min_w_0()
-                    .child(
-                        Icon::new(IconName::Play)
-                            .size(px(14.))
-                            .text_color(fg),
-                    )
+                    .child(Icon::new(IconName::Play).size(px(14.)).text_color(fg))
                     .child(
                         div()
                             .flex_1()
@@ -145,11 +140,7 @@ pub fn render_tree_row(
                     .gap_2()
                     .items_center()
                     .min_w_0()
-                    .child(
-                        Icon::new(IconName::Play)
-                            .size(px(14.))
-                            .text_color(fg),
-                    )
+                    .child(Icon::new(IconName::Play).size(px(14.)).text_color(fg))
                     .child(
                         div()
                             .flex_1()

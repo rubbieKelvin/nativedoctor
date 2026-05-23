@@ -105,7 +105,7 @@ impl RenderOnce for EnvPopup {
                 button::Button::new(SharedString::from("env-button"))
                     .label(active_name)
                     .small()
-                    .with_variant(button::ButtonVariant::Ghost)
+                    .with_variant(button::ButtonVariant::Text)
                     .icon(IconName::ChevronsUpDown),
             )
             .content({
@@ -126,6 +126,7 @@ impl RenderOnce for EnvPopup {
                                 .flex_row()
                                 .items_center()
                                 .gap_2()
+                                .pr_1()
                                 .child(
                                     input::Input::new(&state.read(cx).search_state)
                                         .appearance(false),
@@ -141,6 +142,7 @@ impl RenderOnce for EnvPopup {
                         .child(
                             div()
                                 .flex()
+                                .flex_col()
                                 .max_h(px(240.))
                                 .overflow_y_scrollbar()
                                 .children(filtered.iter().map(|(idx, name)| {
@@ -153,7 +155,6 @@ impl RenderOnce for EnvPopup {
                                     div()
                                         .px_2()
                                         .py_1()
-                                        .rounded(px(6.))
                                         .when(is_active, |this: Div| {
                                             this.bg(theme.primary.opacity(0.1))
                                         })

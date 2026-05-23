@@ -1,10 +1,14 @@
 mod sidebar_requests;
 mod sidebar_sequences;
 
-use gpui::*;
+use std::collections::HashMap;
+
+use gpui::{prelude::FluentBuilder, *};
 use gpui_component::{
-    button, input,
+    button::{self, ButtonVariants},
+    input,
     resizable::{h_resizable, resizable_panel},
+    tab::{self, Tab, TabBar},
     tree::{tree, TreeState},
     ActiveTheme, Icon, IconName, Selectable, Sizable, Theme,
 };
@@ -14,13 +18,28 @@ use crate::{
     windows::app_wrapper,
 };
 
+#[derive(Clone, PartialEq)]
+enum TabKind {
+    Request,
+    Sequence,
+}
+
+#[derive(Clone, PartialEq)]
+struct OpenTab {
+    id: SharedString,
+    label: SharedString,
+    kind: TabKind,
+}
+
 pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
     requests_tree_state: Entity<TreeState>,
     sequences_tree_state: Entity<TreeState>,
     active_sidebar_pane: usize,
     env_popup_state: Entity<env_popup::EnvPopupState>,
-    _rp: Entity<RequestPanel>,
+    open_tabs: Vec<OpenTab>,
+    active_tab_index: Option<usize>,
+    tab_panels: HashMap<String, Entity<RequestPanel>>,
 }
 
 impl WorkspaceView {
@@ -28,22 +47,75 @@ impl WorkspaceView {
         let search_input_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
 
-        let env_popup_state =
-            cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
+        let env_popup_state = cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
         let sequences_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_sequences::sample_sequence_items()));
 
-        Self {
+        return Self {
             search_input_state,
             requests_tree_state,
             sequences_tree_state,
             active_sidebar_pane: 0,
             env_popup_state,
-            _rp: cx.new(|cx| RequestPanel::new(window, cx)),
+            open_tabs: Vec::new(),
+            active_tab_index: None,
+            tab_panels: HashMap::new(),
+        };
+    }
+
+    fn find_tab_position(&self, id: &SharedString) -> Option<usize> {
+        return self.open_tabs.iter().position(|tab| tab.id == *id);
+    }
+
+    fn open_tab(
+        &mut self,
+        id: SharedString,
+        label: SharedString,
+        kind: TabKind,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(position) = self.find_tab_position(&id) {
+            self.active_tab_index = Some(position);
+            return;
         }
+
+        self.open_tabs.push(OpenTab {
+            id: id.clone(),
+            label: label.clone(),
+            kind: kind.clone(),
+        });
+        let new_index = self.open_tabs.len() - 1;
+
+        if kind == TabKind::Request {
+            let panel = cx.new(|cx| RequestPanel::new(window, cx));
+            self.tab_panels.insert(id.to_string(), panel);
+        }
+
+        self.active_tab_index = Some(new_index);
+    }
+
+    fn close_tab(&mut self, index: usize, _window: &mut Window, _cx: &mut Context<Self>) {
+        if index >= self.open_tabs.len() {
+            return;
+        }
+
+        let removed = self.open_tabs.remove(index);
+        self.tab_panels.remove(removed.id.as_str());
+
+        if self.open_tabs.is_empty() {
+            self.active_tab_index = None;
+            return;
+        }
+
+        self.active_tab_index = Some(match self.active_tab_index {
+            Some(active) if active > index => active - 1,
+            Some(active) if active == index => index.min(self.open_tabs.len() - 1),
+            _ => index,
+        });
     }
 
     fn sidebar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
@@ -71,9 +143,9 @@ impl WorkspaceView {
 
     fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
         return div()
-            .min_h(px(50.))
-            .max_h(px(50.))
-            .px_2()
+            .min_h(px(40.))
+            .max_h(px(40.))
+            .pr_1()
             .gap_2()
             .flex()
             .flex_row()
@@ -81,23 +153,58 @@ impl WorkspaceView {
             .justify_center()
             .border_b(px(1.))
             .border_color(theme.border)
-            .child(input::Input::new(&self.search_input_state).prefix(Icon::new(IconName::Search)))
+            .child(
+                input::Input::new(&self.search_input_state)
+                    .prefix(Icon::new(IconName::Search))
+                    .appearance(false),
+            )
             .child(button::Button::new("tests").icon(Icon::new(IconName::Plus)));
     }
 
-    fn sidebar_tree(&mut self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn sidebar_tree(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
         let is_requests = self.active_sidebar_pane == 0;
         let state = if is_requests {
             &self.requests_tree_state
         } else {
             &self.sequences_tree_state
         };
+        let view = cx.weak_entity();
+
         return tree(state, move |ix, entry, selected, _, cx| {
-            if is_requests {
+            let mut item = if is_requests {
                 sidebar_requests::render_tree_row(ix, entry, selected, cx)
             } else {
                 sidebar_sequences::render_tree_row(ix, entry, selected, cx)
+            };
+
+            if entry.is_folder() {
+                return item;
             }
+
+            let item_id = entry.item().id.clone();
+            let item_label = entry.item().label.clone();
+            let view = view.clone();
+
+            item = item.on_click(move |_ev, window, app_cx| {
+                if let Some(view) = view.upgrade() {
+                    let kind = if item_id.starts_with("sequence:") {
+                        TabKind::Sequence
+                    } else {
+                        TabKind::Request
+                    };
+                    view.update(app_cx, |this, cx| {
+                        this.open_tab(
+                            item_id.clone(),
+                            item_label.clone(),
+                            kind,
+                            window,
+                            cx,
+                        );
+                    });
+                }
+            });
+
+            return item;
         })
         .flex_1()
         .min_h_0();
@@ -131,8 +238,149 @@ impl WorkspaceView {
             );
     }
 
-    fn mainpanel(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        return div().flex_1().child(self._rp.clone());
+    fn render_tab_bar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+        let active = self.active_tab_index;
+        let view = cx.weak_entity();
+
+        let mut bar = TabBar::new("workspace-tabs")
+            .min_h(px(40.))
+            .max_h(px(40.))
+            .p_0()
+            .m_0()
+            .with_variant(tab::TabVariant::Underline)
+            .when_some(active, |this, idx| this.selected_index(idx))
+            .prefix(
+                div()
+                    .px_2()
+                    .flex()
+                    .flex_row()
+                    .gap_2()
+                    .border_r(px(1.))
+                    .border_color(theme.border)
+                    .child(
+                        button::Button::new("back")
+                            .icon(IconName::ArrowLeft)
+                            .with_variant(button::ButtonVariant::Text),
+                    )
+                    .child(
+                        button::Button::new("forward")
+                            .icon(IconName::ArrowRight)
+                            .with_variant(button::ButtonVariant::Text),
+                    ),
+            )
+            .border_color(theme.border);
+
+        for (i, tab) in self.open_tabs.iter().enumerate() {
+            let tab_id = tab.id.clone();
+            let tab_label = tab.label.clone();
+            let is_active = active == Some(i);
+
+            let tab_pill = Tab::new()
+                .small()
+                .h_full()
+                .when(is_active, |this| this.selected(true))
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .gap_2()
+                        .child(if tab.kind == TabKind::Request {
+                            IconName::ExternalLink
+                        } else {
+                            IconName::Play
+                        })
+                        .child(tab_label.clone()),
+                )
+                .suffix({
+                    let tab_view = view.clone();
+                    button::Button::new(format!("close-{i}"))
+                        .icon(IconName::Close)
+                        .xsmall()
+                        .with_variant(button::ButtonVariant::Ghost)
+                        .on_click(move |_event, window, app_cx| {
+                            if let Some(v) = tab_view.upgrade() {
+                                v.update(app_cx, |this: &mut WorkspaceView, cx| {
+                                    if let Some(pos) =
+                                        this.find_tab_position(&tab_id)
+                                    {
+                                        this.close_tab(pos, window, cx);
+                                    }
+                                    cx.notify();
+                                });
+                            }
+                        })
+                });
+
+            bar = bar.child(tab_pill);
+        }
+
+        bar = bar.on_click(move |index, _, app_cx| {
+            if let Some(v) = view.upgrade() {
+                v.update(app_cx, |this: &mut WorkspaceView, cx| {
+                    this.active_tab_index = Some(*index);
+                    cx.notify();
+                });
+            }
+        });
+
+        return bar;
+    }
+
+    fn render_tab_content(
+        &self,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let Some(active_index) = self.active_tab_index else {
+            return div().flex_1().child("No open tabs").into_any_element();
+        };
+
+        let Some(tab) = self.open_tabs.get(active_index) else {
+            return div().flex_1().child("No open tabs").into_any_element();
+        };
+
+        return match tab.kind {
+            TabKind::Request => {
+                if let Some(panel) = self.tab_panels.get(tab.id.as_str()) {
+                    div()
+                        .flex_1()
+                        .min_h_0()
+                        .child(panel.clone())
+                        .into_any_element()
+                } else {
+                    div().flex_1().child("Request panel not found").into_any_element()
+                }
+            }
+            TabKind::Sequence => div()
+                .flex_1()
+                .child(format!("Sequence: {}", tab.label))
+                .into_any_element(),
+        };
+    }
+
+    fn mainpanel(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.theme().clone();
+
+        if self.open_tabs.is_empty() {
+            return div().flex_1().flex().items_center().justify_center().child(
+                div()
+                    .text_base()
+                    .text_color(theme.muted_foreground)
+                    .child("Select a request or sequence from the sidebar to open it."),
+            );
+        }
+
+        let tab_bar = self.render_tab_bar(&theme, cx);
+        let content = self.render_tab_content(window, cx);
+
+        return div()
+            .flex()
+            .flex_col()
+            .flex_1()
+            .min_h_0()
+            .child(tab_bar)
+            .child(content);
     }
 }
 
