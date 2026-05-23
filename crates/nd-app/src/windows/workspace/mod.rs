@@ -158,7 +158,6 @@ impl WorkspaceView {
         return div()
             .min_h(px(40.))
             .max_h(px(40.))
-            .pr_1()
             .gap_2()
             .flex()
             .flex_row()
@@ -171,7 +170,16 @@ impl WorkspaceView {
                     .prefix(Icon::new(IconName::Search))
                     .appearance(false),
             )
-            .child(button::Button::new("tests").icon(Icon::new(IconName::Plus)));
+            .child(
+                button::Button::new("tests")
+                    .icon(Icon::new(IconName::Plus))
+                    .with_variant(button::ButtonVariant::Ghost)
+                    .h_full()
+                    .w_10()
+                    .border_l(px(1.))
+                    .border_color(theme.border)
+                    .rounded_none(),
+            );
     }
 
     fn sidebar_tree(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -204,13 +212,7 @@ impl WorkspaceView {
                         .map(|rt| rt.to_tab_kind())
                         .unwrap_or(TabKind::Request);
                     view.update(app_cx, |this, cx| {
-                        this.open_tab(
-                            item_id.clone(),
-                            item_label.clone(),
-                            kind,
-                            window,
-                            cx,
-                        );
+                        this.open_tab(item_id.clone(), item_label.clone(), kind, window, cx);
                     });
                 }
             });
@@ -323,9 +325,7 @@ impl WorkspaceView {
                         .on_click(move |_event, window, app_cx| {
                             if let Some(v) = tab_view.upgrade() {
                                 v.update(app_cx, |this: &mut WorkspaceView, cx| {
-                                    if let Some(pos) =
-                                        this.find_tab_position(&tab_id)
-                                    {
+                                    if let Some(pos) = this.find_tab_position(&tab_id) {
                                         this.close_tab(pos, window, cx);
                                     }
                                     cx.notify();
@@ -371,7 +371,10 @@ impl WorkspaceView {
                         .child(panel.clone())
                         .into_any_element()
                 } else {
-                    div().flex_1().child("Request panel not found").into_any_element()
+                    div()
+                        .flex_1()
+                        .child("Request panel not found")
+                        .into_any_element()
                 }
             }
             TabKind::Environment => {
@@ -382,7 +385,10 @@ impl WorkspaceView {
                         .child(panel.clone())
                         .into_any_element()
                 } else {
-                    div().flex_1().child("Environment panel not found").into_any_element()
+                    div()
+                        .flex_1()
+                        .child("Environment panel not found")
+                        .into_any_element()
                 }
             }
             TabKind::Sequence => div()
