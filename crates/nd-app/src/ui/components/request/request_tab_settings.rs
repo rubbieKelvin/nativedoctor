@@ -24,7 +24,7 @@ pub fn render(
             theme,
         ))
         .child(settings_row(
-            "Timeout (seconds)",
+            "Timeout",
             number_input::NumberInput::new("timeout", timeout_state, theme),
             theme,
         ))
@@ -69,11 +69,7 @@ fn settings_title(label: &str, theme: &Theme) -> impl IntoElement {
         .child(label.to_string());
 }
 
-fn settings_row(
-    label: &str,
-    control: impl IntoElement,
-    theme: &Theme,
-) -> impl IntoElement {
+fn settings_row(label: &str, control: impl IntoElement, theme: &Theme) -> impl IntoElement {
     return div()
         .px_4()
         .flex()
