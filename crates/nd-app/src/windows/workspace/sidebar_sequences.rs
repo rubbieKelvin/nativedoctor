@@ -3,7 +3,7 @@ use gpui_component::{
     h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
 };
 
-const SEQUENCE_PREFIX: &str = "sequence:";
+use super::resources::ResourceType;
 
 #[derive(Clone, Copy)]
 pub struct SequenceMeta {
@@ -13,7 +13,7 @@ pub struct SequenceMeta {
 }
 
 pub fn sequence_meta(id: &SharedString) -> Option<SequenceMeta> {
-    if !id.starts_with(SEQUENCE_PREFIX) {
+    if ResourceType::from_id(id) != Some(ResourceType::Sequence) {
         return None;
     }
     return SAMPLE_SEQUENCES
@@ -24,16 +24,38 @@ pub fn sequence_meta(id: &SharedString) -> Option<SequenceMeta> {
 
 pub fn sample_sequence_items() -> Vec<TreeItem> {
     return vec![
-        TreeItem::new("sequence:new-user-flow", "Create & verify user")
-            .expanded(true)
-            .children([
-                TreeItem::new("sequence:post-user", "Create user"),
-                TreeItem::new("sequence:get-customer", "Verify user"),
-            ]),
-        TreeItem::new("sequence:order-flow", "Order processing pipeline").children([
-            TreeItem::new("sequence:post-customer", "Create customer"),
-            TreeItem::new("sequence:put-user", "Update order"),
-            TreeItem::new("sequence:del-users", "Cleanup"),
+        TreeItem::new(
+            ResourceType::Sequence.make_id("new-user-flow"),
+            "Create & verify user",
+        )
+        .expanded(true)
+        .children([
+            TreeItem::new(
+                ResourceType::Sequence.make_id("post-user"),
+                "Create user",
+            ),
+            TreeItem::new(
+                ResourceType::Sequence.make_id("get-customer"),
+                "Verify user",
+            ),
+        ]),
+        TreeItem::new(
+            ResourceType::Sequence.make_id("order-flow"),
+            "Order processing pipeline",
+        )
+        .children([
+            TreeItem::new(
+                ResourceType::Sequence.make_id("post-customer"),
+                "Create customer",
+            ),
+            TreeItem::new(
+                ResourceType::Sequence.make_id("put-user"),
+                "Update order",
+            ),
+            TreeItem::new(
+                ResourceType::Sequence.make_id("del-users"),
+                "Cleanup",
+            ),
         ]),
     ];
 }
@@ -101,33 +123,6 @@ pub fn render_tree_row(
             );
     }
 
-    // Render child requests with a play icon and title
-    if item.id.starts_with("sequence:") {
-        let (_bg, fg) = sequence_colors(cx);
-
-        return ListItem::new(ix)
-            .w_full()
-            .selected(selected)
-            .pl(indent)
-            .child(
-                h_flex()
-                    .gap_2()
-                    .items_center()
-                    .min_w_0()
-                    .child(Icon::new(IconName::Play).size(px(14.)).text_color(fg))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .text_sm()
-                            .text_color(cx.theme().foreground)
-                            .truncate()
-                            .child(item.label.clone()),
-                    ),
-            );
-    }
-
-    // Render sequence entries with a play icon and step count badge
     if let Some(meta) = sequence_meta(&item.id) {
         let (bg, fg) = sequence_colors(cx);
 
@@ -164,8 +159,7 @@ pub fn render_tree_row(
             );
     }
 
-    // Fallback for unknown items
-    ListItem::new(ix)
+    return ListItem::new(ix)
         .w_full()
         .selected(selected)
         .pl(indent)
@@ -175,5 +169,5 @@ pub fn render_tree_row(
                 .items_center()
                 .child(Icon::new(IconName::File).small())
                 .child(item.label.clone()),
-        )
+        );
 }

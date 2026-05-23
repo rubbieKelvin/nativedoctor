@@ -3,7 +3,7 @@ use gpui_component::{
     h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
 };
 
-const ENV_PREFIX: &str = "env:";
+use super::resources::ResourceType;
 
 #[derive(Clone, Copy)]
 pub struct EnvMeta {
@@ -13,7 +13,7 @@ pub struct EnvMeta {
 }
 
 pub fn env_meta(id: &SharedString) -> Option<EnvMeta> {
-    if !id.starts_with(ENV_PREFIX) {
+    if ResourceType::from_id(id) != Some(ResourceType::Environment) {
         return None;
     }
     return SAMPLE_ENVIRONMENTS

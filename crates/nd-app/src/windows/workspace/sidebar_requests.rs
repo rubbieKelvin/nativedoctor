@@ -3,7 +3,7 @@ use gpui_component::{
     h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
 };
 
-const REQUEST_PREFIX: &str = "request:";
+use super::resources::ResourceType;
 
 #[derive(Clone, Copy)]
 pub struct RequestMeta {
@@ -12,7 +12,7 @@ pub struct RequestMeta {
 }
 
 pub fn request_meta(id: &SharedString) -> Option<RequestMeta> {
-    if !id.starts_with(REQUEST_PREFIX) {
+    if ResourceType::from_id(id) != Some(ResourceType::Request) {
         return None;
     }
     return SAMPLE_REQUESTS
@@ -22,19 +22,23 @@ pub fn request_meta(id: &SharedString) -> Option<RequestMeta> {
 }
 
 pub fn sample_tree_items() -> Vec<TreeItem> {
-    return vec![
-        TreeItem::new("folder:folder-01", "Folder 01")
-            .expanded(true)
-            .children([
-                TreeItem::new("request:del-users", "Delete users"),
-                TreeItem::new("request:put-user", "Update user"),
-                TreeItem::new("request:post-user", "Create user"),
-            ]),
-        TreeItem::new("folder:new-customer", "New Customer").children([
-            TreeItem::new("request:get-customer", "Get customer"),
-            TreeItem::new("request:post-customer", "Create customer"),
-        ]),
-    ];
+    let folder1 = TreeItem::new(ResourceType::Folder.make_id("folder-01"), "Folder 01")
+        .expanded(true)
+        .children([
+            TreeItem::new(ResourceType::Request.make_id("del-users"), "Delete users"),
+            TreeItem::new(ResourceType::Request.make_id("put-user"), "Update user"),
+            TreeItem::new(ResourceType::Request.make_id("post-user"), "Create user"),
+        ]);
+
+    let folder2 = TreeItem::new(ResourceType::Folder.make_id("new-customer"), "New Customer").children([
+        TreeItem::new(ResourceType::Request.make_id("get-customer"), "Get customer"),
+        TreeItem::new(
+            ResourceType::Request.make_id("post-customer"),
+            "Create customer",
+        ),
+    ]);
+
+    return vec![folder1, folder2];
 }
 
 static SAMPLE_REQUESTS: &[(&str, RequestMeta)] = &[

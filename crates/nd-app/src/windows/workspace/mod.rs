@@ -1,3 +1,4 @@
+mod resources;
 mod sidebar_environments;
 mod sidebar_requests;
 mod sidebar_sequences;
@@ -20,7 +21,7 @@ use crate::{
 };
 
 #[derive(Clone, PartialEq)]
-enum TabKind {
+pub(crate) enum TabKind {
     Request,
     Sequence,
     Environment,
@@ -199,13 +200,9 @@ impl WorkspaceView {
 
             item = item.on_click(move |_ev, window, app_cx| {
                 if let Some(view) = view.upgrade() {
-                    let kind = if item_id.starts_with("sequence:") {
-                        TabKind::Sequence
-                    } else if item_id.starts_with("env:") {
-                        TabKind::Environment
-                    } else {
-                        TabKind::Request
-                    };
+                    let kind = resources::ResourceType::from_id(&item_id)
+                        .map(|rt| rt.to_tab_kind())
+                        .unwrap_or(TabKind::Request);
                     view.update(app_cx, |this, cx| {
                         this.open_tab(
                             item_id.clone(),
