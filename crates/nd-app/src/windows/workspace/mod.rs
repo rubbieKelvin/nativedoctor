@@ -1,3 +1,4 @@
+mod sidebar_environments;
 mod sidebar_requests;
 mod sidebar_sequences;
 
@@ -14,7 +15,7 @@ use gpui_component::{
 };
 
 use crate::{
-    ui::components::{self, env_popup, request::RequestPanel},
+    ui::components::{self, env_panel::EnvPanel, env_popup, request::RequestPanel},
     windows::app_wrapper,
 };
 
@@ -22,6 +23,7 @@ use crate::{
 enum TabKind {
     Request,
     Sequence,
+    Environment,
 }
 
 #[derive(Clone, PartialEq)]
@@ -35,11 +37,13 @@ pub struct WorkspaceView {
     search_input_state: Entity<input::InputState>,
     requests_tree_state: Entity<TreeState>,
     sequences_tree_state: Entity<TreeState>,
+    env_tree_state: Entity<TreeState>,
     active_sidebar_pane: usize,
     env_popup_state: Entity<env_popup::EnvPopupState>,
     open_tabs: Vec<OpenTab>,
     active_tab_index: Option<usize>,
     tab_panels: HashMap<String, Entity<RequestPanel>>,
+    env_panels: HashMap<String, Entity<EnvPanel>>,
 }
 
 impl WorkspaceView {
@@ -53,16 +57,20 @@ impl WorkspaceView {
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
         let sequences_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_sequences::sample_sequence_items()));
+        let env_tree_state =
+            cx.new(|cx| TreeState::new(cx).items(sidebar_environments::sample_env_items()));
 
         return Self {
             search_input_state,
             requests_tree_state,
             sequences_tree_state,
+            env_tree_state,
             active_sidebar_pane: 0,
             env_popup_state,
             open_tabs: Vec::new(),
             active_tab_index: None,
             tab_panels: HashMap::new(),
+            env_panels: HashMap::new(),
         };
     }
 
@@ -93,6 +101,9 @@ impl WorkspaceView {
         if kind == TabKind::Request {
             let panel = cx.new(|cx| RequestPanel::new(window, cx));
             self.tab_panels.insert(id.to_string(), panel);
+        } else if kind == TabKind::Environment {
+            let panel = cx.new(|cx| EnvPanel::new(window, cx));
+            self.env_panels.insert(id.to_string(), panel);
         }
 
         self.active_tab_index = Some(new_index);
@@ -105,6 +116,7 @@ impl WorkspaceView {
 
         let removed = self.open_tabs.remove(index);
         self.tab_panels.remove(removed.id.as_str());
+        self.env_panels.remove(removed.id.as_str());
 
         if self.open_tabs.is_empty() {
             self.active_tab_index = None;
@@ -119,10 +131,10 @@ impl WorkspaceView {
     }
 
     fn sidebar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
-        let title = if self.active_sidebar_pane == 0 {
-            "Requests"
-        } else {
-            "Sequences"
+        let title = match self.active_sidebar_pane {
+            0 => "Requests",
+            1 => "Sequences",
+            _ => "Environments",
         };
         return div()
             .flex()
@@ -162,19 +174,19 @@ impl WorkspaceView {
     }
 
     fn sidebar_tree(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
-        let is_requests = self.active_sidebar_pane == 0;
-        let state = if is_requests {
-            &self.requests_tree_state
-        } else {
-            &self.sequences_tree_state
+        let pane = self.active_sidebar_pane;
+        let state = match pane {
+            0 => &self.requests_tree_state,
+            1 => &self.sequences_tree_state,
+            _ => &self.env_tree_state,
         };
         let view = cx.weak_entity();
 
         return tree(state, move |ix, entry, selected, _, cx| {
-            let mut item = if is_requests {
-                sidebar_requests::render_tree_row(ix, entry, selected, cx)
-            } else {
-                sidebar_sequences::render_tree_row(ix, entry, selected, cx)
+            let mut item = match pane {
+                0 => sidebar_requests::render_tree_row(ix, entry, selected, cx),
+                1 => sidebar_sequences::render_tree_row(ix, entry, selected, cx),
+                _ => sidebar_environments::render_tree_row(ix, entry, selected, cx),
             };
 
             if entry.is_folder() {
@@ -189,6 +201,8 @@ impl WorkspaceView {
                 if let Some(view) = view.upgrade() {
                     let kind = if item_id.starts_with("sequence:") {
                         TabKind::Sequence
+                    } else if item_id.starts_with("env:") {
+                        TabKind::Environment
                     } else {
                         TabKind::Request
                     };
@@ -235,6 +249,15 @@ impl WorkspaceView {
                     .on_click(cx.listener(move |this, _event, _window, _cx| {
                         this.active_sidebar_pane = 1;
                     })),
+            )
+            .child(
+                button::Button::new("switch-to-environments-pill")
+                    .label("envs")
+                    .selected(active == 2)
+                    .xsmall()
+                    .on_click(cx.listener(move |this, _event, _window, _cx| {
+                        this.active_sidebar_pane = 2;
+                    })),
             );
     }
 
@@ -275,6 +298,12 @@ impl WorkspaceView {
             let tab_label = tab.label.clone();
             let is_active = active == Some(i);
 
+            let tab_icon = match tab.kind {
+                TabKind::Request => IconName::ExternalLink,
+                TabKind::Sequence => IconName::Play,
+                TabKind::Environment => IconName::Globe,
+            };
+
             let tab_pill = Tab::new()
                 .small()
                 .h_full()
@@ -285,11 +314,7 @@ impl WorkspaceView {
                         .flex_row()
                         .items_center()
                         .gap_2()
-                        .child(if tab.kind == TabKind::Request {
-                            IconName::ExternalLink
-                        } else {
-                            IconName::Play
-                        })
+                        .child(tab_icon)
                         .child(tab_label.clone()),
                 )
                 .suffix({
@@ -350,6 +375,17 @@ impl WorkspaceView {
                         .into_any_element()
                 } else {
                     div().flex_1().child("Request panel not found").into_any_element()
+                }
+            }
+            TabKind::Environment => {
+                if let Some(panel) = self.env_panels.get(tab.id.as_str()) {
+                    div()
+                        .flex_1()
+                        .min_h_0()
+                        .child(panel.clone())
+                        .into_any_element()
+                } else {
+                    div().flex_1().child("Environment panel not found").into_any_element()
                 }
             }
             TabKind::Sequence => div()
