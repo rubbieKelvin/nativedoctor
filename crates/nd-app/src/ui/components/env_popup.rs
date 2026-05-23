@@ -1,7 +1,10 @@
 use gpui::{prelude::FluentBuilder, *};
 use gpui_component::{
-    button, h_flex, input, popover::Popover, scroll::ScrollableElement, v_flex, ActiveTheme, Icon,
-    IconName, Sizable,
+    button::{self, ButtonVariants},
+    input,
+    popover::Popover,
+    scroll::ScrollableElement,
+    ActiveTheme, Icon, IconName, Sizable,
 };
 use std::rc::Rc;
 
@@ -11,73 +14,55 @@ pub struct EnvPopupState {
     search_state: Entity<input::InputState>,
     is_open: bool,
     on_select: Option<Rc<dyn Fn(usize)>>,
-    _search_sub: Subscription,
 }
 
 impl EnvPopupState {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let search_state = cx.new(|cx| {
-            input::InputState::new(window, cx).placeholder("Search environments...")
-        });
+        let search_state =
+            cx.new(|cx| input::InputState::new(window, cx).placeholder("Search environments..."));
 
-        let _search_sub =
-            cx.subscribe(
-                &search_state,
-                |_this, _state, _event: &input::InputEvent, cx| {
-                    cx.notify();
-                },
-            );
-
-        Self {
-            environments: vec![
-                "Development".into(),
-                "Staging".into(),
-                "Production".into(),
-            ],
+        return Self {
+            environments: vec!["Development".into(), "Staging".into(), "Production".into()],
             active_idx: 0,
             search_state,
             is_open: false,
             on_select: None,
-            _search_sub,
-        }
+        };
     }
 
+    #[allow(unused)]
     pub fn on_select(mut self, callback: impl Fn(usize) + 'static) -> Self {
         self.on_select = Some(Rc::new(callback));
-        self
+        return self;
     }
 
-    pub fn toggle(&mut self, cx: &mut Context<Self>) {
-        self.is_open = !self.is_open;
-        cx.notify();
-    }
-
-    fn select_item(&mut self, idx: usize, cx: &mut Context<Self>) {
+    fn select_item(&mut self, idx: usize, _cx: &mut Context<Self>) {
         self.active_idx = idx;
         self.is_open = false;
         if let Some(cb) = &self.on_select {
             cb(idx);
         }
-        cx.notify();
     }
 
     fn filtered(&self, cx: &App) -> Vec<(usize, SharedString)> {
         let query = self.search_state.read(cx).value();
         if query.is_empty() {
-            self.environments
+            return self
+                .environments
                 .iter()
                 .enumerate()
                 .map(|(i, n)| (i, n.clone()))
-                .collect()
-        } else {
-            let q = query.to_lowercase();
-            self.environments
-                .iter()
-                .enumerate()
-                .filter(|(_, name)| name.to_lowercase().contains(&q))
-                .map(|(i, n)| (i, n.clone()))
-                .collect()
+                .collect();
         }
+
+        let q = query.to_lowercase();
+        return self
+            .environments
+            .iter()
+            .enumerate()
+            .filter(|(_, name)| name.to_lowercase().contains(&q))
+            .map(|(i, n)| (i, n.clone()))
+            .collect();
     }
 }
 
@@ -88,7 +73,7 @@ pub struct EnvPopup {
 
 impl EnvPopup {
     pub fn new(state: Entity<EnvPopupState>) -> Self {
-        Self { state }
+        return Self { state };
     }
 }
 
@@ -103,9 +88,10 @@ impl RenderOnce for EnvPopup {
                 .unwrap_or_default()
         };
 
-        Popover::new("env-popup")
+        return Popover::new("env-popup")
             .anchor(Anchor::TopLeft)
             .open(state.read(cx).is_open)
+            .p_0()
             .on_open_change({
                 let state = state.clone();
                 move |is_open, _window, cx| {
@@ -119,6 +105,7 @@ impl RenderOnce for EnvPopup {
                 button::Button::new(SharedString::from("env-button"))
                     .label(active_name)
                     .small()
+                    .with_variant(button::ButtonVariant::Ghost)
                     .icon(IconName::ChevronsUpDown),
             )
             .content({
@@ -130,28 +117,30 @@ impl RenderOnce for EnvPopup {
 
                     let popover_entity = cx.entity();
 
-                    v_flex()
-                        .w(px(260.))
+                    return div()
+                        .w_64()
                         .gap_2()
                         .child(
-                            h_flex()
+                            div()
+                                .flex()
+                                .flex_row()
                                 .items_center()
-                                .justify_between()
+                                .gap_2()
                                 .child(
-                                    div()
-                                        .text_sm()
-                                        .font_weight(FontWeight::BOLD)
-                                        .child("Project Environments"),
+                                    input::Input::new(&state.read(cx).search_state)
+                                        .appearance(false),
                                 )
                                 .child(
                                     button::Button::new(SharedString::from("add-env"))
                                         .icon(Icon::new(IconName::Plus))
-                                        .xsmall(),
-                                ),
+                                        .small(),
+                                )
+                                .border_b_1()
+                                .border_color(theme.border),
                         )
-                        .child(input::Input::new(&state.read(cx).search_state))
                         .child(
-                            v_flex()
+                            div()
+                                .flex()
                                 .max_h(px(240.))
                                 .overflow_y_scrollbar()
                                 .children(filtered.iter().map(|(idx, name)| {
@@ -183,8 +172,8 @@ impl RenderOnce for EnvPopup {
                                             },
                                         )
                                 })),
-                        )
+                        );
                 }
-            })
+            });
     }
 }
