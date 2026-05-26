@@ -32,11 +32,17 @@ impl ProjectFile {
         };
     }
 
-    pub fn load(path: PathBuf) -> Result<Self> {
-        todo!()
+    pub fn load(path: PathBuf) -> Result<Self, String> {
+        let content = std::fs::read_to_string(&path)
+            .map_err(|e| format!("Failed to read project file '{}': {}", path.display(), e))?;
+        serde_yaml::from_str(&content)
+            .map_err(|e| format!("Failed to parse project file '{}': {}", path.display(), e))
     }
 
-    pub fn write(&self, path: PathBuff) -> Result<(), String> {
-        todo!()
+    pub fn write(&self, path: PathBuf) -> Result<(), String> {
+        let content = serde_yaml::to_string(self)
+            .map_err(|e| format!("Failed to serialize project file: {}", e))?;
+        std::fs::write(&path, content)
+            .map_err(|e| format!("Failed to write project file '{}': {}", path.display(), e))
     }
 }

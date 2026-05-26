@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::files::models::{ProjectFiles, _FolderItem, _RequestFileItem};
+use crate::files::models::{ProjectFile, _FolderItem, _RequestFileItem};
 use nd_core::model::request::RequestFile;
 
 pub mod models;
@@ -58,9 +58,9 @@ pub fn create_project(root: PathBuf, name: String) -> Result<(), String> {
     fs::write(&readme_path, readme.as_bytes())
         .map_err(|e| format!("Failed to write README.md: {}", e))?;
 
-    let project_files = ProjectFiles {
+    let project_files = ProjectFile {
         title: name,
-        doc: readme_path,
+        // doc: readme_path,
         folders: vec![_FolderItem {
             id: "default".into(),
             name: "Default".into(),
