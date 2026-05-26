@@ -1,7 +1,7 @@
 use gpui::*;
 use gpui_component::{Root, TitleBar};
 
-use crate::windows::{project, workspace};
+use crate::windows::workspace;
 
 pub fn setup() {
     let app = gpui_platform::application().with_assets(gpui_component_assets::Assets);
@@ -21,8 +21,7 @@ pub fn setup() {
         })
         .detach();
 
-        // spawn window
-        spawn_project_window(cx);
+        spawn_workspace_window(cx);
     });
 }
 
@@ -36,20 +35,6 @@ pub fn window_options(cx: &App) -> WindowOptions {
     };
 }
 
-pub fn spawn_project_window(cx: &mut App) {
-    let options = window_options(cx);
-
-    cx.spawn(async move |cx| {
-        cx.open_window(options, |window, cx| {
-            let view = cx.new(|cx| project::ProjectView::new(window, cx));
-            cx.new(|cx| Root::new(view, window, cx))
-        })
-        .expect("Failed to open window");
-    })
-    .detach();
-}
-
-#[allow(dead_code)]
 pub fn spawn_workspace_window(cx: &mut App) {
     let options = window_options(cx);
 

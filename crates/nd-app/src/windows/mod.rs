@@ -1,7 +1,6 @@
 use gpui::*;
 use gpui_component::Root;
 
-pub mod project;
 pub mod settings;
 pub mod workspace;
 

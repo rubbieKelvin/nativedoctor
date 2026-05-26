@@ -16,9 +16,27 @@ pub struct _FolderItem {
 
 // The structure for nativedoctor project files
 #[derive(Serialize, Deserialize)]
-pub struct ProjectFiles {
+pub struct ProjectFile {
     pub title: String,
-    pub doc: PathBuf,
     pub folders: Vec<_FolderItem>,
     pub requests: Vec<_RequestFileItem>,
+}
+impl ProjectFile {
+    pub fn new<S: AsRef<str>>(title: S) -> Self {
+        let title = title.as_ref();
+
+        return ProjectFile {
+            title: title.to_owned(),
+            folders: vec![],
+            requests: vec![],
+        };
+    }
+
+    pub fn load(path: PathBuf) -> Result<Self> {
+        todo!()
+    }
+
+    pub fn write(&self, path: PathBuff) -> Result<(), String> {
+        todo!()
+    }
 }
