@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use gpui::*;
 use gpui_component::{
     button::{self, ButtonVariants},
-    dialog::{DialogButtonProps, DialogContent},
+    dialog::DialogButtonProps,
     input, ActiveTheme, IconName, Sizable, WindowExt,
 };
 
@@ -73,16 +73,27 @@ fn path_input(cx: &mut App, state: Entity<CreateProjectState>) -> impl IntoEleme
                 .with_variant(button::ButtonVariant::Secondary)
                 .icon(IconName::FolderOpen)
                 .on_click(move |_event, _window, cx| {
-                    if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                        let path_str: SharedString = path.to_string_lossy().to_string().into();
+                    let state = state.clone();
+                    cx.spawn(|cx: &mut AsyncApp| {
+                        let cx = (*cx).clone();
+                        async move {
+                            let result: Option<std::path::PathBuf> = cx.background_executor().spawn(async move {
+                                rfd::FileDialog::new().pick_folder()
+                            }).await;
 
-                        state.update(cx, |s, cx| {
-                            s.base_path.update(cx, |v, cx| {
-                                *v = path_str;
-                                cx.notify();
-                            });
-                        });
-                    }
+                            if let Some(path) = result {
+                                cx.update(|cx| {
+                                    let path_str: SharedString = path.to_string_lossy().to_string().into();
+                                    state.update(cx, |s, cx| {
+                                        s.base_path.update(cx, |v, cx| {
+                                            *v = path_str;
+                                            cx.notify();
+                                        });
+                                    });
+                                });
+                            }
+                        }
+                    }).detach();
                 })
         });
 }
