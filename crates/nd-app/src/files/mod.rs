@@ -1,12 +1,11 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::files::models::{ProjectFile, _FolderItem, _RequestFileItem};
+use crate::files::models::ProjectFile;
 use nd_core::model::request::RequestFile;
 
 pub mod models;
 
-/// Create a new project folder with `.nativedoctor` manifest, README, and sample request files.
 pub fn create_project(root: PathBuf, name: String) -> Result<(), String> {
     if !root.is_dir() {
         return Err("Root should be a directory".into());
@@ -61,19 +60,10 @@ pub fn create_project(root: PathBuf, name: String) -> Result<(), String> {
     let project_files = ProjectFile {
         title: name,
         // doc: readme_path,
-        folders: vec![_FolderItem {
-            id: "default".into(),
-            name: "Default".into(),
-        }],
+        folders: vec![],
         requests: vec![
-            _RequestFileItem {
-                path: PathBuf::from("requests/request1.json"),
-                folder: None,
-            },
-            _RequestFileItem {
-                path: PathBuf::from("requests/request2.json"),
-                folder: Some("default".into()),
-            },
+            (PathBuf::from("requests/request1.json"), None),
+            (PathBuf::from("requests/request2.json"), None),
         ],
     };
 

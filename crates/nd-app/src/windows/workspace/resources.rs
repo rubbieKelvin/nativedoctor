@@ -1,5 +1,6 @@
 use gpui::SharedString;
 
+// TODO: We'd probably trash this in favor of somthing else
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ResourceType {
     Request,

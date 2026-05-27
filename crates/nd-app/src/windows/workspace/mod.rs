@@ -1,3 +1,4 @@
+mod project;
 mod resources;
 mod sidebar_environments;
 mod sidebar_requests;
@@ -16,7 +17,7 @@ use gpui_component::{
 };
 
 use crate::{
-    ui::components::{self, env_panel::EnvPanel, env_popup, request::RequestPanel},
+    ui::components::{self, env_panel::EnvPanel, env_popup, project_popup, request::RequestPanel},
     windows::app_wrapper,
 };
 
@@ -35,16 +36,19 @@ struct OpenTab {
 }
 
 pub struct WorkspaceView {
+    project: Entity<Option<project::OpenProject>>,
     search_input_state: Entity<input::InputState>,
     requests_tree_state: Entity<TreeState>,
     sequences_tree_state: Entity<TreeState>,
     env_tree_state: Entity<TreeState>,
     active_sidebar_pane: usize,
     env_popup_state: Entity<env_popup::EnvPopupState>,
+    project_popup_state: Entity<project_popup::ProjectPopupState>,
     open_tabs: Vec<OpenTab>,
     active_tab_index: Option<usize>,
     tab_panels: HashMap<String, Entity<RequestPanel>>,
     env_panels: HashMap<String, Entity<EnvPanel>>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl WorkspaceView {
@@ -53,25 +57,33 @@ impl WorkspaceView {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
 
         let env_popup_state = cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
+        let project_popup_state = cx.new(|cx| project_popup::ProjectPopupState::new(window, cx));
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
+
         let sequences_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_sequences::sample_sequence_items()));
+
         let env_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_environments::sample_env_items()));
 
+        let project = cx.new(|_cx| None::<project::OpenProject>);
+
         return Self {
+            project,
             search_input_state,
             requests_tree_state,
             sequences_tree_state,
             env_tree_state,
             active_sidebar_pane: 0,
             env_popup_state,
+            project_popup_state,
             open_tabs: Vec::new(),
             active_tab_index: None,
             tab_panels: HashMap::new(),
             env_panels: HashMap::new(),
+            _subscriptions: vec![],
         };
     }
 
@@ -421,35 +433,41 @@ impl WorkspaceView {
             .child(tab_bar)
             .child(content);
     }
+
+    fn render_workspace(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl Element {
+        let theme = cx.theme().clone();
+
+        return div().flex_1().min_h_0().child(
+            div()
+                .size_full()
+                .bg(theme.background)
+                .text_color(theme.foreground)
+                .child(
+                    h_resizable("sidebar-workspace")
+                        .child(
+                            resizable_panel()
+                                .size(px(384.))
+                                .size_range(px(200.)..px(600.))
+                                .child(self.sidebar(&theme, cx)),
+                        )
+                        .child(resizable_panel().child(self.mainpanel(window, cx))),
+                ),
+        );
+    }
 }
 
 impl Render for WorkspaceView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.theme().clone();
-
         return app_wrapper::<Self>(window, cx)
             .child(components::title_bar::render(
-                "Project name",
+                project_popup::ProjectPopup::new(self.project_popup_state.clone()),
                 env_popup::EnvPopup::new(self.env_popup_state.clone()),
                 cx,
             ))
-            .child(
-                div().flex_1().min_h_0().child(
-                    div()
-                        .size_full()
-                        .bg(theme.background)
-                        .text_color(theme.foreground)
-                        .child(
-                            h_resizable("sidebar-workspace")
-                                .child(
-                                    resizable_panel()
-                                        .size(px(384.))
-                                        .size_range(px(200.)..px(600.))
-                                        .child(self.sidebar(&theme, cx)),
-                                )
-                                .child(resizable_panel().child(self.mainpanel(window, cx))),
-                        ),
-                ),
+            .when_else(
+                self.project.read(cx).is_some(),
+                |el| el.child(self.render_workspace(window, cx)),
+                |el| el.child(div().child("No project")),
             );
     }
 }

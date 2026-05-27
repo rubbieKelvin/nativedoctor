@@ -2,14 +2,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
-pub struct _RequestFileItem {
-    pub path: PathBuf,
-    pub folder: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct _FolderItem {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Folder {
     pub id: String,
     pub name: String,
 }
@@ -18,9 +12,11 @@ pub struct _FolderItem {
 #[derive(Serialize, Deserialize)]
 pub struct ProjectFile {
     pub title: String,
-    pub folders: Vec<_FolderItem>,
-    pub requests: Vec<_RequestFileItem>,
+    pub folders: Vec<Folder>,
+    /// A request holds a tuple pointing to the request path and the folder id
+    pub requests: Vec<(PathBuf, Option<String>)>,
 }
+
 impl ProjectFile {
     pub fn new<S: AsRef<str>>(title: S) -> Self {
         let title = title.as_ref();
