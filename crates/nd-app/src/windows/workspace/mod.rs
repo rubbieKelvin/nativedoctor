@@ -17,7 +17,13 @@ use gpui_component::{
 };
 
 use crate::{
-    ui::components::{self, env_panel::EnvPanel, env_popup, project_popup, request::RequestPanel},
+    ui::components::{
+        self,
+        env_panel::EnvPanel,
+        env_popup,
+        project::recents::{ProjectPopup, ProjectPopupState},
+        request::RequestPanel,
+    },
     windows::app_wrapper,
 };
 
@@ -43,7 +49,7 @@ pub struct WorkspaceView {
     env_tree_state: Entity<TreeState>,
     active_sidebar_pane: usize,
     env_popup_state: Entity<env_popup::EnvPopupState>,
-    project_popup_state: Entity<project_popup::ProjectPopupState>,
+    project_popup_state: Entity<ProjectPopupState>,
     open_tabs: Vec<OpenTab>,
     active_tab_index: Option<usize>,
     tab_panels: HashMap<String, Entity<RequestPanel>>,
@@ -57,7 +63,7 @@ impl WorkspaceView {
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search requests..."));
 
         let env_popup_state = cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
-        let project_popup_state = cx.new(|cx| project_popup::ProjectPopupState::new(window, cx));
+        let project_popup_state = cx.new(|cx| ProjectPopupState::new(window, cx));
 
         let requests_tree_state =
             cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
@@ -460,7 +466,7 @@ impl Render for WorkspaceView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         return app_wrapper::<Self>(window, cx)
             .child(components::title_bar::render(
-                project_popup::ProjectPopup::new(self.project_popup_state.clone()),
+                ProjectPopup::new(self.project_popup_state.clone()),
                 env_popup::EnvPopup::new(self.env_popup_state.clone()),
                 cx,
             ))

@@ -1,7 +1,6 @@
 use gpui::*;
 use gpui_component::Root;
 
-pub mod settings;
 pub mod workspace;
 
 pub fn app_wrapper<T>(window: &mut Window, cx: &mut Context<T>) -> Div {
