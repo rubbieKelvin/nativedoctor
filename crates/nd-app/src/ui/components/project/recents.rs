@@ -9,11 +9,21 @@ use gpui_component::{
     ActiveTheme, Icon, IconName, Sizable,
 };
 
+use crate::ui::components::project;
+
+#[derive(Clone)]
+pub struct RecentProject {
+    pub name: SharedString,
+    pub path: SharedString,
+}
+
 pub struct ProjectPopupState {
     pub recent_projects: Vec<RecentProject>,
     pub active_project_name: SharedString,
     search_state: Entity<input::InputState>,
+    create_project_popup: Entity<project::create::CreateProjectState>,
     is_open: bool,
+    _subscriptions: Vec<Subscription>,
 }
 
 #[derive(Debug, Clone)]
@@ -23,22 +33,34 @@ pub enum ProjectPopupEvents {
 
 impl EventEmitter<ProjectPopupEvents> for ProjectPopupState {}
 
-#[derive(Clone)]
-pub struct RecentProject {
-    pub name: SharedString,
-    pub path: SharedString,
-}
-
 impl ProjectPopupState {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let search_state =
             cx.new(|cx| input::InputState::new(window, cx).placeholder("Search projects..."));
+
+        let create_project_popup =
+            cx.new(|cx| project::create::CreateProjectState::new(window, cx));
+
+        let _subscriptions = vec![cx.subscribe_in(
+            &create_project_popup,
+            window,
+            |this, _entity, event, _window, cx| {
+                match event {
+                    project::create::CreateProjectEvent::ProjectFileCreated(path) => {
+                        cx.emit(ProjectPopupEvents::OpenProject(path.clone()));
+                        this.is_open = false;
+                    }
+                };
+            },
+        )];
 
         return Self {
             recent_projects: Vec::new(),
             active_project_name: "No project".into(),
             search_state,
             is_open: false,
+            create_project_popup,
+            _subscriptions,
         };
     }
 
@@ -67,13 +89,6 @@ impl ProjectPopupState {
     fn open_project(&mut self, cx: &mut Context<Self>) {
         // open a folder and ask the user to select a project file
         // then emit the project file
-        let project_file = PathBuf::new();
-        cx.emit(ProjectPopupEvents::OpenProject(project_file));
-        self.is_open = false;
-    }
-
-    fn create_project(&mut self, cx: &mut Context<Self>) {
-        // open a dialog that ask the user to input a path and a name for the project
         let project_file = PathBuf::new();
         cx.emit(ProjectPopupEvents::OpenProject(project_file));
         self.is_open = false;
@@ -195,6 +210,7 @@ impl ProjectPopup {
     ) -> impl IntoElement {
         let theme = cx.theme();
         let state = self.state.clone();
+        let create_project_state = self.state.read(cx).create_project_popup.clone();
 
         return div()
             .flex()
@@ -210,7 +226,7 @@ impl ProjectPopup {
                     .with_variant(button::ButtonVariant::Ghost)
                     .icon(IconName::Plus)
                     .on_click({
-                        let state = state.clone();
+                        let create_project_state = create_project_state.clone();
                         let popover_entity = popover_entity.clone();
 
                         move |_event, window, cx| {
@@ -218,10 +234,12 @@ impl ProjectPopup {
                                 s.dismiss(window, cx);
                             });
 
-                            state.update(cx, |this, cx| {
-                                // TODO: empty path buf for now, improve later
-                                this.create_project(cx);
-                            });
+                            // let state = state.clone();
+                            super::create::open_create_project(
+                                create_project_state.clone(),
+                                window,
+                                cx,
+                            );
                         }
                     }),
             )
