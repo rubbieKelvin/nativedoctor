@@ -5,6 +5,12 @@ use thiserror::Error;
 /// Errors returned by [`crate::Result`].
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("{0}")]
+    Plain(String),
+
+    #[error("Unknown Error: {0}")]
+    Unknown(String),
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 

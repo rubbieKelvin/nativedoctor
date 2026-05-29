@@ -1,10 +1,12 @@
 mod project;
-mod resources;
 mod sidebar_environments;
 mod sidebar_requests;
+mod sidebar_search;
 mod sidebar_sequences;
+pub mod sidebar_tree;
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use gpui::{prelude::FluentBuilder, *};
 use gpui_component::{
@@ -12,19 +14,22 @@ use gpui_component::{
     input,
     resizable::{h_resizable, resizable_panel},
     tab::{self, Tab, TabBar},
-    tree::{tree, TreeState},
-    ActiveTheme, Icon, IconName, Selectable, Sizable, Theme,
+    tree::{TreeItem, TreeState},
+    ActiveTheme, IconName, Selectable, Sizable, Theme,
 };
+use nd_core::model::project::{ProjectFile, ProjectResource, ResourceType};
+use tracing::warn;
 
 use crate::{
     ui::components::{
         self,
         env_panel::EnvPanel,
         env_popup,
-        project::recents::{ProjectPopup, ProjectPopupState},
+        project::recents::{ProjectPopup, ProjectPopupEvents, ProjectPopupState},
         request::RequestPanel,
     },
     windows::app_wrapper,
+    windows::workspace::project::OpenProject,
 };
 
 #[derive(Clone, PartialEq)]
@@ -44,10 +49,11 @@ struct OpenTab {
 pub struct WorkspaceView {
     project: Entity<Option<project::OpenProject>>,
     search_input_state: Entity<input::InputState>,
-    requests_tree_state: Entity<TreeState>,
-    sequences_tree_state: Entity<TreeState>,
+    pub requests_tree_state: Entity<TreeState>,
+    pub sequences_tree_state: Entity<TreeState>,
+    #[allow(dead_code)]
     env_tree_state: Entity<TreeState>,
-    active_sidebar_pane: usize,
+    pub active_sidebar_pane: usize,
     env_popup_state: Entity<env_popup::EnvPopupState>,
     project_popup_state: Entity<ProjectPopupState>,
     open_tabs: Vec<OpenTab>,
@@ -65,16 +71,21 @@ impl WorkspaceView {
         let env_popup_state = cx.new(|cx| env_popup::EnvPopupState::new(window, cx));
         let project_popup_state = cx.new(|cx| ProjectPopupState::new(window, cx));
 
-        let requests_tree_state =
-            cx.new(|cx| TreeState::new(cx).items(sidebar_requests::sample_tree_items()));
-
-        let sequences_tree_state =
-            cx.new(|cx| TreeState::new(cx).items(sidebar_sequences::sample_sequence_items()));
-
-        let env_tree_state =
-            cx.new(|cx| TreeState::new(cx).items(sidebar_environments::sample_env_items()));
+        let requests_tree_state = cx.new(|cx| TreeState::new(cx));
+        let sequences_tree_state = cx.new(|cx| TreeState::new(cx));
+        let env_tree_state = cx.new(|cx| TreeState::new(cx));
 
         let project = cx.new(|_cx| None::<project::OpenProject>);
+
+        let _subscriptions = vec![cx.subscribe_in(
+            &project_popup_state,
+            window,
+            |this, _entity, event, window, cx| match event {
+                ProjectPopupEvents::OpenProject(path) => {
+                    this.handle_open_project(path.clone(), window, cx);
+                }
+            },
+        )];
 
         return Self {
             project,
@@ -89,7 +100,7 @@ impl WorkspaceView {
             active_tab_index: None,
             tab_panels: HashMap::new(),
             env_panels: HashMap::new(),
-            _subscriptions: vec![],
+            _subscriptions,
         };
     }
 
@@ -97,7 +108,7 @@ impl WorkspaceView {
         return self.open_tabs.iter().position(|tab| tab.id == *id);
     }
 
-    fn open_tab(
+    pub fn open_tab(
         &mut self,
         id: SharedString,
         label: SharedString,
@@ -128,6 +139,48 @@ impl WorkspaceView {
         self.active_tab_index = Some(new_index);
     }
 
+    /// Handle an open-project request triggered from the title-bar popover.
+    ///
+    /// Loads the `nativedoctor.yaml` at `path`, parses it, builds the
+    /// in-memory [`OpenProject`], scans request files for metadata, and
+    /// populates the sidebar tree states.
+    fn handle_open_project(&mut self, path: PathBuf, _window: &mut Window, cx: &mut Context<Self>) {
+        let project_file = match ProjectFile::from_file(&path) {
+            Ok(pf) => pf,
+            Err(e) => {
+                tracing::error!("Failed to load project file: {}", e);
+                return;
+            }
+        };
+
+        let mut open_project = OpenProject::from_project_file(project_file.clone(), path.clone());
+        open_project.load_resources();
+
+        // Build request tree + metadata from the ProjectResource tree.
+        let request_tree_items =
+            build_items_from_resources(&project_file.requests, ResourceType::Request);
+
+        self.requests_tree_state.update(cx, |state, cx| {
+            state.set_items(request_tree_items, cx);
+        });
+
+        // Build sequence tree from the ProjectResource tree.
+        let sequence_tree_items =
+            build_items_from_resources(&project_file.sequences, ResourceType::Sequence);
+
+        self.sequences_tree_state.update(cx, |state, cx| {
+            state.set_items(sequence_tree_items, cx);
+        });
+
+        // Store the loaded project and update the UI.
+        self.project.update(cx, |proj, cx| {
+            *proj = Some(open_project);
+            cx.notify();
+        });
+
+        cx.notify();
+    }
+
     fn close_tab(&mut self, index: usize, _window: &mut Window, _cx: &mut Context<Self>) {
         if index >= self.open_tabs.len() {
             return;
@@ -149,17 +202,28 @@ impl WorkspaceView {
         });
     }
 
-    fn sidebar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
+    fn sidebar(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = cx.theme().clone();
+        let project = self.project.read(cx);
         let title = match self.active_sidebar_pane {
             0 => "Requests",
-            1 => "Sequences",
-            _ => "Environments",
+            _ => "Sequences",
         };
+
+        let (request, sequence) = if let Some(project) = project {
+            (
+                project.loaded_requests.clone(),
+                project.loaded_sequences.clone(),
+            )
+        } else {
+            (HashMap::new(), HashMap::new())
+        };
+
         return div()
             .flex()
             .flex_col()
             .size_full()
-            .child(self.sidebar_searchbar(theme))
+            .child(sidebar_search::render(cx, &self.search_input_state))
             .child(
                 div()
                     .px_3()
@@ -168,114 +232,15 @@ impl WorkspaceView {
                     .text_sm()
                     .text_color(theme.muted_foreground),
             )
-            .child(self.sidebar_tree(cx))
-            .child(self.bottom_pane(theme, cx));
-    }
-
-    fn sidebar_searchbar(&mut self, theme: &Theme) -> impl IntoElement {
-        return div()
-            .min_h(px(40.))
-            .max_h(px(40.))
-            .gap_2()
-            .flex()
-            .flex_row()
-            .items_center()
-            .justify_center()
-            .border_b(px(1.))
-            .border_color(theme.border)
-            .child(
-                input::Input::new(&self.search_input_state)
-                    .prefix(Icon::new(IconName::Search))
-                    .appearance(false),
-            )
-            .child(
-                button::Button::new("tests")
-                    .icon(Icon::new(IconName::Plus))
-                    .with_variant(button::ButtonVariant::Ghost)
-                    .h_full()
-                    .w_10()
-                    .border_l(px(1.))
-                    .border_color(theme.border)
-                    .rounded_none(),
-            );
-    }
-
-    fn sidebar_tree(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
-        let pane = self.active_sidebar_pane;
-        let state = match pane {
-            0 => &self.requests_tree_state,
-            1 => &self.sequences_tree_state,
-            _ => &self.env_tree_state,
-        };
-        let view = cx.weak_entity();
-
-        return tree(state, move |ix, entry, selected, _, cx| {
-            let mut item = match pane {
-                0 => sidebar_requests::render_tree_row(ix, entry, selected, cx),
-                1 => sidebar_sequences::render_tree_row(ix, entry, selected, cx),
-                _ => sidebar_environments::render_tree_row(ix, entry, selected, cx),
-            };
-
-            if entry.is_folder() {
-                return item;
-            }
-
-            let item_id = entry.item().id.clone();
-            let item_label = entry.item().label.clone();
-            let view = view.clone();
-
-            item = item.on_click(move |_ev, window, app_cx| {
-                if let Some(view) = view.upgrade() {
-                    let kind = resources::ResourceType::from_id(&item_id)
-                        .map(|rt| rt.to_tab_kind())
-                        .unwrap_or(TabKind::Request);
-                    view.update(app_cx, |this, cx| {
-                        this.open_tab(item_id.clone(), item_label.clone(), kind, window, cx);
-                    });
-                }
-            });
-
-            return item;
-        })
-        .flex_1()
-        .min_h_0();
-    }
-
-    fn bottom_pane(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
-        let active = self.active_sidebar_pane;
-        return div()
-            .flex()
-            .gap_2()
-            .p_2()
-            .border_t(px(1.))
-            .border_color(theme.border)
-            .child(
-                button::Button::new("switch-to-request-pill")
-                    .label("requests")
-                    .selected(active == 0)
-                    .xsmall()
-                    .on_click(cx.listener(move |this, _event, _window, _cx| {
-                        this.active_sidebar_pane = 0;
-                    })),
-            )
-            .child(
-                button::Button::new("switch-to-sequences-pill")
-                    .label("sequences")
-                    .selected(active == 1)
-                    .xsmall()
-                    .on_click(cx.listener(move |this, _event, _window, _cx| {
-                        this.active_sidebar_pane = 1;
-                    })),
-            )
-            .child(
-                button::Button::new("switch-to-environments-pill")
-                    .label("envs")
-                    .selected(active == 2)
-                    .xsmall()
-                    .on_click(cx.listener(move |this, _event, _window, _cx| {
-                        this.active_sidebar_pane = 2;
-                    })),
-            );
+            .child(sidebar_tree::render(
+                self.active_sidebar_pane,
+                cx.weak_entity(),
+                &self.requests_tree_state,
+                &self.sequences_tree_state,
+                request,
+                sequence,
+                cx,
+            ));
     }
 
     fn render_tab_bar(&mut self, theme: &Theme, cx: &mut Context<Self>) -> impl IntoElement {
@@ -454,7 +419,7 @@ impl WorkspaceView {
                             resizable_panel()
                                 .size(px(384.))
                                 .size_range(px(200.)..px(600.))
-                                .child(self.sidebar(&theme, cx)),
+                                .child(self.sidebar(cx)),
                         )
                         .child(resizable_panel().child(self.mainpanel(window, cx))),
                 ),
@@ -462,13 +427,66 @@ impl WorkspaceView {
     }
 }
 
+/// recursively walk a [`ProjectResource`] tree and produce a flat list of
+/// [`TreeItem`]s filtered to the given [`ResourceType`].
+///
+/// - `Folder` nodes become expandable folder tree items.
+/// - resource leaf nodes are included only when they match `kind`.
+fn build_items_from_resources(resources: &[ProjectResource], kind: ResourceType) -> Vec<TreeItem> {
+    let mut items = Vec::new();
+
+    for resource in resources {
+        match resource {
+            ProjectResource::Folder(_, name, children) => {
+                let folder_item = TreeItem::new(resource.make_id(), name.clone())
+                    .expanded(true)
+                    .children(build_items_from_resources(children, kind));
+
+                items.push(folder_item);
+            }
+            ProjectResource::Request(path) if kind == ResourceType::Request => {
+                let label = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown");
+
+                items.push(TreeItem::new(resource.make_id(), label));
+            }
+            ProjectResource::Sequence(path) if kind == ResourceType::Sequence => {
+                let label = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown");
+
+                items.push(TreeItem::new(resource.make_id(), label));
+            }
+
+            _ => {
+                warn!("You've not handled other resource types!");
+            }
+        }
+    }
+
+    return items;
+}
+
 impl Render for WorkspaceView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let no_open_project = self.project.read(cx).is_none();
+        let project_title = match self.project.read(cx) {
+            Some(project) => project.name.clone(),
+            None => "No project".into(),
+        };
+
         return app_wrapper::<Self>(window, cx)
             .child(components::title_bar::render(
-                ProjectPopup::new(self.project_popup_state.clone()),
-                env_popup::EnvPopup::new(self.env_popup_state.clone()),
                 cx,
+                ProjectPopup::new(project_title, self.project_popup_state.clone()),
+                if no_open_project {
+                    None
+                } else {
+                    Some(env_popup::EnvPopup::new(self.env_popup_state.clone()))
+                },
             ))
             .when_else(
                 self.project.read(cx).is_some(),

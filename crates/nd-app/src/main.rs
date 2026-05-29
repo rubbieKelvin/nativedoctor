@@ -1,6 +1,5 @@
 mod app;
 mod cli;
-mod files;
 mod theme;
 mod ui;
 mod windows;
@@ -8,9 +7,9 @@ mod windows;
 use std::path::PathBuf;
 
 use clap::Parser;
+use nd_core::model::project::ProjectFile;
 
 fn main() {
-    // Initialise tracing for debug logs.
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -21,12 +20,11 @@ fn main() {
     let cli = cli::Cli::parse();
 
     match cli.command {
-        // create a project with "init"
         Some(cli::Command::Init { name, path }) => {
             let root = path
                 .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
-            match files::create_project(root, name) {
+            match ProjectFile::create_in_path(root, name) {
                 Ok(()) => tracing::info!("Project created successfully"),
                 Err(e) => {
                     tracing::error!("Failed to create project: {}", e);

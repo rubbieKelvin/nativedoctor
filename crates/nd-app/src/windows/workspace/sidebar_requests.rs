@@ -1,83 +1,20 @@
+use std::collections::HashMap;
+
 use gpui::{div, px, App, Hsla, IntoElement, ParentElement, SharedString, Styled};
-use gpui_component::{
-    h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
-};
+use gpui_component::{h_flex, list::ListItem, ActiveTheme, Icon, IconName, Sizable, StyledExt};
+use nd_core::model::request::RequestFile;
 
-use super::resources::ResourceType;
-
-#[derive(Clone, Copy)]
-pub struct RequestMeta {
-    pub method: &'static str,
-    pub url: &'static str,
+/// Look up request metadata by the tree-item id.
+///
+/// The id format is `"request:<relative-path>"`. The map is keyed by the
+/// request file's relative path (e.g. `"requests/request1.json"`).
+pub fn request_meta(
+    id: &SharedString,
+    meta_map: &HashMap<String, RequestFile>,
+) -> Option<RequestFile> {
+    let key = id.strip_prefix("request:")?;
+    return meta_map.get(key).cloned();
 }
-
-pub fn request_meta(id: &SharedString) -> Option<RequestMeta> {
-    if ResourceType::from_id(id) != Some(ResourceType::Request) {
-        return None;
-    }
-    return SAMPLE_REQUESTS
-        .iter()
-        .find(|r| r.0 == id.as_str())
-        .map(|r| r.1);
-}
-
-pub fn sample_tree_items() -> Vec<TreeItem> {
-    let folder1 = TreeItem::new(ResourceType::Folder.make_id("folder-01"), "Folder 01")
-        .expanded(true)
-        .children([
-            TreeItem::new(ResourceType::Request.make_id("del-users"), "Delete users"),
-            TreeItem::new(ResourceType::Request.make_id("put-user"), "Update user"),
-            TreeItem::new(ResourceType::Request.make_id("post-user"), "Create user"),
-        ]);
-
-    let folder2 = TreeItem::new(ResourceType::Folder.make_id("new-customer"), "New Customer").children([
-        TreeItem::new(ResourceType::Request.make_id("get-customer"), "Get customer"),
-        TreeItem::new(
-            ResourceType::Request.make_id("post-customer"),
-            "Create customer",
-        ),
-    ]);
-
-    return vec![folder1, folder2];
-}
-
-static SAMPLE_REQUESTS: &[(&str, RequestMeta)] = &[
-    (
-        "request:del-users",
-        RequestMeta {
-            method: "DEL",
-            url: "https://dummyjson.com/users/1",
-        },
-    ),
-    (
-        "request:put-user",
-        RequestMeta {
-            method: "PUT",
-            url: "https://dummyjson.com/users/1",
-        },
-    ),
-    (
-        "request:post-user",
-        RequestMeta {
-            method: "POST",
-            url: "https://dummyjson.com/users/add",
-        },
-    ),
-    (
-        "request:get-customer",
-        RequestMeta {
-            method: "GET",
-            url: "https://dummyjson.com/users/2",
-        },
-    ),
-    (
-        "request:post-customer",
-        RequestMeta {
-            method: "POST",
-            url: "https://dummyjson.com/users/add",
-        },
-    ),
-];
 
 fn method_colors(method: &str, cx: &App) -> (Hsla, Hsla) {
     let theme = cx.theme();
@@ -90,6 +27,7 @@ fn method_colors(method: &str, cx: &App) -> (Hsla, Hsla) {
     }
 }
 
+/// Render a small coloured badge showing the HTTP method.
 pub fn method_badge(method: &str, cx: &App) -> impl IntoElement {
     let (bg, fg) = method_colors(method, cx);
 
@@ -105,11 +43,16 @@ pub fn method_badge(method: &str, cx: &App) -> impl IntoElement {
         .child(SharedString::from(method))
 }
 
+/// Render a single row in the requests sidebar tree.
+///
+/// `meta_map` provides the method + URL for each request; pass an empty map
+/// if no project is loaded (all rows fall back to a plain file icon).
 pub fn render_tree_row(
     ix: usize,
     entry: &gpui_component::tree::TreeEntry,
     selected: bool,
     cx: &App,
+    meta_map: &HashMap<String, RequestFile>,
 ) -> ListItem {
     let item = entry.item();
     let depth = entry.depth();
@@ -146,7 +89,11 @@ pub fn render_tree_row(
             );
     }
 
-    if let Some(meta) = request_meta(&item.id) {
+    let label = request_meta(&item.id, meta_map)
+        .and_then(|m| Some(SharedString::from(m.label())))
+        .unwrap_or(item.label.clone());
+
+    if let Some(meta) = request_meta(&item.id, meta_map) {
         return ListItem::new(ix)
             .w_full()
             .selected(selected)
@@ -156,20 +103,12 @@ pub fn render_tree_row(
                     .gap_2()
                     .items_center()
                     .min_w_0()
-                    .child(method_badge(meta.method, cx))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .text_sm()
-                            .text_color(cx.theme().muted_foreground)
-                            .truncate()
-                            .child(meta.url),
-                    ),
+                    .child(method_badge(&meta.request.method.as_str(), cx))
+                    .child(div().flex_1().min_w_0().text_sm().truncate().child(label)),
             );
     }
 
-    ListItem::new(ix)
+    return ListItem::new(ix)
         .w_full()
         .selected(selected)
         .pl(indent)
@@ -178,6 +117,6 @@ pub fn render_tree_row(
                 .gap_2()
                 .items_center()
                 .child(Icon::new(IconName::File).small())
-                .child(item.label.clone()),
-        )
+                .child(label),
+        );
 }

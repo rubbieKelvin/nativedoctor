@@ -19,7 +19,6 @@ pub struct RecentProject {
 
 pub struct ProjectPopupState {
     pub recent_projects: Vec<RecentProject>,
-    pub active_project_name: SharedString,
     search_state: Entity<input::InputState>,
     create_project_popup: Entity<project::create::CreateProjectState>,
     is_open: bool,
@@ -56,7 +55,6 @@ impl ProjectPopupState {
 
         return Self {
             recent_projects: Vec::new(),
-            active_project_name: "No project".into(),
             search_state,
             is_open: false,
             create_project_popup,
@@ -69,28 +67,8 @@ impl ProjectPopupState {
         self.recent_projects = projects;
     }
 
-    #[allow(dead_code)]
-    pub fn set_active_project(&mut self, name: impl Into<SharedString>) {
-        self.active_project_name = name.into();
-    }
-
-    // // Here path is the path to the project file.
-    // fn open_project(&mut self, _path: PathBuf, creating: bool) {
-    //     // emit event here
-    //     self.is_open = false;
-    // }
-    //
-
     fn select_project(&mut self, cx: &mut Context<Self>, path: PathBuf) {
         cx.emit(ProjectPopupEvents::OpenProject(path));
-        self.is_open = false;
-    }
-
-    fn open_project(&mut self, cx: &mut Context<Self>) {
-        // open a folder and ask the user to select a project file
-        // then emit the project file
-        let project_file = PathBuf::new();
-        cx.emit(ProjectPopupEvents::OpenProject(project_file));
         self.is_open = false;
     }
 
@@ -106,23 +84,25 @@ impl ProjectPopupState {
         }
 
         let q = query.to_lowercase();
-        self.recent_projects
+        return self
+            .recent_projects
             .iter()
             .enumerate()
             .filter(|(_, p)| p.name.to_lowercase().contains(&q))
             .map(|(i, p)| (i, p.clone()))
-            .collect()
+            .collect();
     }
 }
 
 #[derive(IntoElement)]
 pub struct ProjectPopup {
+    title: SharedString,
     state: Entity<ProjectPopupState>,
 }
 
 impl ProjectPopup {
-    pub fn new(state: Entity<ProjectPopupState>) -> Self {
-        Self { state }
+    pub fn new(title: SharedString, state: Entity<ProjectPopupState>) -> Self {
+        return Self { state, title };
     }
 
     fn render_search_bar(&self, cx: &mut App) -> impl IntoElement {
@@ -254,13 +234,39 @@ impl ProjectPopup {
                         let popover_entity = popover_entity.clone();
 
                         move |_event, window, cx| {
+                            // Dismiss the popover immediately on click.
                             popover_entity.update(cx, |s, cx| {
                                 s.dismiss(window, cx);
                             });
 
-                            state.update(cx, |this, cx| {
-                                this.open_project(cx);
-                            });
+                            // Open the native file-picker on a background thread
+                            // to avoid blocking the main event loop.
+                            let state = state.clone();
+                            cx.spawn(|cx: &mut AsyncApp| {
+                                let cx = (*cx).clone();
+                                async move {
+                                    let result = cx
+                                        .background_executor()
+                                        .spawn(async move {
+                                            rfd::FileDialog::new()
+                                                .add_filter("Project Files", &["yaml", "yml"])
+                                                .pick_file()
+                                        })
+                                        .await;
+
+                                    if let Some(path) = result {
+                                        cx.update(|cx| {
+                                            state.update(cx, |this, cx| {
+                                                this.is_open = false;
+                                                cx.emit(ProjectPopupEvents::OpenProject(
+                                                    path.clone(),
+                                                ));
+                                            });
+                                        });
+                                    }
+                                }
+                            })
+                            .detach();
                         }
                     }),
             );
@@ -284,9 +290,8 @@ impl ProjectPopup {
 impl RenderOnce for ProjectPopup {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let state = self.state.clone();
-        let active_name = state.read(cx).active_project_name.clone();
 
-        Popover::new("project-popup")
+        return Popover::new("project-popup")
             .anchor(Anchor::TopLeft)
             .open(state.read(cx).is_open)
             .p_0()
@@ -301,7 +306,7 @@ impl RenderOnce for ProjectPopup {
             })
             .trigger(
                 button::Button::new(SharedString::from("project-button"))
-                    .label(active_name)
+                    .label(&self.title)
                     .small()
                     .with_variant(button::ButtonVariant::Text)
                     .icon(IconName::Folder),
@@ -310,6 +315,6 @@ impl RenderOnce for ProjectPopup {
                 let popover_entity = cx.entity();
 
                 return self.render_popup_content(cx, popover_entity);
-            })
+            });
     }
 }

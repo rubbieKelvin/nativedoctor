@@ -1,10 +1,4 @@
 //! Request file schema (`RequestFile`, [`HttpRequestSpec`], [`RequestBody`]).
-//!
-//! # OpenAPI 3.x alignment (tooling and docs)
-//!
-//! This crate models a **runnable** HTTP call (concrete URL, template strings, optional JSON/text
-//! body). OpenAPI models a **contract** (parameters, `requestBody.content` keyed by media type,
-//! schemas). They are not the same, but fields map conceptually as follows:
 
 use crate::env::RuntimeEnv;
 use crate::error::{Error, Result};
@@ -26,40 +20,16 @@ use tracing::debug;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-fn default_version() -> String {
-    return nd_constants::REQUEST_FILE_DEFAULT_VERSION.into();
-}
+use super::defaults::*;
 
-fn default_follow_redirects() -> bool {
-    return true;
-}
-
-fn default_verify_tls() -> bool {
-    return true;
-}
-
-fn default_deprecated() -> bool {
-    return false;
-}
-
-// serde helper
-fn is_false(b: &bool) -> bool {
-    return !*b;
-}
-
-/// Root document for a single request file (JSON or YAML).
-///
-/// `post_script`, when set, is a path string resolved relative to the request file’s directory.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct RequestFile {
     /// Schema version for forward-compatible parsing (default [`nd_constants::DOCUMENT_DEFAULT_VERSION`] if omitted).
     #[serde(default = "default_version")]
     pub version: String,
-    /// Optional human-readable label for logs and UIs (backward compatible when omitted).
     #[serde(default)]
     pub name: Option<String>,
     pub request: HttpRequestSpec,
-    /// Set only by [`RequestFile::from_file`]; not part of the on-disk format.
     #[serde(skip)]
     #[schemars(skip)]
     pub _path: Option<PathBuf>,
@@ -78,10 +48,6 @@ impl RequestFile {
         return serde_json::to_value(&schema).expect("RequestFile JsonSchema serializes to JSON");
     }
 
-    /// Read and deserialize a request file. Extension must be `.json`, `.yaml`, or `.yml`.
-    ///
-    /// Returns the parsed document and the **parent directory** of `path`, used to resolve
-    /// [`RequestFile::post_script`] paths.
     pub fn from_file(path: &Path) -> Result<RequestFile> {
         let ext = path
             .extension()
@@ -234,6 +200,20 @@ impl RequestFile {
             initiator_script: None,
             doc: self.clone(),
         });
+    }
+
+    pub fn label(&self) -> String {
+        let name = self.name.clone();
+        let url = self.request.url.clone();
+        let url = url.trim();
+
+        let url = if url.len() > 0 {
+            String::from(url)
+        } else {
+            String::from("Untitled")
+        };
+
+        return name.unwrap_or(url).clone();
     }
 }
 

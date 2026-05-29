@@ -1,92 +1,36 @@
+use std::collections::HashMap;
+
 use gpui::{div, px, App, Hsla, ParentElement, SharedString, Styled};
-use gpui_component::{
-    h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
-};
+use gpui_component::{h_flex, list::ListItem, ActiveTheme, Icon, IconName, Sizable, StyledExt};
+use nd_core::model::sequence::SequenceFile;
 
-use super::resources::ResourceType;
-
-#[derive(Clone, Copy)]
-pub struct SequenceMeta {
-    #[allow(unused)]
-    pub name: &'static str,
-    pub steps: usize,
+/// Look up sequence metadata by the tree-item id.
+///
+/// The id format is `"sequence:<relative-path>"`. The map is keyed by the
+/// sequence file's relative path.
+pub fn sequence_meta(
+    id: &SharedString,
+    meta_map: &HashMap<String, SequenceFile>,
+) -> Option<SequenceFile> {
+    let key = id.strip_prefix("sequence:")?;
+    return meta_map.get(key).cloned();
 }
-
-pub fn sequence_meta(id: &SharedString) -> Option<SequenceMeta> {
-    if ResourceType::from_id(id) != Some(ResourceType::Sequence) {
-        return None;
-    }
-    return SAMPLE_SEQUENCES
-        .iter()
-        .find(|r| r.0 == id.as_str())
-        .map(|r| r.1);
-}
-
-pub fn sample_sequence_items() -> Vec<TreeItem> {
-    return vec![
-        TreeItem::new(
-            ResourceType::Sequence.make_id("new-user-flow"),
-            "Create & verify user",
-        )
-        .expanded(true)
-        .children([
-            TreeItem::new(
-                ResourceType::Sequence.make_id("post-user"),
-                "Create user",
-            ),
-            TreeItem::new(
-                ResourceType::Sequence.make_id("get-customer"),
-                "Verify user",
-            ),
-        ]),
-        TreeItem::new(
-            ResourceType::Sequence.make_id("order-flow"),
-            "Order processing pipeline",
-        )
-        .children([
-            TreeItem::new(
-                ResourceType::Sequence.make_id("post-customer"),
-                "Create customer",
-            ),
-            TreeItem::new(
-                ResourceType::Sequence.make_id("put-user"),
-                "Update order",
-            ),
-            TreeItem::new(
-                ResourceType::Sequence.make_id("del-users"),
-                "Cleanup",
-            ),
-        ]),
-    ];
-}
-
-static SAMPLE_SEQUENCES: &[(&str, SequenceMeta)] = &[
-    (
-        "sequence:new-user-flow",
-        SequenceMeta {
-            name: "Create & verify user",
-            steps: 2,
-        },
-    ),
-    (
-        "sequence:order-flow",
-        SequenceMeta {
-            name: "Order processing pipeline",
-            steps: 3,
-        },
-    ),
-];
 
 fn sequence_colors(cx: &App) -> (Hsla, Hsla) {
     let theme = cx.theme();
     (theme.green.opacity(0.2), theme.green)
 }
 
+/// Render a single row in the sequences sidebar tree.
+///
+/// `meta_map` provides the step count for each sequence; pass an empty map
+/// if no project is loaded.
 pub fn render_tree_row(
     ix: usize,
     entry: &gpui_component::tree::TreeEntry,
     selected: bool,
     cx: &App,
+    meta_map: &HashMap<String, SequenceFile>,
 ) -> ListItem {
     let item = entry.item();
     let depth = entry.depth();
@@ -123,7 +67,7 @@ pub fn render_tree_row(
             );
     }
 
-    if let Some(meta) = sequence_meta(&item.id) {
+    if let Some(meta) = sequence_meta(&item.id, meta_map) {
         let (bg, fg) = sequence_colors(cx);
 
         return ListItem::new(ix)
@@ -154,7 +98,7 @@ pub fn render_tree_row(
                             .text_xs()
                             .font_semibold()
                             .text_color(fg)
-                            .child(format!("{} steps", meta.steps)),
+                            .child(format!("{}", meta.groups.len())),
                     ),
             );
     }

@@ -6,7 +6,13 @@ use gpui_component::{
     dialog::DialogButtonProps,
     input, ActiveTheme, IconName, Sizable, WindowExt,
 };
+use nd_core::model::project::ProjectFile;
 
+/// State backing the "Create Project" dialog.
+///
+/// Holds the project name input and the base-path (folder) selection so the
+/// dialog can validate both before delegating to
+/// [`ProjectFile::create_in_path`].
 pub struct CreateProjectState {
     pub project_name: Entity<input::InputState>,
     pub base_path: Entity<SharedString>,
@@ -136,6 +142,11 @@ fn render_content(cx: &mut App, state: Entity<CreateProjectState>) -> impl IntoE
         );
 }
 
+/// Open the "Create Project" dialog as a modal over the given window.
+///
+/// On successful creation, the dialog emits
+/// [`CreateProjectEvent::ProjectFileCreated`] with the path to the
+/// newly written `nativedoctor.yaml`.
 pub fn open_create_project(state: Entity<CreateProjectState>, window: &mut Window, cx: &mut App) {
     window.open_dialog(cx, move |dialog, _window, _cx| {
         dialog
@@ -167,14 +178,13 @@ pub fn open_create_project(state: Entity<CreateProjectState>, window: &mut Windo
                             }
 
                             let project_dir = std::path::Path::new(base).join(name);
-                            if std::fs::create_dir_all(&project_dir).is_err() {
-                                return false;
-                            }
-
                             let project_file = project_dir.join("nativedoctor.yaml");
 
-                            // TODO: update
-                            if std::fs::write(&project_file, "# NativeDoctor Project\n").is_err() {
+                            // Delegate directory creation, sample files, README, and
+                            // YAML serialisation to the shared create_project helper.
+                            if ProjectFile::create_in_path(PathBuf::from(base), name.to_string())
+                                .is_err()
+                            {
                                 return false;
                             }
 

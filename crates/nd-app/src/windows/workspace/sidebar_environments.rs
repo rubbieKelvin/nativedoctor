@@ -1,73 +1,51 @@
+use std::collections::HashMap;
+
 use gpui::{div, px, App, Hsla, ParentElement, SharedString, Styled};
 use gpui_component::{
-    h_flex, list::ListItem, tree::TreeItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
+    h_flex, list::ListItem, ActiveTheme, Icon, IconName, Sizable, StyledExt,
 };
 
-use super::resources::ResourceType;
-
-#[derive(Clone, Copy)]
+/// Metadata for a single environment shown in the sidebar tree.
+#[derive(Clone)]
 pub struct EnvMeta {
-    #[allow(unused)]
-    pub name: &'static str,
+    /// Human-readable environment name.
+    pub name: SharedString,
+    /// Number of variables defined in this environment.
     pub var_count: usize,
 }
 
-pub fn env_meta(id: &SharedString) -> Option<EnvMeta> {
-    if ResourceType::from_id(id) != Some(ResourceType::Environment) {
-        return None;
-    }
-    return SAMPLE_ENVIRONMENTS
-        .iter()
-        .find(|r| r.0 == id.as_str())
-        .map(|r| r.1);
+/// Look up environment metadata by the tree-item id.
+///
+/// The id format is `"env:<name>"`. The map is keyed by the environment name.
+pub fn env_meta(
+    id: &SharedString,
+    meta_map: &HashMap<String, EnvMeta>,
+) -> Option<EnvMeta> {
+    let key = id.strip_prefix("env:")?;
+    return meta_map.get(key).cloned();
 }
-
-pub fn sample_env_items() -> Vec<TreeItem> {
-    return SAMPLE_ENVIRONMENTS
-        .iter()
-        .map(|(id, meta)| TreeItem::new(*id, meta.name))
-        .collect();
-}
-
-static SAMPLE_ENVIRONMENTS: &[(&str, EnvMeta)] = &[
-    (
-        "env:development",
-        EnvMeta {
-            name: "Development",
-            var_count: 3,
-        },
-    ),
-    (
-        "env:staging",
-        EnvMeta {
-            name: "Staging",
-            var_count: 3,
-        },
-    ),
-    (
-        "env:production",
-        EnvMeta {
-            name: "Production",
-            var_count: 2,
-        },
-    ),
-];
 
 fn env_colors(cx: &App) -> (Hsla, Hsla) {
     let theme = cx.theme();
     return (theme.cyan.opacity(0.2), theme.cyan);
 }
 
+/// Render a single row in the environments sidebar tree.
+///
+/// `meta_map` provides the variable count for each environment; pass an empty
+/// map if no environments are defined.
 pub fn render_tree_row(
     ix: usize,
     entry: &gpui_component::tree::TreeEntry,
     selected: bool,
     cx: &App,
+    meta_map: &HashMap<String, EnvMeta>,
 ) -> ListItem {
     let item = entry.item();
-    let (bg, fg) = env_colors(cx);
 
-    if let Some(meta) = env_meta(&item.id) {
+    if let Some(meta) = env_meta(&item.id, meta_map) {
+        let (bg, fg) = env_colors(cx);
+
         return ListItem::new(ix)
             .w_full()
             .selected(selected)
