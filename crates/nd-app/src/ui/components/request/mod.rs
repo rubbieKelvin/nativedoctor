@@ -9,6 +9,8 @@ mod response_tab_headers;
 mod response_tab_logs;
 mod response_tab_timeline;
 
+use std::collections::HashMap;
+
 use gpui::*;
 use gpui_component::{
     button, input,
@@ -17,6 +19,7 @@ use gpui_component::{
     tab::{Tab, TabBar},
     ActiveTheme, IndexPath, Sizable, StyledExt, Theme,
 };
+use nd_core::model::request::{RequestBody, RequestFile};
 
 use crate::ui::components::{kvinput, number_input};
 
@@ -133,6 +136,141 @@ impl RequestPanel {
             timeout_state,
             max_redirects_state,
         };
+    }
+
+    pub fn load_from_request(
+        &mut self,
+        request: &RequestFile,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        // URL
+        self.url_input_state.update(cx, |state, cx| {
+            state.set_value(SharedString::from(request.request.url.clone()), window, cx);
+        });
+
+        // Method — TODO: wire up SelectState index selection when API is available.
+        // Currently the SelectState from gpui_component doesn't expose a public
+        // `select(idx)` or `items()` API, so the method defaults to GET.
+
+        // Body
+        if let Some(body) = &request.request.body {
+            let body_str = match body {
+                RequestBody::Json(v) => {
+                    serde_json::to_string_pretty(v).unwrap_or_default()
+                }
+                RequestBody::Text(s) => s.clone(),
+                RequestBody::Structured(s) => s.content.to_string(),
+            };
+            self.body_text_state.update(cx, |state, cx| {
+                state.set_value(SharedString::from(body_str), window, cx);
+            });
+        }
+
+        // Headers
+        self.headers_input_state.update(cx, |state, cx| {
+            state.clear();
+            for (key, value) in &request.request.headers {
+                state.new_row(cx, window, key, value, "");
+            }
+        });
+
+        // Query params
+        self.param_input_state.update(cx, |state, cx| {
+            state.clear();
+            for (key, value) in &request.request.query {
+                state.new_row(cx, window, key, value, "");
+            }
+        });
+
+        // Docs / description
+        self.docs_input_state.update(cx, |state, cx| {
+            state.set_value(
+                SharedString::from(
+                    request
+                        .request
+                        .description
+                        .clone()
+                        .unwrap_or_default(),
+                ),
+                window,
+                cx,
+            );
+        });
+
+        // Settings
+        self.ssl_verify = request.request.verify_tls;
+        self.follow_redirects = request.request.follow_redirects;
+        if let Some(timeout) = request.request.timeout_secs {
+            self.timeout_state.update(cx, |state, _cx| {
+                state.set_value(timeout as i32);
+            });
+        }
+
+        cx.notify();
+    }
+
+    pub fn collect_request_data(&self, cx: &mut Context<Self>) -> RequestFile {
+        let url = self.url_input_state.read(cx).value().to_string();
+        let method = self
+            .method_state
+            .read(cx)
+            .selected_value()
+            .cloned()
+            .unwrap_or_else(|| SharedString::from("GET"))
+            .to_string();
+
+        let body_text = self.body_text_state.read(cx).value();
+        let body = if body_text.trim().is_empty() {
+            None
+        } else if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body_text) {
+            Some(RequestBody::Json(json))
+        } else {
+            Some(RequestBody::Text(body_text.to_string()))
+        };
+
+        let headers: HashMap<String, String> = self
+            .headers_input_state
+            .read(cx)
+            .entries(cx)
+            .into_iter()
+            .collect();
+
+        let query: HashMap<String, String> = self
+            .param_input_state
+            .read(cx)
+            .entries(cx)
+            .into_iter()
+            .collect();
+
+        let description = self.docs_input_state.read(cx).value().to_string();
+        let description = if description.is_empty() {
+            None
+        } else {
+            Some(description)
+        };
+
+        let timeout = Some(self.timeout_state.read(cx).value() as u64);
+
+        RequestFile {
+            name: Some("Saved request".into()),
+            request: nd_core::model::request::HttpRequestSpec {
+                method,
+                url,
+                summary: None,
+                description,
+                tags: vec![],
+                deprecated: false,
+                query,
+                headers,
+                body,
+                timeout_secs: timeout,
+                follow_redirects: self.follow_redirects,
+                verify_tls: self.ssl_verify,
+            },
+            version: nd_constants::DOCUMENT_DEFAULT_VERSION.into(),
+            _path: None,
+        }
     }
 
     fn render_top_bar(&mut self, theme: &Theme, _cx: &mut Context<Self>) -> impl IntoElement {

@@ -1,7 +1,7 @@
 use gpui::*;
 use gpui_component::{Root, TitleBar};
 
-use crate::windows::workspace;
+use crate::windows::workspace::{self, Save};
 
 pub fn setup() {
     let app = gpui_platform::application().with_assets(gpui_component_assets::Assets);
@@ -9,6 +9,11 @@ pub fn setup() {
     app.run(move |cx| {
         gpui_component::init(cx);
         crate::theme::init(cx);
+
+        cx.bind_keys([
+            KeyBinding::new("cmd-s", Save, Some("Workspace")),
+            KeyBinding::new("ctrl-s", Save, Some("Workspace")),
+        ]);
 
         // bring the window to the front
         cx.activate(true);

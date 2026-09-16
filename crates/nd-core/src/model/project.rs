@@ -23,6 +23,8 @@ impl ResourceType {
         let id = id.as_ref();
 
         return match id {
+            n if n.starts_with("scratch:request:") => Some(Self::Request),
+            n if n.starts_with("scratch:sequence:") => Some(Self::Sequence),
             n if n.starts_with("request:") => Some(Self::Request),
             n if n.starts_with("sequence:") => Some(Self::Sequence),
             n if n.starts_with("env:") => Some(Self::Environment),
@@ -118,6 +120,26 @@ impl ProjectFile {
                 e
             ))
         });
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let path = self
+            ._path
+            .clone()
+            .ok_or_else(|| Error::Plain("Project file has no path set".into()))?;
+        return self.write(path);
+    }
+
+    pub fn add_request(&mut self, relative_path: PathBuf) -> Result<()> {
+        self.requests
+            .push(ProjectResource::Request(relative_path));
+        return self.save();
+    }
+
+    pub fn add_sequence(&mut self, relative_path: PathBuf) -> Result<()> {
+        self.sequences
+            .push(ProjectResource::Sequence(relative_path));
+        return self.save();
     }
 
     pub fn create_in_path(root: PathBuf, name: String) -> Result<()> {

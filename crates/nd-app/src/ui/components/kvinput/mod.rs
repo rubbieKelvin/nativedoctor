@@ -132,6 +132,27 @@ impl KvInputState {
         );
     }
 
+    pub fn clear(&mut self) {
+        self.items.clear();
+    }
+
+    /// Collect all non-empty key-value pairs from the rows.
+    pub fn entries(&self, cx: &App) -> Vec<(String, String)> {
+        return self
+            .items
+            .iter()
+            .filter_map(|(entity, _)| {
+                let row = entity.read(cx);
+                let key = row.key.read(cx).value();
+                let value = row.value.read(cx).value();
+                if key.trim().is_empty() {
+                    return None;
+                }
+                return Some((key.trim().to_string(), value.to_string()));
+            })
+            .collect();
+    }
+
     fn is_row_empty(state: &Entity<row::KvRowState>, cx: &mut App) -> bool {
         let inner = state.read(cx);
         let key = inner.key.read(cx).value();
