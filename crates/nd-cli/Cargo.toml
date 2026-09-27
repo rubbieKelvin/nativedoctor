@@ -1,0 +1,23 @@
+[package]
+name = "nd-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "nativedoctor"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+nd-core.workspace = true
+nd-engine.workspace = true
+nd-constants.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+colored.workspace = true
+
+[lints]
+workspace = true

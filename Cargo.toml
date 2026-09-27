@@ -1,0 +1,45 @@
+[workspace]
+members = [
+    "crates/nd-constants",
+    "crates/nd-core",
+    "crates/nd-engine",
+    "crates/nd-cli",
+    "crates/nd-desktop",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.3.0"
+edition = "2021"
+authors = ["rubbie kelvin <dev@gmail.com>"]
+
+[workspace.dependencies]
+nd-constants = { path = "crates/nd-constants" }
+nd-core = { path = "crates/nd-core" }
+nd-engine = { path = "crates/nd-engine" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+oas3 = { version = "0.22", features = ["yaml-spec"] }
+dotenvy = "0.15"
+nanoid = "0.4"
+uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"
+rand = "0.8"
+fake = { version = "4", features = ["chrono"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+regex = "1"
+clap = { version = "4", features = ["derive"] }
+rhai = { version = "1.20", features = ["sync", "metadata", "internals"] }
+colored = "3.1.1"
+anyhow = "1.0"
+tempfile = "3"
+
+[workspace.lints.clippy]
+needless_return = "allow"
