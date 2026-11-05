@@ -1,0 +1,16 @@
+[package]
+name = "nd-engine"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+nd-constants.workspace = true
+nd-core.workspace = true
+bytes.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

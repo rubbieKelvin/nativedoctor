@@ -1,0 +1,30 @@
+[package]
+name = "nd-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+nd-constants.workspace = true
+chrono.workspace = true
+dotenvy.workspace = true
+fake.workspace = true
+globset.workspace = true
+indexmap.workspace = true
+mime_guess.workspace = true
+nanoid.workspace = true
+rand.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_json_path.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+url.workspace = true
+uuid.workspace = true
+walkdir.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

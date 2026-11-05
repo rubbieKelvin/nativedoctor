@@ -2,307 +2,188 @@
 
 [![Made in Nigeria](https://img.shields.io/badge/made%20in-nigeria-008751.svg?style=flat-square)](https://github.com/acekyd/made-in-nigeria)
 [![License](https://img.shields.io/github/license/rubbieKelvin/nativedoctor?style=flat-square)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/rubbieKelvin/nativedoctor?style=flat-square)](https://github.com/rubbieKelvin/nativedoctor/releases)
-[![Release workflow](https://github.com/rubbieKelvin/nativedoctor/actions/workflows/release.yml/badge.svg)](https://github.com/rubbieKelvin/nativedoctor/actions/workflows/release.yml)
 
-**nativedoctor** is a file-driven HTTP client: you describe requests in **JSON** or **YAML**, run **Rhai** scripts that can import other scripts and request files, and execute everything from the command line or embed **`nd-core`** in your own Rust code. It fits API exploration, smoke tests, and light automation without ad-hoc shell `curl` scripts.
-
-![Web UI](./screenshots/web-ui.png)
-
-- **Request files** (`.json`, `.yaml`, `.yml`): one HTTP call per file (method, URL, query, headers, body).
-- **Rhai scripts** (`.rhai`): sandboxed scripting with `env` / `set`, `assert`, `log`, optional `persist`, and **`import`** of other `.rhai` modules and request files.
-- **Template expansion**: `${VAR}` from the runtime map (process env, `--env` files, Rhai `set`, optional persistence); **dynamic** `${!name}` helpers (see below).
-- **Imported requests**: `import "api.json" as api` then **`api::invoke(#{ user_id: "42" })`** to run that HTTP request with per-call variable overrides (overrides win over the runtime map).
-- **OpenAPI 3.0.x**: generate starter request files from a spec (`generate`).
-- **Rhai definition files**: emit **`.d.rhai`** stubs for editors / language servers (`definitions`).
-- **Web UI** (optional): local **Axum** server + **Vue 3** / **TypeScript** / **Tailwind CSS v4** SPA, embedded in the binary with **`rust-embed`** (`web`).
-
-The CLI binary is **`nativedoctor`**. Core logic lives in **`nd-core`**; **`nd-generate`** implements OpenAPI import; **`nd-constants`** holds shared literals; **`nd-web`** serves the browser UI and JSON API.
-
----
-
-## Requirements
-
-- **Rust** stable toolchain, to build from source.
-- **Node.js** and **pnpm** when building **`nd-web`** in **release** mode: the crate’s `build.rs` runs `pnpm install` and `pnpm build` in `crates/nd-web/frontend` so the SPA can be embedded (see **`ND_WEB_SKIP_FRONTEND_BUILD`** in [`crates/nd-web/build.rs`](crates/nd-web/build.rs) if you must skip that step).
-- Network access for real HTTP calls (optional: **`--no-network-io`** expands and prints only).
-
----
-
-## Install
-
-### From source (workspace root)
+Postman for the command line. Collections are plain folders of YAML, so they live in Git.
 
 ```bash
-cargo build --release -p nd-cli
+cargo build --release -p nd-cli   # binary: target/release/nativedoctor
 ```
 
-The binary is at `target/release/nativedoctor`. Add that directory to your `PATH`, or run it by path.
-
-Building **`nd-web`** as a dependency pulls in the frontend build via `build.rs` (requires **pnpm** unless you use **`ND_WEB_SKIP_FRONTEND_BUILD=1`** with an existing `crates/nd-web/frontend/dist/`).
-
-### Prebuilt archives
-
-If this repository publishes **GitHub Releases**, attaching archives is automated (see [Release binaries (CI)](#release-binaries-ci)). Download the archive for your OS and place the `nativedoctor` binary on your `PATH`.
-
----
-
-## Release binaries (CI)
-
-Publishing a **GitHub Release** (not draft-only) runs [`.github/workflows/release.yml`](.github/workflows/release.yml): it checks out the release tag, installs **pnpm** (pinned to match `crates/nd-web/frontend/package.json`), **Node 20**, and the **stable Rust** toolchain, then runs **`cargo build --release -p nd-cli`**. That compile triggers `nd-web`’s `build.rs`, which builds the Vue app so the SPA is embedded in the binary. Archives (**`.tar.gz`** on Linux/macOS, **`.zip`** on Windows) are uploaded back to the same release.
-
-Matrix targets: **linux-x86_64**, **windows-x86_64**, **darwin-aarch64** (Apple Silicon), **darwin-x86_64** (Intel macOS via `macos-13`).
-
----
+HTTP works today. WebSocket and gRPC are planned.
 
 ## Quick start
 
-**Run a request file** (either form is equivalent):
-
 ```bash
-nativedoctor run my-request.yaml
-nativedoctor my-request.yaml
+nativedoctor init my-api && cd my-api
+nativedoctor run ping.request.yaml
+
+# One-off request, with no file
+nativedoctor send POST :3000/users name=John age:=29 X-Debug:1 page==2
+
+# One-time changes to a saved request
+nativedoctor run users/create.request.yaml name=Jane -e prod
+
+# Save a one-off request (add --offline to save without sending)
+nativedoctor send POST :3000/users name=John --save users/create.request.yaml
 ```
 
-**Expand and print only** (no network I/O):
+| Command | Does |
+|---|---|
+| `init [DIR]` | Create a collection |
+| `run <FILE or FOLDER> [ITEM...]` | Run a request, or a folder of them in path order, stopping at the first failure |
+| `send [METHOD] URL [ITEM...]` | Send a one-off request |
+| `list [PATH]` | List requests |
+| `check [PATH]` | Validate files and variables without using the network |
 
-```bash
-nativedoctor run my-request.yaml --no-network-io
+## Collections
+
+```
+my-api/
+├── nativedoctor.yaml
+├── environments/
+│   └── dev.yaml
+├── users/
+│   └── get-user.request.yaml
+└── .nativedoctor/          # never committed: secrets and captured values
 ```
 
-**Run a Rhai script** (`.rhai`):
+Requests are found by looking for `*.request.yaml`. Commands find the collection by walking up from
+the request file or current folder. A request file outside a collection still runs.
 
-```bash
-nativedoctor run my-flow.rhai
+```yaml
+# nativedoctor.yaml
+name: My API
+default_env: dev
+exclude: ["drafts/**"]
+vars:
+  API_VERSION: v1
+defaults:
+  headers:
+    x-client: nativedoctor
 ```
-
-**Run several files** (each path is a request or a script, in order):
-
-```bash
-nativedoctor run ./a.yaml ./b.rhai ./c.yaml
-```
-
-**Keep one runtime across files** (Rhai `set` / `${VAR}` visible across runs):
-
-```bash
-nativedoctor run --retain-runtime ./login.yaml ./fetch.rhai
-```
-
-**Scaffold a request file**:
-
-```bash
-nativedoctor new examples/hello.yaml
-nativedoctor new -u https://httpbin.org/get -n Demo examples/demo.yaml
-```
-
-**Generate requests from OpenAPI 3.0.x**:
-
-```bash
-nativedoctor generate -i openapi.json -o ./generated --format yaml
-```
-
-**Emit Rhai `.d.rhai` definitions** (IDE / LSP checkout [Rhai metadata](https://rhai.rs/book/engine/metadata/index.html)):
-
-```bash
-nativedoctor definitions --out-dir .rhai/definitions
-# or a single merged file:
-nativedoctor definitions --out-file nativedoctor.d.rhai
-```
-
-**Browse and run request files in a browser**:
-
-```bash
-nativedoctor web
-nativedoctor web ./api ./scripts
-```
-
----
-
-## CLI reference
-
-Global options apply where noted.
-
-| Option | Description |
-|--------|-------------|
-| `-v`, `--verbose` | More detailed output; default tracing filter `nd_core=debug` unless `RUST_LOG` is set. |
-| `--env <FILE>` | Merge variables from a dotenv-style file into the runtime ([dotenvy](https://docs.rs/dotenvy); repeatable; later files override earlier). |
-| `--persistence-file <FILE>` | Optional **JSON** or **YAML** persistence file: path must end with `.json`, `.yaml`, or `.yml` (Rhai `persist()`; see `RuntimeEnv` in `nd-core`). |
-| `--no-network-io` | **Request files:** expand and print the prepared request; no HTTP. **Rhai scripts:** still run; `invoke()` on imported requests uses dry-run behavior (no real HTTP) when this flag is set. **Web UI:** request “Send” becomes expand-only; script behavior follows `nd-core` options. |
-
-### `run`
-
-```text
-nativedoctor run [OPTIONS] <FILE>...
-```
-
-| Option | Description |
-|--------|-------------|
-| `--retain-runtime` | Build the runtime once and reuse it for every file in this invocation (default: clear runtime between files). |
-| `<FILE>...` | One or more paths: `.json`, `.yaml`, `.yml` (request), or `.rhai` (script). |
-
-**Shorthand:** with no subcommand, a single positional `FILE` runs like `run` with one path.
-
-### `definitions`
-
-```text
-nativedoctor definitions (--out-dir <DIR> | --out-file <FILE>)
-```
-
-Writes Rhai definition stubs (`.d.rhai`) for autocompletion / language servers: Rhai builtins plus nativedoctor globals (`env`, `set`, `assert`, `log`, `persist`), plus a small supplement for **`invoke`** on imported request modules. Use **`--out-dir`** for the usual multi-file layout or **`--out-file`** for one merged file.
-
-### `web`
-
-```text
-nativedoctor web [OPTIONS] [DIR]...
-```
-
-Starts a local **Axum** server: JSON API under **`/api`** and a **Vue** SPA (static assets embedded at compile time). Each **`DIR`** is scanned **non-recursively** for top-level `*.json` / `*.yaml` / `*.yml` request files (validated before listing) and `*.rhai` scripts. Omit **`DIR`** to use the current directory.
-
-| Option | Description |
-|--------|-------------|
-| `--bind <ADDR>` | Listen address (default **`127.0.0.1:8080`**). |
-| `[DIR]...` | One or more workspace roots (default **`.`** when omitted). |
-
-**Security:** treat as a **local development** tool. Anyone who can reach the bind address can trigger outbound HTTP to URLs in your files and run configured Rhai. Prefer loopback unless you understand the exposure.
-
-### `generate`
-
-```text
-nativedoctor generate -i <SPEC> -o <DIR> [--format yaml|json]
-```
-
-Reads **OpenAPI 3.0.x** (JSON or YAML). **OpenAPI 3.1** and some `$ref` patterns may be rejected. Writes one request file per operation under `DIR`.
-
-### `new`
-
-```text
-nativedoctor new [--url <URL>] [--name <NAME>] <PATH>
-```
-
-Writes a starter **request** document. Extension must be `.json`, `.yaml`, or `.yml`. Refuses to overwrite an existing file.
-
----
 
 ## Request files
 
-A request file wraps an `HttpRequestSpec` under a top-level `request` key. Extensions: **`.json`**, **`.yaml`**, **`.yml`**.
+```yaml
+name: Log in
+http:
+  method: POST              # default: GET, or POST with a body
+  url: ${BASE_URL}/login
+  query: { verbose: true, tag: [a, b] }
+  headers:
+    x-trace: ${!uuidv4}
+    accept: null            # null removes a default header
+  body:
+    json: { user: "${USERNAME}", password: "${PASSWORD}" }
+  timeout: 10s              # default 30s, 0 disables it
+  follow_redirects: true    # default false
+  max_redirects: 5          # default 30
+  verify_tls: true
+capture:
+  API_TOKEN: $.access_token # JSONPath, or header:Name
+assert:
+  status: [200, 201]
+  headers: { content-type: application/json }   # value must contain this
+  body: { $.user.active: true }
+```
 
-Minimal YAML example:
+The body is one of `json`, `text`, `form`, `file` or `multipart`:
 
 ```yaml
-version: "0.0.0"
-name: Example GET
-request:
-  method: GET
-  url: https://httpbin.org/get
-  query:
-    foo: bar
-  headers: {}
-  body: null
-  follow_redirects: true
-  verify_tls: true
+body:
+  multipart:
+    title: My CV
+    cv: { file: ./cv.pdf, type: application/pdf }
 ```
 
-Useful fields (non-exhaustive):
+Files named in a request must be inside its collection. Files named on the command line can be
+anywhere.
 
-| Area | Notes |
-|------|--------|
-| `method` | Any case; normalized when sending. |
-| `url` | May contain `${VAR}` placeholders. |
-| `query` / `headers` | String maps; values may use `${VAR}`. |
-| `body` | Omitted or `null` for no body. JSON object/array → JSON body; string → text. Structured bodies support explicit `type` (e.g. `json`, `text`, `binary`, …). |
-| `timeout_secs` | Optional; default from schema in `nd-core`. |
-| `follow_redirects` | Default `true`. |
-| `verify_tls` | Default `true`; set `false` only for local/dev. |
+## Request items
 
-**JSON Schema:** `RequestFile::schema()` returns a JSON Schema document for tooling.
+| Item | Meaning |
+|---|---|
+| `Header:value` | Set a header |
+| `Header:` | Remove a header |
+| `Header;` | Send an empty header |
+| `key==value` | Query parameter |
+| `key=value` | JSON string field (or a form field with `--form`) |
+| `key:=29` | Raw JSON value |
+| `user[name]=x`, `tags[]=y`, `list[0]=z` | Nested JSON |
+| `key=@file`, `key:=@file.json`, `Header:@file`, `key==@file` | Value from a file |
+| `cv@file;type=application/pdf` | File upload, with `--form` or `--multipart` |
 
----
+Use `\` to escape a separator in a name (`foo\==bar`), and `--` before items that start with `-`.
 
-## Rhai scripts
+`--body` sends a raw body: text, `@file`, or `-` for stdin. Stdin is only read when you ask for it.
 
-Scripts run with a locked-down Rhai engine: **no arbitrary filesystem or network APIs** inside Rhai; HTTP happens only via **imported request files** and **`invoke`**.
+## Variables and secrets
 
-### Built-ins
+`${NAME}` is a variable and `$${NAME}` is a literal. `${!name}` is generated fresh each time:
+`uuidv4`, `nanoid`, `now`, `yesterday`, `tomorrow`, `random_date_past`, `random_date_future`,
+`random_int`, `random_bool`, `color`, `random_name`, `random_username`, `random_email`,
+`random_phone`, `random_words`, `random_paragraph`.
 
-| Symbol | Role |
-|--------|------|
-| `env(key)` | Read a string from the runtime map; missing keys → `()`. |
-| `set(key, value)` | Stringify `value` and store in the runtime map (visible to `${VAR}` and `env()`). |
-| `assert(condition, message)` | Fail evaluation if `condition` is false. |
-| `log(level, message)` | Log (tracing; optional `Logger` capture from the CLI). |
-| `persist(key, value)` | If a persistence file is configured, update runtime and the persist file. |
-
-### Imports
-
-```rhai
-import "helpers.rhai" as helpers;
-import "get_user.json" as get_user;
-
-let r = get_user::invoke(#{ user_id: "42" });
-assert(r.status == 200, "bad status");
+```yaml
+# environments/dev.yaml: committed, so it only holds secret names
+vars:
+  BASE_URL: https://dev.example.com
+  USER_ID:                  # declared, value comes from elsewhere
+secrets:
+  - API_TOKEN
 ```
 
-- Import paths are resolved **relative to the importing script’s directory** (or the main script’s directory for top-level imports).
-- **`invoke()`** with no arguments uses only the runtime map for `${VAR}`.
-- **`invoke(#{ name: value, ... })`** merges overrides for that request only; **overrides take precedence** over `env()` / `set()` / process env for `${VAR}` in that request.
+Highest priority first:
 
-Rhai reserves **`call`** as a keyword in qualified paths like `module::call(...)`, so imported request modules use **`invoke`**, not `call`.
+1. `--var NAME=value`
+2. Process environment, for declared names only
+3. Captured values, in `.nativedoctor/state/<env>.yaml`
+4. `.nativedoctor/secrets/<env>.env`, for declared secrets only
+5. Environment `vars`
+6. Collection `vars`
 
----
+Undeclared process variables can't be read, so a request in a cloned collection can't send your
+`AWS_SECRET_ACCESS_KEY` anywhere. Values set by `--var` or the process environment aren't replaced
+by captures.
 
-## Environment and `${VAR}` templates
+Secret values show as `***` in headers, request bodies, errors, `--offline`, `--json` and terminal
+output. A captured value is only treated as secret if its name is listed under `secrets`.
 
-Before send, strings in URLs, query values, headers, and JSON/text bodies expand **`${IDENT}`** (letters, digits, underscore; see `nd-core`).
+**Raw response bodies aren't redacted.** When output is piped, the body passes through byte for byte
+so that `| jq` and `> file.png` work.
 
-Dynamic placeholders use **`${!name}`** (fresh value per expansion). Examples include `uuidv4`, `nanoid`, `random_username`, `now`, etc. Unknown names error at expansion time.
+## Output
 
-By default the CLI seeds the runtime map from the **process environment**, then merges each **`--env`** file. The **`RuntimeEnv`** API also supports an isolated/empty starting map for embedded use (`nd-core`).
+A terminal gets formatted, coloured headers and body. A pipe gets only the raw body.
 
----
+| Flag | Does |
+|---|---|
+| `--print WHAT` | `H`, `B` request head and body; `h`, `b` response head and body; `m` timing |
+| `-v` | Full exchange, same as `--print=HBhbm` |
+| `--offline` | Build and print the request without sending it |
+| `--stream`, `-S` | Print the body as it arrives (automatic for `text/event-stream`) |
+| `--json` | One JSON result. With `--stream`, one JSON event per line |
+| `--pretty all\|none` | Override the terminal or pipe default |
 
-## OpenAPI generation
+## Exit codes
 
-**Supported:** OpenAPI **3.0.x**.
+Any HTTP response exits 0 unless you pass `--fail` or a check fails.
 
-**Not supported (today):** OpenAPI **3.1** (may be rejected), some `$ref` patterns.
-
-Generated URLs may use **`${BASE_URL}`** when the spec has no `servers` entry. Path `{param}` segments become **`${param}`** template syntax.
-
----
-
-## Using the library (`nd-core`)
-
-Path or crates.io dependency on **`nd-core`**. Typical entry points:
-
-- **Load / expand:** `RequestFile::from_file`, `HttpRequestSpec::expand` / `expand_with_overrides`, template helpers in `nd_core::utils::template`
-- **Execute:** `RequestFile::execute` / `execute_with_overrides`, `ExecutionResult`
-- **Rhai:** `run_rhai_script`, `RhaiScriptRunOptions`, definition export helpers in `nd_core::rhai`
-- **Discovery:** `list_request_paths`, `list_rhai_paths`, `partition_valid_request_paths`
-
-Install a **`tracing`** subscriber if you want structured logs from the core crate.
-
----
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Error: connection, invalid file, missing variable, bad usage, failed capture |
+| 2 | Timeout |
+| 3, 4, 5 | 3xx, 4xx or 5xx response, with `--fail` |
+| 6 | Too many redirects |
+| 7 | Failed assertion |
 
 ## Development
 
 ```bash
-cargo build --workspace
 cargo test --workspace
-cargo fmt --all
-cargo clippy --workspace -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-**Frontend (`nd-web`):** package manager is **pnpm** (`crates/nd-web/frontend`). The **`nd-web`** crate runs `pnpm install` / `pnpm build` from **`build.rs`** before compiling so the SPA is embedded. For a fast iteration loop on the UI alone:
-
-```bash
-cd crates/nd-web/frontend && pnpm install && pnpm dev
-```
-
-(run the Rust server separately, with Vite proxying `/api` to it, per `vite.config.ts`).
-
----
-
-## Contributing
-
-Issues and pull requests are welcome. When changing behavior, update this README, **PROJECT.md**, and any affected `///` / `//!` documentation in the crates you touch.
+`nd-core` handles files, variables and request preparation with no networking. `nd-engine` sends
+requests and emits a stream of events. `nd-cli` is the binary.
