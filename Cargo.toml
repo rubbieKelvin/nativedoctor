@@ -1,10 +1,6 @@
 [workspace]
 members = [
-    "crates/nd-constants",
-    "crates/nd-core",
-    "crates/nd-engine",
-    "crates/nd-cli",
-    "crates/nd-desktop",
+    "crates/*"
 ]
 resolver = "2"
 
@@ -15,8 +11,6 @@ authors = ["rubbie kelvin <dev@gmail.com>"]
 
 [workspace.dependencies]
 nd-constants = { path = "crates/nd-constants" }
-nd-core = { path = "crates/nd-core" }
-nd-engine = { path = "crates/nd-engine" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
