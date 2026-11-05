@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::{self, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use colored::Colorize;
 use nd_constants::REQUEST_SUFFIX;
@@ -11,6 +12,8 @@ use nd_core::{
     prepare, state, Body, Collection, HttpSpec, Part, PrepareContext, PreparedBody,
     PreparedRequest, RequestFile, Variables,
 };
+
+use nd_engine::CookieJar;
 
 use crate::args::{Options, Pretty, RunArgs, SendArgs};
 use crate::exchange::{self, Output};
@@ -92,6 +95,32 @@ pub fn check(
     return Ok(());
 }
 
+pub fn cookies_list(path: &Path, env: Option<&str>) -> Result<(), Failure> {
+    let collection = require_collection(path)?;
+    let env = select_env(Some(&collection), env)?;
+    let jar = CookieJar::load(&collection.cookies_path(env.as_deref()))?;
+    for cookie in jar.list() {
+        let lifetime = if cookie.session { "session" } else { "expires" };
+        println!(
+            "{:<30} {:<15} {:<8} {}",
+            cookie.domain, cookie.path, lifetime, cookie.name
+        );
+    }
+    return Ok(());
+}
+
+pub fn cookies_clear(path: &Path, env: Option<&str>) -> Result<(), Failure> {
+    let collection = require_collection(path)?;
+    let env = select_env(Some(&collection), env)?;
+    let file = collection.cookies_path(env.as_deref());
+    let count = CookieJar::load(&file).map_or(0, |jar| jar.list().len());
+    if file.exists() {
+        fs::remove_file(&file).map_err(|e| Failure::new(format!("{}: {e}", file.display())))?;
+    }
+    println!("Cleared {count} cookie(s)");
+    return Ok(());
+}
+
 pub async fn run(args: RunArgs) -> Result<(), Failure> {
     let is_dir = args.target.is_dir();
     if !is_dir && !args.target.is_file() {
@@ -110,6 +139,7 @@ pub async fn run(args: RunArgs) -> Result<(), Failure> {
     let collection = Collection::find(start)?;
     let env = select_env(collection.as_ref(), args.options.env.as_deref())?;
     let mut vars = load_vars(collection.as_ref(), env.as_deref(), &args.options.vars)?;
+    let cookies = Cookies::open(collection.as_ref(), env.as_deref(), &args.options)?;
 
     let paths = match (is_dir, &collection) {
         (false, _) => vec![target.clone()],
@@ -133,31 +163,81 @@ pub async fn run(args: RunArgs) -> Result<(), Failure> {
     output.show_titles = paths.len() > 1 && output.pretty && !output.json;
     colored::control::set_override(output.pretty);
 
+    let context = RunContext {
+        collection: collection.as_ref(),
+        env: env.as_deref(),
+        parsed: &parsed,
+        options: &args.options,
+        output: &output,
+        cookies: &cookies,
+    };
     for path in &paths {
-        let outcome = run_file(
-            path,
-            collection.as_ref(),
-            env.as_deref(),
-            &parsed,
-            &args.options,
-            &output,
-            &mut vars,
-        )
-        .await;
+        let outcome = run_file(path, &context, &mut vars).await;
         outcome.map_err(|failure| failure.redacted(&vars.redactor()))?;
     }
     return Ok(());
 }
 
+/// The jar for this run. It's only written to disk when there's a collection to hold it.
+struct Cookies {
+    jar: Option<Arc<CookieJar>>,
+    path: Option<PathBuf>,
+}
+
+impl Cookies {
+    fn open(
+        collection: Option<&Collection>,
+        env: Option<&str>,
+        options: &Options,
+    ) -> Result<Cookies, Failure> {
+        if options.no_cookies {
+            return Ok(Cookies {
+                jar: None,
+                path: None,
+            });
+        }
+        let path = collection.map(|c| c.cookies_path(env));
+        let jar = match &path {
+            Some(path) => CookieJar::load(path)?,
+            None => CookieJar::new(),
+        };
+        return Ok(Cookies {
+            jar: Some(Arc::new(jar)),
+            path,
+        });
+    }
+
+    fn save(&self) -> Result<(), Failure> {
+        if let (Some(jar), Some(path)) = (&self.jar, &self.path) {
+            jar.save(path)?;
+        }
+        return Ok(());
+    }
+}
+
+/// What stays the same for every file in a run.
+struct RunContext<'a> {
+    collection: Option<&'a Collection>,
+    env: Option<&'a str>,
+    parsed: &'a [Item],
+    options: &'a Options,
+    output: &'a Output,
+    cookies: &'a Cookies,
+}
+
 async fn run_file(
     path: &Path,
-    collection: Option<&Collection>,
-    env: Option<&str>,
-    parsed: &[Item],
-    options: &Options,
-    output: &Output,
+    context: &RunContext<'_>,
     vars: &mut Variables,
 ) -> Result<(), Failure> {
+    let RunContext {
+        collection,
+        env,
+        parsed,
+        options,
+        output,
+        cookies,
+    } = *context;
     let mut file = RequestFile::load(path)?;
     let name = file.display_name(path);
     if output.show_titles {
@@ -172,6 +252,7 @@ async fn run_file(
         root: Some(root),
         collection,
         save: None,
+        cookies,
     };
     let saved = execute(&name, &mut file, parsed, options, output, vars, &scope).await?;
 
@@ -187,6 +268,7 @@ pub async fn send(args: SendArgs) -> Result<(), Failure> {
     let collection = Collection::find(&cwd)?;
     let env = select_env(collection.as_ref(), args.options.env.as_deref())?;
     let mut vars = load_vars(collection.as_ref(), env.as_deref(), &args.options.vars)?;
+    let cookies = Cookies::open(collection.as_ref(), env.as_deref(), &args.options)?;
 
     let parsed = parse_items(raw_items)?;
     let output = output_for(&args.options)?;
@@ -211,6 +293,7 @@ pub async fn send(args: SendArgs) -> Result<(), Failure> {
         root: None,
         collection: collection.as_ref(),
         save: args.save.as_deref(),
+        cookies: &cookies,
     };
     let outcome = execute(
         &name,
@@ -232,6 +315,7 @@ struct Scope<'a> {
     root: Option<PathBuf>,
     collection: Option<&'a Collection>,
     save: Option<&'a Path>,
+    cookies: &'a Cookies,
 }
 
 /// Applies items and flags, prepares the request, then saves, prints or sends it.
@@ -277,10 +361,14 @@ async fn execute(
     }
 
     if options.offline {
-        exchange::print_offline(name, &request, vars, output)?;
+        exchange::print_offline(name, &request, scope.cookies.jar.as_ref(), vars, output)?;
         return Ok(Vec::new());
     }
-    return exchange::perform(name, file, request, vars, output).await;
+    let jar = scope.cookies.jar.clone();
+    let outcome = exchange::perform(name, file, request, jar, vars, output).await;
+    // Saved even after a failed check, since the server has already set them.
+    scope.cookies.save()?;
+    return outcome;
 }
 
 /// Handles --body. Returns stdin's bytes, which skip variable expansion.

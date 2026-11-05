@@ -34,6 +34,7 @@ nativedoctor send POST :3000/users name=John --save users/create.request.yaml
 | `send [METHOD] URL [ITEM...]` | Send a one-off request |
 | `list [PATH]` | List requests |
 | `check [PATH]` | Validate files and variables without using the network |
+| `cookies list [PATH]`, `cookies clear [PATH]` | See or delete saved cookies for an environment |
 
 ## Collections
 
@@ -151,6 +152,22 @@ output. A captured value is only treated as secret if its name is listed under `
 
 **Raw response bodies aren't redacted.** When output is piped, the body passes through byte for byte
 so that `| jq` and `> file.png` work.
+
+## Cookies
+
+Cookies a server sets are sent back on later requests, like in a browser. In a collection they're
+saved per environment in `.nativedoctor/state/<env>.cookies.json`, so a login carries over between
+runs, including session cookies. Outside a collection they last for one run.
+
+- A cookie only goes to the host that set it, or to subdomains if it has a `Domain` attribute.
+  `Domain=com` and other public suffixes are rejected.
+- `Secure`, `Path` and expiry are respected.
+- A `Cookie` header on the request replaces saved cookies for that request.
+- `--no-cookies` neither sends nor saves them.
+- `nativedoctor cookies clear` logs you out.
+
+Saved cookies show as `name=***` in request output. The file itself isn't encrypted, but only you
+can read it. Response `Set-Cookie` headers are shown as the server sent them.
 
 ## Output
 

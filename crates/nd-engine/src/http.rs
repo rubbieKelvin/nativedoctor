@@ -1,5 +1,6 @@
 use std::error::Error as _;
 use std::future::Future;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use futures_util::StreamExt;
@@ -11,15 +12,21 @@ use reqwest::redirect::Policy;
 use reqwest::{Client, Method};
 use tokio::sync::mpsc::Sender;
 
+use crate::cookies::CookieJar;
 use crate::event::{Error, Event};
 
 /// Sends `request` and emits its events. Dropping the receiver cancels the request.
-pub async fn send(request: PreparedRequest, events: Sender<Event>) -> Result<(), Error> {
+/// A `Cookie` header on the request takes priority over the jar.
+pub async fn send(
+    request: PreparedRequest,
+    cookies: Option<Arc<CookieJar>>,
+    events: Sender<Event>,
+) -> Result<(), Error> {
     let started = Instant::now();
     let limit = time_limit(&request);
     let max_redirects = request.max_redirects;
 
-    let builder = build_request(request)?;
+    let builder = build_request(request, cookies)?;
     let response = with_limit(limit, builder.send())
         .await?
         .map_err(|e| classify(e, limit, max_redirects))?;
@@ -88,17 +95,22 @@ async fn with_limit<F: Future>(limit: Option<Duration>, step: F) -> Result<F::Ou
         .map_err(|_| Error::Timeout(limit));
 }
 
-fn build_request(request: PreparedRequest) -> Result<reqwest::RequestBuilder, Error> {
+fn build_request(
+    request: PreparedRequest,
+    cookies: Option<Arc<CookieJar>>,
+) -> Result<reqwest::RequestBuilder, Error> {
     let policy = if request.follow_redirects {
         Policy::limited(request.max_redirects)
     } else {
         Policy::none()
     };
-    let client = Client::builder()
+    let mut client = Client::builder()
         .redirect(policy)
-        .tls_danger_accept_invalid_certs(!request.verify_tls)
-        .build()
-        .map_err(|e| Error::Other(e.to_string()))?;
+        .tls_danger_accept_invalid_certs(!request.verify_tls);
+    if let Some(jar) = cookies {
+        client = client.cookie_provider(jar);
+    }
+    let client = client.build().map_err(|e| Error::Other(e.to_string()))?;
 
     let method = Method::from_bytes(request.method.as_bytes())
         .map_err(|_| Error::Invalid(format!("bad method `{}`", request.method)))?;

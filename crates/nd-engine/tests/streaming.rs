@@ -47,7 +47,7 @@ async fn server(content_type: &'static str, chunks: Vec<(u64, &'static str)>) ->
 async fn chunks_arrive_as_they_are_sent() {
     let port = server("text/plain", vec![(0, "first"), (400, "second")]).await;
     let (sender, mut events) = mpsc::channel(8);
-    let task = tokio::spawn(send(request(port, None), sender));
+    let task = tokio::spawn(send(request(port, None), None, sender));
 
     let mut first_chunk_at = None;
     let mut last_chunk_at = None;
@@ -85,6 +85,7 @@ async fn a_stalled_body_times_out() {
     let (sender, mut events) = mpsc::channel(8);
     let task = tokio::spawn(send(
         request(port, Some(Duration::from_millis(100))),
+        None,
         sender,
     ));
     while events.recv().await.is_some() {}
@@ -95,7 +96,7 @@ async fn a_stalled_body_times_out() {
 async fn a_zero_timeout_means_no_limit() {
     let port = server("text/plain", vec![(200, "ok")]).await;
     let (sender, mut events) = mpsc::channel(8);
-    let task = tokio::spawn(send(request(port, Some(Duration::ZERO)), sender));
+    let task = tokio::spawn(send(request(port, Some(Duration::ZERO)), None, sender));
     while events.recv().await.is_some() {}
     task.await.unwrap().unwrap();
 }
@@ -104,7 +105,7 @@ async fn a_zero_timeout_means_no_limit() {
 async fn dropping_the_receiver_cancels_quietly() {
     let port = server("text/plain", vec![(0, "first"), (5_000, "late")]).await;
     let (sender, mut events) = mpsc::channel(1);
-    let task = tokio::spawn(send(request(port, None), sender));
+    let task = tokio::spawn(send(request(port, None), None, sender));
     assert!(events.recv().await.is_some());
     drop(events);
 
@@ -119,6 +120,6 @@ async fn refused_connections_are_connect_errors() {
     let port = listener.local_addr().unwrap().port();
     drop(listener);
     let (sender, _events) = mpsc::channel(8);
-    let result = send(request(port, None), sender).await;
+    let result = send(request(port, None), None, sender).await;
     assert!(matches!(result, Err(Error::Connect(_))), "{result:?}");
 }

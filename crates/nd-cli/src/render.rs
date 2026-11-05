@@ -38,7 +38,7 @@ impl Print {
     }
 }
 
-pub fn request_head(request: &PreparedRequest) -> String {
+pub fn request_head(request: &PreparedRequest, cookies: Option<&str>) -> String {
     let mut target = request.url.path().to_string();
     if let Some(query) = request.url.query() {
         target = format!("{target}?{query}");
@@ -53,6 +53,9 @@ pub fn request_head(request: &PreparedRequest) -> String {
     lines.push(header_line("host", &host));
     for (name, value) in &request.headers {
         lines.push(header_line(name, value));
+    }
+    if let Some(cookies) = cookies {
+        lines.push(header_line("cookie", cookies));
     }
     return lines.join("\n") + "\n";
 }

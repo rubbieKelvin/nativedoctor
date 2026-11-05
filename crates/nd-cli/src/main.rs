@@ -10,7 +10,7 @@ use std::process::ExitCode;
 
 use clap::Parser;
 
-use args::{Cli, Command};
+use args::{Cli, Command, CookiesAction};
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -28,6 +28,10 @@ async fn main() -> ExitCode {
         Command::Run(args) => commands::run(args).await,
         Command::Send(args) => commands::send(args).await,
         Command::List { path } => commands::list(&path),
+        Command::Cookies { action } => match action {
+            CookiesAction::List { path, env } => commands::cookies_list(&path, env.as_deref()),
+            CookiesAction::Clear { path, env } => commands::cookies_clear(&path, env.as_deref()),
+        },
         Command::Check { path, env, vars } => commands::check(&path, env.as_deref(), &vars),
     };
 

@@ -7,10 +7,15 @@ edition.workspace = true
 nd-constants.workspace = true
 nd-core.workspace = true
 bytes.workspace = true
+cookie_store.workspace = true
 futures-util.workspace = true
+psl.workspace = true
 reqwest.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

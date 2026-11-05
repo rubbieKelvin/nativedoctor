@@ -691,3 +691,270 @@ fn planned_protocols_explain_themselves() {
         stderr(&output)
     );
 }
+
+/// The `Cookie` header on each request the server received for `route`, in order.
+async fn cookies_sent(server: &MockServer, route: &str) -> Vec<Option<String>> {
+    let requests = server.received_requests().await.unwrap();
+    return requests
+        .iter()
+        .filter(|request| request.url.path() == route)
+        .map(|request| {
+            request
+                .headers
+                .get("cookie")
+                .map(|value| value.to_str().unwrap().to_string())
+        })
+        .collect();
+}
+
+fn set_cookie(value: &str) -> ResponseTemplate {
+    ResponseTemplate::new(200).insert_header("set-cookie", value)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn cookies_persist_between_runs_in_a_collection() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    write(
+        &dir,
+        "login.request.yaml",
+        "http: { url: '${BASE_URL}/login' }\n",
+    );
+    write(&dir, "me.request.yaml", "http: { url: '${BASE_URL}/me' }\n");
+
+    assert_eq!(code(&run(dir.path(), &["run", "me.request.yaml"])), 0);
+    assert_eq!(code(&run(dir.path(), &["run", "login.request.yaml"])), 0);
+    assert_eq!(code(&run(dir.path(), &["run", "me.request.yaml"])), 0);
+
+    assert_eq!(
+        cookies_sent(&server, "/me").await,
+        vec![None, Some("session=abc123".to_string())]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn each_environment_has_its_own_cookies() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=dev")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    let env = json!({ "vars": { "BASE_URL": server.uri() } });
+    write(&dir, "environments/prod.yaml", &env.to_string());
+    write(
+        &dir,
+        "login.request.yaml",
+        "http: { url: '${BASE_URL}/login' }\n",
+    );
+    write(&dir, "me.request.yaml", "http: { url: '${BASE_URL}/me' }\n");
+
+    run(dir.path(), &["run", "login.request.yaml", "-e", "dev"]);
+    run(dir.path(), &["run", "me.request.yaml", "-e", "prod"]);
+    run(dir.path(), &["run", "me.request.yaml", "-e", "dev"]);
+
+    assert_eq!(
+        cookies_sent(&server, "/me").await,
+        vec![None, Some("session=dev".to_string())]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn saved_cookies_only_go_to_the_host_that_set_them() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    let local = server.uri().replace("127.0.0.1", "localhost");
+    let login = format!("{}/login", server.uri());
+    run(dir.path(), &["send", &login]);
+    let output = run(dir.path(), &["send", &format!("{local}/me")]);
+    assert_eq!(code(&output), 0, "{}", stderr(&output));
+
+    assert_eq!(cookies_sent(&server, "/me").await, vec![None]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_folder_run_shares_cookies_without_a_collection() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = tempfile::tempdir().unwrap();
+    let uri = server.uri();
+    write(
+        &dir,
+        "1.request.yaml",
+        &format!("http: {{ url: '{uri}/login' }}\n"),
+    );
+    write(
+        &dir,
+        "2.request.yaml",
+        &format!("http: {{ url: '{uri}/me' }}\n"),
+    );
+    let output = run(dir.path(), &["run", "."]);
+    assert_eq!(code(&output), 0, "{}", stderr(&output));
+
+    assert_eq!(
+        cookies_sent(&server, "/me").await,
+        vec![Some("session=abc123".to_string())]
+    );
+    assert!(
+        !dir.path().join(".nativedoctor").exists(),
+        "nowhere to save them"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn no_cookies_neither_sends_nor_saves() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    let login = format!("{}/login", server.uri());
+    let me = format!("{}/me", server.uri());
+
+    run(dir.path(), &["send", &login, "--no-cookies"]);
+    assert!(!dir
+        .path()
+        .join(".nativedoctor/state/dev.cookies.json")
+        .exists());
+
+    run(dir.path(), &["send", &login]);
+    run(dir.path(), &["send", &me, "--no-cookies"]);
+    run(dir.path(), &["send", &me]);
+
+    assert_eq!(
+        cookies_sent(&server, "/me").await,
+        vec![None, Some("session=abc123".to_string())]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_explicit_cookie_header_replaces_saved_cookies() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=saved")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    run(dir.path(), &["send", &format!("{}/login", server.uri())]);
+    let output = run(
+        dir.path(),
+        &[
+            "send",
+            &format!("{}/me", server.uri()),
+            "Cookie:mine=1",
+            "-v",
+            "--pretty",
+            "all",
+        ],
+    );
+
+    assert_eq!(
+        cookies_sent(&server, "/me").await,
+        vec![Some("mine=1".to_string())]
+    );
+    assert!(stdout(&output).contains("mine=1"), "{}", stdout(&output));
+    assert!(
+        !stdout(&output).contains("session=***"),
+        "{}",
+        stdout(&output)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn saved_cookie_values_are_hidden_in_output() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    run(dir.path(), &["send", &format!("{}/login", server.uri())]);
+    let me = format!("{}/me", server.uri());
+
+    for args in [
+        vec!["send", &me, "-v", "--pretty", "all"],
+        vec!["send", &me, "--offline"],
+    ] {
+        let text = stdout(&run(dir.path(), &args));
+        assert!(text.contains("session=***"), "{text}");
+        assert!(!text.contains("abc123"), "{text}");
+    }
+    let text = stdout(&run(dir.path(), &["send", &me, "--json"]));
+    assert!(text.contains("session=***"), "{text}");
+    assert!(!text.contains("abc123"), "{text}");
+
+    let text = stdout(&run(dir.path(), &["cookies", "list"]));
+    assert!(text.contains("session"), "{text}");
+    assert!(!text.contains("abc123"), "{text}");
+
+    // Offline doesn't touch the jar, and the value did go out on the wire.
+    let sent = cookies_sent(&server, "/me").await;
+    assert_eq!(sent, vec![Some("session=abc123".to_string()); 2]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn cookies_clear_logs_out_one_environment() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+    respond(&server, "/me", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    run(dir.path(), &["send", &format!("{}/login", server.uri())]);
+    let output = run(dir.path(), &["cookies", "clear"]);
+    assert_eq!(code(&output), 0);
+    assert!(stdout(&output).contains("Cleared 1"), "{}", stdout(&output));
+
+    run(dir.path(), &["send", &format!("{}/me", server.uri())]);
+    assert_eq!(cookies_sent(&server, "/me").await, vec![None]);
+
+    let again = run(dir.path(), &["cookies", "clear"]);
+    assert!(stdout(&again).contains("Cleared 0"), "{}", stdout(&again));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn cookies_set_on_a_redirect_reach_the_next_request() {
+    let server = MockServer::start().await;
+    respond(
+        &server,
+        "/login",
+        ResponseTemplate::new(302)
+            .insert_header("location", "/home")
+            .insert_header("set-cookie", "session=abc123"),
+    )
+    .await;
+    respond(&server, "/home", ResponseTemplate::new(200)).await;
+
+    let dir = collection(&server, &[]);
+    let output = run(
+        dir.path(),
+        &["send", &format!("{}/login", server.uri()), "--follow"],
+    );
+    assert_eq!(code(&output), 0, "{}", stderr(&output));
+    assert_eq!(
+        cookies_sent(&server, "/home").await,
+        vec![Some("session=abc123".to_string())]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn cookies_are_saved_when_an_assertion_fails() {
+    let server = MockServer::start().await;
+    respond(&server, "/login", set_cookie("session=abc123")).await;
+
+    let dir = collection(&server, &[]);
+    write(
+        &dir,
+        "l.request.yaml",
+        "http: { url: '${BASE_URL}/login' }\nassert: { status: 201 }\n",
+    );
+    assert_eq!(code(&run(dir.path(), &["run", "l.request.yaml"])), 7);
+    assert!(dir
+        .path()
+        .join(".nativedoctor/state/dev.cookies.json")
+        .exists());
+}

@@ -1,11 +1,12 @@
 //! Runs one prepared request: consumes engine events, prints them, then evaluates checks.
 
 use std::io::{self, Write};
+use std::sync::Arc;
 
 use colored::Colorize;
 use nd_core::evaluate::{self, ResponseView};
 use nd_core::{PreparedRequest, RequestFile, Variables};
-use nd_engine::Event;
+use nd_engine::{CookieJar, Event};
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
 
@@ -47,29 +48,48 @@ struct Head {
 pub fn print_offline(
     name: &str,
     request: &PreparedRequest,
+    cookies: Option<&Arc<CookieJar>>,
     vars: &Variables,
     output: &Output,
 ) -> Result<(), Failure> {
     let redactor = vars.redactor();
+    let cookie_line = saved_cookies(request, cookies);
     let mut out = io::stdout().lock();
     if output.json {
-        let value = json!({ "name": name, "request": request_json(request) });
+        let value = json!({
+            "name": name,
+            "request": request_json(request, cookie_line.as_deref()),
+        });
         writeln!(out, "{}", redactor.redact_json(&value))?;
         return Ok(());
     }
-    write_request(&mut out, request, vars, output)?;
+    write_request(&mut out, request, cookie_line.as_deref(), vars, output)?;
     return Ok(());
+}
+
+/// Saved cookies for this request, values hidden. An explicit `Cookie` header replaces them.
+fn saved_cookies(request: &PreparedRequest, cookies: Option<&Arc<CookieJar>>) -> Option<String> {
+    let explicit = request
+        .headers
+        .iter()
+        .any(|(name, _)| name.eq_ignore_ascii_case("cookie"));
+    if explicit {
+        return None;
+    }
+    return cookies.and_then(|jar| jar.masked_header(&request.url));
 }
 
 fn write_request(
     out: &mut impl Write,
     request: &PreparedRequest,
+    cookie_line: Option<&str>,
     vars: &Variables,
     output: &Output,
 ) -> Result<(), Failure> {
     let redactor = vars.redactor();
     if output.print.request_head {
-        writeln!(out, "{}", redactor.redact(&render::request_head(request)))?;
+        let head = render::request_head(request, cookie_line);
+        writeln!(out, "{}", redactor.redact(&head))?;
     }
     if output.print.request_body {
         if let Some(body) = render::request_body(request, output.pretty) {
@@ -84,20 +104,22 @@ pub async fn perform(
     name: &str,
     file: &RequestFile,
     request: PreparedRequest,
+    cookies: Option<Arc<CookieJar>>,
     vars: &mut Variables,
     output: &Output,
 ) -> Result<Vec<(String, String)>, Failure> {
     let has_checks = !file.capture.is_empty() || !file.assertions.is_empty();
     let events_as_json = output.json && output.stream;
     let wants_body = output.print.response_body || has_checks || output.json;
+    let cookie_line = saved_cookies(&request, cookies.as_ref());
 
     let mut out = io::stdout().lock();
     if !output.json {
-        write_request(&mut out, &request, vars, output)?;
+        write_request(&mut out, &request, cookie_line.as_deref(), vars, output)?;
     }
 
     let (sender, mut events) = mpsc::channel(CHANNEL_SIZE);
-    let engine = tokio::spawn(nd_engine::send(request.clone(), sender));
+    let engine = tokio::spawn(nd_engine::send(request.clone(), cookies, sender));
 
     let redactor = vars.redactor();
     let mut head: Option<Head> = None;
@@ -239,7 +261,8 @@ pub async fn perform(
         writeln!(out, "\n{} {elapsed:.3}s", "Elapsed time:".dimmed())?;
     }
     if output.json && !output.stream {
-        let result = result_json(name, &request, &head, &collected, elapsed_ms, &failures);
+        let sent = request_json(&request, cookie_line.as_deref());
+        let result = result_json(name, sent, &head, &collected, elapsed_ms, &failures);
         writeln!(out, "{}", redactor.redact_json(&result))?;
     }
     out.flush()?;
@@ -291,17 +314,21 @@ fn write_complete_lines(
     return out.flush();
 }
 
-fn request_json(request: &PreparedRequest) -> Value {
+fn request_json(request: &PreparedRequest, cookie_line: Option<&str>) -> Value {
+    let mut headers = request.headers.clone();
+    if let Some(cookies) = cookie_line {
+        headers.push(("cookie".to_string(), cookies.to_string()));
+    }
     return json!({
         "method": request.method,
         "url": request.url.as_str(),
-        "headers": render::pairs_json(&request.headers),
+        "headers": render::pairs_json(&headers),
     });
 }
 
 fn result_json(
     name: &str,
-    request: &PreparedRequest,
+    request: Value,
     head: &Head,
     body: &[u8],
     elapsed_ms: Option<u128>,
@@ -309,7 +336,7 @@ fn result_json(
 ) -> Value {
     return json!({
         "name": name,
-        "request": request_json(request),
+        "request": request,
         "response": {
             "status": head.status,
             "reason": head.reason,

@@ -29,7 +29,7 @@ pub fn load(path: &Path) -> Result<IndexMap<String, String>> {
     });
 }
 
-/// Merges `values` into the file. The file is readable only by its owner.
+/// Merges `values` into the file.
 pub fn save(path: &Path, values: &[(String, String)]) -> Result<()> {
     let mut merged = load(path)?;
     for (name, value) in values {
@@ -40,6 +40,11 @@ pub fn save(path: &Path, values: &[(String, String)]) -> Result<()> {
         source,
     })?;
 
+    return write_private(path, text.as_bytes());
+}
+
+/// Replaces a file under `.nativedoctor/state/`, readable only by its owner.
+pub fn write_private(path: &Path, bytes: &[u8]) -> Result<()> {
     let parent = path
         .parent()
         .ok_or_else(|| Error::Invalid(format!("{} has no parent", path.display())))?;
@@ -48,10 +53,9 @@ pub fn save(path: &Path, values: &[(String, String)]) -> Result<()> {
         ensure_local_dir(local)?;
     }
 
-    let temp = path.with_extension("yaml.tmp");
+    let temp = path.with_extension("tmp");
     let mut file = private_file(&temp)?;
-    file.write_all(text.as_bytes())
-        .map_err(|e| Error::io(&temp, e))?;
+    file.write_all(bytes).map_err(|e| Error::io(&temp, e))?;
     drop(file);
     return fs::rename(&temp, path).map_err(|e| Error::io(path, e));
 }

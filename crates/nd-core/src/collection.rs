@@ -104,6 +104,14 @@ impl Collection {
         return self.local_dir().join("state").join(format!("{name}.yaml"));
     }
 
+    pub fn cookies_path(&self, env: Option<&str>) -> PathBuf {
+        let name = env.unwrap_or(DEFAULT_STATE);
+        return self
+            .local_dir()
+            .join("state")
+            .join(format!("{name}.cookies.json"));
+    }
+
     /// Names of the environments in `environments/`, sorted.
     pub fn environments(&self) -> Result<Vec<String>> {
         let dir = self.root.join(ENVIRONMENTS_DIR);

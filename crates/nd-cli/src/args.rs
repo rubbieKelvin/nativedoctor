@@ -28,6 +28,11 @@ pub enum Command {
         #[arg(default_value = ".", value_hint = clap::ValueHint::DirPath)]
         path: PathBuf,
     },
+    /// See or clear saved cookies
+    Cookies {
+        #[command(subcommand)]
+        action: CookiesAction,
+    },
     /// Validate a collection without using the network
     Check {
         #[arg(default_value = ".", value_hint = clap::ValueHint::DirPath)]
@@ -38,6 +43,26 @@ pub enum Command {
         /// Treat a variable as set: NAME=value
         #[arg(long = "var", value_name = "NAME=VALUE", value_parser = parse_var)]
         vars: Vec<(String, String)>,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CookiesAction {
+    /// List saved cookies, without their values
+    List {
+        #[arg(default_value = ".", value_hint = clap::ValueHint::DirPath)]
+        path: PathBuf,
+        /// Environment to use
+        #[arg(short, long)]
+        env: Option<String>,
+    },
+    /// Delete saved cookies for one environment
+    Clear {
+        #[arg(default_value = ".", value_hint = clap::ValueHint::DirPath)]
+        path: PathBuf,
+        /// Environment to use
+        #[arg(short, long)]
+        env: Option<String>,
     },
 }
 
@@ -81,6 +106,9 @@ pub struct Options {
     /// Raw body: text, @file, or - for stdin
     #[arg(long, value_name = "BODY", allow_hyphen_values = true)]
     pub body: Option<String>,
+    /// Don't send or save cookies
+    #[arg(long)]
+    pub no_cookies: bool,
     /// Exit 3, 4 or 5 on a 3xx, 4xx or 5xx response
     #[arg(long)]
     pub fail: bool,
