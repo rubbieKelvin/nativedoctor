@@ -3,6 +3,8 @@
 use std::path::{Path, PathBuf};
 
 use gpui_kit::component::button::*;
+use gpui_kit::component::dialog::DialogButtonProps;
+use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::input::{EditorState, Editor, Input, InputEvent, InputState};
 use gpui_kit::component::select::{Select, SelectEvent, SelectState};
 use gpui_kit::component::searchable_list::SearchableVec;
@@ -17,12 +19,20 @@ use tokio::sync::mpsc;
 use crate::model::document::Document;
 use crate::model::exchange::{Exchange, Language};
 use crate::model::run::{saved_scope, Outcome, RunInput, Source, Target};
+use crate::pairs_view::{PairsChanged, PairsView};
 use crate::runtime;
 
 actions!(request, [Send, Save]);
 
 pub const KEY_CONTEXT: &str = "RequestView";
 const METHODS: [&str; 7] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+
+#[derive(Clone, Copy, PartialEq)]
+enum RequestTab {
+    Params,
+    Headers,
+    Yaml,
+}
 
 #[derive(Clone, Copy, PartialEq)]
 enum ResponseTab {
@@ -47,6 +57,12 @@ pub struct RequestView {
     body: Entity<EditorState>,
     headers: Entity<EditorState>,
     sent: Entity<EditorState>,
+    params: Entity<PairsView>,
+    request_headers: Entity<PairsView>,
+    yaml: Entity<EditorState>,
+    /// The YAML tab holds text the form doesn't know about yet.
+    yaml_dirty: bool,
+    request_tab: RequestTab,
     exchange: Exchange,
     tab: ResponseTab,
     pretty: bool,
@@ -96,10 +112,45 @@ impl RequestView {
         let body = viewer(window, cx, "plaintext");
         let headers = viewer(window, cx, "plaintext");
         let sent = viewer(window, cx, "plaintext");
+        let params = {
+            let pairs = draft.http.query.clone();
+            cx.new(|cx| PairsView::new("params", &pairs, false, window, cx))
+        };
+        let request_headers = {
+            let pairs = draft.http.headers.clone();
+            cx.new(|cx| PairsView::new("headers", &pairs, true, window, cx))
+        };
+        let yaml = cx.new(|cx| EditorState::new(window, cx).language("yaml").line_number(true));
+        let request_tab = if load_error.is_some() {
+            RequestTab::Yaml
+        } else {
+            RequestTab::Params
+        };
+
+        cx.subscribe_in(&params, window, |this, view, _: &PairsChanged, _, cx| {
+            this.draft.http.query = view.read(cx).pairs(cx);
+            this.yaml_dirty = false;
+            cx.notify();
+        })
+        .detach();
+        cx.subscribe_in(&request_headers, window, |this, view, _: &PairsChanged, _, cx| {
+            this.draft.http.headers = view.read(cx).pairs(cx);
+            this.yaml_dirty = false;
+            cx.notify();
+        })
+        .detach();
+        cx.subscribe_in(&yaml, window, |this, _, event: &InputEvent, _, cx| {
+            if matches!(event, InputEvent::Change) {
+                this.yaml_dirty = true;
+                cx.notify();
+            }
+        })
+        .detach();
 
         cx.subscribe_in(&url, window, |this, state, event: &InputEvent, _, cx| {
             if matches!(event, InputEvent::Change) {
                 this.draft.http.url = state.read(cx).value().to_string();
+                this.yaml_dirty = false;
                 cx.notify();
             }
         })
@@ -112,12 +163,13 @@ impl RequestView {
                     return;
                 };
                 this.draft.http.method = Some((*method).to_string());
+                this.yaml_dirty = false;
                 cx.notify();
             },
         )
         .detach();
 
-        return RequestView {
+        let mut view = RequestView {
             document,
             draft,
             place,
@@ -126,6 +178,11 @@ impl RequestView {
             body,
             headers,
             sent,
+            params,
+            request_headers,
+            yaml,
+            yaml_dirty: false,
+            request_tab,
             exchange: Exchange::default(),
             tab: ResponseTab::Body,
             pretty: true,
@@ -134,6 +191,10 @@ impl RequestView {
             running: None,
             _task: None,
         };
+        if view.request_tab == RequestTab::Yaml {
+            view.show_yaml(window, cx);
+        }
+        return view;
     }
 
     pub fn title(&self) -> String {
@@ -144,7 +205,7 @@ impl RequestView {
     }
 
     pub fn is_dirty(&self) -> bool {
-        return self.document.is_dirty(&self.draft);
+        return self.yaml_dirty || self.document.is_dirty(&self.draft);
     }
 
     pub fn is_running(&self) -> bool {
@@ -212,12 +273,100 @@ impl RequestView {
         cx.notify();
     }
 
-    fn save(&mut self, cx: &mut Context<Self>) {
-        self.notice = Some(match self.document.save(&self.draft) {
-            Ok(()) => "Saved".to_string(),
-            Err(error) => error.to_string(),
-        });
+    /// Fills the YAML tab from the form, unless it holds edits of its own.
+    fn show_yaml(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.yaml_dirty {
+            return;
+        }
+        let text = match (&self.load_error, self.document.disk_text()) {
+            (Some(_), Some(disk)) => disk.to_string(),
+            _ => match self.document.yaml_for(&self.draft) {
+                Ok(text) => text,
+                // The form can't be applied without losing comments, so show the file as it is.
+                Err(_) => self.document.disk_text().unwrap_or_default().to_string(),
+            },
+        };
+        self.yaml.update(cx, |state, cx| state.set_value(text, window, cx));
+    }
+
+    /// Replaces the form with a parsed draft, as after saving from the YAML tab.
+    fn load_draft(&mut self, draft: RequestFile, window: &mut Window, cx: &mut Context<Self>) {
+        let method = draft.http.method.clone().unwrap_or_else(|| "GET".to_string());
+        let url = draft.http.url.clone();
+        self.url.update(cx, |state, cx| state.set_value(url, window, cx));
+        if let Some(method) = METHODS.iter().find(|m| **m == method) {
+            self.method
+                .update(cx, |state, cx| state.set_selected_value(method, window, cx));
+        }
+        let (query, headers) = (draft.http.query.clone(), draft.http.headers.clone());
+        self.params.update(cx, |view, cx| view.load(&query, window, cx));
+        self.request_headers.update(cx, |view, cx| view.load(&headers, window, cx));
+        self.draft = draft;
+        self.load_error = None;
+    }
+
+    fn save(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.yaml_dirty {
+            let text = self.yaml.read(cx).value().to_string();
+            match self.document.save_yaml(&text) {
+                Ok(draft) => {
+                    self.load_draft(draft, window, cx);
+                    self.yaml_dirty = false;
+                    self.notice = Some("Saved".to_string());
+                }
+                Err(error) => self.notice = Some(error.to_string()),
+            }
+            cx.notify();
+            return;
+        }
+        match self.document.save(&self.draft) {
+            Ok(()) => self.notice = Some("Saved".to_string()),
+            Err(nd_core::Error::Unpreserved(reason)) => self.ask_how_to_save(reason, window, cx),
+            Err(error) => self.notice = Some(error.to_string()),
+        }
         cx.notify();
+    }
+
+    /// The form can't be saved without losing comments. Nothing has been written.
+    fn ask_how_to_save(&mut self, reason: String, window: &mut Window, cx: &mut Context<Self>) {
+        let this = cx.entity().downgrade();
+        let rewrite = this.clone();
+        window.open_dialog(cx, move |dialog, _, _| {
+            let this = this.clone();
+            let rewrite = rewrite.clone();
+            dialog
+                .title("Can't keep this file's comments")
+                .child(format!(
+                    "{reason}. You can edit the YAML directly, or rewrite the file, which drops its comments."
+                ))
+                .button_props(
+                    DialogButtonProps::default()
+                        .ok_text("Rewrite file (loses comments)")
+                        .cancel_text("Open YAML tab"),
+                )
+                .on_ok(move |_, window, cx| {
+                    rewrite
+                        .update(cx, |view, cx| {
+                            view.notice = Some(match view.document.save_rewriting(&view.draft) {
+                                Ok(()) => "Saved (comments dropped)".to_string(),
+                                Err(error) => error.to_string(),
+                            });
+                            let _ = window;
+                            cx.notify();
+                        })
+                        .ok();
+                    true
+                })
+                .on_cancel(move |_, window, cx| {
+                    this.update(cx, |view, cx| {
+                        view.request_tab = RequestTab::Yaml;
+                        view.show_yaml(window, cx);
+                        cx.notify();
+                    })
+                    .ok();
+                    true
+                })
+        });
     }
 
     /// Pushes the exchange's text into the three read-only viewers.
@@ -263,6 +412,50 @@ impl RequestView {
             row = row.child(div().text_xs().text_color(theme.danger).child(failure.clone()));
         }
         return row;
+    }
+
+    fn render_request_side(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let selected = match self.request_tab {
+            RequestTab::Params => 0,
+            RequestTab::Headers => 1,
+            RequestTab::Yaml => 2,
+        };
+        let count = |n: usize, label: &str| {
+            if n == 0 { label.to_string() } else { format!("{label} ({n})") }
+        };
+        let content = match self.request_tab {
+            RequestTab::Params => div().size_full().child(self.params.clone()).into_any_element(),
+            RequestTab::Headers => div()
+                .size_full()
+                .child(self.request_headers.clone())
+                .into_any_element(),
+            RequestTab::Yaml => Editor::new(&self.yaml).size_full().into_any_element(),
+        };
+        return div()
+            .v_flex()
+            .size_full()
+            .child(
+                TabBar::new("request-side-tabs")
+                    .underline()
+                    .selected_index(selected)
+                    .children([
+                        Tab::new().label(count(self.draft.http.query.0.len(), "Params")),
+                        Tab::new().label(count(self.draft.http.headers.0.len(), "Headers")),
+                        Tab::new().label("YAML"),
+                    ])
+                    .on_click(cx.listener(|this, index: &usize, window, cx| {
+                        this.request_tab = match index {
+                            1 => RequestTab::Headers,
+                            2 => RequestTab::Yaml,
+                            _ => RequestTab::Params,
+                        };
+                        if this.request_tab == RequestTab::Yaml {
+                            this.show_yaml(window, cx);
+                        }
+                        cx.notify();
+                    })),
+            )
+            .child(div().flex_1().min_h_0().overflow_y_scrollbar().child(content));
     }
 
     fn render_response(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -336,7 +529,7 @@ impl Render for RequestView {
         let mut column = div()
             .key_context(KEY_CONTEXT)
             .on_action(cx.listener(|this, _: &Send, window, cx| this.send(window, cx)))
-            .on_action(cx.listener(|this, _: &Save, _, cx| this.save(cx)))
+            .on_action(cx.listener(|this, _: &Save, window, cx| this.save(window, cx)))
             .v_flex()
             .size_full();
         if let Some(error) = &self.load_error {
@@ -361,11 +554,29 @@ impl Render for RequestView {
                         Button::new("save")
                             .label("Save")
                             .disabled(self.document.path.is_none() || !self.is_dirty())
-                            .on_click(cx.listener(|this, _, _, cx| this.save(cx))),
+                            .on_click(cx.listener(|this, _, window, cx| this.save(window, cx))),
                     ),
             )
-            .child(self.render_status(cx))
-            .child(self.render_response(cx));
+            .child(
+                div().flex_1().min_h_0().child(
+                    v_resizable("request-response")
+                        .child(
+                            resizable_panel()
+                                .size(px(240.))
+                                .size_range(px(120.)..px(600.))
+                                .child(self.render_request_side(cx)),
+                        )
+                        .child(
+                            resizable_panel().child(
+                                div()
+                                    .v_flex()
+                                    .size_full()
+                                    .child(self.render_status(cx))
+                                    .child(self.render_response(cx)),
+                            ),
+                        ),
+                ),
+            );
     }
 }
 
@@ -544,13 +755,106 @@ mod tests {
             assert!(view.is_dirty());
         });
 
-        cx.update_window(fixture.window, |_, _, cx| {
-            fixture.view.update(cx, |view, cx| view.save(cx));
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture.view.update(cx, |view, cx| view.save(window, cx));
         })
         .unwrap();
         let saved = std::fs::read_to_string(&fixture.file).unwrap();
         assert!(saved.contains("# keep me") && saved.contains("# note"), "{saved}");
         assert!(saved.contains("http://example.com/changed"), "{saved}");
         cx.read_entity(&fixture.view, |view, _| assert!(!view.is_dirty()));
+    }
+
+    #[gpui_kit::test]
+    fn a_typed_header_reaches_the_draft_and_the_file(cx: &mut TestAppContext) {
+        let fixture = fixture(cx, 200, "", Duration::ZERO);
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture
+                .view
+                .update(cx, |view, cx| {
+                    view.request_tab = super::RequestTab::Headers;
+                    cx.notify();
+                });
+            window.render_frame(cx);
+            let headers = fixture.view.read(cx).request_headers.clone();
+            headers.update(cx, |view, cx| view.add(window, cx));
+            window.render_frame(cx);
+            window.input("x-new", cx);
+            window.press("tab", cx);
+            window.input("42", cx);
+        })
+        .unwrap();
+        cx.run_until_parked();
+        cx.read_entity(&fixture.view, |view, _| {
+            assert_eq!(
+                view.draft.http.headers.0,
+                vec![("x-new".to_string(), Some("42".to_string()))]
+            );
+            assert!(view.is_dirty());
+        });
+
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture.view.update(cx, |view, cx| view.save(window, cx));
+        })
+        .unwrap();
+        let saved = std::fs::read_to_string(&fixture.file).unwrap();
+        assert!(saved.contains("x-new: '42'") || saved.contains("x-new: \"42\"") || saved.contains("x-new: 42"), "{saved}");
+        assert!(saved.contains("# keep me") && saved.contains("# note"), "{saved}");
+    }
+
+    #[gpui_kit::test]
+    fn the_yaml_tab_saves_exactly_what_was_typed(cx: &mut TestAppContext) {
+        let fixture = fixture(cx, 200, "", Duration::ZERO);
+        let text = "http: {url: 'http://y.test/z'}   # my  spacing";
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture.view.update(cx, |view, cx| {
+                view.request_tab = super::RequestTab::Yaml;
+                view.show_yaml(window, cx);
+            });
+            let yaml = fixture.view.read(cx).yaml.clone();
+            yaml.read(cx).focus_handle(cx).focus(window, cx);
+            window.render_frame(cx);
+            window.press("secondary-a", cx);
+            window.input(text, cx);
+        })
+        .unwrap();
+        cx.run_until_parked();
+        cx.read_entity(&fixture.view, |view, _| assert!(view.yaml_dirty && view.is_dirty()));
+
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture.view.update(cx, |view, cx| view.save(window, cx));
+        })
+        .unwrap();
+        cx.run_until_parked();
+        assert_eq!(std::fs::read_to_string(&fixture.file).unwrap(), text);
+        cx.read_entity(&fixture.view, |view, cx| {
+            assert!(!view.yaml_dirty && !view.is_dirty());
+            assert_eq!(view.draft.http.url, "http://y.test/z");
+            assert_eq!(view.url.read(cx).value().as_ref(), "http://y.test/z");
+        });
+    }
+
+    #[gpui_kit::test]
+    fn broken_yaml_is_refused_and_leaves_the_file_alone(cx: &mut TestAppContext) {
+        let fixture = fixture(cx, 200, "", Duration::ZERO);
+        let before = std::fs::read_to_string(&fixture.file).unwrap();
+        cx.update_window(fixture.window, |_, window, cx| {
+            fixture.view.update(cx, |view, cx| {
+                view.request_tab = super::RequestTab::Yaml;
+                view.show_yaml(window, cx);
+            });
+            let yaml = fixture.view.read(cx).yaml.clone();
+            yaml.read(cx).focus_handle(cx).focus(window, cx);
+            window.render_frame(cx);
+            window.press("secondary-a", cx);
+            window.input("http: [oops", cx);
+            fixture.view.update(cx, |view, cx| view.save(window, cx));
+        })
+        .unwrap();
+        assert_eq!(std::fs::read_to_string(&fixture.file).unwrap(), before);
+        cx.read_entity(&fixture.view, |view, _| {
+            assert!(view.yaml_dirty, "the edit must survive a refused save");
+            assert!(view.notice.is_some());
+        });
     }
 }

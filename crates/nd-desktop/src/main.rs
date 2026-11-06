@@ -1,4 +1,5 @@
 mod model;
+mod pairs_view;
 mod request_view;
 mod runtime;
 mod workspace;
