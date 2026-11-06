@@ -1,5 +1,6 @@
 //! The root view: title bar, sidebar, tabs, main area and status bar.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use gpui_kit::component::button::*;
@@ -13,11 +14,13 @@ use nd_core::Collection;
 
 use crate::model::sidebar::tree_items;
 use crate::model::tabs::Tabs;
+use crate::request_view::{Place, RequestView};
 
 pub struct Workspace {
     collection: Option<Collection>,
     tree: Entity<TreeState>,
     tabs: Tabs,
+    views: HashMap<PathBuf, Entity<RequestView>>,
     error: Option<String>,
 }
 
@@ -28,6 +31,7 @@ impl Workspace {
             collection: None,
             tree,
             tabs: Tabs::default(),
+            views: HashMap::new(),
             error: None,
         };
         if let Some(path) = start {
@@ -64,6 +68,7 @@ impl Workspace {
         };
         self.error = None;
         self.tabs = Tabs::default();
+        self.views.clear();
         self.tree.update(cx, |state, cx| state.set_items(items, cx));
         window.set_window_title(&format!("{} — NativeDoctor", collection.manifest.name));
         self.collection = Some(collection);
@@ -89,13 +94,31 @@ impl Workspace {
         .detach();
     }
 
-    fn open_request(&mut self, path: &Path, cx: &mut Context<Self>) {
-        let title = nd_core::RequestFile::load(path)
-            .map_or_else(
-                |_| nd_core::RequestFile::default().display_name(path),
-                |file| file.display_name(path),
-            );
+    fn place(&self) -> Place {
+        return Place {
+            root: self.collection.as_ref().map(|c| c.root.clone()),
+            env: self.collection.as_ref().and_then(|c| c.manifest.default_env.clone()),
+        };
+    }
+
+    fn open_request(&mut self, path: &Path, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.views.contains_key(path) {
+            let place = self.place();
+            let owned = path.to_path_buf();
+            let view = cx.new(|cx| RequestView::open(&owned, place, window, cx));
+            self.views.insert(owned, view);
+        }
+        let title = self.views[path].read(cx).title();
         self.tabs.open(path, title);
+        cx.notify();
+    }
+
+    fn close_tab(&mut self, index: usize, cx: &mut Context<Self>) {
+        let Some(tab) = self.tabs.items.get(index) else {
+            return;
+        };
+        self.views.remove(&tab.path);
+        self.tabs.close(index);
         cx.notify();
     }
 
@@ -137,23 +160,43 @@ impl Workspace {
                                 .child(Icon::new(icon).size_4())
                                 .child(item.label.clone()),
                         )
-                        .on_click(move |_, _, cx| {
+                        .on_click(move |_, window, cx| {
                             let path = PathBuf::from(id.as_ref());
                             if !path.to_string_lossy().ends_with(REQUEST_SUFFIX) {
                                 return;
                             }
-                            this.update(cx, |this, cx| this.open_request(&path, cx)).ok();
+                            this.update(cx, |this, cx| this.open_request(&path, window, cx))
+                                .ok();
                         })
                 })),
             );
     }
 
     fn render_tabs(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let tabs = self.tabs.items.iter().map(|tab| Tab::new().label(tab.title.clone()));
+        let tabs: Vec<Tab> = self
+            .tabs
+            .items
+            .iter()
+            .enumerate()
+            .map(|(index, tab)| {
+                let dirty = self
+                    .views
+                    .get(&tab.path)
+                    .is_some_and(|view| view.read(cx).is_dirty());
+                let title = if dirty { format!("{} ●", tab.title) } else { tab.title.clone() };
+                Tab::new().label(title).suffix(
+                    Button::new(("close-tab", index))
+                        .ghost()
+                        .compact()
+                        .icon(IconName::Close)
+                        .on_click(cx.listener(move |this, _, _, cx| this.close_tab(index, cx))),
+                )
+            })
+            .collect();
         return TabBar::new("request-tabs")
             .underline()
             .selected_index(self.tabs.active.unwrap_or(0))
-            .children(tabs.collect::<Vec<_>>())
+            .children(tabs)
             .on_click(cx.listener(|this, index: &usize, _, cx| {
                 this.tabs.select(*index);
                 cx.notify();
@@ -162,27 +205,19 @@ impl Workspace {
 
     fn render_main(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
-        let body = match self.tabs.active_tab() {
-            Some(tab) => div()
-                .v_flex()
-                .gap_1()
-                .child(div().text_lg().child(tab.title.clone()))
-                .child(
-                    div()
-                        .text_sm()
-                        .text_color(theme.muted_foreground)
-                        .child(tab.path.display().to_string()),
-                ),
+        let body = match self.tabs.active_tab().and_then(|tab| self.views.get(&tab.path)) {
+            Some(view) => div().size_full().child(view.clone()).into_any_element(),
             None => div()
-                .v_flex()
-                .gap_1()
-                .child(div().text_color(theme.muted_foreground).child("Pick a request from the sidebar")),
+                .p_4()
+                .text_color(theme.muted_foreground)
+                .child("Pick a request from the sidebar")
+                .into_any_element(),
         };
         return div()
             .v_flex()
             .size_full()
             .child(self.render_tabs(cx))
-            .child(div().flex_1().p_4().child(body));
+            .child(div().flex_1().min_h_0().child(body));
     }
 
     fn render_welcome(&self, cx: &mut Context<Self>) -> impl IntoElement {

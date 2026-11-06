@@ -1,4 +1,5 @@
 mod model;
+mod request_view;
 mod runtime;
 mod workspace;
 
@@ -16,6 +17,10 @@ fn main() {
         .run(move |cx| {
             gpui_kit::init(cx);
             runtime::init(cx);
+            cx.bind_keys([
+                KeyBinding::new("secondary-enter", request_view::Send, Some(request_view::KEY_CONTEXT)),
+                KeyBinding::new("secondary-s", request_view::Save, Some(request_view::KEY_CONTEXT)),
+            ]);
             cx.activate(true);
             cx.on_window_closed(|cx, _| {
                 if cx.windows().is_empty() {
