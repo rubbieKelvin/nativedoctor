@@ -11,6 +11,26 @@ use uuid::Uuid;
 
 use crate::error::{Error, Result};
 
+/// Every name usable as `${!name}`.
+pub const NAMES: &[&str] = &[
+    "uuidv4",
+    "nanoid",
+    "now",
+    "yesterday",
+    "tomorrow",
+    "random_date_past",
+    "random_date_future",
+    "random_int",
+    "random_bool",
+    "color",
+    "random_name",
+    "random_username",
+    "random_email",
+    "random_phone",
+    "random_words",
+    "random_paragraph",
+];
+
 pub(crate) fn invoke(name: &str) -> Result<String> {
     let mut rng = rand::rng();
     return match name {
@@ -44,25 +64,7 @@ mod tests {
 
     #[test]
     fn every_generator_produces_a_value() {
-        let names = [
-            "uuidv4",
-            "nanoid",
-            "now",
-            "yesterday",
-            "tomorrow",
-            "random_date_past",
-            "random_date_future",
-            "random_int",
-            "random_bool",
-            "color",
-            "random_name",
-            "random_username",
-            "random_email",
-            "random_phone",
-            "random_words",
-            "random_paragraph",
-        ];
-        for name in names {
+        for name in NAMES {
             assert!(!invoke(name).unwrap().is_empty(), "{name}");
         }
     }

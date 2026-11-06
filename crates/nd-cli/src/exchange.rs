@@ -1,13 +1,12 @@
 //! Runs one prepared request: consumes engine events, prints them, then evaluates checks.
 
 use std::io::{self, Write};
-use std::sync::Arc;
 
 use colored::Colorize;
-use nd_core::evaluate::{self, ResponseView};
 use nd_core::{PreparedRequest, RequestFile, Variables};
-use nd_engine::{CookieJar, Event};
-use serde_json::{json, Value};
+use nd_engine::report::{request_json, result_json};
+use nd_engine::{Event, ResponseHead, Session};
+use serde_json::json;
 use tokio::sync::mpsc;
 
 use crate::failure::{Failure, ASSERTION};
@@ -37,23 +36,16 @@ enum BodyMode {
     Buffered,
 }
 
-struct Head {
-    status: u16,
-    reason: Option<String>,
-    version: String,
-    headers: Vec<(String, String)>,
-}
-
 /// Prints the request without sending it. Secrets are always redacted.
 pub fn print_offline(
     name: &str,
     request: &PreparedRequest,
-    cookies: Option<&Arc<CookieJar>>,
-    vars: &Variables,
+    session: &Session,
     output: &Output,
 ) -> Result<(), Failure> {
+    let vars = &session.vars;
     let redactor = vars.redactor();
-    let cookie_line = saved_cookies(request, cookies);
+    let cookie_line = session.masked_cookies(request);
     let mut out = io::stdout().lock();
     if output.json {
         let value = json!({
@@ -65,18 +57,6 @@ pub fn print_offline(
     }
     write_request(&mut out, request, cookie_line.as_deref(), vars, output)?;
     return Ok(());
-}
-
-/// Saved cookies for this request, values hidden. An explicit `Cookie` header replaces them.
-fn saved_cookies(request: &PreparedRequest, cookies: Option<&Arc<CookieJar>>) -> Option<String> {
-    let explicit = request
-        .headers
-        .iter()
-        .any(|(name, _)| name.eq_ignore_ascii_case("cookie"));
-    if explicit {
-        return None;
-    }
-    return cookies.and_then(|jar| jar.masked_header(&request.url));
 }
 
 fn write_request(
@@ -104,25 +84,24 @@ pub async fn perform(
     name: &str,
     file: &RequestFile,
     request: PreparedRequest,
-    cookies: Option<Arc<CookieJar>>,
-    vars: &mut Variables,
+    session: &mut Session,
     output: &Output,
 ) -> Result<Vec<(String, String)>, Failure> {
     let has_checks = !file.capture.is_empty() || !file.assertions.is_empty();
     let events_as_json = output.json && output.stream;
     let wants_body = output.print.response_body || has_checks || output.json;
-    let cookie_line = saved_cookies(&request, cookies.as_ref());
+    let cookie_line = session.masked_cookies(&request);
 
     let mut out = io::stdout().lock();
     if !output.json {
-        write_request(&mut out, &request, cookie_line.as_deref(), vars, output)?;
+        write_request(&mut out, &request, cookie_line.as_deref(), &session.vars, output)?;
     }
 
     let (sender, mut events) = mpsc::channel(CHANNEL_SIZE);
-    let engine = tokio::spawn(nd_engine::send(request.clone(), cookies, sender));
+    let engine = tokio::spawn(nd_engine::send(request.clone(), session.jar(), sender));
 
-    let redactor = vars.redactor();
-    let mut head: Option<Head> = None;
+    let redactor = session.vars.redactor();
+    let mut head: Option<ResponseHead> = None;
     let mut mode = BodyMode::Hidden;
     let mut collected: Vec<u8> = Vec::new();
     let mut collect = output.json || has_checks;
@@ -159,7 +138,7 @@ pub async fn perform(
                 });
                 mode = choose_mode(output, is_event_stream);
                 collect = collect || mode == BodyMode::Buffered;
-                head = Some(Head {
+                head = Some(ResponseHead {
                     status,
                     reason,
                     version,
@@ -192,7 +171,7 @@ pub async fn perform(
                             continue;
                         }
                         pending_line.extend_from_slice(&bytes);
-                        write_complete_lines(&mut out, &mut pending_line, vars)?;
+                        write_complete_lines(&mut out, &mut pending_line, &session.vars)?;
                     }
                     _ => {}
                 }
@@ -220,30 +199,13 @@ pub async fn perform(
         return Err(Failure::new("no response received"));
     };
 
-    let view = ResponseView {
-        status: head.status,
-        headers: &head.headers,
-        body: &collected,
-    };
-    let failures = evaluate::check(&file.assertions, &view, vars)?;
-    let captures = if failures.is_empty() {
-        evaluate::capture(&file.capture, &view)
-    } else {
-        Ok(Vec::new())
-    };
-
     // Captured secrets are stored first, so they're redacted in the output below.
-    let mut saved = Vec::new();
-    if let Ok(values) = &captures {
-        for (name, value) in values {
-            if vars.capture(name, value.clone()) {
-                saved.push((name.clone(), value.clone()));
-            } else {
-                eprintln!("warning: capture `{name}` ignored; a value set by --var or the environment wins");
-            }
-        }
+    let conclusion = session.conclude(file, &head, &collected)?;
+    for name in &conclusion.ignored {
+        eprintln!("warning: capture `{name}` ignored; a value set by --var or the environment wins");
     }
-    let redactor = vars.redactor();
+    let failures = conclusion.failures;
+    let redactor = session.vars.redactor();
 
     if !pending_line.is_empty() {
         writeln!(
@@ -276,7 +238,9 @@ pub async fn perform(
             message: String::new(),
         });
     }
-    captures?;
+    if let Some(error) = conclusion.capture_error {
+        return Err(error.into());
+    }
 
     if output.fail && (300..600).contains(&head.status) {
         return Err(Failure {
@@ -284,7 +248,7 @@ pub async fn perform(
             message: format!("server responded with {}", head.status),
         });
     }
-    return Ok(saved);
+    return Ok(conclusion.saved);
 }
 
 fn choose_mode(output: &Output, is_event_stream: bool) -> BodyMode {
@@ -312,39 +276,4 @@ fn write_complete_lines(
     let text = vars.redactor().redact(&String::from_utf8_lossy(&complete));
     out.write_all(text.as_bytes())?;
     return out.flush();
-}
-
-fn request_json(request: &PreparedRequest, cookie_line: Option<&str>) -> Value {
-    let mut headers = request.headers.clone();
-    if let Some(cookies) = cookie_line {
-        headers.push(("cookie".to_string(), cookies.to_string()));
-    }
-    return json!({
-        "method": request.method,
-        "url": request.url.as_str(),
-        "headers": render::pairs_json(&headers),
-    });
-}
-
-fn result_json(
-    name: &str,
-    request: Value,
-    head: &Head,
-    body: &[u8],
-    elapsed_ms: Option<u128>,
-    failures: &[String],
-) -> Value {
-    return json!({
-        "name": name,
-        "request": request,
-        "response": {
-            "status": head.status,
-            "reason": head.reason,
-            "version": head.version,
-            "headers": render::pairs_json(&head.headers),
-            "body": render::body_json(body),
-            "elapsed_ms": elapsed_ms,
-        },
-        "assertion_failures": failures,
-    });
 }

@@ -2,11 +2,9 @@
 
 use colored::Colorize;
 use nd_core::{PreparedBody, PreparedRequest};
-use serde_json::Value;
+pub use nd_engine::report::{body_text, pairs_json, BINARY_NOTICE};
 
 use crate::failure::Failure;
-
-pub const BINARY_NOTICE: &str = "[binary data not shown]";
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Print {
@@ -102,48 +100,6 @@ pub fn response_head(
 
 fn header_line(name: &str, value: &str) -> String {
     format!("{}: {value}", name.cyan())
-}
-
-/// Formats a complete body for display, keeping key order and number text.
-pub fn body_text(bytes: &[u8], pretty: bool) -> String {
-    if is_binary(bytes) {
-        return BINARY_NOTICE.to_string();
-    }
-    let text = String::from_utf8_lossy(bytes);
-    if !pretty {
-        return text.to_string();
-    }
-    let trimmed = text.trim_start();
-    if trimmed.starts_with('{') || trimmed.starts_with('[') {
-        if let Ok(value) = serde_json::from_str::<Value>(&text) {
-            if let Ok(formatted) = serde_json::to_string_pretty(&value) {
-                return formatted;
-            }
-        }
-    }
-    return text.to_string();
-}
-
-pub fn is_binary(bytes: &[u8]) -> bool {
-    bytes.contains(&0) || std::str::from_utf8(bytes).is_err()
-}
-
-pub fn pairs_json(pairs: &[(String, String)]) -> Value {
-    return Value::Array(
-        pairs
-            .iter()
-            .map(|(name, value)| serde_json::json!([name, value]))
-            .collect(),
-    );
-}
-
-/// A body as JSON output: parsed if it's JSON, else text, else null for binary.
-pub fn body_json(bytes: &[u8]) -> Value {
-    if is_binary(bytes) {
-        return Value::Null;
-    }
-    return serde_json::from_slice(bytes)
-        .unwrap_or_else(|_| Value::String(String::from_utf8_lossy(bytes).to_string()));
 }
 
 #[cfg(test)]

@@ -14,9 +14,30 @@ use crate::error::{Error, Result};
 use crate::manifest::Environment;
 use crate::state;
 
+/// Where a variable's current value came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Source {
+    Collection,
+    Environment,
+    SecretsFile,
+    Captured,
+    Process,
+    Override,
+}
+
+/// One row of the desktop app's variables panel.
+#[derive(Debug, Clone, PartialEq)]
+pub struct VarEntry {
+    pub name: String,
+    pub value: Option<String>,
+    pub secret: bool,
+    pub source: Option<Source>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Variables {
     values: HashMap<String, String>,
+    sources: HashMap<String, Source>,
     declared: BTreeSet<String>,
     secret_names: BTreeSet<String>,
     /// Set by the process environment or `--var`, so captures can't replace them.
@@ -35,7 +56,7 @@ impl Variables {
         let mut vars = Variables::default();
 
         if let Some(collection) = collection {
-            vars.declare_pairs(&collection.manifest.vars);
+            vars.declare_pairs(&collection.manifest.vars, Source::Collection);
             if let Some(name) = env {
                 let environment = collection.load_environment(name)?;
                 vars.apply_environment(&environment);
@@ -45,21 +66,21 @@ impl Variables {
                 vars.secrets_hint = Some(relative.display().to_string());
             }
             for (name, value) in state::load(&collection.state_path(env))? {
-                vars.values.insert(name, value);
+                vars.set(name, value, Source::Captured);
             }
         }
 
         let declared: Vec<String> = vars.declared.iter().cloned().collect();
         for name in declared {
             if let Some(value) = process_env(&name) {
-                vars.values.insert(name.clone(), value);
-                vars.pinned.insert(name);
+                vars.pinned.insert(name.clone());
+                vars.set(name, value, Source::Process);
             }
         }
 
         for (name, value) in overrides {
-            vars.values.insert(name.clone(), value.clone());
             vars.pinned.insert(name.clone());
+            vars.set(name.clone(), value.clone(), Source::Override);
         }
         return Ok(vars);
     }
@@ -73,23 +94,33 @@ impl Variables {
         return vars;
     }
 
-    fn declare_pairs(&mut self, pairs: &crate::pairs::Pairs) {
+    fn set(&mut self, name: String, value: String, source: Source) {
+        self.sources.insert(name.clone(), source);
+        self.values.insert(name, value);
+    }
+
+    fn unset(&mut self, name: &str) {
+        self.sources.remove(name);
+        self.values.remove(name);
+    }
+
+    fn declare_pairs(&mut self, pairs: &crate::pairs::Pairs, source: Source) {
         for (name, value) in &pairs.0 {
             self.declared.insert(name.clone());
             match value {
-                Some(value) => self.values.insert(name.clone(), value.clone()),
-                None => self.values.remove(name),
+                Some(value) => self.set(name.clone(), value.clone(), source),
+                None => self.unset(name),
             };
         }
     }
 
     fn apply_environment(&mut self, environment: &Environment) {
-        self.declare_pairs(&environment.vars);
+        self.declare_pairs(&environment.vars, Source::Environment);
         for name in &environment.secrets {
             self.declared.insert(name.clone());
             self.secret_names.insert(name.clone());
             // A secret's value must never come from a committed file.
-            self.values.remove(name);
+            self.unset(name);
         }
     }
 
@@ -104,7 +135,7 @@ impl Variables {
             let (name, value) =
                 entry.map_err(|e| Error::Invalid(format!("{}: {e}", path.display())))?;
             if self.secret_names.contains(&name) {
-                self.values.insert(name, value);
+                self.set(name, value, Source::SecretsFile);
             }
         }
         return Ok(());
@@ -146,8 +177,23 @@ impl Variables {
         if self.pinned.contains(name) {
             return false;
         }
-        self.values.insert(name.to_string(), value);
+        self.set(name.to_string(), value, Source::Captured);
         return true;
+    }
+
+    /// Every known variable, sorted by name. Holds real values, so redact before showing them.
+    pub fn entries(&self) -> Vec<VarEntry> {
+        let mut names: BTreeSet<&String> = self.declared.iter().collect();
+        names.extend(self.values.keys());
+        return names
+            .into_iter()
+            .map(|name| VarEntry {
+                name: name.clone(),
+                value: self.values.get(name).cloned(),
+                secret: self.secret_names.contains(name),
+                source: self.sources.get(name).copied(),
+            })
+            .collect();
     }
 
     pub fn redactor(&self) -> Redactor {
@@ -212,6 +258,30 @@ mod tests {
 
     fn no_env(_: &str) -> Option<String> {
         None
+    }
+
+    #[test]
+    fn entries_report_where_each_value_came_from() {
+        let (dir, mut collection) = collection("vars: { A: env, B: }\nsecrets: [TOKEN, MISSING]\n");
+        collection.manifest.vars.push("C", Some("manifest".into()));
+        let secrets = collection.secrets_path("dev");
+        fs::create_dir_all(secrets.parent().unwrap()).unwrap();
+        fs::write(&secrets, "TOKEN=abc\n").unwrap();
+        let _keep = dir;
+        let overrides = [("D".to_string(), "cli".to_string())];
+        let vars = Variables::load(Some(&collection), Some("dev"), &overrides, &no_env).unwrap();
+
+        let source = |name: &str| {
+            let entries = vars.entries();
+            entries.iter().find(|e| e.name == name).unwrap().source
+        };
+        assert_eq!(source("A"), Some(Source::Environment));
+        assert_eq!(source("B"), None);
+        assert_eq!(source("C"), Some(Source::Collection));
+        assert_eq!(source("D"), Some(Source::Override));
+        assert_eq!(source("TOKEN"), Some(Source::SecretsFile));
+        assert_eq!(source("MISSING"), None);
+        assert!(vars.entries().iter().find(|e| e.name == "TOKEN").unwrap().secret);
     }
 
     #[test]

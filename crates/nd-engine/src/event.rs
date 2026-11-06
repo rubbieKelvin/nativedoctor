@@ -28,4 +28,6 @@ pub enum Error {
     Invalid(String),
     #[error("{0}")]
     Other(String),
+    #[error(transparent)]
+    Core(#[from] nd_core::Error),
 }

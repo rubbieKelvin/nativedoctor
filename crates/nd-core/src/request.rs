@@ -5,7 +5,7 @@ use std::path::Path;
 
 use indexmap::IndexMap;
 use serde::de::Error as _;
-use serde::ser::SerializeMap;
+use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Map, Value};
 
@@ -90,8 +90,61 @@ pub struct Assertions {
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub headers: IndexMap<String, String>,
     /// `$.json.path` -> expected value.
-    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    #[serde(
+        default,
+        serialize_with = "serialize_expected",
+        skip_serializing_if = "IndexMap::is_empty"
+    )]
     pub body: IndexMap<String, Value>,
+}
+
+/// Writes a JSON value with real numbers. `arbitrary_precision` makes a `Number` serialize as a
+/// private struct, which only serde_json's own serializer understands.
+struct PlainJson<'a>(&'a Value);
+
+impl Serialize for PlainJson<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
+        match self.0 {
+            Value::Number(number) => {
+                if let Some(int) = number.as_i64() {
+                    return serializer.serialize_i64(int);
+                }
+                if let Some(int) = number.as_u64() {
+                    return serializer.serialize_u64(int);
+                }
+                if let Some(float) = number.as_f64().filter(|float| float.is_finite()) {
+                    return serializer.serialize_f64(float);
+                }
+                return serializer.serialize_str(&number.to_string());
+            }
+            Value::Array(items) => {
+                let mut seq = serializer.serialize_seq(Some(items.len()))?;
+                for item in items {
+                    seq.serialize_element(&PlainJson(item))?;
+                }
+                return seq.end();
+            }
+            Value::Object(fields) => {
+                let mut map = serializer.serialize_map(Some(fields.len()))?;
+                for (name, item) in fields {
+                    map.serialize_entry(name, &PlainJson(item))?;
+                }
+                return map.end();
+            }
+            other => return other.serialize(serializer),
+        }
+    }
+}
+
+fn serialize_expected<S: Serializer>(
+    expected: &IndexMap<String, Value>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    let mut map = serializer.serialize_map(Some(expected.len()))?;
+    for (path, value) in expected {
+        map.serialize_entry(path, &PlainJson(value))?;
+    }
+    return map.end();
 }
 
 impl Assertions {
@@ -113,6 +166,21 @@ impl RequestFile {
                 path.display()
             )),
         });
+    }
+
+    /// Parses text that isn't in a file yet, like the desktop app's YAML tab.
+    pub fn from_yaml(text: &str) -> Result<RequestFile> {
+        return RequestFile::parse(text).map_err(|e| match e {
+            ParseError::Yaml(source) => Error::Invalid(source.to_string()),
+            ParseError::Unsupported(protocol) => {
+                Error::Unsupported(format!("{protocol} requests aren't supported yet"))
+            }
+        });
+    }
+
+    /// Saves over `path`, keeping its comments and formatting. See [`crate::patch`].
+    pub fn save(&self, path: &Path) -> Result<()> {
+        return crate::patch::save_model(path, self);
     }
 
     fn parse(text: &str) -> std::result::Result<RequestFile, ParseError> {
@@ -244,7 +312,7 @@ impl Serialize for Body {
     fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(1))?;
         match self {
-            Body::Json(value) => map.serialize_entry("json", value)?,
+            Body::Json(value) => map.serialize_entry("json", &PlainJson(value))?,
             Body::Text(text) => map.serialize_entry("text", text)?,
             Body::Form(pairs) => map.serialize_entry("form", pairs)?,
             Body::File(path) => map.serialize_entry("file", path)?,
@@ -331,6 +399,18 @@ http:
         let again = parse(&text);
         assert_eq!(again.http.body, original.http.body);
         assert_eq!(again.http.query, original.http.query);
+    }
+
+    #[test]
+    fn numbers_are_written_as_numbers() {
+        let original = parse(
+            "http:\n  url: x\n  body:\n    json: { age: 29, price: 1.5, list: [1] }\nassert:\n  body:\n    $.age: 29\n",
+        );
+        let text = serde_yaml_ng::to_string(&original).unwrap();
+        assert!(!text.contains("serde_json"), "{text}");
+        let again = parse(&text);
+        assert_eq!(again.http.body, original.http.body);
+        assert_eq!(again.assertions.body, original.assertions.body);
     }
 
     #[test]

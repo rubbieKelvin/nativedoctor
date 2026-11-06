@@ -1,0 +1,31 @@
+[package]
+name = "nd-desktop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "nativedoctor-desktop"
+path = "src/main.rs"
+
+[dependencies]
+gpui-kit = { version = "0.9", features = ["tree-sitter-yaml", "tree-sitter-html"] }
+nd-constants.workspace = true
+nd-core.workspace = true
+nd-engine.workspace = true
+dirs = "7"
+indexmap.workspace = true
+notify = "8"
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+tokio.workspace = true
+trash = "5"
+
+[dev-dependencies]
+gpui-kit = { version = "0.9", features = ["test-support"] }
+tempfile.workspace = true
+wiremock.workspace = true
+
+[lints]
+workspace = true

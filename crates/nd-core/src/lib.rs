@@ -2,12 +2,13 @@
 
 pub mod check;
 pub mod collection;
-mod dynamic;
+pub mod dynamic;
 pub mod error;
 pub mod evaluate;
 pub mod items;
 pub mod manifest;
 pub mod pairs;
+pub mod patch;
 pub mod prepare;
 pub mod request;
 pub mod state;

@@ -41,6 +41,7 @@ url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
 wiremock = "0.6"
+yaml-edit = "0.3"
 
 [workspace.lints.clippy]
 needless_return = "allow"

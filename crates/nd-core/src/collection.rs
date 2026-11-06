@@ -131,17 +131,16 @@ impl Collection {
         return Ok(names);
     }
 
-    pub fn load_environment(&self, name: &str) -> Result<Environment> {
-        let valid = !name.is_empty()
-            && !name.starts_with('.')
-            && name
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
-        let path = self
+    fn environment_path(&self, name: &str) -> PathBuf {
+        return self
             .root
             .join(ENVIRONMENTS_DIR)
             .join(format!("{name}.yaml"));
-        if !valid || !path.is_file() {
+    }
+
+    pub fn load_environment(&self, name: &str) -> Result<Environment> {
+        let path = self.environment_path(name);
+        if !valid_env_name(name) || !path.is_file() {
             return Err(Error::UnknownEnv {
                 name: name.to_string(),
                 available: self.environments()?.join(", "),
@@ -149,6 +148,76 @@ impl Collection {
         }
         let text = fs::read_to_string(&path).map_err(|e| Error::io(&path, e))?;
         return serde_yaml_ng::from_str(&text).map_err(|source| Error::Yaml { path, source });
+    }
+
+    /// Saves `nativedoctor.yaml`, keeping its comments.
+    pub fn save_manifest(&self) -> Result<()> {
+        return crate::patch::save_model(&self.root.join(MANIFEST_FILE), &self.manifest);
+    }
+
+    /// Saves an environment file, keeping its comments.
+    pub fn save_environment(&self, name: &str, environment: &Environment) -> Result<()> {
+        check_env_name(name)?;
+        return crate::patch::save_model(&self.environment_path(name), environment);
+    }
+
+    /// Creates an empty environment. Fails if it already exists.
+    pub fn create_environment(&self, name: &str) -> Result<()> {
+        check_env_name(name)?;
+        let path = self.environment_path(name);
+        if path.exists() {
+            return Err(Error::Invalid(format!("environment `{name}` already exists")));
+        }
+        return crate::patch::rewrite_model(&path, &Environment::default());
+    }
+
+    pub fn delete_environment(&self, name: &str) -> Result<()> {
+        check_env_name(name)?;
+        let path = self.environment_path(name);
+        return fs::remove_file(&path).map_err(|e| Error::io(&path, e));
+    }
+
+    /// The collection's folders and requests, for browsing. Empty folders are included.
+    pub fn tree(&self) -> Result<Vec<TreeNode>> {
+        let exclude = build_excludes(&self.manifest.exclude)?;
+        return Ok(self.walk_tree(&self.root, &exclude)?.0);
+    }
+
+    /// Returns the folder's contents, and whether anything in it was excluded.
+    fn walk_tree(&self, dir: &Path, exclude: &GlobSet) -> Result<(Vec<TreeNode>, bool)> {
+        let mut entries: Vec<fs::DirEntry> = fs::read_dir(dir)
+            .map_err(|e| Error::io(dir, e))?
+            .collect::<std::io::Result<_>>()
+            .map_err(|e| Error::io(dir, e))?;
+        entries.sort_by_key(fs::DirEntry::file_name);
+
+        let mut nodes = Vec::new();
+        let mut any_excluded = false;
+        for entry in entries {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_string();
+            let relative = path.strip_prefix(&self.root).unwrap_or(&path);
+            let kind = entry.file_type().map_err(|e| Error::io(&path, e))?;
+            if name.starts_with('.') || relative == Path::new(ENVIRONMENTS_DIR) {
+                continue;
+            }
+            if exclude.is_match(relative) {
+                any_excluded = true;
+                continue;
+            }
+            if kind.is_dir() {
+                let (children, excluded) = self.walk_tree(&path, exclude)?;
+                // A folder emptied by excludes is excluded too. One that's really empty isn't.
+                if children.is_empty() && excluded {
+                    any_excluded = true;
+                    continue;
+                }
+                nodes.push(TreeNode::Folder { name, path, children });
+            } else if kind.is_file() && name.ends_with(REQUEST_SUFFIX) {
+                nodes.push(TreeNode::Request { path });
+            }
+        }
+        return Ok((nodes, any_excluded));
     }
 
     /// All request files in the collection, sorted by path.
@@ -168,6 +237,35 @@ impl Collection {
             })
             .collect());
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TreeNode {
+    Folder {
+        name: String,
+        path: PathBuf,
+        children: Vec<TreeNode>,
+    },
+    Request {
+        path: PathBuf,
+    },
+}
+
+fn valid_env_name(name: &str) -> bool {
+    return !name.is_empty()
+        && !name.starts_with('.')
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
+}
+
+fn check_env_name(name: &str) -> Result<()> {
+    if valid_env_name(name) {
+        return Ok(());
+    }
+    return Err(Error::Invalid(format!(
+        "`{name}` isn't a valid environment name; use letters, numbers, `-`, `_` and `.`"
+    )));
 }
 
 /// Finds `*.request.yaml` under `dir`, skipping hidden folders.
@@ -265,6 +363,53 @@ mod tests {
             })
             .collect();
         assert_eq!(names, vec!["ping.request.yaml", "users/get.request.yaml"]);
+    }
+
+    #[test]
+    fn tree_shows_empty_folders_but_not_excluded_ones() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut collection = Collection::init(dir.path(), None).unwrap();
+        touch(&dir.path().join("users/get.request.yaml"));
+        touch(&dir.path().join("users/notes.txt"));
+        touch(&dir.path().join("drafts/wip.request.yaml"));
+        touch(&dir.path().join(".hidden/x.request.yaml"));
+        fs::create_dir_all(dir.path().join("empty")).unwrap();
+        collection.manifest.exclude = vec!["drafts/**".to_string()];
+
+        let tree = collection.tree().unwrap();
+        let names: Vec<String> = tree
+            .iter()
+            .map(|node| match node {
+                TreeNode::Folder { name, children, .. } => format!("{name}/{}", children.len()),
+                TreeNode::Request { path } => {
+                    path.file_name().unwrap().to_string_lossy().to_string()
+                }
+            })
+            .collect();
+        assert_eq!(names, vec!["empty/0", "ping.request.yaml", "users/1"]);
+    }
+
+    #[test]
+    fn saving_keeps_comments_in_manifest_and_environments() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut collection = Collection::init(dir.path(), Some("Demo")).unwrap();
+        let manifest = dir.path().join(MANIFEST_FILE);
+        let text = fs::read_to_string(&manifest).unwrap();
+        fs::write(&manifest, format!("# mine\n{text}")).unwrap();
+        collection.manifest.name = "Renamed".to_string();
+        collection.save_manifest().unwrap();
+        let saved = fs::read_to_string(&manifest).unwrap();
+        assert!(saved.starts_with("# mine\n") && saved.contains("Renamed"), "{saved}");
+
+        collection.create_environment("prod").unwrap();
+        assert!(collection.create_environment("prod").is_err());
+        assert!(collection.create_environment("../evil").is_err());
+        let mut env = collection.load_environment("prod").unwrap();
+        env.secrets.push("TOKEN".to_string());
+        collection.save_environment("prod", &env).unwrap();
+        assert_eq!(collection.load_environment("prod").unwrap().secrets, vec!["TOKEN"]);
+        collection.delete_environment("prod").unwrap();
+        assert_eq!(collection.environments().unwrap(), vec!["dev"]);
     }
 
     #[test]

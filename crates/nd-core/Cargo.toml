@@ -22,6 +22,7 @@ thiserror.workspace = true
 url.workspace = true
 uuid.workspace = true
 walkdir.workspace = true
+yaml-edit.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

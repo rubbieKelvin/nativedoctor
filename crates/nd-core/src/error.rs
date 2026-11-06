@@ -32,6 +32,8 @@ pub enum Error {
     FileOutsideRoot(PathBuf),
     #[error("{0}")]
     Unsupported(String),
+    #[error("can't save while keeping the file's formatting: {0}")]
+    Unpreserved(String),
 }
 
 impl Error {

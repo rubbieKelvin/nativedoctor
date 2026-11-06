@@ -46,6 +46,21 @@ impl Item {
                 | Item::Upload { .. }
         );
     }
+
+    /// Makes a relative file path relative to `base`, for callers with no useful working folder.
+    pub fn rebase(&mut self, base: &Path) {
+        let file = match self {
+            Item::HeaderFile(_, file)
+            | Item::QueryFile(_, file)
+            | Item::FieldFile(_, file)
+            | Item::JsonFile(_, file)
+            | Item::Upload { file, .. } => file,
+            _ => return,
+        };
+        if Path::new(file.as_str()).is_relative() {
+            *file = base.join(file.as_str()).display().to_string();
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
