@@ -1,0 +1,79 @@
+---
+title: NativeDoctor
+description: API requests as plain YAML files, run from your terminal or CI.
+template: splash
+hero:
+  title: API requests that live in Git
+  tagline: Collections are plain folders of YAML, easy to diff, review and branch. Run, chain and assert on HTTP requests from your terminal or CI.
+  actions:
+    - text: Get started
+      link: /guides/getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/rubbieKelvin/nativedoctor
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## See it work
+
+<Tabs>
+	<TabItem label="Run a saved request">
+		```bash
+		nativedoctor init my-api && cd my-api
+		nativedoctor run ping.request.yaml
+		```
+	</TabItem>
+	<TabItem label="Send a one-off">
+		```bash
+		nativedoctor send POST :3000/users name=John age:=29 X-Debug:1 page==2
+		```
+	</TabItem>
+	<TabItem label="Request file">
+		```yaml
+		name: Log in
+		http:
+		  method: POST
+		  url: ${BASE_URL}/login
+		  body:
+		    json: { user: "${USERNAME}", password: "${PASSWORD}" }
+		capture:
+		  API_TOKEN: $.access_token
+		assert:
+		  status: [200, 201]
+		```
+	</TabItem>
+</Tabs>
+
+## Why NativeDoctor
+
+<CardGrid stagger>
+	<Card title="Git-native" icon="document">
+		A collection is a folder of `*.request.yaml` files. Review, diff and branch your API tests like code.
+	</Card>
+	<Card title="Capture and assert" icon="approve-check">
+		Pull values out of responses with JSONPath, reuse them in later requests, and fail the run when an assertion breaks.
+	</Card>
+	<Card title="Secrets stay local" icon="setting">
+		Secret values show as `***` everywhere and live in `.nativedoctor/`, which is never committed.
+	</Card>
+	<Card title="Built for CI" icon="rocket">
+		Piped output is the raw body, `--json` gives structured results, and distinct exit codes tell you what failed.
+	</Card>
+	<Card title="Cookies like a browser" icon="puzzle">
+		Logins carry over between runs, per environment, with host, `Secure`, `Path` and expiry respected.
+	</Card>
+	<Card title="Quick one-offs" icon="pencil">
+		HTTPie-style items let you tweak or send a request without writing a file. Save it later with `--save`.
+	</Card>
+</CardGrid>
+
+## Install
+
+```bash
+cargo build --release -p nd-cli   # binary: target/release/nativedoctor
+```
+
+HTTP works today. WebSocket and gRPC are planned.
