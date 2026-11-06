@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
-#[command(name = "nativedoctor", version, about = "Postman for the command line")]
+#[command(
+    name = "nativedoctor",
+    version,
+    about = "A configurable API testing tool"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
