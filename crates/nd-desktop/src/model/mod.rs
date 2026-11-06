@@ -2,3 +2,5 @@
 
 pub mod document;
 pub mod run;
+pub mod sidebar;
+pub mod tabs;

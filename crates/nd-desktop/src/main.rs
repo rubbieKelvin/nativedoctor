@@ -1,27 +1,38 @@
 mod model;
+mod runtime;
+mod workspace;
 
-use gpui_kit::component::*;
+use std::path::PathBuf;
+
+use gpui_kit::component::TitleBar;
 use gpui_kit::*;
 
-struct Workspace;
-
-impl Render for Workspace {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        return div()
-            .v_flex()
-            .size_full()
-            .items_center()
-            .justify_center()
-            .child("NativeDoctor");
-    }
-}
+use workspace::Workspace;
 
 fn main() {
+    let start = std::env::args_os().nth(1).map(PathBuf::from);
     gpui_kit::application()
         .with_assets(gpui_kit::assets::Assets)
-        .run(|cx| {
+        .run(move |cx| {
             gpui_kit::init(cx);
-            gpui_kit::open_window(WindowOptions::default(), cx, |_, cx| cx.new(|_| Workspace))
-                .expect("failed to open window");
+            runtime::init(cx);
+            cx.activate(true);
+            cx.on_window_closed(|cx, _| {
+                if cx.windows().is_empty() {
+                    cx.quit();
+                }
+            })
+            .detach();
+
+            let mut options = TitleBar::window_options();
+            options.window_bounds = Some(WindowBounds::Windowed(Bounds::centered(
+                None,
+                size(px(1200.), px(780.)),
+                cx,
+            )));
+            gpui_kit::open_window(options, cx, |window, cx| {
+                cx.new(|cx| Workspace::new(start, window, cx))
+            })
+            .expect("failed to open window");
         });
 }
